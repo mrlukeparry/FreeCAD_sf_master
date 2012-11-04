@@ -44,95 +44,95 @@ using namespace Cam;
 //     return "NULL";
 // }
 
-TPGPython::TPGPython(PyObject *cls) : TPG()
+TPGPython::TPGPython(PyObject *cls) :
+		TPG()
 {
-    //TODO: check the cls is an instance of PyTPG (somehow, possibly checking for the presence of api methods)
-    Py_XINCREF(cls);
-    this->cls = cls;
-    this->inst = NULL;
+	//TODO: check the cls is an instance of PyTPG (somehow, possibly checking for the presence of api methods)
+	Py_XINCREF(cls);
+	this->cls = cls;
+	this->inst = NULL;
 }
 
 TPGPython::~TPGPython()
 {
-    Py_XDECREF(this->cls);
+	Py_XDECREF(this->cls);
 }
-
 
 PyObject *TPGPython::QStringToPythonUC(const QString &str)
 {
-    //TODO: check this works properly, it appears to work with the UCS4 characters I tested
-    return PyString_FromString((const char*)str.toStdString().c_str());
+	//TODO: check this works properly, it appears to work with the UCS4 characters I tested
+	return PyString_FromString((const char*) str.toStdString().c_str());
 }
 
 QString TPGPython::PythonUCToQString(PyObject *obj)
 {
-  Py_UNICODE *pid = PyUnicode_AsUnicode(obj);
+	Py_UNICODE *pid = PyUnicode_AsUnicode(obj);
 
-  if (pid != NULL)
-      return QString::fromUcs4((const uint *)pid); //TODO: this should have a check for older pythons that use Ucs2)
-  if (PyString_Check(obj))
-      return QString::fromLatin1(PyString_AS_STRING(obj));
-  return QString();
+	if (pid != NULL)
+		return QString::fromUcs4((const uint *) pid); //TODO: this should have a check for older pythons that use Ucs2)
+	if (PyString_Check(obj))
+		return QString::fromLatin1(PyString_AS_STRING(obj));
+	return QString();
 }
-
 
 /**
  * Creates an instance of cls and stores it in inst if it doesn't exist
  */
 PyObject *TPGPython::getInst(void)
 {
-    if (inst == NULL)
-    {
-        printf("Creating Python Instance\n");
-        PyObject *result = PyObject_CallObject(cls, NULL);
+	if (inst == NULL)
+	{
+		printf("Creating Python Instance\n");
+		PyObject *result = PyObject_CallObject(cls, NULL);
 
-    if (result != NULL)
-        inst = result;
-    }
-    return inst;
+		if (result != NULL)
+			inst = result;
+	}
+	return inst;
 }
 
 // TPG API methods.  Used by the CAM workbench to run the TPG
 
 QString TPGPython::getId()
 {
-    if (this->id.size() == 0 && this->cls != NULL)
-    {
-        PyObject *result = PyObject_CallMethod(this->cls, "getId", NULL);
-        if (result != NULL)
-        {
-          this->id = PythonUCToQString(result);
-          Py_DecRef(result);
-        }
-    }
-    return this->id;
+	if (this->id.size() == 0 && this->cls != NULL)
+	{
+		PyObject *result = PyObject_CallMethod(this->cls, "getId", NULL);
+		if (result != NULL)
+		{
+			this->id = PythonUCToQString(result);
+			Py_DecRef(result);
+		}
+	}
+	return this->id;
 }
 QString TPGPython::getName()
 {
-    if (this->cls != NULL)
-    {
-      PyObject * result = PyObject_CallMethod(this->cls, "getName", NULL);
-      if (result != NULL)
-      {
-        this->name = PythonUCToQString(result);
-        Py_DecRef(result);
-      }
-    }
-    return this->name;
+	if (this->cls != NULL)
+	{
+		PyObject * result = PyObject_CallMethod(this->cls, "getName", NULL);
+		if (result != NULL)
+		{
+			this->name = PythonUCToQString(result);
+			Py_DecRef(result);
+		}
+	}
+	return this->name;
 }
 QString TPGPython::getDescription()
 {
-    if (this->cls != NULL)
-    {
-        PyObject * result = PyObject_CallMethod(this->cls, "getDescription", NULL);
-        if (result != NULL)
-        {
-            this->description = PythonUCToQString(result);
-          //			printf("Description: %s\n", ts(description));
-            Py_DecRef(result);
-        }
-    }
-    return this->description;
+	if (this->cls != NULL)
+	{
+		PyObject * result = PyObject_CallMethod(this->cls, "getDescription",
+				NULL);
+		if (result != NULL)
+		{
+			this->description = PythonUCToQString(result);
+			//			printf("Description: %s\n", ts(description));
+			Py_DecRef(result);
+		}
+	}
+	return this->description;
 }
 
 /**
@@ -142,21 +142,25 @@ QString TPGPython::getDescription()
  */
 std::vector<QString> &TPGPython::getActions()
 {
-    PyObject *inst = getInst();
-    if (inst != NULL) {
-        PyObject *result = PyObject_CallMethod(inst, "getActions", NULL);
-        if (result != NULL) {
-            if (PyList_Check(result)) {
-              int len = PyList_Size(result);
-              for (int i = 0; i < len; i++) {
-                  PyObject *item = PyList_GetItem(result, i);
-                  this->actions.push_back(PythonUCToQString(item));
-                }
-            }
-            Py_DecRef(result);
-        }
-    }
-    return this->actions;
+	PyObject *inst = getInst();
+	if (inst != NULL)
+	{
+		PyObject *result = PyObject_CallMethod(inst, "getActions", NULL);
+		if (result != NULL)
+		{
+			if (PyList_Check(result))
+			{
+				int len = PyList_Size(result);
+				for (int i = 0; i < len; i++)
+				{
+					PyObject *item = PyList_GetItem(result, i);
+					this->actions.push_back(PythonUCToQString(item));
+				}
+			}
+			Py_DecRef(result);
+		}
+	}
+	return this->actions;
 }
 
 /**
@@ -165,31 +169,56 @@ std::vector<QString> &TPGPython::getActions()
  */
 TPGSettings *TPGPython::getSettings(QString &action)
 {
-    TPGSettings *setting = NULL;
-    std::map<QString, TPGSettings*>::iterator it = settings.find(action);
-    PyObject *inst = getInst();
-    if (inst != NULL) {
-        PyObject *arg = QStringToPythonUC(action);
-        PyObject *result = PyObject_CallMethod(inst, "getSettings", "(O)", arg);
-        if (result != NULL) {
-            if (PyList_Check(result)) {
-              setting = new TPGSettings();
-              int len = PyList_Size(result);
+	TPGSettings *setting = NULL;
+	std::map<QString, TPGSettings*>::iterator it = settings.find(action);
+	PyObject *inst = getInst();
+	if (inst != NULL)
+	{
+		PyObject *arg = QStringToPythonUC(action);
+		PyObject *result = PyObject_CallMethod(inst, "getSettings", "(O)", arg);
+		if (result != NULL)
+		{
+			if (PyList_Check(result))
+			{
+				setting = new TPGSettings();
+				int len = PyList_Size(result);
 
-              for (int i = 0; i < len; i++) {
-                  PyObject *item = PyList_GetItem(result, i);
-                  //TODO: parse the item (list) and put its values into setting
-                  //setting.add(new TPGSetting(name, label, type, defaultvalue, units, helptext))
-              }
-              settings[action] = setting;
-            }
-          Py_DecRef(result);
-        }
-        Py_DecRef(arg);
-    } else {
-        setting = it->second;
-    }
-    return setting;
+				for (int i = 0; i < len; i++)
+				{
+					PyObject *item = PyList_GetItem(result, i);
+					if (PyTuple_Check(item))
+					{
+						char *name;
+						char *label;
+						char *type;
+						char *defaultvalue;
+						char *units;
+						char *helptext;
+//						int items = PyTuple_Size(item);
+
+
+						if (PyArg_ParseTuple(item, "zzzzzz", &name, &label, &type,
+								&defaultvalue, &units, &helptext))
+						{
+							setting->addSetting(
+									new TPGSetting(name, label, type, defaultvalue,
+											units, helptext));
+						}
+					}
+					else
+						printf("Not a Tuple!\n");
+				}
+				settings[action] = setting;
+			}
+			Py_DecRef(result);
+		}
+		Py_DecRef(arg);
+	}
+	else
+	{
+		setting = it->second;
+	}
+	return setting;
 }
 
 /**
@@ -199,19 +228,24 @@ TPGSettings *TPGPython::getSettings(QString &action)
  */
 void TPGPython::run(TPGSettings *settings, QString action)
 {
-    PyObject *inst = getInst();
-    if (inst != NULL) {
-        PyObject *actionArg = QStringToPythonUC(action);
-        PyObject *settingsArg = PyList_New(0); //TODO: Populate the settings once the TPGSettings class is implemented
-        PyObject *result = PyObject_CallMethod(inst, "run", "(OO)", actionArg, settingsArg);
-        if (result != NULL) {
-            Py_DecRef(result);
-            printf("pyAction: %s Successful\n", action.toAscii().constData());
-        } else
-            printf("Failed to run pyAction: %s\n", action.toAscii().constData());
+	PyObject *inst = getInst();
+	if (inst != NULL)
+	{
+		PyObject *actionArg = QStringToPythonUC(action);
+		PyObject *settingsArg = PyList_New(0); //TODO: Populate the settings once the TPGSettings class is implemented
+		PyObject *result = PyObject_CallMethod(inst, "run", "(OO)", actionArg,
+				settingsArg);
+		if (result != NULL)
+		{
+			Py_DecRef(result);
+			printf("pyAction: %s Successful\n", action.toAscii().constData());
+		}
+		else
+			printf("Failed to run pyAction: %s\n",
+					action.toAscii().constData());
 
-        Py_XDECREF(actionArg);
-        Py_XDECREF(settingsArg);
-    }
-    //TODO: make error
+		Py_XDECREF(actionArg);
+		Py_XDECREF(settingsArg);
+	}
+	//TODO: make error
 }

@@ -23,25 +23,41 @@
 #ifndef CAM_TPGSETTINGS_H
 #define CAM_TPGSETTINGS_H
 
+#include <vector>
+#include <QString>
+
 #include <App/PropertyStandard.h>
+
 
 namespace Cam
 {
 
-///**
-// * A Class object to store the details of a single setting
-// */
-//class CamExport TPGSetting
-//{
-//public:
-//	//(<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>)
-//	QString name;
-//	QString label;
-//	QString type;
-//	QString defaultvalue;
-//	QString units;
-//	QString helptext;
-//};
+/**
+ * A Class object to store the details of a single setting
+ */
+class CamExport TPGSetting
+{
+public:
+	//(<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>)
+	QString name;
+	QString label;
+	QString type;
+	QString defaultvalue;
+	QString units;
+	QString helptext;
+
+	QString value;
+
+	TPGSetting(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext);
+	TPGSetting(QString &name, QString &label, QString &type, QString &defaultvalue, QString &units, QString &helptext);
+
+	/**
+	 * Perform a deep copy of this class
+	 */
+    TPGSetting* clone();
+
+    void print();
+};
 
   // Class stores hash of settings for managing each independant TPG
 class CamExport TPGSettings
@@ -54,8 +70,20 @@ public:
     void initialise() {};
     void loadSettings() {};
 
+	/**
+	 * Perform a deep copy of this class
+	 */
     TPGSettings* clone();
+
+    void addSetting(TPGSetting* setting);
+
+    /**
+     * Print the settings to stdout
+     */
+    void print();
 protected:
+
+    std::vector<TPGSetting*> settings;
 };
 
 } //namespace Cam

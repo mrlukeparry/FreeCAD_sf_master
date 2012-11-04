@@ -140,9 +140,12 @@ static PyObject *test(PyObject *self, PyObject *args)
 		printf(" '%s'\n", ts(desc));
 		// test the pyTPG API
 		vector<QString> actions = tpg->getActions();
-		for (int i = 0; i < actions.size(); i++)
+		for (int i = 0; i < actions.size(); i++) {
 			printf(" - Action: %s\n", ts(actions[i]));
-
+			Cam::TPGSettings *settings = tpg->getSettings(actions[i]);
+			settings->print();
+			delete settings;
+		}
 		delete tpg;
 	}
 	else {

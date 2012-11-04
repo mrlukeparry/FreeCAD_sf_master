@@ -105,9 +105,12 @@ SET(TPG_Scripts
 	PyCam.py
 	PyTPG/__init__.py
 
-	# Copy Python TPG's to the distribution directory
-	PyTPG/ExampleTPG.py
-	## Add yours here
+	### Copy Python TPG's to the distribution directory ###
+	# Add yours here #
+	
+	# ExampleTPG module
+	PyTPG/ExampleTPG/__init__.py
+	PyTPG/ExampleTPG/ExampleTPG.py
 )
 SOURCE_GROUP("" FILES ${TPG_Scripts})
 ADD_CUSTOM_TARGET(TPG_Scripts ALL
