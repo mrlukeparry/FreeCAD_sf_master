@@ -111,6 +111,13 @@ SET(TPG_Scripts
 	# ExampleTPG module
 	PyTPG/ExampleTPG/__init__.py
 	PyTPG/ExampleTPG/ExampleTPG.py
+	PyTPG/ProfileMilling/__init__.py
+	PyTPG/ProfileMilling/ProfileMilling.py
+	PyTPG/ProfileMilling/format.py
+	PyTPG/ProfileMilling/newnc.py
+	PyTPG/ProfileMilling/simple_nc.py
+	PyTPG/ProfileMilling/profile_funcs.py
+	PyTPG/ProfileMilling/test.py
 )
 SOURCE_GROUP("" FILES ${TPG_Scripts})
 ADD_CUSTOM_TARGET(TPG_Scripts ALL

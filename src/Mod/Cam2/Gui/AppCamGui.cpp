@@ -40,6 +40,7 @@
 #include "ViewProviderTPGList.h"
 
 #include "Workbench.h"
+#include "qrc_Cam.cxx"
 
 // use a different name to CreateCommand()
 void CreateCamCommands(void);
