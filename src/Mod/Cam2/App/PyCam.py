@@ -122,14 +122,14 @@ class PyTPGManager(object):
     def getPlugin(self, pid):
         '''Gets the Python TPG Class (as opposed to Instance) for the selected id'''
         if pid in self._tpgs:
-            return self._tpgs[pid][0]
+            return self._tpgs[pid]
         return None
     
     def printPlugins(self):
         '''Print out a user-friendly list of plugins'''
         print "Known python plugins (TPGs):"
         for key in self._tpgs:
-            tpgcls = self._tpgs[key][0]
+            tpgcls = self._tpgs[key]
             print "> %s [%s] '%s'" % (tpgcls.getName(), tpgcls.getId(), tpgcls.getDescription())
     
     def pytest(self, val):
@@ -148,18 +148,20 @@ class PyTPGManager(object):
         # loop through all modules (or special packages @see examples in tpg folder)
         for modname in dir(package):
             mod = getattr(package, modname)
+#            print "Scanning: %s (%s)" % (modname, type(mod))
             if type(mod) == types.ModuleType:
                 # loop through all the definitions in the module
                 for classname in dir(mod):
                     cls = getattr(mod, classname)
+#                    print " - %s (%s)" % (classname, type(cls))
                     # filter out only Classes that extend the PyTPGBase superclass
                     if inspect.isclass(cls) and issubclass(cls, PyTPGBase) and cls != PyTPGBase:
                         if reload or classname not in self._tpgs:
-                            self._tpgs[cls.getID()] = [cls, None]
+                            self._tpgs[cls.getId()] = cls
             # check if they included a class rather than a module
             elif inspect.isclass(mod) and issubclass(mod, PyTPGBase) and mod != PyTPGBase:
                 if reload or modname not in self._tpgs:
-                    self._tpgs[mod.getId()] = [mod, None]
+                    self._tpgs[mod.getId()] = mod
 # End PyTPGManager
 
 

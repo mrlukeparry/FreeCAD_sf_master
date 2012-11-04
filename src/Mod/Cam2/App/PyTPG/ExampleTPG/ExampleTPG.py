@@ -22,17 +22,16 @@
  
 from PyCam.PyCam import PyTPGBase, UnimplementedTPError
 
-__all__=['ExampleTPG']
 
 class ExampleTPG(PyTPGBase):
     '''This is an example TPG that demonstrates how to create a TPG for the 
-    CAM2 module.  The first way to create a TPG Module is to simply put all
-    code within a python module with the same name as the TPGModule.  In this
-    case 'ExampleTPG' class in 'ExampleTPG.py' '''
+    CAM2 module.'''
     
     '''
     Each settings is made up of a 6-tuple (<name>, <label>, <type>, 
     <defaultvalue>, <unit>, <helptext>)
+    
+    NOTE: All values must be a string, unicode or None
     <name>
         A unique (within the action) identifier for the given setting.  It may 
         be preceded by one or more group names (separated by ':') which are 
@@ -58,12 +57,12 @@ class ExampleTPG(PyTPGBase):
         of desirable options
     '''
     settings = {
-                'rough': [('tolerance','Tolerance', 'App::PropertyInteger', 1, 'mm', 'How close to run tool to final depth'),
+                'rough': [('tolerance','Tolerance', 'App::PropertyInteger', '1', 'mm', 'How close to run tool to final depth'),
                           ],
                 'finish': [('tolerance','Tolerance', 'Cam::Group', None, '', ''), # this is optional way to specify the label of the group
                            # these are the sub elements of tolerance group
-                           ('tolerance:min','Minimum', 'App::PropertyInteger', 0.0, 'mm', 'How close to run tool to final depth'),
-                           ('tolerance:max','Maximum', 'App::PropertyInteger', 0.1, 'mm', 'How close to run tool to final depth'),
+                           ('tolerance:min','Minimum', 'App::PropertyInteger', '0.0', 'mm', 'How close to run tool to final depth'),
+                           ('tolerance:max','Maximum', 'App::PropertyInteger', '0.1', 'mm', 'How close to run tool to final depth'),
                            ],
                 }
     
