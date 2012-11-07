@@ -25,6 +25,7 @@
 #define CAMGUI_WORKBENCH_H
 
 #include <Gui/Workbench.h>
+#include <Gui/DockWindowManager.h>
 
 namespace CamGui
 {
@@ -44,6 +45,7 @@ protected:
     Gui::MenuItem* setupMenuBar() const;
     Gui::ToolBarItem* setupToolBars() const;
     Gui::ToolBarItem* setupCommandBars() const;
+    Gui::DockWindowItems* setupDockWindows() const;
 };
 
 } // namespace CamGui

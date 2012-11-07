@@ -55,6 +55,8 @@ SET(CamGui_SRCS
     ViewProviderTPGFeature
     ViewProviderTPGList.cpp
     ViewProviderTPGList.h
+    ToolPathDockWindow.cpp
+    ToolPathDockWindow.h
 )
 
 add_library(CamGui SHARED ${CamGui_SRCS})
@@ -64,6 +66,12 @@ fc_target_copy_resource(CamGui
     ${CMAKE_SOURCE_DIR}/src/Mod/Cam2
     ${CMAKE_BINARY_DIR}/Mod/Cam
     InitGui.py)
+
+
+set(CamGui_MOC_HDRS
+	ToolPathDockWindow.h
+)
+fc_wrap_cpp(CamGui_MOC_SRCS ${CamGui_MOC_HDRS})
 
 if(MSVC)
     set_target_properties(CamGui PROPERTIES SUFFIX ".pyd")
