@@ -33,7 +33,9 @@
 #include <Gui/ToolBarManager.h>
 #include <Gui/DockWindowManager.h>
 
+#include "CamSettingsDockWindow.h"
 #include "ToolPathDockWindow.h"
+#include "TPGLibraryDockWindow.h"
 
 using namespace CamGui;
 
@@ -45,11 +47,23 @@ Workbench::Workbench()
   Gui::DockWindowManager* pDockMgr = Gui::DockWindowManager::instance();
   Gui::MainWindow* pMainWindow = Gui::MainWindow::getInstance();
 
+  // Add CamSettings Dock Window
+  CamSettingsDockWindow* pcCamSettingsView = new CamSettingsDockWindow(0, pMainWindow);
+  pcCamSettingsView->setObjectName("Cam Settings");
+  pcCamSettingsView->setMinimumWidth(150);
+  pDockMgr->registerDockWindow("Cam_CamSettingsDockWindow", pcCamSettingsView);
+
   // Add Toolpath Dock Window
   ToolPathDockWindow* pcTPView = new ToolPathDockWindow(0, pMainWindow);
   pcTPView->setObjectName("Tool Path");
   pcTPView->setMinimumWidth(150);
   pDockMgr->registerDockWindow("Cam_ToolPathDockWindow", pcTPView);
+
+  // Add TPGLibrary Dock Window
+  TPGLibraryDockWindow* pcTPGLibView = new TPGLibraryDockWindow(0, pMainWindow);
+  pcTPGLibView->setObjectName("TPG Library");
+  pcTPGLibView->setMinimumWidth(150);
+  pDockMgr->registerDockWindow("Cam_TPGLibraryDockWindow", pcTPGLibView);
 }
 
 Workbench::~Workbench()
@@ -90,7 +104,9 @@ Gui::ToolBarItem* Workbench::setupCommandBars() const
 Gui::DockWindowItems* Workbench::setupDockWindows() const
 {
     Gui::DockWindowItems* root = Gui::StdWorkbench::setupDockWindows();
+    root->addDockWidget("Cam_CamSettingsDockWindow", Qt::LeftDockWidgetArea, true, false);
     root->addDockWidget("Cam_ToolPathDockWindow", Qt::BottomDockWidgetArea, true, false);
+    root->addDockWidget("Cam_TPGLibraryDockWindow", Qt::RightDockWidgetArea, true, false);
 //    root->setVisibility(false); // hide all dock windows by default
 //    root->setVisibility("Std_CombiView",true); // except of the combi view
 //    root->setVisibility("Cam_ToolPathDockWindow",true); // Show ToolPathDockWindow

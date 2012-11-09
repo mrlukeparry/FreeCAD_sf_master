@@ -82,7 +82,7 @@ extern "C"
         CamGui::ViewProviderCamPartsList       ::init();
         CamGui::Workbench                      ::init();
 
-        // instanciating the commands
+        // instantiating the commands
         CreateCamCommands();
 
         return;

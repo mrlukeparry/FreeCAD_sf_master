@@ -34,7 +34,21 @@ endif(MSVC)
 
 qt4_add_resources(CamGui_SRCS Resources/Cam.qrc)
 
+set(CamGui_MOC_HDRS
+	CamSettingsDockWindow.h
+	ToolPathDockWindow.h
+    TPGLibraryDockWindow.h
+)
+fc_wrap_cpp(CamGui_MOC_SRCS ${CamGui_MOC_HDRS})
+
+set(CamGui_UIC_SRCS
+    TPGLibraryDockWindow.ui
+	CamSettingsDockWindow.ui
+)
+qt4_wrap_ui(CamGui_UIC_HDRS ${CamGui_UIC_SRCS})
+
 SET(CamGui_SRCS
+	${CamGui_SRCS}
     ${CamGui_UIC_HDRS}
     Resources/Cam.qrc
     AppCamGui.cpp
@@ -55,8 +69,12 @@ SET(CamGui_SRCS
     ViewProviderTPGFeature
     ViewProviderTPGList.cpp
     ViewProviderTPGList.h
+	CamSettingsDockWindow.cpp
+	CamSettingsDockWindow.h
     ToolPathDockWindow.cpp
     ToolPathDockWindow.h
+    TPGLibraryDockWindow.cpp
+    TPGLibraryDockWindow.h
 )
 
 add_library(CamGui SHARED ${CamGui_SRCS})
@@ -66,12 +84,6 @@ fc_target_copy_resource(CamGui
     ${CMAKE_SOURCE_DIR}/src/Mod/Cam2
     ${CMAKE_BINARY_DIR}/Mod/Cam
     InitGui.py)
-
-
-set(CamGui_MOC_HDRS
-	ToolPathDockWindow.h
-)
-fc_wrap_cpp(CamGui_MOC_SRCS ${CamGui_MOC_HDRS})
 
 if(MSVC)
     set_target_properties(CamGui PROPERTIES SUFFIX ".pyd")
