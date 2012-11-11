@@ -33,7 +33,7 @@
 #include <Gui/ToolBarManager.h>
 #include <Gui/DockWindowManager.h>
 
-#include "CamSettingsDockWindow.h"
+#include "CamProjectDockWindow.h"
 #include "ToolPathDockWindow.h"
 #include "TPGLibraryDockWindow.h"
 
@@ -48,10 +48,10 @@ Workbench::Workbench()
   Gui::MainWindow* pMainWindow = Gui::MainWindow::getInstance();
 
   // Add CamSettings Dock Window
-  CamSettingsDockWindow* pcCamSettingsView = new CamSettingsDockWindow(0, pMainWindow);
-  pcCamSettingsView->setObjectName("Cam Settings");
-  pcCamSettingsView->setMinimumWidth(150);
-  pDockMgr->registerDockWindow("Cam_CamSettingsDockWindow", pcCamSettingsView);
+  CamProjectDockWindow* pcCamProjectView = new CamProjectDockWindow(0, pMainWindow);
+  pcCamProjectView->setObjectName("Cam Project");
+  pcCamProjectView->setMinimumWidth(150);
+  pDockMgr->registerDockWindow("Cam_CamSettingsDockWindow", pcCamProjectView);
 
   // Add Toolpath Dock Window
   ToolPathDockWindow* pcTPView = new ToolPathDockWindow(0, pMainWindow);

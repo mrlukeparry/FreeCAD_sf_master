@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>CamSettingsDockWindow</class>
- <widget class="QWidget" name="CamSettingsDockWindow">
+ <class>CamProjectDockWindow</class>
+ <widget class="QWidget" name="CamProjectDockWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -21,14 +21,14 @@
     <number>0</number>
    </property>
    <item row="0" column="0">
-    <widget class="QSplitter" name="CamSettingsSplitter">
+    <widget class="QSplitter" name="CamSplitter">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
-     <widget class="QTreeWidget" name="CamFeatureTree">
+     <widget class="QTreeWidget" name="ProjectTree">
       <column>
        <property name="text">
-        <string>Cam Features</string>
+        <string>Project Tree</string>
        </property>
       </column>
       <item>
@@ -187,7 +187,7 @@
             <x>0</x>
             <y>0</y>
             <width>398</width>
-            <height>82</height>
+            <height>248</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout"/>

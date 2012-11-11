@@ -20,27 +20,27 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CAMSETTINGSDOCKWINDOW_H_
-#define CAMSETTINGSDOCKWINDOW_H_
+#include "PreCompiled.h"
+#ifndef _PreComp_
+#endif
+#include "ui_CamProjectDockWindow.h"
+#include "CamProjectDockWindow.h"
 
-#include <Gui/DockWindow.h>
-#include <qobject.h>
-#include "ui_CamSettingsDockWindow.h"
 namespace CamGui {
 
-class CamSettingsDockWindow : public Gui::DockWindow {
+CamProjectDockWindow::CamProjectDockWindow(Gui::Document*  pcDocument, QWidget *parent)
+: DockWindow(pcDocument,parent)
+, ui(new Ui_CamProjectDockWindow)
+{
+  setWindowTitle(tr("Cam Project"));
 
-  Q_OBJECT
+  ui->setupUi(this);
+}
 
-public:
-  CamSettingsDockWindow(Gui::Document*  pcDocument, QWidget *parent=0);
-  virtual ~CamSettingsDockWindow();
+CamProjectDockWindow::~CamProjectDockWindow()
+{
+}
 
-protected:
-
-private:
-  Ui_CamSettingsDockWindow* ui;
-};
+#include "moc_CamProjectDockWindow.cpp"
 
 } /* namespace CamGui */
-#endif /* CAMSETTINGSDOCKWINDOW_H_ */
