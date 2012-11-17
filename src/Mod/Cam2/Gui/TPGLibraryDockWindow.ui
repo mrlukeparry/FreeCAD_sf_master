@@ -51,11 +51,27 @@
     </layout>
    </item>
    <item row="1" column="0">
-    <widget class="QSplitter" name="LibrarySplitter">
+    <widget class="QSplitter" name="splitter">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
-     <widget class="QListView" name="TPGList"/>
+     <widget class="QWidget" name="verticalLayoutWidget">
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QListView" name="TPGList"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="ReloadLibrary">
+         <property name="text">
+          <string>Reload Library</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
      <widget class="QTextBrowser" name="TPGDetails">
       <property name="html">
        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;

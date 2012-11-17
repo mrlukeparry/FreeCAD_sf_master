@@ -96,7 +96,7 @@ void CamExport initCam()
     Cam::MyPlugin            ::init();
     Cam::TPGFactory().registerPlugin<Cam::MyPlugin>("MyPlugin", "My CAM Plugin", "My Plugin's Description", Cam::TPG::PLUGIN_LIB);
 //
-   const std::vector<Cam::TPGStruc> &camPlugList = Cam::TPGFactory().getPluginList();
+//   const std::vector<Cam::TPGStruc> &camPlugList = Cam::TPGFactory().getPluginList();
 
     Base::Console().Log("Loading CAM module... done\n");
 

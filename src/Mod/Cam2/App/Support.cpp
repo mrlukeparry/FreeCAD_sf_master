@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Andrew Robinson <andrewjrobinson@gmail.com>        *
+ *   Copyright (c) 2012 Andrew Robinson  (andrewjrobinson@gmail.com)       *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,45 +20,45 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef TPGLIBRARYDOCKWINDOW_H_
-#define TPGLIBRARYDOCKWINDOW_H_
 
-#include <qobject.h>
-#include <Gui/DockWindow.h>
-#include "../App/TPG/TPGFactory.h"
-#include "TPGListModel.h"
-#include "ui_TPGLibraryDockWindow.h"
+#include "Support.h"
 
-namespace CamGui {
+/**
+ * Convert a QString to a Python Object
+ */
+PyObject *QStringToPythonUC(const QString &str)
+{
+  //TODO: check this works properly, it appears to work with the UCS4 characters I tested
+  return PyString_FromString((const char*) str.toStdString().c_str());
+}
 
-class CamGuiExport TPGLibraryDockWindow : public Gui::DockWindow {
+/**
+ * Convert a Python Object (string/unicode) to a QString
+ */
+QString PythonUCToQString(PyObject *obj)
+{
+  Py_UNICODE *pid = PyUnicode_AsUnicode(obj);
 
-  Q_OBJECT
+  if (pid != NULL)
+    return QString::fromUcs4((const uint *) pid); //TODO: this should have a check for older pythons that use Ucs2)
+  if (PyString_Check(obj))
+    return QString::fromLatin1(PyString_AS_STRING(obj));
+  return QString();
+}
 
-public:
-  TPGLibraryDockWindow(Gui::Document*  pcDocument, QWidget *parent=0);
-  virtual ~TPGLibraryDockWindow();
+///**
+// * Convert a QString to a const char *
+// */
+//inline const char* ts(QString str)
+//{
+//  return str.toAscii().constData();
+//}
+//inline const char* ts(QString *str)
+//{
+//  if (str != NULL)
+//    return str->toAscii().constData();
+//  return "NULL";
+//}
 
-  /**
-   * Set the model used to select TPGs from
-   */
-//  void setTPGList(TPGListModel* tpgs);
 
-public Q_SLOTS:
-  void addBtnClick();
-//  void reloadBtnClick();
-  void updatedTPGList(TPGListModel* tpgs);
 
-Q_SIGNALS:
-  void addTPG(Cam::TPGDescriptor *tpg);
-//  void reloadLibrary(QListView *list);
-
-protected:
-  TPGListModel* tpgs;
-
-private:
-  Ui_TPGLibraryDockWindow* ui;
-};
-
-} /* namespace CamGui */
-#endif /* TPGLIBRARYDOCKWINDOW_H_ */

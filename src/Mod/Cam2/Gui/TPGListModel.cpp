@@ -20,45 +20,51 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef TPGLIBRARYDOCKWINDOW_H_
-#define TPGLIBRARYDOCKWINDOW_H_
+#include "PreCompiled.h"
+#ifndef _PreComp_
+#endif
 
-#include <qobject.h>
-#include <Gui/DockWindow.h>
-#include "../App/TPG/TPGFactory.h"
 #include "TPGListModel.h"
-#include "ui_TPGLibraryDockWindow.h"
 
 namespace CamGui {
 
-class CamGuiExport TPGLibraryDockWindow : public Gui::DockWindow {
+TPGListModel::TPGListModel(std::vector<Cam::TPGDescriptor*> *tpgs, QObject *parent)
+  : QAbstractListModel(parent)
+{
+  this->tpgs = tpgs;
+}
 
-  Q_OBJECT
+TPGListModel::~TPGListModel() {
+}
 
-public:
-  TPGLibraryDockWindow(Gui::Document*  pcDocument, QWidget *parent=0);
-  virtual ~TPGLibraryDockWindow();
+int TPGListModel::rowCount(const QModelIndex& parent) const {
+  if (tpgs != NULL)
+    return tpgs->size();
+  return 0;
+}
 
-  /**
-   * Set the model used to select TPGs from
-   */
-//  void setTPGList(TPGListModel* tpgs);
+QVariant TPGListModel::data(const QModelIndex& index, int role) const {
+  if (!index.isValid())
+    return QVariant();
+  if (index.row() >= tpgs->size())
+    return QVariant();
+  if (role == Qt::DisplayRole) {
+    if (tpgs != NULL) {
+      return QVariant(tpgs->at(index.row())->name);
+    }
+  }
+  return QVariant();
+}
 
-public Q_SLOTS:
-  void addBtnClick();
-//  void reloadBtnClick();
-  void updatedTPGList(TPGListModel* tpgs);
+QVariant TPGListModel::headerData(int section, Qt::Orientation orientation,
+    int role) const {
+  if (role == Qt::DisplayRole && section == 0) {
+    return QVariant("TPG Name");
+  }
+  return QVariant();
+}
 
-Q_SIGNALS:
-  void addTPG(Cam::TPGDescriptor *tpg);
-//  void reloadLibrary(QListView *list);
 
-protected:
-  TPGListModel* tpgs;
+#include "moc_TPGListModel.cpp"
 
-private:
-  Ui_TPGLibraryDockWindow* ui;
-};
-
-} /* namespace CamGui */
-#endif /* TPGLIBRARYDOCKWINDOW_H_ */
+}/* namespace CamGui */

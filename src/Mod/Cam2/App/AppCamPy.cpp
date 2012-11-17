@@ -45,6 +45,7 @@
 
 #include "TPG/PyTPGManager.h"
 #include "TPG/TPG.h"
+#include "Support.h"
 
 using Base::Console;
 using namespace Part;
@@ -54,17 +55,17 @@ using namespace std;
 //{
 //	return str.toAscii().constData();
 //}
-const char* ts(QString str)
-{
-    return str.toAscii().constData();
-}
-
-const char* ts(QString *str)
-{
-    if (str != NULL)
-        return str->toAscii().constData();
-    return "NULL";
-}
+//const char* ts(QString str)
+//{
+//    return str.toAscii().constData();
+//}
+//
+//const char* ts(QString *str)
+//{
+//    if (str != NULL)
+//        return str->toAscii().constData();
+//    return "NULL";
+//}
 
 /* module functions */
 static PyObject * open(PyObject *self, PyObject *args)
@@ -127,9 +128,9 @@ static PyObject *test(PyObject *self, PyObject *args)
 {
 //	Cam::PyTPGManager().test();
 
-	vector<QString> plugins = Cam::PyTPGManager().scanPlugins();
+	vector<Cam::TPGDescriptor*> plugins = Cam::PyTPGManager().scanPlugins();
 	for (int i = 0; i < plugins.size(); i++)
-		printf("PyPlugin: %s\n", plugins[i].toStdString().c_str());
+		plugins[i]->print();
 
 	QString id = QString::fromAscii("10bf335e-2491-11e2-8f39-08002734b94f");
 	Cam::TPG *tpg = Cam::PyTPGManager().getPlugin(id);

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Andrew Robinson <andrewjrobinson@gmail.com>        *
+ *   Copyright (c) 2012 Andrew Robinson  (andrewjrobinson@gmail.com)       *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,45 +20,33 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef TPGLIBRARYDOCKWINDOW_H_
-#define TPGLIBRARYDOCKWINDOW_H_
+#ifndef CAM_SUPPORT_H_
+#define CAM_SUPPORT_H_
+#include <qstring.h>
+#include <Python.h>
 
-#include <qobject.h>
-#include <Gui/DockWindow.h>
-#include "../App/TPG/TPGFactory.h"
-#include "TPGListModel.h"
-#include "ui_TPGLibraryDockWindow.h"
+/**
+ * Convert a QString to a Python Object
+ */
+PyObject *QStringToPythonUC(const QString &str);
 
-namespace CamGui {
+/**
+ * Convert a Python Object (string/unicode) to a QString
+ */
+QString PythonUCToQString(PyObject *obj);
 
-class CamGuiExport TPGLibraryDockWindow : public Gui::DockWindow {
+/**
+ * Convert a QString to a const char *
+ */
+inline const char* ts(QString str)
+{
+  return str.toAscii().constData();
+}
+inline const char* ts(QString *str)
+{
+  if (str != NULL)
+    return str->toAscii().constData();
+  return "NULL";
+}
 
-  Q_OBJECT
-
-public:
-  TPGLibraryDockWindow(Gui::Document*  pcDocument, QWidget *parent=0);
-  virtual ~TPGLibraryDockWindow();
-
-  /**
-   * Set the model used to select TPGs from
-   */
-//  void setTPGList(TPGListModel* tpgs);
-
-public Q_SLOTS:
-  void addBtnClick();
-//  void reloadBtnClick();
-  void updatedTPGList(TPGListModel* tpgs);
-
-Q_SIGNALS:
-  void addTPG(Cam::TPGDescriptor *tpg);
-//  void reloadLibrary(QListView *list);
-
-protected:
-  TPGListModel* tpgs;
-
-private:
-  Ui_TPGLibraryDockWindow* ui;
-};
-
-} /* namespace CamGui */
-#endif /* TPGLIBRARYDOCKWINDOW_H_ */
+#endif /* SUPPORT_H_ */

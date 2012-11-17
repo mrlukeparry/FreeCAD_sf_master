@@ -84,6 +84,8 @@ SET(CamModule_SRCS
     MachineSettings.h
     PreCompiled.cpp
     PreCompiled.h
+    Support.cpp
+    Support.h
 )
 SOURCE_GROUP("Module" FILES ${CamModule_SRCS})
 

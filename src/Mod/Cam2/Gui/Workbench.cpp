@@ -36,6 +36,7 @@
 #include "CamProjectDockWindow.h"
 #include "ToolPathDockWindow.h"
 #include "TPGLibraryDockWindow.h"
+#include "UIManager.h"
 
 using namespace CamGui;
 
@@ -64,6 +65,8 @@ Workbench::Workbench()
   pcTPGLibView->setObjectName("TPG Library");
   pcTPGLibView->setMinimumWidth(150);
   pDockMgr->registerDockWindow("Cam_TPGLibraryDockWindow", pcTPGLibView);
+
+  UIManager(); // get singleton so it makes connections
 }
 
 Workbench::~Workbench()

@@ -20,45 +20,44 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef TPGLIBRARYDOCKWINDOW_H_
-#define TPGLIBRARYDOCKWINDOW_H_
+#ifndef TPGLISTMODEL_H_
+#define TPGLISTMODEL_H_
 
-#include <qobject.h>
-#include <Gui/DockWindow.h>
+#include <qabstractitemmodel.h>
+#include <vector>
+
 #include "../App/TPG/TPGFactory.h"
-#include "TPGListModel.h"
-#include "ui_TPGLibraryDockWindow.h"
 
 namespace CamGui {
 
-class CamGuiExport TPGLibraryDockWindow : public Gui::DockWindow {
+/**
+ * A model that wraps the contents of a TPGDescriptor list
+ */
+class TPGListModel: public QAbstractListModel {
 
   Q_OBJECT
 
+protected:
+  std::vector<Cam::TPGDescriptor*> *tpgs;
+
 public:
-  TPGLibraryDockWindow(Gui::Document*  pcDocument, QWidget *parent=0);
-  virtual ~TPGLibraryDockWindow();
+  TPGListModel(std::vector<Cam::TPGDescriptor*> *tpgs, QObject *parent=0);
+  virtual ~TPGListModel();
 
   /**
-   * Set the model used to select TPGs from
+   * Simplified getter for the descriptors
    */
-//  void setTPGList(TPGListModel* tpgs);
+  Cam::TPGDescriptor *get(int i) {
+    if (tpgs != NULL && i >= 0 && i < tpgs->size())
+      return tpgs->at(i);
+    return NULL;
+  }
 
-public Q_SLOTS:
-  void addBtnClick();
-//  void reloadBtnClick();
-  void updatedTPGList(TPGListModel* tpgs);
-
-Q_SIGNALS:
-  void addTPG(Cam::TPGDescriptor *tpg);
-//  void reloadLibrary(QListView *list);
-
-protected:
-  TPGListModel* tpgs;
-
-private:
-  Ui_TPGLibraryDockWindow* ui;
+  //List model methods
+  int rowCount(const QModelIndex &parent=QModelIndex() ) const;
+  QVariant data(const QModelIndex &index, int role=Qt::DisplayRole ) const;
+  QVariant headerData(int section, Qt::Orientation orientation, int role=Qt::DisplayRole ) const;
 };
 
 } /* namespace CamGui */
-#endif /* TPGLIBRARYDOCKWINDOW_H_ */
+#endif /* TPGLISTMODEL_H_ */

@@ -20,45 +20,49 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef TPGLIBRARYDOCKWINDOW_H_
-#define TPGLIBRARYDOCKWINDOW_H_
+#ifndef CAM_UIMANAGER_H_
+#define CAM_UIMANAGER_H_
 
 #include <qobject.h>
-#include <Gui/DockWindow.h>
+#include <qlistview.h>
 #include "../App/TPG/TPGFactory.h"
 #include "TPGListModel.h"
-#include "ui_TPGLibraryDockWindow.h"
 
 namespace CamGui {
 
-class CamGuiExport TPGLibraryDockWindow : public Gui::DockWindow {
+
+/**
+ * A class to manage the interactions between the various UI components of the
+ * CAM workbench.
+ */
+class CamGuiExport UIManagerInst : public QObject {
 
   Q_OBJECT
 
-public:
-  TPGLibraryDockWindow(Gui::Document*  pcDocument, QWidget *parent=0);
-  virtual ~TPGLibraryDockWindow();
+protected:
+  static UIManagerInst* _pcSingleton;
 
-  /**
-   * Set the model used to select TPGs from
-   */
-//  void setTPGList(TPGListModel* tpgs);
+public:
+  UIManagerInst();
+  virtual ~UIManagerInst();
+
+  // singleton manipators
+  static UIManagerInst& instance(void);
+  static void destruct (void);
 
 public Q_SLOTS:
-  void addBtnClick();
-//  void reloadBtnClick();
-  void updatedTPGList(TPGListModel* tpgs);
+  void addTPG(Cam::TPGDescriptor *tpg);
+  void reloadTPGs();
 
 Q_SIGNALS:
-  void addTPG(Cam::TPGDescriptor *tpg);
-//  void reloadLibrary(QListView *list);
-
-protected:
-  TPGListModel* tpgs;
-
-private:
-  Ui_TPGLibraryDockWindow* ui;
+  void updatedTPGList(TPGListModel *model);
 };
 
+/// Get the global instance
+inline UIManagerInst& UIManager(void)
+{
+    return UIManagerInst::instance();
+}
+
 } /* namespace CamGui */
-#endif /* TPGLIBRARYDOCKWINDOW_H_ */
+#endif /* UIMANAGER_H_ */

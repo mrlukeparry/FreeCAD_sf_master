@@ -31,6 +31,7 @@
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/WidgetFactory.h>
+#include <Gui/MainWindow.h>
 
 #include "ViewProviderCamFeature.h"
 #include "ViewProviderCamPartsList.h"
@@ -41,12 +42,48 @@
 
 #include "Workbench.h"
 
+#include <vector>
+#include <qmessagebox.h>
+
+#include "TPGListModel.h"
+#include "UIManager.h"
+#include "TPGLibraryDockWindow.h"
+#include "../App/TPG/PyTPGManager.h"
+
 // use a different name to CreateCommand()
 void CreateCamCommands(void);
+
+
+static PyObject *test(PyObject *self, PyObject *args)
+{
+  // get the TPGs
+  std::vector<Cam::TPGDescriptor*> plugins = Cam::PyTPGManager().scanPlugins();
+  for (int i = 0; i < plugins.size(); i++)
+    plugins[i]->print();
+
+//  CamGui::UIManager().reloadTPGs();
+  CamGui::UIManager().addTPG(NULL);
+
+//  // get the dock window
+//  Gui::DockWindowManager* pDockMgr = Gui::DockWindowManager::instance();
+//  QWidget *tpgdockwidget = pDockMgr->getDockWindow("Cam_TPGLibraryDockWindow");
+//  if (tpgdockwidget != NULL)
+//  {
+//    CamGui::TPGLibraryDockWindow *dwin = (CamGui::TPGLibraryDockWindow*) tpgdockwidget;
+//    CamGui::TPGListModel *model = new CamGui::TPGListModel(&plugins);
+//    dwin->setTPGList(model);
+//  }
+//  else
+//    QMessageBox::information(Gui::getMainWindow(), "Information", "Failed to get TPGLibrary window");
+
+  Py_Return;
+}
+
 
 /* registration table  */
 static struct PyMethodDef CamGui_methods[] =
 {
+    {"test"   , test,    METH_VARARGS, "Perform some UI testing."},
     {
         NULL, NULL
     }                   /* end of table marker */

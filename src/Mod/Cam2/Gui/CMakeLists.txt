@@ -38,6 +38,9 @@ set(CamGui_MOC_HDRS
 	CamProjectDockWindow.h
 	ToolPathDockWindow.h
     TPGLibraryDockWindow.h
+    
+    UIManager.h
+    TPGListModel.h
 )
 fc_wrap_cpp(CamGui_MOC_SRCS ${CamGui_MOC_HDRS})
 
@@ -75,6 +78,10 @@ SET(CamGui_SRCS
     ToolPathDockWindow.h
     TPGLibraryDockWindow.cpp
     TPGLibraryDockWindow.h
+    UIManager.cpp
+    UIManager.h
+    TPGListModel.cpp
+    TPGListModel.h
 )
 
 add_library(CamGui SHARED ${CamGui_SRCS})

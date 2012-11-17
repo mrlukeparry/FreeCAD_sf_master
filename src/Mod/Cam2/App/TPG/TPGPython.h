@@ -33,6 +33,7 @@ void PythonFinish();
 
 namespace Cam
 {
+
 // Class stores hash of settings for managing each independant TPG
 class CamExport TPGPython : public TPG
 {

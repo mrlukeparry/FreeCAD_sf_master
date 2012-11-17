@@ -32,10 +32,27 @@
 #include <QString>
 
 #include "TPGPython.h"
+#include "TPGFactory.h"
 
 
 namespace Cam {
 
+/**
+ * A descriptor for Python TPG's
+ */
+class PythonTPGDescriptor : public TPGDescriptor
+{
+public:
+  PythonTPGDescriptor(QString id, QString name, QString description)
+    : TPGDescriptor(id, name, description, QString::fromAscii("PythonTPG"))
+  {}
+
+  TPG* make();
+};
+
+/**
+ * A class that manages the interface to the Python TPG implementations.
+ */
 class CamExport PyTPGManagerInst
 {
 protected:
@@ -44,7 +61,8 @@ protected:
 	PyTPGManagerInst();
 	~PyTPGManagerInst();
 
-	std::vector<QString> plugins;
+//	std::vector<QString> plugins;
+	std::vector<TPGDescriptor *> descriptors;
 
 
     QString PythonUCToQString(PyObject *obj);
@@ -69,9 +87,11 @@ public:
 	// C++ API (to Python TPG's)
 	/**
 	 * Returns (by reference) the list of found Python Plugins.
-	 * This is a list of ID's
+	 * This is a list of PythonTPGDescriptors
+	 *
+	 * TODO: make this a const return value.
 	 */
-	std::vector<QString> &scanPlugins();
+	std::vector<TPGDescriptor*> &scanPlugins();
 
 	/**
 	 * Gets a TPG given its id.
