@@ -26,6 +26,16 @@
 
 namespace Cam {
 
+///// PythonTPGDescriptor /////
+
+TPG* PythonTPGDescriptor::make()
+{
+  return PyTPGManager().getPlugin(id);
+}
+
+
+///// PyTPGManager /////
+
 PyTPGManagerInst* PyTPGManagerInst::_pcSingleton = NULL;
 
 PyTPGManagerInst& PyTPGManagerInst::instance(void)
@@ -67,6 +77,7 @@ PyTPGManagerInst::~PyTPGManagerInst()
  */
 void PyTPGManagerInst::setCallback(PyObject* obj)
 {
+  printf("PyTPGManager.setCallback(%p)\n", obj);
     if (this->obj != NULL)
         Py_DecRef(this->obj);
     this->obj = obj;
@@ -136,27 +147,41 @@ bool PyTPGManagerInst::pytest(PyObject* arg)
 //////////// C++ API (to Python TPG's) ///////////////
 /**
  * Returns (by reference) the list of found Python Plugins.
- * This is a list of ID's
+ * This is a vector of PythonTPGDescriptors
  */
-std::vector<QString> &PyTPGManagerInst::scanPlugins()
+std::vector<TPGDescriptor*> &PyTPGManagerInst::scanPlugins()
 {
     if (this->obj != NULL) {
+      printf("PyTPGManager.scanPlugins(%p)\n", obj);
         PyObject * result = PyObject_CallMethod(obj, "scanPlugins", NULL);
         if (result != NULL) {
             if (PyList_Check(result)) {
 
-              this->plugins.clear();
-              int len = PyList_Size(result);
+              // clean the current list
+              std::vector<Cam::TPGDescriptor*>::iterator it = this->descriptors.begin();
+              for (; it != this->descriptors.end(); ++it)
+                delete (*it);
+              this->descriptors.clear();
 
+              // add the new items
+              int len = PyList_Size(result);
               for (int i = 0; i < len; i++) {
-                  PyObject *item = PyList_GetItem(result, i);
-                  this->plugins.push_back(PythonUCToQString(item));
+                  PyObject *tuple = PyList_GetItem(result, i);
+                  if (PyTuple_Check(tuple) && PyTuple_GET_SIZE(tuple) == 3) {
+                    PyObject *pid = PyTuple_GET_ITEM(tuple, 0);
+                    PyObject *pname = PyTuple_GET_ITEM(tuple, 1);
+                    PyObject *pdesc = PyTuple_GET_ITEM(tuple, 2);
+
+                    this->descriptors.push_back(new PythonTPGDescriptor(PythonUCToQString(pid),
+                        PythonUCToQString(pname),
+                        PythonUCToQString(pdesc)));
+                  }
               }
             }
             Py_DecRef(result);
         }
     }
-    return this->plugins;
+    return this->descriptors;
 }
 
 /**

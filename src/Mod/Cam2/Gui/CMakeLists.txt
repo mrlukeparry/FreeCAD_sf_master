@@ -34,7 +34,24 @@ endif(MSVC)
 
 qt4_add_resources(CamGui_SRCS Resources/Cam.qrc)
 
+set(CamGui_MOC_HDRS
+	CamProjectDockWindow.h
+	ToolPathDockWindow.h
+    TPGLibraryDockWindow.h
+    
+    UIManager.h
+    TPGListModel.h
+)
+fc_wrap_cpp(CamGui_MOC_SRCS ${CamGui_MOC_HDRS})
+
+set(CamGui_UIC_SRCS
+    TPGLibraryDockWindow.ui
+	CamProjectDockWindow.ui
+)
+qt4_wrap_ui(CamGui_UIC_HDRS ${CamGui_UIC_SRCS})
+
 SET(CamGui_SRCS
+	${CamGui_SRCS}
     ${CamGui_UIC_HDRS}
     Resources/Cam.qrc
     AppCamGui.cpp
@@ -55,6 +72,16 @@ SET(CamGui_SRCS
     ViewProviderTPGFeature
     ViewProviderTPGList.cpp
     ViewProviderTPGList.h
+	CamProjectDockWindow.cpp
+	CamProjectDockWindow.h
+    ToolPathDockWindow.cpp
+    ToolPathDockWindow.h
+    TPGLibraryDockWindow.cpp
+    TPGLibraryDockWindow.h
+    UIManager.cpp
+    UIManager.h
+    TPGListModel.cpp
+    TPGListModel.h
 )
 
 add_library(CamGui SHARED ${CamGui_SRCS})

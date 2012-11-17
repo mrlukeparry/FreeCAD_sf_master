@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CamProjectDockWindow</class>
+ <widget class="QWidget" name="CamProjectDockWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>750</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <property name="margin">
+    <number>0</number>
+   </property>
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <item row="0" column="0">
+    <widget class="QSplitter" name="CamSplitter">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <widget class="QTreeWidget" name="ProjectTree">
+      <column>
+       <property name="text">
+        <string>Project Tree</string>
+       </property>
+      </column>
+      <item>
+       <property name="text">
+        <string>Cam Feature 01</string>
+       </property>
+       <property name="icon">
+        <iconset resource="Resources/Cam.qrc">
+         <normaloff>:/icons/cam.png</normaloff>:/icons/cam.png</iconset>
+       </property>
+       <item>
+        <property name="text">
+         <string>Rough</string>
+        </property>
+        <property name="icon">
+         <iconset>
+          <normaloff>../../../../../../QTCreator/FreeCAD-UI/gear.png</normaloff>../../../../../../QTCreator/FreeCAD-UI/gear.png</iconset>
+        </property>
+        <item>
+         <property name="text">
+          <string>ToolPath 01</string>
+         </property>
+         <property name="icon">
+          <iconset resource="Resources/Cam.qrc">
+           <normaloff>:/icons/tp.png</normaloff>:/icons/tp.png</iconset>
+         </property>
+        </item>
+       </item>
+       <item>
+        <property name="text">
+         <string>Contour</string>
+        </property>
+        <property name="icon">
+         <iconset>
+          <normaloff>../../../../../../QTCreator/FreeCAD-UI/gear.png</normaloff>../../../../../../QTCreator/FreeCAD-UI/gear.png</iconset>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Pocket</string>
+        </property>
+        <property name="icon">
+         <iconset>
+          <normaloff>../../../../../../QTCreator/FreeCAD-UI/gear.png</normaloff>../../../../../../QTCreator/FreeCAD-UI/gear.png</iconset>
+        </property>
+       </item>
+      </item>
+     </widget>
+     <widget class="QWidget" name="SettingsArea" native="true">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="spacing">
+        <number>2</number>
+       </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item>
+        <layout class="QHBoxLayout" name="FeatureButtons">
+         <item>
+          <widget class="QPushButton" name="FeatureEnableButton">
+           <property name="maximumSize">
+            <size>
+             <width>31</width>
+             <height>31</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Enable/Disable the selected feature</string>
+           </property>
+           <property name="text">
+            <string notr="true"/>
+           </property>
+           <property name="icon">
+            <iconset resource="Resources/Cam.qrc">
+             <normaloff>:/icons/cross.png</normaloff>
+             <normalon>:/icons/tick.png</normalon>:/icons/cross.png</iconset>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="RunTPGButton">
+           <property name="maximumSize">
+            <size>
+             <width>31</width>
+             <height>31</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Execute selected TPG(s)</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="Resources/Cam.qrc">
+             <normaloff>:/icons/run.png</normaloff>:/icons/run.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="PostProcessButton">
+           <property name="maximumSize">
+            <size>
+             <width>31</width>
+             <height>31</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Post-process the selected tool-path(s)</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="Resources/Cam.qrc">
+             <normaloff>:/icons/diverge.png</normaloff>:/icons/diverge.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="ExportGCodeButton">
+           <property name="maximumSize">
+            <size>
+             <width>31</width>
+             <height>31</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Export the selected GCode program(s) to file ...</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="Resources/Cam.qrc">
+             <normaloff>:/icons/export.png</normaloff>:/icons/export.png</iconset>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QScrollArea" name="SettingsScroll">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="SettingsWidget">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>398</width>
+            <height>248</height>
+           </rect>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout"/>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="Resources/Cam.qrc"/>
+ </resources>
+ <connections/>
+</ui>

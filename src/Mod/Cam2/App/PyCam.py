@@ -107,17 +107,22 @@ class PyTPGManager(object):
     def __init__(self, searchpath=['PyTPG']):
         '''Use PyTPGManager.instance() to get the singleton instance'''
         self._searchpath = searchpath
-        self._tpgs = {} # elements [<class>, <instance>]
+        self._tpgs = {} # elements {<id>: <class>, ...}
 
     ## C++ to Python API ##
     def scanPlugins(self):
-        '''Search for Python TPGs'''
-        try:
-            self._scanDirs()
-        except:
-            pass
-        plugins = self._tpgs.keys()
-        return plugins
+        '''Search for Python TPGs and return a list of Python Descriptor tuples
+        [(<id>, <name>, <description>), ...]'''
+#        try:
+#            self._scanDirs()
+#        except:
+#            pass
+#        results = []
+#        for key in self._tpgs:
+#            tpg = self._tpgs[key]
+#            results.append((tpg.id, tpg.name, tpg.description))
+#        return results
+        return None
     
     def getPlugin(self, pid):
         '''Gets the Python TPG Class (as opposed to Instance) for the selected id'''
