@@ -46,4 +46,7 @@ add_subdirectory(Surfaces)
 add_subdirectory(Ship)
 add_subdirectory(OpenSCAD)
 
+add_subdirectory(Plot)
+
+
 

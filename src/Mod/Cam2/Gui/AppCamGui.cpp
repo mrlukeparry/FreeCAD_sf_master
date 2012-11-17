@@ -41,6 +41,7 @@
 #include "ViewProviderTPGList.h"
 
 #include "Workbench.h"
+#include "qrc_Cam.cxx"
 
 #include <vector>
 #include <qmessagebox.h>
