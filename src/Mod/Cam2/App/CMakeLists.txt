@@ -60,6 +60,8 @@ SET(TPG_SRCS
     TPG/TPGCache.h
     TPG/TPGFactory.cpp
     TPG/TPGFactory.h
+    TPG/TPGLib.cpp
+    TPG/TPGLib.cpp
     TPG/TPGProcess.cpp
     TPG/TPGProcess.h
     TPG/TPGPython.cpp

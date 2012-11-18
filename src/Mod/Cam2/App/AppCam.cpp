@@ -89,14 +89,10 @@ void CamExport initCam()
     Cam::TPGFeature          ::init();
     Cam::TPGList             ::init();
 
-    // Scan for Python Plugins
-//    Cam::TPGFactory().scanPlugins();
-//
-//    //Initialise and Register and C++ TPG Plugins [TODO SHOULD WE INITIALISE THESE IN A SEPERATE FILE FOR READABILITY]
+
+    //Initialise and Register and C++ TPG Plugins [TODO SHOULD WE INITIALISE THESE IN A SEPERATE FILE FOR READABILITY]
     Cam::MyPlugin            ::init();
-    Cam::TPGFactory().registerPlugin<Cam::MyPlugin>("MyPlugin", "My CAM Plugin", "My Plugin's Description", Cam::TPG::PLUGIN_LIB);
-//
-//   const std::vector<Cam::TPGStruc> &camPlugList = Cam::TPGFactory().getPluginList();
+    Cam::TPGFactory().registerPlugin<Cam::MyPlugin>(new Cam::LibTPGDescriptor("MyPlugin", "My CAM Plugin", "My Plugin's Description"));
 
     Base::Console().Log("Loading CAM module... done\n");
 

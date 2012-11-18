@@ -50,7 +50,8 @@ void TPGFeature::loadTPG(const char *pluginId)
         return;
 
     // Load the TPG from factory - we must delete this always
-    TPG *fndTpg  = TPGFactory().getPluginById(pluginId);
+    // [TODO] we need a super TPGFactory that loads both c++ and python pluginsit happens 
+    TPG *fndTpg  = TPGFactory().getPlugin(QString::fromAscii(pluginId));
      if(fndTpg) {
         tpg = fndTpg;
         tpg->initialise(this); // We must initialise the TPG and associate with this TPGFeature

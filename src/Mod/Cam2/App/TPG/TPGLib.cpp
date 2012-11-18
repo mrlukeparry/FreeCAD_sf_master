@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2012 Luke Parry      (l.parry@warwick.ac.uk)            *
+ *                 2012 Andrew Robinson (andrewjrobinson@gmail.com)        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -24,71 +25,22 @@
 #ifndef _PreComp_
 #endif
 
-#include <App/Application.h>
-#include <Base/Console.h>
-#include <Base/Sequencer.h>
-
-#include <Python.h>
-
-#include <QList>
 #include <QString>
-#include <QFile>
-#include <QFileInfo>
-#include <QDir>
 
-#include "TPG.h"
-#include "TPGPython.h"
-#include "TPGFactory.h"
+#include "../TPGFeature.h"
+#include "TPGLib.h"
 
 using namespace Cam;
 
-TPGFactoryInst* TPGFactoryInst::_pcSingleton = NULL;
-
-TPGFactoryInst& TPGFactoryInst::instance(void)
+TPG* LibTPGDescriptor::make()
 {
-    if (_pcSingleton == NULL) {
-        _pcSingleton = new TPGFactoryInst;
-    }
-
-    return *_pcSingleton;
+    return TPGFactory().getPlugin(id);
 }
 
-void TPGFactoryInst::clearDescriptors()
+LibTPG::LibTPG()
 {
-    // Iterator through the TPGDescriptor List and delete all the entries
-    for(std::vector<TPGDescriptor *>::iterator it = d->tpgList.begin(); it != d->tpgList.end(); ++it) {
-        delete (*it);
-        (*it) = 0;
-    }     
-    d->tpgList.empty();
 }
 
-TPG * TPGFactoryInst::getPlugin(QString id)
+LibTPG::~LibTPG()
 {
-    std::map<const std::string, Base::AbstractProducer*>::const_iterator it;
-    it = _mpcProducers.find(id.toStdString().c_str());
-    if (it != _mpcProducers.end()) {
-        //it->second->setValue(v);
-        return static_cast<TPG *>(it->second->Produce());
-    }
-
-    // Try loading python modules
-    return 0;
-}
-
-TPGFactoryInst::TPGFactoryInst(void)
-{
-    d = new TPGFactoryInstP;
-}
-
-TPGFactoryInst::~TPGFactoryInst(void)
-{
-    delete d;
-}
-
-void TPGFactoryInst::destruct (void)
-{
-    if (_pcSingleton != 0)
-        delete _pcSingleton;
-    _pcSingleton = 0;
 }

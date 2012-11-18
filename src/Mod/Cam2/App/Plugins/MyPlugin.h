@@ -23,19 +23,22 @@
 #ifndef _CAM_PLUGIN_MYPLUGIN_h_
 #define _CAM_PLUGIN_MYPLUGIN_h_
 
-#include "../TPG/TPG.h"
+#include "../TPG/TPGLib.h"
 
 namespace Cam
 {
-// Class stores hash of settings for managing each independant TPG
-class CamExport MyPlugin: public TPG
-{
 
+/**
+  * Example My Plugin to demonstrate the basic structure of a c++ based plugin
+  */
+
+class CamExport MyPlugin: public LibTPG
+{
 public:
     MyPlugin();
     ~MyPlugin();
 
-    /// Implement the virtual function
+    /// Implement the virtual function that is called by the factory method
     TPG* makeTPG()
     {
         TPG* tpg = new MyPlugin();

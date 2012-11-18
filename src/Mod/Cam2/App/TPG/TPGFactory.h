@@ -35,19 +35,6 @@ namespace Cam
 {
 
 /**
-  * Basic container structure for storing the TPG basic information for the plugins library
-  * Intended to be lightweight
-  */
-struct TPGStruc
-{
-public:
-    const char *id;
-    std::string name;
-    std::string desc;
-    TPG::Type type;
-};
-
-/**
  * A superclass for TPG Descriptors.  These describe the basic information
  * about a TPG and contain a method to create a new instance of this TPG.
  */
@@ -61,10 +48,17 @@ public:
   QString type; // subclasses should set this to their classname in the constructor
 
   TPGDescriptor(QString id, QString name, QString description, QString type) {
-    this->id = id;
-    this->name = name;
+    this->id          = id;
+    this->name        = name;
     this->description = description;
-    this->type = type;
+    this->type        = type;
+  }
+  /// Convenience method for using plain ascii string
+  TPGDescriptor(const char *id, const char * name, const char * description, const char * type) {
+    this->id          = QString::fromAscii(id);
+    this->name        = QString::fromAscii(name);
+    this->description = QString::fromAscii(description);
+    this->type        = QString::fromAscii(type);
   }
   virtual ~TPGDescriptor() {}
 
@@ -83,14 +77,12 @@ public:
 };
 
 /**
-  * The actual static initialisation of the TPGFactory
+  * The actual static initialisation of the TPGFactory that stores the list of tpgLists
   */
 class TPGFactoryInstP
 {
 public:
-//  std::vector<TPGStruc> tpgList;
   std::vector<TPGDescriptor*> tpgList;
-  QString userPluginsPath;
 };
 
 class CamExport TPGFactoryInst : public Base::Factory
@@ -100,23 +92,20 @@ public:
   static TPGFactoryInst& instance(void);
 
   static void destruct (void);
-  TPG * getPluginById(const char *id);
+  TPG * getPlugin(QString id);
 
   const std::vector<TPGDescriptor*> & getPluginList() { return d->tpgList; }
 
-  void scanPlugins();
-  void setUserPluginPath(const char *);
-
   template <class CLASS>
-  void registerPlugin(const char *id, const char *name, const char *desc, TPG::Type type);
+  void registerPlugin(TPGDescriptor *);
 
 private:
   TPGFactoryInst(void);
   ~TPGFactoryInst(void);
   static TPGFactoryInst* _pcSingleton;
-
-  QStringList scanDirectory(const QString &path);
-  void clearPlugins() {}
+  
+  /// Used for clearing the registered descriptors for describing a TPG plugin
+  void clearDescriptors();
 
   TPGFactoryInstP* d;
 };
@@ -155,27 +144,22 @@ public:
 
 // Unfortunatly we have to implement this after the TPGProducer and in the header file.
 template <class CLASS>
-void TPGFactoryInst::registerPlugin(const char *id, const char *name, const char *desc, TPG::Type type)
+void TPGFactoryInst::registerPlugin(TPGDescriptor *descriptor)
 {
     // We need to check if plugin of name has been registered and throw exception
     std::map<const std::string, Base::AbstractProducer*>::const_iterator it;
-    it = _mpcProducers.find(name);
+    it = _mpcProducers.find(descriptor->id.toStdString());
 
     if (it != _mpcProducers.end())
         throw new Base::Exception("A plugin with this ID has already been registered");
 
     //We must register the producer
-    new Cam::TPGProducer<CLASS>(name);
+    new Cam::TPGProducer<CLASS>(descriptor->id.toStdString().c_str());
 
-    // We now create a light TPG Description to add to the library
-//    TPGStruc tpgDesc;
-//    tpgDesc.id = id;
-//    tpgDesc.name = name;
-//    tpgDesc.desc = desc;
-//    tpgDesc.type = type;
-//    d->tpgList.push_back(tpgDesc);
+    //Store some useful information (the descriptor) related to the plugin
+    d->tpgList.push_back(descriptor);
 
-    //Store some useful information related to the plugin
+
 };
 }
 

@@ -23,20 +23,35 @@
 #ifndef CAM_TPGPROCESS_H
 #define CAM_TPGPROCESS_H
 
-#include "TPG.h"
+
+#include "TPGFactory.h"
 
 namespace Cam
 {
-  // I was thinking that each TPG super class should ideally register its type, but may not be possible
 
-  // Class stores hash of settings for managing each independant TPG
-class CamExport TPGPRocess
+class ProcessTPGDescriptor : public TPGDescriptor
+{
+public:
+  ProcessTPGDescriptor(QString id, QString name, QString description)
+    : TPGDescriptor(id, name, description, QString::fromAscii("ProcessTPG"))
+  {}
+
+  ProcessTPGDescriptor(const char *id, const char * name, const char * description)
+    : TPGDescriptor(id, name, description, "ProcessTPG")
+  {}
+  TPG* make();
+};
+
+
+/**
+ * For implementing TPG plugins that are spawn new processes and require asynchronous operation
+ */
+class CamExport ProcessTPG : public TPG
 {
 
 public:
-    TPGProcess();
-    ~TPGProcess();
-
+    ProcessTPG();
+    ~ProcessTPG();    
 protected:
 };
 

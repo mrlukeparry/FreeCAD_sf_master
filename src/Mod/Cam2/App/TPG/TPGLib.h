@@ -20,75 +20,44 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
-#ifndef _PreComp_
-#endif
+#ifndef CAM_TPGLIB_H
+#define CAM_TPGLIB_H
 
-#include <App/Application.h>
-#include <Base/Console.h>
-#include <Base/Sequencer.h>
-
-#include <Python.h>
-
-#include <QList>
-#include <QString>
-#include <QFile>
-#include <QFileInfo>
-#include <QDir>
-
-#include "TPG.h"
-#include "TPGPython.h"
 #include "TPGFactory.h"
 
-using namespace Cam;
-
-TPGFactoryInst* TPGFactoryInst::_pcSingleton = NULL;
-
-TPGFactoryInst& TPGFactoryInst::instance(void)
+namespace Cam
 {
-    if (_pcSingleton == NULL) {
-        _pcSingleton = new TPGFactoryInst;
-    }
 
-    return *_pcSingleton;
-}
-
-void TPGFactoryInst::clearDescriptors()
+/**
+ * A descriptor for C++ Library Based TPG's
+ */
+class LibTPGDescriptor : public TPGDescriptor
 {
-    // Iterator through the TPGDescriptor List and delete all the entries
-    for(std::vector<TPGDescriptor *>::iterator it = d->tpgList.begin(); it != d->tpgList.end(); ++it) {
-        delete (*it);
-        (*it) = 0;
-    }     
-    d->tpgList.empty();
-}
+public:
+  LibTPGDescriptor(QString id, QString name, QString description)
+    : TPGDescriptor(id, name, description, QString::fromAscii("LibTPG"))
+  {}
+  /// Convenience Method
+  LibTPGDescriptor(const char *id, const char * name, const char * description)
+    : TPGDescriptor(id, name, description, "LibTPG")
+  {}
+  TPG* make();
+};
 
-TPG * TPGFactoryInst::getPlugin(QString id)
+/**
+ * A class that c++ library based plugins should derive from
+ */
+class CamExport LibTPG : public TPG
 {
-    std::map<const std::string, Base::AbstractProducer*>::const_iterator it;
-    it = _mpcProducers.find(id.toStdString().c_str());
-    if (it != _mpcProducers.end()) {
-        //it->second->setValue(v);
-        return static_cast<TPG *>(it->second->Produce());
-    }
 
-    // Try loading python modules
-    return 0;
-}
+public:
+    LibTPG();
+    ~LibTPG();
 
-TPGFactoryInst::TPGFactoryInst(void)
-{
-    d = new TPGFactoryInstP;
-}
+protected:
+};
 
-TPGFactoryInst::~TPGFactoryInst(void)
-{
-    delete d;
-}
+} //namespace Cam
 
-void TPGFactoryInst::destruct (void)
-{
-    if (_pcSingleton != 0)
-        delete _pcSingleton;
-    _pcSingleton = 0;
-}
+#endif //CAM_TPGLIB_H
+
