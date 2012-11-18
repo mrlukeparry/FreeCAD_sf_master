@@ -113,16 +113,15 @@ class PyTPGManager(object):
     def scanPlugins(self):
         '''Search for Python TPGs and return a list of Python Descriptor tuples
         [(<id>, <name>, <description>), ...]'''
-#        try:
-#            self._scanDirs()
-#        except:
-#            pass
-#        results = []
-#        for key in self._tpgs:
-#            tpg = self._tpgs[key]
-#            results.append((tpg.id, tpg.name, tpg.description))
-#        return results
-        return None
+        try:
+            self._scanDirs()
+        except:
+            pass
+        results = []
+        for key in self._tpgs:
+            tpg = self._tpgs[key]
+            results.append((tpg.id, tpg.name, tpg.description))
+        return results
     
     def getPlugin(self, pid):
         '''Gets the Python TPG Class (as opposed to Instance) for the selected id'''

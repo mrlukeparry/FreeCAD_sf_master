@@ -67,9 +67,9 @@ class ExampleTPG(PyTPGBase):
                 }
     
     # The static identification and descriptive information 
-    id = '10bf335e-2491-11e2-8f39-08002734b94f' #this NEEDS to be unique!!!  @see PyTPGBase.id
-    name = 'ExampleTPG' # should match classname
-    description = 'This is a simple Example Python TPG'
+    id = u'10bf335e-2491-11e2-8f39-08002734b94f' #this NEEDS to be unique!!!  @see PyTPGBase.id
+    name = u'ExampleTPG' # should match classname
+    description = u'This is a simple Example Python TPG'
         
     def getActions(self):
         '''Returns a list of actions that this TPG offers'''
@@ -90,5 +90,18 @@ class ExampleTPG(PyTPGBase):
         '''Runs the selected action and returns the resulting TP'''
         #TODO: implement an example (Note: need to define the output interface i.e. what it will return)
         raise UnimplementedTPError(action)
+    
+
+class SecondTPG(ExampleTPG):
+    '''A second TPG to test ui'''
+    settings = {'rough': []}
+    
+    # The static identification and descriptive information 
+    id = u'299d8e22-3155-11e2-98ec-08002734b94f' #this NEEDS to be unique!!!  @see PyTPGBase.id
+    name = u'ExampleTPGa' # should match classname
+    description = u'A second Python TPG for testing UI'
+    
+    
+    
     
     

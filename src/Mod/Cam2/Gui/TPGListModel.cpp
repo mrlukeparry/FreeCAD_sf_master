@@ -49,8 +49,9 @@ QVariant TPGListModel::data(const QModelIndex& index, int role) const {
   if (index.row() >= tpgs->size())
     return QVariant();
   if (role == Qt::DisplayRole) {
-    if (tpgs != NULL) {
-      return QVariant(tpgs->at(index.row())->name);
+    if (tpgs != NULL && tpgs->size() > index.row()) {
+      Cam::TPGDescriptor* tpg = (*tpgs)[index.row()];
+      return QVariant(tpg->name);
     }
   }
   return QVariant();

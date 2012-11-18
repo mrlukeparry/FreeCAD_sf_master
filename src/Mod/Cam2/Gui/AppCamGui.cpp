@@ -57,12 +57,12 @@ void CreateCamCommands(void);
 static PyObject *test(PyObject *self, PyObject *args)
 {
   // get the TPGs
-  std::vector<Cam::TPGDescriptor*> plugins = Cam::PyTPGManager().scanPlugins();
-  for (int i = 0; i < plugins.size(); i++)
-    plugins[i]->print();
+//  std::vector<Cam::TPGDescriptor*> plugins = Cam::PyTPGManager().scanPlugins();
+//  for (int i = 0; i < plugins.size(); i++)
+//    plugins[i]->print();
 
-//  CamGui::UIManager().reloadTPGs();
-  CamGui::UIManager().addTPG(NULL);
+  CamGui::UIManager().reloadTPGs();
+//  CamGui::UIManager().addTPG(NULL);
 
 //  // get the dock window
 //  Gui::DockWindowManager* pDockMgr = Gui::DockWindowManager::instance();
@@ -79,14 +79,22 @@ static PyObject *test(PyObject *self, PyObject *args)
   Py_Return;
 }
 
+/**
+ * Asks the UIManager to reload the TPG library
+ */
+static PyObject *reloadTPGs(PyObject *self, PyObject *args)
+{
+  CamGui::UIManager().reloadTPGs();
+  Py_Return;
+}
+
 
 /* registration table  */
 static struct PyMethodDef CamGui_methods[] =
 {
-    {"test"   , test,    METH_VARARGS, "Perform some UI testing."},
-    {
-        NULL, NULL
-    }                   /* end of table marker */
+    {"reloadTPGs", reloadTPGs, METH_VARARGS, "Instructs the UIManager to reload the TPG Library."},
+    {"test", test, METH_VARARGS, "Perform some UI testing."},
+    {NULL, NULL}                   /* end of table marker */
 };
 
 extern "C"

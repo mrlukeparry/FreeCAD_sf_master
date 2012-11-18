@@ -39,19 +39,13 @@ public:
   TPGLibraryDockWindow(Gui::Document*  pcDocument, QWidget *parent=0);
   virtual ~TPGLibraryDockWindow();
 
-  /**
-   * Set the model used to select TPGs from
-   */
-//  void setTPGList(TPGListModel* tpgs);
-
 public Q_SLOTS:
   void addBtnClick();
-//  void reloadBtnClick();
   void updatedTPGList(TPGListModel* tpgs);
+  void selectionChanged(const QItemSelection &newselection, const QItemSelection &oldselection);
 
 Q_SIGNALS:
   void addTPG(Cam::TPGDescriptor *tpg);
-//  void reloadLibrary(QListView *list);
 
 protected:
   TPGListModel* tpgs;
