@@ -22,6 +22,7 @@
 
 
 #include "Support.h"
+#include "qstring.h"
 
 /**
  * Convert a QString to a Python Object
@@ -37,13 +38,25 @@ PyObject *QStringToPythonUC(const QString &str)
  */
 QString PythonUCToQString(PyObject *obj)
 {
-  Py_UNICODE *pid = PyUnicode_AsUnicode(obj);
+  QString conv;
 
-  if (pid != NULL)
-    return QString::fromUcs4((const uint *) pid); //TODO: this should have a check for older pythons that use Ucs2)
-  if (PyString_Check(obj))
-    return QString::fromLatin1(PyString_AS_STRING(obj));
-  return QString();
+  if (obj == Py_None) // None to ""
+  {}
+  else if (PyUnicode_Check(obj)) // Unicode values
+  {
+    PyObject* uc = PyUnicode_AsUTF8String(obj);
+    if (uc != NULL) {
+      conv = QString::fromUtf8(PyString_AS_STRING(uc));
+      Py_DecRef(uc);
+    }
+    else
+      conv = QString::fromAscii("Unicode Conversion Problem");
+  }
+  else if (PyString_Check(obj)) // String values
+    conv = QString::fromUtf8(PyString_AS_STRING(obj));
+  else
+    conv = QString::fromAscii("Non-string object");
+  return conv;
 }
 
 ///**

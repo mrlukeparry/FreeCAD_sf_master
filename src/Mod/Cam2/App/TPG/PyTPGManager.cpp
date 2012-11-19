@@ -149,37 +149,39 @@ bool PyTPGManagerInst::pytest(PyObject* arg)
  * Returns (by reference) the list of found Python Plugins.
  * This is a vector of PythonTPGDescriptors
  */
-std::vector<TPGDescriptor*> &PyTPGManagerInst::scanPlugins()
-{
+std::vector<TPGDescriptor*> &PyTPGManagerInst::scanPlugins() {
     if (this->obj != NULL) {
-      printf("PyTPGManager.scanPlugins(%p)\n", obj);
+        PyGILState_STATE state = PyGILState_Ensure();
         PyObject * result = PyObject_CallMethod(obj, "scanPlugins", NULL);
         if (result != NULL) {
             if (PyList_Check(result)) {
 
-              // clean the current list
-              std::vector<Cam::TPGDescriptor*>::iterator it = this->descriptors.begin();
-              for (; it != this->descriptors.end(); ++it)
-                delete (*it);
-              this->descriptors.clear();
+                // clean the current list
+                std::vector<Cam::TPGDescriptor*>::iterator it =
+                        this->descriptors.begin();
+                for (; it != this->descriptors.end(); ++it)
+                    delete (*it);
+                this->descriptors.clear();
 
-              // add the new items
-              int len = PyList_Size(result);
-              for (int i = 0; i < len; i++) {
-                  PyObject *tuple = PyList_GetItem(result, i);
-                  if (PyTuple_Check(tuple) && PyTuple_GET_SIZE(tuple) == 3) {
-                    PyObject *pid = PyTuple_GET_ITEM(tuple, 0);
-                    PyObject *pname = PyTuple_GET_ITEM(tuple, 1);
-                    PyObject *pdesc = PyTuple_GET_ITEM(tuple, 2);
+                // add the new items
+                int len = PyList_Size(result);
+                for (int i = 0; i < len; i++) {
+                    PyObject *tuple = PyList_GetItem(result, i);
+                    if (PyTuple_Check(tuple) && PyTuple_GET_SIZE(tuple) == 3) {
+                        PyObject *pid = PyTuple_GET_ITEM(tuple, 0);
+                        PyObject *pname = PyTuple_GET_ITEM(tuple, 1);
+                        PyObject *pdesc = PyTuple_GET_ITEM(tuple, 2);
 
-                    this->descriptors.push_back(new PythonTPGDescriptor(PythonUCToQString(pid),
-                        PythonUCToQString(pname),
-                        PythonUCToQString(pdesc)));
-                  }
-              }
+                        this->descriptors.push_back(
+                                new PythonTPGDescriptor(PythonUCToQString(pid),
+                                        PythonUCToQString(pname),
+                                        PythonUCToQString(pdesc)));
+                    }
+                }
             }
             Py_DecRef(result);
         }
+        PyGILState_Release(state);
     }
     return this->descriptors;
 }
@@ -193,17 +195,19 @@ TPGPython *PyTPGManagerInst::getPlugin(QString id)
     if (this->obj != NULL)
     {
         PyObject *arg    = QStringToPythonUC(id);
+        PyGILState_STATE state = PyGILState_Ensure();
         PyObject *result = PyObject_CallMethod(obj, "getPlugin", "(O)", arg);
-
         if (result != NULL) {
           if (PyType_Check(result)) {
             tpg = new TPGPython(result);
+            PyGILState_Release(state);
             return tpg;
           } else
               printf("ERROR Unable to get Python Class'%s'\n", Py_TYPE(result)->tp_name);
 
           Py_DecRef(result);
         }
+        PyGILState_Release(state);
     }
     return tpg;
 }
@@ -218,15 +222,25 @@ PyObject *PyTPGManagerInst::QStringToPythonUC(const QString &str)
 
 QString PyTPGManagerInst::PythonUCToQString(PyObject *obj)
 {
-    Py_UNICODE *pid = PyUnicode_AsUnicode(obj);
+  QString conv;
 
-    if (pid != NULL)
-        return QString::fromUcs4((const uint *)pid); //TODO: this should have a check for older pythons that use Ucs2)
-
-    if (PyString_Check(obj))
-        return QString::fromLatin1(PyString_AS_STRING(obj));
-
-    return QString();
+  if (obj == Py_None) // None to ""
+  {}
+  else if (PyUnicode_Check(obj)) // Unicode values
+  {
+    PyObject* uc = PyUnicode_AsUTF8String(obj);
+    if (uc != NULL) {
+      conv = QString::fromUtf8(PyString_AS_STRING(uc));
+      Py_DecRef(uc);
+    }
+    else
+      conv = QString::fromAscii("Unicode Conversion Problem");
+  }
+  else if (PyString_Check(obj)) // String values
+    conv = QString::fromUtf8(PyString_AS_STRING(obj));
+  else
+    conv = QString::fromAscii("Non-string object");
+  return conv;
 }
 
 } /* namespace Cam */

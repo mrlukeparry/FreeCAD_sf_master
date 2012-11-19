@@ -32,8 +32,8 @@
 
 namespace CamGui {
 
-TPGLibraryDockWindow::TPGLibraryDockWindow(Gui::Document*  pcDocument, QWidget *parent)
-  : DockWindow(pcDocument,parent) , ui(new Ui_TPGLibraryDockWindow)
+TPGLibraryDockWindow::TPGLibraryDockWindow(Gui::Document* pcDocument, QWidget *parent)
+  : DockWindow(pcDocument,parent), ui(new Ui_TPGLibraryDockWindow)
 {
   setWindowTitle(tr("TPG Library"));
 
@@ -45,11 +45,14 @@ TPGLibraryDockWindow::TPGLibraryDockWindow(Gui::Document*  pcDocument, QWidget *
   // connect add button to internal handler
   QObject::connect(ui->AddTPG, SIGNAL(clicked()),
       this, SLOT(addBtnClick()));
+  // selection changes
+  QObject::connect(ui->TPGList->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+      this, SLOT(selectionChanged(const QItemSelection &, const QItemSelection &)));
 
   /// External ///
   // connect addTPG to UIManager
   QObject::connect(this, SIGNAL(addTPG(Cam::TPGDescriptor*)),
-      &UIManager(), SLOT(reloadTPGs()));
+      &UIManager(), SLOT(addTPG(Cam::TPGDescriptor*)));
   // connect reload button to UIManager
   QObject::connect(ui->ReloadLibrary, SIGNAL(clicked()),
       &UIManager(), SLOT(reloadTPGs()));
@@ -61,34 +64,57 @@ TPGLibraryDockWindow::TPGLibraryDockWindow(Gui::Document*  pcDocument, QWidget *
 TPGLibraryDockWindow::~TPGLibraryDockWindow() {
 }
 
-
-
 /**
- * Set the model used to select TPGs from
+ * A slot to update the TPG model.
  */
 void TPGLibraryDockWindow::updatedTPGList(TPGListModel* tpgs)
 {
   this->tpgs = tpgs;
   ui->TPGList->setModel(tpgs);
+  // Reconnect the signal after a model change
+  QObject::connect(ui->TPGList->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+      this, SLOT(selectionChanged(const QItemSelection &, const QItemSelection &)));
 }
 
-
+/**
+ * [Internal Use Only] Slot to receive Add TPG requests from the button
+ */
 void TPGLibraryDockWindow::addBtnClick()
 {
   QItemSelectionModel *selectionModel = ui->TPGList->selectionModel();
   QModelIndexList idxs = selectionModel->selectedIndexes();
   for (int i = 0; i < idxs.size(); i++) {
-    Cam::TPGDescriptor *tpg = tpgs->get(i);
+    Cam::TPGDescriptor *tpg = tpgs->get(idxs[i].row());
     if (tpg != NULL)
       Q_EMIT addTPG(tpg);
   }
 }
-//void TPGLibraryDockWindow::reloadBtnClick()
-//{
-////  QMessageBox::information(Gui::getMainWindow(), "Information", "This is where I would reload the TPG List");
-////  Q_EMIT reloadLibraryRequest(ui->TPGList);
-//}
 
+/**
+ * [Internal Use Only] Slot to receive selection change signals from the TPGTreeView.
+ */
+void TPGLibraryDockWindow::selectionChanged(const QItemSelection &newselection, const QItemSelection &oldselection)
+{
+  //TODO: move the hard-coded HTML into resource files
+  //TODO: translate on-screen text
+  QString html;
+  if (newselection.size() == 1) {
+    QModelIndexList idxs = newselection.indexes();
+
+    Cam::TPGDescriptor *tpg = tpgs->get(idxs[0].row());
+    html = "<html><body style=\"font-family:'Cantarell'; font-size:11pt; margin: 0;\">"\
+        "<p style=\"margin:0;\"><span style=\"font-weight:bold;\">Name</span>: " + tpg->name + "</p>"\
+        "<p style=\"margin:0;\"><span style=\"font-weight:bold;\">Description</span>: <br/>" + tpg->description + "</p>"\
+        "<hr style=\"margin:0;\"/>"\
+        "<p style=\"font-size:8pt; font-style:italic; color:#868686; margin: 0;\">{" + tpg->id + "}</p>"\
+        "</body></html>";
+  }
+  else if (newselection.size() == 0)
+    html = QString::fromAscii("<html><body><p style=\"font-family:'Cantarell'; font-size:8pt; font-style:italic; color:#868686;\">No TPG selected</p></body></html>");
+  else
+    html = QString::fromAscii("<html><body><p style=\"font-family:'Cantarell'; font-size:8pt; font-style:italic; color:#868686;\">Multiple TPG selection</p></body></html>");
+  ui->TPGDetails->setHtml(html);
+}
 
 #include "moc_TPGLibraryDockWindow.cpp"
 

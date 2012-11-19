@@ -28,6 +28,7 @@
 #endif
 
 #include "Workbench.h"
+#include <Base/Interpreter.h>
 #include <Gui/MainWindow.h>
 #include <Gui/MenuManager.h>
 #include <Gui/ToolBarManager.h>

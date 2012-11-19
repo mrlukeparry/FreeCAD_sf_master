@@ -29,7 +29,7 @@
 #endif
 
 #include <vector>
-#include <QString>
+#include <qstring.h>
 
 #include "TPGPython.h"
 #include "TPGFactory.h"
@@ -45,7 +45,14 @@ class PythonTPGDescriptor : public TPGDescriptor
 public:
   PythonTPGDescriptor(QString id, QString name, QString description)
     : TPGDescriptor(id, name, description, QString::fromAscii("PythonTPG"))
-  {}
+  {
+//    printf("Creating PythonTPGDescriptor: %p\n", this);
+  }
+
+  ~PythonTPGDescriptor()
+  {
+//    printf("Deleting PythonTPGDescriptor: %p\n", this);
+  }
 
   TPG* make();
 };

@@ -20,6 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
+#define EMBED_BREAKPOINT  asm volatile ("int3;")
+
 #include "PreCompiled.h"
 #ifndef _PreComp_
 //#include <qobject.h>
@@ -60,38 +62,36 @@ UIManagerInst::UIManagerInst() {
 UIManagerInst::~UIManagerInst() {
 }
 
-
-void UIManagerInst::addTPG(Cam::TPGDescriptor *tpg)
-{
-  if (tpg != NULL)
-    QMessageBox::information( Gui::getMainWindow(), "Information", "This is where I would add a '" + tpg->name + "' TPG to the project" );
-  QMessageBox::information( Gui::getMainWindow(), "Information", "Hello");
+/**
+ * A Slot to receive requests to add TPG's to the document tree.
+ */
+void UIManagerInst::addTPG(Cam::TPGDescriptor *tpg) {
+    if (tpg != NULL)
+        QMessageBox::information(Gui::getMainWindow(), "Information",
+                "This is where I would add a '" + tpg->name
+                        + "' TPG to the document");
+    Cam::TPG *tp = tpg->make();
+    delete tp;
 }
+/**
+ * A Slot to request a Library reload.
+ */
 void UIManagerInst::reloadTPGs()
 {
   if (!Py_IsInitialized())
     QMessageBox::information( Gui::getMainWindow(), "Information", "Python not initialised" );
-  // get the TPGs
-  std::vector<Cam::TPGDescriptor*> plugins = Cam::PyTPGManager().scanPlugins();
-//  for (int i = 0; i < plugins.size(); i++)
-//    plugins[i]->print();
+  else {
+    // get the TPGs
+    std::vector<Cam::TPGDescriptor*> *plugins = &Cam::PyTPGManager().scanPlugins();
+    printf("Plugins:\n");
+    for (int i = 0; i < plugins->size(); i++) {
+      (*plugins)[i]->print();
+    }
 
-
-  CamGui::TPGListModel *model = new CamGui::TPGListModel(&plugins);
-  Q_EMIT updatedTPGList(model);
-
-
-  // get the dock window
-//  Gui::DockWindowManager* pDockMgr = Gui::DockWindowManager::instance();
-//  QWidget *tpgdockwidget = pDockMgr->getDockWindow("Cam_TPGLibraryDockWindow");
-//  if (tpgdockwidget != NULL)
-//  {
-//    CamGui::TPGLibraryDockWindow *dwin = (CamGui::TPGLibraryDockWindow*) tpgdockwidget;
-//    CamGui::TPGListModel *model = new CamGui::TPGListModel(&plugins);
-//    dwin->setTPGList(model);
-//  }
+    CamGui::TPGListModel *model = new CamGui::TPGListModel(plugins);
+    Q_EMIT updatedTPGList(model);
+  }
 }
-
 
 #include "moc_UIManager.cpp"
 
