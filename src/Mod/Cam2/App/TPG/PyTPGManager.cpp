@@ -149,37 +149,39 @@ bool PyTPGManagerInst::pytest(PyObject* arg)
  * Returns (by reference) the list of found Python Plugins.
  * This is a vector of PythonTPGDescriptors
  */
-std::vector<TPGDescriptor*> &PyTPGManagerInst::scanPlugins()
-{
+std::vector<TPGDescriptor*> &PyTPGManagerInst::scanPlugins() {
     if (this->obj != NULL) {
-      printf("PyTPGManager.scanPlugins(%p): %p\n", obj, &descriptors);
+        PyGILState_STATE state = PyGILState_Ensure();
         PyObject * result = PyObject_CallMethod(obj, "scanPlugins", NULL);
         if (result != NULL) {
             if (PyList_Check(result)) {
 
-              // clean the current list
-              std::vector<Cam::TPGDescriptor*>::iterator it = this->descriptors.begin();
-              for (; it != this->descriptors.end(); ++it)
-                delete (*it);
-              this->descriptors.clear();
+                // clean the current list
+                std::vector<Cam::TPGDescriptor*>::iterator it =
+                        this->descriptors.begin();
+                for (; it != this->descriptors.end(); ++it)
+                    delete (*it);
+                this->descriptors.clear();
 
-              // add the new items
-              int len = PyList_Size(result);
-              for (int i = 0; i < len; i++) {
-                  PyObject *tuple = PyList_GetItem(result, i);
-                  if (PyTuple_Check(tuple) && PyTuple_GET_SIZE(tuple) == 3) {
-                    PyObject *pid = PyTuple_GET_ITEM(tuple, 0);
-                    PyObject *pname = PyTuple_GET_ITEM(tuple, 1);
-                    PyObject *pdesc = PyTuple_GET_ITEM(tuple, 2);
+                // add the new items
+                int len = PyList_Size(result);
+                for (int i = 0; i < len; i++) {
+                    PyObject *tuple = PyList_GetItem(result, i);
+                    if (PyTuple_Check(tuple) && PyTuple_GET_SIZE(tuple) == 3) {
+                        PyObject *pid = PyTuple_GET_ITEM(tuple, 0);
+                        PyObject *pname = PyTuple_GET_ITEM(tuple, 1);
+                        PyObject *pdesc = PyTuple_GET_ITEM(tuple, 2);
 
-                    this->descriptors.push_back(new PythonTPGDescriptor(PythonUCToQString(pid),
-                        PythonUCToQString(pname),
-                        PythonUCToQString(pdesc)));
-                  }
-              }
+                        this->descriptors.push_back(
+                                new PythonTPGDescriptor(PythonUCToQString(pid),
+                                        PythonUCToQString(pname),
+                                        PythonUCToQString(pdesc)));
+                    }
+                }
             }
             Py_DecRef(result);
         }
+        PyGILState_Release(state);
     }
     return this->descriptors;
 }
@@ -193,17 +195,19 @@ TPGPython *PyTPGManagerInst::getPlugin(QString id)
     if (this->obj != NULL)
     {
         PyObject *arg    = QStringToPythonUC(id);
+        PyGILState_STATE state = PyGILState_Ensure();
         PyObject *result = PyObject_CallMethod(obj, "getPlugin", "(O)", arg);
-
         if (result != NULL) {
           if (PyType_Check(result)) {
             tpg = new TPGPython(result);
+            PyGILState_Release(state);
             return tpg;
           } else
               printf("ERROR Unable to get Python Class'%s'\n", Py_TYPE(result)->tp_name);
 
           Py_DecRef(result);
         }
+        PyGILState_Release(state);
     }
     return tpg;
 }

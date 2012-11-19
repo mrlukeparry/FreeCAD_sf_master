@@ -46,12 +46,12 @@ public:
   PythonTPGDescriptor(QString id, QString name, QString description)
     : TPGDescriptor(id, name, description, QString::fromAscii("PythonTPG"))
   {
-    printf("Creating PythonTPGDescriptor: %p\n", this);
+//    printf("Creating PythonTPGDescriptor: %p\n", this);
   }
 
   ~PythonTPGDescriptor()
   {
-    printf("Deleting PythonTPGDescriptor: %p\n", this);
+//    printf("Deleting PythonTPGDescriptor: %p\n", this);
   }
 
   TPG* make();

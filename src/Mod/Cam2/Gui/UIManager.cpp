@@ -65,10 +65,13 @@ UIManagerInst::~UIManagerInst() {
 /**
  * A Slot to receive requests to add TPG's to the document tree.
  */
-void UIManagerInst::addTPG(Cam::TPGDescriptor *tpg)
-{
-  if (tpg != NULL)
-    QMessageBox::information( Gui::getMainWindow(), "Information", "This is where I would add a '" + tpg->name + "' TPG to the document" );
+void UIManagerInst::addTPG(Cam::TPGDescriptor *tpg) {
+    if (tpg != NULL)
+        QMessageBox::information(Gui::getMainWindow(), "Information",
+                "This is where I would add a '" + tpg->name
+                        + "' TPG to the document");
+    Cam::TPG *tp = tpg->make();
+    delete tp;
 }
 /**
  * A Slot to request a Library reload.
