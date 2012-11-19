@@ -37,10 +37,13 @@ TPG* LibTPGDescriptor::make()
     return TPGFactory().getPlugin(id);
 }
 
-LibTPG::LibTPG()
+LibTPG::LibTPG(TPGDescriptor *descriptor)
+       :TPG(descriptor->id, descriptor->name, descriptor->description)
 {
+    
 }
 
 LibTPG::~LibTPG()
 {
 }
+

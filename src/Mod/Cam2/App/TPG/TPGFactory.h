@@ -123,23 +123,21 @@ template <class CLASS>
 class CamExport TPGProducer : public Base::AbstractProducer
 {
 public:
-    TPGProducer (const char* name)
+    TPGProducer (TPGDescriptor *descriptor)
     {
-        TPGFactory().AddProducer(name, this);
+        TPGFactory().AddProducer(descriptor->id.toStdString().c_str(), this);
+        this->value = descriptor;
     }
 
     virtual ~TPGProducer(){}
-    void setValue(int v)
-    {
-        this->value = v;
-    }
+
     virtual void* Produce () const
     {
         CLASS inst;
-        return (void*)inst.makeTPG(); // Function Pointer
+        return (void*)inst.makeTPG(value); // Function Pointer
     }
 
-    int value;
+    TPGDescriptor *value;
 };
 
 // Unfortunatly we have to implement this after the TPGProducer and in the header file.
@@ -154,7 +152,7 @@ void TPGFactoryInst::registerPlugin(TPGDescriptor *descriptor)
         throw new Base::Exception("A plugin with this ID has already been registered");
 
     //We must register the producer
-    new Cam::TPGProducer<CLASS>(descriptor->id.toStdString().c_str());
+    new Cam::TPGProducer<CLASS>(descriptor);
 
     //Store some useful information (the descriptor) related to the plugin
     d->tpgList.push_back(descriptor);

@@ -35,7 +35,8 @@ TPG* ProcessTPGDescriptor::make()
     return TPGFactory().getPlugin(id);
 }
  
-ProcessTPG::ProcessTPG()
+ProcessTPG::ProcessTPG(TPGDescriptor *descriptor)
+   :TPG(descriptor->id, descriptor->name, descriptor->description)
 {
 }
 

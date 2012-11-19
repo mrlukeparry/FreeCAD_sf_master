@@ -71,7 +71,6 @@ TPG * TPGFactoryInst::getPlugin(QString id)
         //it->second->setValue(v);
         return static_cast<TPG *>(it->second->Produce());
     }
-
     // Try loading python modules
     return 0;
 }

@@ -44,6 +44,13 @@ TPG::TPG()
 //    cache->initialise();
 }
 
+TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription)
+{
+  this->id = TPGId;
+  this->name = TPGName;
+  this->description = TPGDescription;
+}
+
 TPG::~TPG()
 {
 //    delete settings;

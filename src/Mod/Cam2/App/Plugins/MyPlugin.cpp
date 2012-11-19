@@ -30,7 +30,9 @@
 
 using namespace Cam;
 
-MyPlugin::MyPlugin() {}
+MyPlugin::MyPlugin(TPGDescriptor *descriptor) :LibTPG(descriptor)
+{
+}
 MyPlugin::~MyPlugin() {}
 
 void MyPlugin::run()

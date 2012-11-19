@@ -50,7 +50,8 @@ class CamExport ProcessTPG : public TPG
 {
 
 public:
-    ProcessTPG();
+    ProcessTPG() {}
+    ProcessTPG(TPGDescriptor *descriptor);
     ~ProcessTPG();    
 protected:
 };
