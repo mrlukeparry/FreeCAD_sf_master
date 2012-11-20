@@ -60,6 +60,12 @@ public:
     this->description = QString::fromAscii(description);
     this->type        = QString::fromAscii(type);
   }
+  TPGDescriptor(const TPGDescriptor &copy) {
+      this->id = copy.id;
+      this->name = copy.name;
+      this->description = copy.description;
+      this->type = copy.type;
+  }
   virtual ~TPGDescriptor() {}
 
   /**
