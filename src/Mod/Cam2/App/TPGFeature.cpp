@@ -38,25 +38,30 @@ TPGFeature::TPGFeature() : tpg(0)
     ADD_PROPERTY_TYPE(ExternalGeometry,(0, 0), "TPG Feature", (App::PropertyType)(App::Prop_None) , "External geometry");
 }
 
-TPGFeature::TPGFeature(const char *pluginId)
+TPGFeature::TPGFeature(TPGDescriptor *tpgDescriptor)
 {
-    loadTPG(pluginId);
+    loadTPG(tpgDescriptor);
 }
 
-void TPGFeature::loadTPG(const char *pluginId)
-{
+bool TPGFeature::loadTPG(TPGDescriptor *tpgDescriptor)
+{    
+    if(tpgDescriptor == NULL)
+        throw new Base::Exception("TPG Plugin Description is null");
+    
     // First check if a plugin already exists and quit if already running
     if(this->hasRunningTPG())
-        return;
-
-    // Load the TPG from factory - we must delete this always
-    // [TODO] we need a super TPGFactory that loads both c++ and python pluginsit happens 
-    TPG *fndTpg  = TPGFactory().getPlugin(QString::fromAscii(pluginId));
-     if(fndTpg) {
-        tpg = fndTpg;
-        tpg->initialise(this); // We must initialise the TPG and associate with this TPGFeature
-     } else
-        tpg = 0;
+        return false;
+    
+    // Make the plugin from the descriptor
+    TPG *myTpg = NULL;
+    myTpg = tpgDescriptor->make();
+    
+    if(myTpg == NULL)
+        return false;
+    
+    // Set the TPGFeatures internal TPG member
+    this->tpg = myTpg;
+    return true;
 }
 
 void TPGFeature::run()

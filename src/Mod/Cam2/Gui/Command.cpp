@@ -74,22 +74,12 @@ void CmdCamCreateCamFeature::activated(int iMsg)
     App::Document *doc = getActiveGuiDocument()->getDocument();
 
     // NOTE Need to use simple test case file
-    App::DocumentObject *stock = getActiveGuiDocument()->getDocument()->getObject("Pad");
-    App::DocumentObject *pad = getActiveGuiDocument()->getDocument()->getObject("Pad001");
-
-    doc->addObject("Cam::CamFeature", FeatName.c_str());
+    App::DocumentObject *camFeat =  doc->addObject("Cam::CamFeature", FeatName.c_str());
 
     // TODO Unsure if these should be created automatically by the CAM Feature in the constructor
     // -- maybe useful to keep it like this so we can create this in a wizard step by  step
 
     // Initialise a few TPG Features and put this in tree for testing
-
-    std::string TPGFeatName1 = getUniqueObjectName("TPGFeature");
-    doc->addObject("Cam::TPGFeature", TPGFeatName1.c_str());
-    std::string TPGFeatName2 = getUniqueObjectName("TPGFeature");
-    doc->addObject("Cam::TPGFeature", TPGFeatName2.c_str());
-    std::string TPGFeatName3 = getUniqueObjectName("TPGFeature");
-    doc->addObject("Cam::TPGFeature", TPGFeatName3.c_str());
 
     App::DocumentObject *docObj = doc->getObject(FeatName.c_str());
 
@@ -97,23 +87,7 @@ void CmdCamCreateCamFeature::activated(int iMsg)
         Cam::CamFeature *camFeat = dynamic_cast<Cam::CamFeature *>(docObj);
 
         // We Must Initialise the Cam Feature before usage
-        camFeat->initialise();
-        Cam::TPGList *tpgList = camFeat->getTPGContainer();
-        tpgList->addTPG(TPGFeatName1.c_str());
-        tpgList->addTPG(TPGFeatName2.c_str());
-        tpgList->addTPG(TPGFeatName3.c_str());
-
-        //Test Access
-        const std::vector<App::DocumentObject *> tpgFeats = tpgList->TPGObjects.getValues();
-        App::DocumentObject *tpgDocObj = tpgFeats.at(0);
-                App::DocumentObject *tpgDocObj1 = tpgFeats.at(1);
-
-        Cam::TPGFeature *tpgFeat = dynamic_cast<Cam::TPGFeature *>(tpgDocObj);
-        Cam::TPGFeature *tpgFeat1 = dynamic_cast<Cam::TPGFeature *>(tpgDocObj1);
-
-        tpgFeat->loadTPG("MyPlugin");
-        camFeat->getPartsContainer()->addPart(pad);
-        camFeat->getStockGeometry()->Geometry.setValue(stock);
+        camFeat->initialise();        
     }
 
 }

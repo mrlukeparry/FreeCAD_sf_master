@@ -41,6 +41,10 @@ class TPGList;
 class StockGeometry;
 class GCodeFeature;
 
+/**
+ * The Cam Feature collects all the of the sub features into this parent object
+ * 
+ */
 class CamExport CamFeature : public App::DocumentObject
 {
     PROPERTY_HEADER(Cam::CamFeature);
@@ -78,9 +82,9 @@ public:
 
     /// Getters
     StockGeometry * getStockGeometry() const { return stockGeometry; }
-    CamPartsList * getPartsContainer() const { return camPartsList; }
-    TPGList * getTPGContainer() const { return tpgList; }
-    GCodeFeature * getGCodeFeature() const { return getGCodeResult(); }
+    CamPartsList  * getPartsContainer() const { return camPartsList; }
+    TPGList       * getTPGContainer() const { return tpgList; }
+    GCodeFeature  * getGCodeFeature() const { return getGCodeResult(); }
 
     GCodeFeature * getGCodeResult() const;
 

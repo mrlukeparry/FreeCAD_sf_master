@@ -27,13 +27,18 @@
 
 #include <Gui/ViewProviderDocumentObject.h>
 
+class QMenu;
+
+namespace Gui
+{
+  class View3DInventorViewer;
+}
+
 namespace Cam {
     class CamFeature;
 }
 
 namespace CamGui {
-
-
 class CamGuiExport ViewProviderCamFeature : public Gui::ViewProviderDocumentObject
 {
     PROPERTY_HEADER(CamGui::ViewProviderCamFeature);
@@ -43,6 +48,18 @@ public:
     ViewProviderCamFeature();
     /// destructor
     virtual ~ViewProviderCamFeature();
+
+    void setupContextMenu(QMenu *menu, QObject *receiver, const char *member);
+    bool setEdit(int ModNum);
+    void setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum);
+    
+    void unsetEditViewer(Gui::View3DInventorViewer* viewer);
+    void unsetEdit(int ModNum);
+
+
+
+    bool doubleClicked(void);
+
 
     /// grouping handling
     std::vector<App::DocumentObject*> claimChildren(void)const;

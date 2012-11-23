@@ -23,8 +23,9 @@
 #ifndef CAM_UIMANAGER_H_
 #define CAM_UIMANAGER_H_
 
-#include <qobject.h>
-#include <qlistview.h>
+#include <QObject>
+#include <QListView>
+
 #include "../App/TPG/TPGFactory.h"
 #include "TPGListModel.h"
 
@@ -65,4 +66,4 @@ inline UIManagerInst& UIManager(void)
 }
 
 } /* namespace CamGui */
-#endif /* UIMANAGER_H_ */
+#endif /* CAMGUI_UIMANAGER_H_ */

@@ -106,7 +106,7 @@ public:
 
     virtual QString getId() { return id; }
     virtual QString getName() { return name; }
-    virtual QString getDescription() { printf("TPG.getDescription()\n");return description; }
+    virtual QString getDescription() { printf("TPG.getDescription()\n"); return description; }
 
     /* [arobinson] Commented all this out until it is needed, it was making
          * things more complex when making the of the Python API

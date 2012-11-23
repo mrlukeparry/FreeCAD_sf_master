@@ -24,8 +24,10 @@
 #ifndef _PreComp_
 # include <qobject.h>
 # include <qmessagebox.h>
-# include <Gui/MainWindow.h>
+
 #endif
+# include <Gui/MainWindow.h>
+
 #include "ui_TPGLibraryDockWindow.h"
 #include "TPGLibraryDockWindow.h"
 #include "UIManager.h"

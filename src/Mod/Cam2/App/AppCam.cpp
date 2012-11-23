@@ -89,7 +89,6 @@ void CamExport initCam()
     Cam::TPGFeature          ::init();
     Cam::TPGList             ::init();
 
-
     //Initialise and Register and C++ TPG Plugins [TODO SHOULD WE INITIALISE THESE IN A SEPERATE FILE FOR READABILITY]
     Cam::MyPlugin            ::init();
     Cam::TPGFactory().registerPlugin<Cam::MyPlugin>(new Cam::LibTPGDescriptor("MyPlugin", "My CAM Plugin", "My Plugin's Description"));

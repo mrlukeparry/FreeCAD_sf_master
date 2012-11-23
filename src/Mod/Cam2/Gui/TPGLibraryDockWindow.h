@@ -20,11 +20,13 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef TPGLIBRARYDOCKWINDOW_H_
-#define TPGLIBRARYDOCKWINDOW_H_
+#ifndef CAMGUI_TPGLIBRARYDOCKWINDOW_H_
+#define CAMGUI_TPGLIBRARYDOCKWINDOW_H_
 
 #include <qobject.h>
+
 #include <Gui/DockWindow.h>
+
 #include "../App/TPG/TPGFactory.h"
 #include "TPGListModel.h"
 #include "ui_TPGLibraryDockWindow.h"

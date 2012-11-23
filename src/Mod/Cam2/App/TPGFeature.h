@@ -29,6 +29,7 @@
 #include <Mod/Part/App/PartFeature.h>
 #include <Base/BoundBox.h>
 
+#include "TPG/TPGFactory.h"
 #include "TPG/TPG.h"
 
 /**
@@ -43,7 +44,7 @@ class CamExport TPGFeature : public App::DocumentObject
 
 public:
     TPGFeature();
-    TPGFeature(const char *pluginId);
+    TPGFeature(TPGDescriptor *tpgDescriptor);
     ~TPGFeature();
 
     ///App properties stores (saves and restores references used by the TPG)
@@ -70,8 +71,7 @@ public:
     void stop();
 
     /// Methods for handling the TPG
-    void loadTPG(const char *pluginId);
-    void setTPG(TPG *tpgPlugin);
+    bool loadTPG(TPGDescriptor *tpgDescriptor);
 
     /// Convenience method for get the current TPG Status (Undefined if TPG not loaded)
     TPG::State getTPGStatus();
