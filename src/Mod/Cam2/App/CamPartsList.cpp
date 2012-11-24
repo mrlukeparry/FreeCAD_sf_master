@@ -48,11 +48,6 @@
 #include "CamPartsList.h"
 // #include "CamPartsListPy.h"
 
-/*
- * This class needs to manage the list of INPUT geometry that is used by each TPG
- * and provide methods of extracting geometry shapes from the TPG that are independant of OpenCASCADE
- **/
-
 using namespace Cam;
 using namespace Base;
 

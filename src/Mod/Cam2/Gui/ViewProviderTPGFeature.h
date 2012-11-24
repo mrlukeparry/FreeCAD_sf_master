@@ -27,12 +27,21 @@
 
 #include <Gui/ViewProviderDocumentObject.h>
 
-namespace Cam {
+class QMenu;
+
+namespace Gui
+{
+  class View3DInventorViewer;
+}
+
+
+namespace Cam 
+{
   class TPGFeature;
 }
+
 namespace CamGui {
 
-// TODO eventually we need to provide a custom view provider for showing the Tool path lines
 class CamGuiExport ViewProviderTPGFeature : public Gui::ViewProviderDocumentObject
 {
     PROPERTY_HEADER(CamGui::ViewProviderTPGFeature);
@@ -43,6 +52,14 @@ public:
     /// destructor
     virtual ~ViewProviderTPGFeature();
 
+    void setupContextMenu(QMenu *menu, QObject *receiver, const char *member);
+    bool setEdit(int ModNum);
+    void setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum);
+    
+    void unsetEditViewer(Gui::View3DInventorViewer* viewer);
+    void unsetEdit(int ModNum);
+    bool doubleClicked(void);
+    
     Cam::TPGFeature* getObject() const;
 };
 

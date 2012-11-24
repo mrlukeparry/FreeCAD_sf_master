@@ -33,7 +33,7 @@ namespace Cam {
 
 PROPERTY_SOURCE(Cam::TPGFeature, App::DocumentObject)
 
-TPGFeature::TPGFeature() : tpg(0)
+TPGFeature::TPGFeature() : tpg(NULL)
 {
     ADD_PROPERTY_TYPE(ExternalGeometry,(0, 0), "TPG Feature", (App::PropertyType)(App::Prop_None) , "External geometry");
 }

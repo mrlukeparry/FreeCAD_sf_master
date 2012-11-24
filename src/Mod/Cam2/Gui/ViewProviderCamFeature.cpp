@@ -37,12 +37,15 @@
 #include <Gui/SoFCBoundingBox.h>
 #include <Gui/View3DInventor.h>
 
-#include "ViewProviderCamFeature.h"
+
 #include "../App/CamFeature.h"
 #include "../App/StockGeometry.h"
 #include "../App/CamPartsList.h"
 #include "../App/TPGList.h"
 #include "../App/GCodeFeature.h"
+
+#include "TaskDialog/TaskDlgEditCamFeature.h"
+#include "ViewProviderCamFeature.h"
 
 using namespace CamGui;
 
@@ -63,37 +66,33 @@ void ViewProviderCamFeature::setupContextMenu(QMenu *menu, QObject *receiver, co
 
 bool ViewProviderCamFeature::setEdit(int ModNum)
 {
-   // When double-clicking on the item for this sketch the
-    // object unsets and sets its edit mode without closing
-    // the task panel
-//     Gui::TaskView::TaskDialog *dlg = Gui::Control().activeDialog();
-//     TaskDlgRender *taskDlgRender = qobject_cast<TaskDlgRender *>(dlg);
-// //     if (sketchDlg && sketchDlg->getSketchView() != this)
-// //         sketchDlg = 0; // another sketch left open its task panel
-//     if (dlg && !taskDlgRender) {
-//         QMessageBox msgBox;
-//         msgBox.setText(QObject::tr("A dialog is already open in the task panel"));
-//         msgBox.setInformativeText(QObject::tr("Do you want to close this dialog?"));
-//         msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-//         msgBox.setDefaultButton(QMessageBox::Yes);
-//         int ret = msgBox.exec();
-//         if (ret == QMessageBox::Yes)
-//             Gui::Control().closeDialog();
-//         else
-//             return false;
-//     }
+    /*When double-clicking on the item for this sketch the
+    object unsets and sets its edit mode without closing
+    the task panel */
+    Gui::TaskView::TaskDialog *dlg = Gui::Control().activeDialog();
+    TaskDlgEditCamFeature *taskDlgCamFeat = qobject_cast<TaskDlgEditCamFeature *>(dlg);
+
+    if (dlg && !taskDlgCamFeat) {
+        QMessageBox msgBox;
+        msgBox.setText(QObject::tr("A dialog is already open in the task panel"));
+        msgBox.setInformativeText(QObject::tr("Do you want to close this dialog?"));
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::Yes);
+        int ret = msgBox.exec();
+        if (ret == QMessageBox::Yes)
+            Gui::Control().closeDialog();
+        else
+            return false;
+    }
     Gui::Selection().clearSelection();
-// 
-// 
-//     //start the edit dialog
-//     if (taskDlgRender)
-//         Gui::Control().showDialog(taskDlgRender);
-//     else
-//         Gui::Control().showDialog(new TaskDlgRender(this));
-// 
-//     edit = true;
-//     createInventorNodes();
-//     draw();
+
+
+    //start the edit dialog
+    if (taskDlgCamFeat)
+        Gui::Control().showDialog(taskDlgCamFeat);
+    else
+        Gui::Control().showDialog(new TaskDlgEditCamFeature(this));
+
     return true;
 }
 
@@ -120,7 +119,6 @@ void ViewProviderCamFeature::unsetEdit(int ModNum)
     // clear the selection and set the new/edited sketch(convenience)
     Gui::Selection().clearSelection();
 }
-
 
 std::vector<App::DocumentObject*> ViewProviderCamFeature::claimChildren(void)const
 {

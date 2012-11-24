@@ -29,11 +29,11 @@
 #include <Gui/MainWindow.h>
 #include <QPointer>
 
-#include <Mod/Cam2/App/CamFeature.h>
-#include <Mod/Cam2/App/StockGeometry.h>
-#include <Mod/Cam2/App/TPGList.h>
-#include <Mod/Cam2/App/TPGFeature.h>
-#include <Mod/Cam2/App/CamPartsList.h>
+#include "../App/CamFeature.h"
+#include "../App/StockGeometry.h"
+#include "../App/TPGList.h"
+#include "../App/TPGFeature.h"
+#include "../App/CamPartsList.h"
 
 
 //===========================================================================
@@ -57,27 +57,10 @@ void CmdCamCreateCamFeature::activated(int iMsg)
 {
 
     std::string FeatName = getUniqueObjectName("CamFeature");
-//     openCommand("Raytracing create render feature");
-//     doCommand(Doc,"import Raytracing,RaytracingGui");
-//     doCommand(Doc,"App.activeDocument().addObject('Raytracing::RenderFeature','%s')",FeatName.c_str());
-//
-//
-//     // Attach this temporary camera to the Render Feature
-//     doCommand(Doc,"App.ActiveDocument.%s.attachRenderCamera(renderCam)", FeatName.c_str());
-//
-//     doCommand(Doc,"App.ActiveDocument.%s.setRenderPreset('metropolisUnbiased')", FeatName.c_str());
-//     doCommand(Doc,"CamPartsLisApp.ActiveDocument.%s.setRenderTemplate('lux_default')", FeatName.c_str());
-//
-//     doCommand(Gui,"Gui.activeDocument().setEdit('%s')",FeatName.c_str());
-//     commitCommand();
-
-    App::Document *doc = getActiveGuiDocument()->getDocument();
+    App::Document *doc   = getActiveGuiDocument()->getDocument();
 
     // NOTE Need to use simple test case file
     App::DocumentObject *camFeat =  doc->addObject("Cam::CamFeature", FeatName.c_str());
-
-    // TODO Unsure if these should be created automatically by the CAM Feature in the constructor
-    // -- maybe useful to keep it like this so we can create this in a wizard step by  step
 
     // Initialise a few TPG Features and put this in tree for testing
 
@@ -89,7 +72,6 @@ void CmdCamCreateCamFeature::activated(int iMsg)
         // We Must Initialise the Cam Feature before usage
         camFeat->initialise();        
     }
-
 }
 
 bool CmdCamCreateCamFeature::isActive(void)

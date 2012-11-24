@@ -19,48 +19,48 @@
  *   Suite 330, Boston, MA  02111-1307, USA                                *
  *                                                                         *
  ***************************************************************************/
-#ifndef CAMGUI_VIEWPROVIDERCAMPARTSLIST_H
-#define CAMGUI_VIEWPROVIDERCAMPARTSLIST_H
 
-#include <Gui/ViewProviderDocumentObject.h>
+#ifndef CAMGUI__TaskDlgEditTPGFeature_H
+#define CAMGUI__TaskDlgEditTPGFeature_H
 
-class QMenu;
+#include <Gui/TaskView/TaskDialog.h>
 
-namespace Gui
-{
-  class View3DInventorViewer;
-}
-
-namespace Cam {
-  class CamPartsList;
-}
+#include "../ViewProviderTPGFeature.h"
 
 namespace CamGui {
 
-class CamGuiExport ViewProviderCamPartsList : public Gui::ViewProviderDocumentObject
+/// simulation dialog for the TaskView
+class CamGuiExport TaskDlgEditTPGFeature : public Gui::TaskView::TaskDialog
 {
-    PROPERTY_HEADER(CamGui::ViewProviderCamPartsList);
+    Q_OBJECT
 
 public:
-    /// constructor
-    ViewProviderCamPartsList();
-    /// destructor
-    virtual ~ViewProviderCamPartsList();
+    TaskDlgEditTPGFeature(ViewProviderTPGFeature *camTPGFeatView);
+    ~TaskDlgEditTPGFeature();
+    ViewProviderTPGFeature* getTPGFeatureView() const { return camTPGView; }
 
-    void setupContextMenu(QMenu *menu, QObject *receiver, const char *member);
-    bool setEdit(int ModNum);
-    void setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum);
-    
-    void unsetEditViewer(Gui::View3DInventorViewer* viewer);
-    void unsetEdit(int ModNum);
-    bool doubleClicked(void);
-    
-    Cam::CamPartsList* getObject() const;
+public:
+    /// is called the TaskView when the dialog is opened
+    virtual void open();
+    /// is called by the framework if an button is clicked which has no accept or reject role
+    virtual void clicked(int);
+    /// is called by the framework if the dialog is accepted (Ok)
+    virtual bool accept();
+    /// is called by the framework if the dialog is rejected (Cancel)
+    virtual bool reject();
+    /// is called by the framework if the user presses the help button 
+    virtual void helpRequested();
+    virtual bool isAllowedAlterDocument(void) const
+    { return false; }
+
+    /// returns for Close and Help button 
+    virtual QDialogButtonBox::StandardButtons getStandardButtons(void) const
+    { return QDialogButtonBox::Close|QDialogButtonBox::Help; }
+
+protected:
+    ViewProviderTPGFeature   *camTPGView;
 };
 
+} //namespace CamGui
 
-
-} // namespace
-
-
-#endif //CAMGUI_VIEWPROVIDERCAMFEATURE_H
+#endif // CAMGUI_TaskDlgEditTPGFeature_H

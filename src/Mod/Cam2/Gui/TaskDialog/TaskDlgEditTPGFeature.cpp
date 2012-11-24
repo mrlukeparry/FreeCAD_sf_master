@@ -19,48 +19,64 @@
  *   Suite 330, Boston, MA  02111-1307, USA                                *
  *                                                                         *
  ***************************************************************************/
-#ifndef CAMGUI_VIEWPROVIDERCAMPARTSLIST_H
-#define CAMGUI_VIEWPROVIDERCAMPARTSLIST_H
 
-#include <Gui/ViewProviderDocumentObject.h>
+#include "../PreCompiled.h"
+#ifndef _PreComp_
+#endif
 
-class QMenu;
+#include <Gui/Command.h>
 
-namespace Gui
+#include "TaskDlgEditTPGFeature.h"
+#include "../ViewProviderTPGFeature.h"
+
+using namespace CamGui;
+
+
+//**************************************************************************
+//**************************************************************************
+// TaskDialog
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+TaskDlgEditTPGFeature::TaskDlgEditTPGFeature(ViewProviderTPGFeature *tpgView)
+    : TaskDialog(),camTPGView(tpgView)
 {
-  class View3DInventorViewer;
+    assert(tpgView);
 }
 
-namespace Cam {
-  class CamPartsList;
+TaskDlgEditTPGFeature::~TaskDlgEditTPGFeature()
+{
+
 }
 
-namespace CamGui {
+//==== calls from the TaskView ===============================================================
 
-class CamGuiExport ViewProviderCamPartsList : public Gui::ViewProviderDocumentObject
+void TaskDlgEditTPGFeature::open()
 {
-    PROPERTY_HEADER(CamGui::ViewProviderCamPartsList);
 
-public:
-    /// constructor
-    ViewProviderCamPartsList();
-    /// destructor
-    virtual ~ViewProviderCamPartsList();
+}
 
-    void setupContextMenu(QMenu *menu, QObject *receiver, const char *member);
-    bool setEdit(int ModNum);
-    void setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum);
+void TaskDlgEditTPGFeature::clicked(int)
+{
     
-    void unsetEditViewer(Gui::View3DInventorViewer* viewer);
-    void unsetEdit(int ModNum);
-    bool doubleClicked(void);
-    
-    Cam::CamPartsList* getObject() const;
-};
+}
 
+bool TaskDlgEditTPGFeature::accept()
+{
+    return true;
+}
 
+bool TaskDlgEditTPGFeature::reject()
+{
+    std::string document = getDocumentName(); // needed because resetEdit() deletes this instance
+    Gui::Command::doCommand(Gui::Command::Gui,"Gui.getDocument('%s').resetEdit()", document.c_str());
+    Gui::Command::doCommand(Gui::Command::Doc,"App.getDocument('%s').recompute()", document.c_str());
 
-} // namespace
+    return true;
+}
 
+void TaskDlgEditTPGFeature::helpRequested()
+{
 
-#endif //CAMGUI_VIEWPROVIDERCAMFEATURE_H
+}
+
+#include "TaskDialog/moc_TaskDlgEditTPGFeature.cpp"

@@ -55,20 +55,12 @@ public:
     
     void unsetEditViewer(Gui::View3DInventorViewer* viewer);
     void unsetEdit(int ModNum);
-
-
-
     bool doubleClicked(void);
-
 
     /// grouping handling
     std::vector<App::DocumentObject*> claimChildren(void)const;
     Cam::CamFeature* getObject() const;
 };
 
-
-
 } // namespace
-
-
 #endif //CAMGUI_VIEWPROVIDERCAMFEATURE_H

@@ -19,13 +19,17 @@
  *   Suite 330, Boston, MA  02111-1307, USA                                *
  *                                                                         *
  ***************************************************************************/
-
-#include "PreCompiled.h"
-
 #ifndef CAMGUI_VIEWPROVIDERSTOCKGEOMETRY_H
 #define CAMGUI_VIEWPROVIDERSTOCKGEOMETRY_H
 
 #include <Gui/ViewProviderDocumentObject.h>
+
+class QMenu;
+
+namespace Gui
+{
+  class View3DInventorViewer;
+}
 
 namespace Cam {
   class StockGeometry;
@@ -43,6 +47,14 @@ public:
     /// destructor
     virtual ~ViewProviderStockGeometry();
 
+    bool doubleClicked(void);
+    void setupContextMenu(QMenu *menu, QObject *receiver, const char *member);
+    bool setEdit(int ModNum);
+    void setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum);
+    
+    void unsetEditViewer(Gui::View3DInventorViewer* viewer);
+    void unsetEdit(int ModNum);
+    
     Cam::StockGeometry* getObject() const;
 };
 

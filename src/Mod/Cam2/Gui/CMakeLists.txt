@@ -35,10 +35,12 @@ endif(MSVC)
 qt4_add_resources(CamGui_SRCS Resources/Cam.qrc)
 
 set(CamGui_MOC_HDRS
-	CamProjectDockWindow.h
-	ToolPathDockWindow.h
-    TPGLibraryDockWindow.h
-    
+    TaskDialog/TaskDlgEditCamFeature.h
+    TaskDialog/TaskDlgEditTPGFeature.h
+    TaskDialog/TaskDlgEditCamPartsList.h
+    CamProjectDockWindow.h
+    ToolPathDockWindow.h
+    TPGLibraryDockWindow.h    
     UIManager.h
     TPGListModel.h
 )
@@ -46,18 +48,24 @@ fc_wrap_cpp(CamGui_MOC_SRCS ${CamGui_MOC_HDRS})
 
 set(CamGui_UIC_SRCS
     TPGLibraryDockWindow.ui
-	CamProjectDockWindow.ui
+    CamProjectDockWindow.ui
 )
 qt4_wrap_ui(CamGui_UIC_HDRS ${CamGui_UIC_SRCS})
 
 SET(CamGui_SRCS
-	${CamGui_SRCS}
+    ${CamGui_SRCS}
     ${CamGui_UIC_HDRS}
     Resources/Cam.qrc
     AppCamGui.cpp
     Command.cpp
     PreCompiled.cpp
     PreCompiled.h
+    TaskDialog/TaskDlgEditCamFeature.cpp
+    TaskDialog/TaskDlgEditCamFeature.h
+    TaskDialog/TaskDlgEditTPGFeature.cpp
+    TaskDialog/TaskDlgEditTPGFeature.h
+    TaskDialog/TaskDlgEditCamPartsList.cpp
+    TaskDialog/TaskDlgEditCamPartsList.h
     Workbench.cpp
     Workbench.h
     ViewProviderCamFeature.cpp
@@ -72,8 +80,9 @@ SET(CamGui_SRCS
     ViewProviderTPGFeature
     ViewProviderTPGList.cpp
     ViewProviderTPGList.h
-	CamProjectDockWindow.cpp
-	CamProjectDockWindow.h
+    CamProjectDockWindow.cpp
+    CamProjectDockWindow.h
+
     ToolPathDockWindow.cpp
     ToolPathDockWindow.h
     TPGLibraryDockWindow.cpp

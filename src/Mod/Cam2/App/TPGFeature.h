@@ -72,10 +72,11 @@ public:
 
     /// Methods for handling the TPG
     bool loadTPG(TPGDescriptor *tpgDescriptor);
+    TPG * getTPG() const { return (this->hasTPG()) ? tpg : NULL ; }
 
     /// Convenience method for get the current TPG Status (Undefined if TPG not loaded)
     TPG::State getTPGStatus();
-    bool hasTPG() { return tpg; }
+    bool hasTPG() const { return (tpg == NULL); }
     bool hasRunningTPG();
 
 protected:

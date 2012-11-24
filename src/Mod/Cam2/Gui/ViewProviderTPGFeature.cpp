@@ -21,11 +21,25 @@
  ***************************************************************************/
 
 #include "PreCompiled.h"
-
 #ifndef _PreComp_
+#include <QMenu>
 #endif
 
-#include <Mod/Cam2/App/TPGFeature.h>
+#include <Gui/Application.h>
+#include <Gui/Command.h>
+#include <Gui/Control.h>
+#include <Gui/Document.h>
+#include <Gui/SoFCSelection.h>
+#include <Gui/Selection.h>
+#include <Gui/SoTextLabel.h>
+#include <Gui/MainWindow.h>
+#include <Gui/SoFCUnifiedSelection.h>
+#include <Gui/SoFCBoundingBox.h>
+#include <Gui/View3DInventor.h>
+
+#include "../App/TPGFeature.h"
+
+#include "TaskDialog/TaskDlgEditTPGFeature.h"
 #include "ViewProviderTPGFeature.h"
 
 using namespace CamGui;
@@ -38,6 +52,73 @@ ViewProviderTPGFeature::ViewProviderTPGFeature()
 
 ViewProviderTPGFeature::~ViewProviderTPGFeature()
 {
+}
+
+void ViewProviderTPGFeature::setupContextMenu(QMenu *menu, QObject *receiver, const char *member)
+{
+    Cam::TPG *tpg = NULL;
+    tpg = getObject()->getTPG();
+    if(tpg == NULL)
+        return;
+    
+    menu->addAction(QObject::tr("Edit ") + QString::fromAscii(getObject()->Label.getValue()), receiver, member);
+}
+
+bool ViewProviderTPGFeature::setEdit(int ModNum)
+{
+   // When double-clicking on the item for this sketch the
+    // object unsets and sets its edit mode without closing
+    // the task panel
+    Gui::TaskView::TaskDialog *dlg = Gui::Control().activeDialog();
+    TaskDlgEditTPGFeature *taskDlgTPGFeat = qobject_cast<TaskDlgEditTPGFeature *>(dlg);
+//     if (sketchDlg && sketchDlg->getSketchView() != this)
+//         sketchDlg = 0; // another sketch left open its task panel
+    if (dlg && !taskDlgTPGFeat) {
+        QMessageBox msgBox;
+        msgBox.setText(QObject::tr("A dialog is already open in the task panel"));
+        msgBox.setInformativeText(QObject::tr("Do you want to close this dialog?"));
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::Yes);
+        int ret = msgBox.exec();
+        if (ret == QMessageBox::Yes)
+            Gui::Control().closeDialog();
+        else
+            return false;
+    }
+    Gui::Selection().clearSelection();
+
+
+    //start the edit dialog
+    if (taskDlgTPGFeat)
+        Gui::Control().showDialog(taskDlgTPGFeat);
+    else
+        Gui::Control().showDialog(new TaskDlgEditTPGFeature(this));
+
+    return true;
+}
+
+void ViewProviderTPGFeature::setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum)
+{
+    viewer->setEditing(TRUE);
+//     SoNode* root = viewer->getSceneGraph();
+//     //static_cast<Gui::SoFCUnifiedSelection*>(root)->selectionRole.setValue(FALSE);
+}
+
+bool ViewProviderTPGFeature::doubleClicked(void)
+{
+    Gui::Application::Instance->activeDocument()->setEdit(this);
+    return true;
+}
+
+void ViewProviderTPGFeature::unsetEditViewer(Gui::View3DInventorViewer* viewer)
+{
+    viewer->setEditing(FALSE);
+}
+
+void ViewProviderTPGFeature::unsetEdit(int ModNum)
+{
+    // clear the selection and set the new/edited sketch(convenience)
+    Gui::Selection().clearSelection();
 }
 
 Cam::TPGFeature* ViewProviderTPGFeature::getObject() const
