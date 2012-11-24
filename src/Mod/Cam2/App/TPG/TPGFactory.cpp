@@ -42,6 +42,9 @@
 
 using namespace Cam;
 
+
+//TYPESYSTEM_SOURCE_ABSTRACT(Cam::TPGFactoryInst, Base::Factory)
+
 TPGFactoryInst* TPGFactoryInst::_pcSingleton = NULL;
 
 TPGFactoryInst& TPGFactoryInst::instance(void)
@@ -65,12 +68,15 @@ void TPGFactoryInst::clearDescriptors()
 
 TPG * TPGFactoryInst::getPlugin(QString id)
 {
-    std::map<const std::string, Base::AbstractProducer*>::const_iterator it;
-    it = _mpcProducers.find(id.toStdString().c_str());
-    if (it != _mpcProducers.end()) {
-        //it->second->setValue(v);
-        return static_cast<TPG *>(it->second->Produce());
-    }
+
+//    std::map<const std::string, Base::AbstractProducer*>::const_iterator it;
+//    it = _mpcProducers.find(id.toStdString().c_str());
+//    if (it != _mpcProducers.end()) {
+//        //it->second->setValue(v);
+//        return static_cast<TPG *>(it->second->Produce());
+//    }
+
+
     // Try loading python modules
     return 0;
 }

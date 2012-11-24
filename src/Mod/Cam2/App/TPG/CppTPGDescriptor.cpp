@@ -20,33 +20,20 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
-#ifndef _PreComp_
-#endif
-
-#include "CppTPGDescriptorWrapper.h"
+#include "CppTPGDescriptor.h"
 
 namespace Cam {
 
-CppTPGDescriptorWrapper::CppTPGDescriptorWrapper(TPGDescriptor *descriptor, CppTPGPlugin *plugin/*=NULL*/)
-        : TPGDescriptor(*descriptor) {
-    this->descriptor = descriptor;
-    this->plugin = plugin;
+CppTPGDescriptor::CppTPGDescriptor(QString id, QString name, QString description)
+: TPGDescriptor(id, name, description, QString::fromAscii("CppTPG")) {
 }
 
-CppTPGDescriptorWrapper::~CppTPGDescriptorWrapper() {
+CppTPGDescriptor::~CppTPGDescriptor() {
 }
 
-/**
- * Creates a new instance of this TPG.  Sub-classes need to implement this
- */
-TPG* CppTPGDescriptorWrapper::make()
-{
-    if (plugin != NULL)
-        return plugin->getTPG(id);
-    if (descriptor != NULL)
-        return descriptor->make();
-    return NULL;
+
+TPG* make() {
+    return NULL; // NOTE: this isn't called. Just implemented to make it not abstract
 }
 
-} /* namespace CamGui */
+} /* namespace Cam */

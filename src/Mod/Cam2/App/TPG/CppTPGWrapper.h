@@ -24,6 +24,7 @@
 #define CPPTPGWRAPPER_H_
 
 #include "TPG.h"
+#include "CppTPGPlugin.h"
 
 namespace Cam {
 

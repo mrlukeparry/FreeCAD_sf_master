@@ -31,10 +31,11 @@
 #include <vector>
 #include <map>
 
+#include <Base/Type.h>
 #include <Base/BaseClass.h>
 #include <Base/BoundBox.h>
 
-#include "../GCode.h"
+//#include "../GCode.h"
 #include "TPGCache.h"
 #include "TPGSettings.h"
 
@@ -164,7 +165,7 @@ protected:
     */
 
     // [mrlukeparry] Prefer to use QString because it gives UTF compatible strings
-    QString id;
+    QString id; // To gerenate a new id run import uuid; str(uuid.uuid1()); on the python console
     QString name;
     QString description;
 

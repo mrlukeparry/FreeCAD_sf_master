@@ -27,8 +27,8 @@
 #include "../TPGFeature.h"
 #include "TPG.h"
 
-using namespace Cam;
 
+using namespace Cam;
 TYPESYSTEM_SOURCE_ABSTRACT(Cam::TPG, Base::BaseClass)
 
 TPG::TPG()

@@ -24,9 +24,12 @@
 #define CPPTPGDESCRIPTORWRAPPER_H_
 
 #include "TPGFactory.h"
+#include "TPG.h"
 #include "CppTPGPlugin.h"
 
 namespace Cam {
+
+class TPG;
 
 /**
  * A wrapper for the C++ TPGDescriptor objects.  This allows them to be deleted

@@ -20,6 +20,10 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "../PreCompiled.h"
+#ifndef _PreComp_
+#endif
+
 #include "CppTPGWrapper.h"
 
 namespace Cam {

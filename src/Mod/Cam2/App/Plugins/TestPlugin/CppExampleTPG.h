@@ -23,7 +23,10 @@
 #ifndef CPPEXAMPLETPG_H_
 #define CPPEXAMPLETPG_H_
 
+#include <vector>
+
 #include "../../TPG/TPG.h"
+#include "../../TPG/TPGFactory.h"
 
 namespace Cam {
 
@@ -35,7 +38,25 @@ class CppExampleTPG : public TPG {
 public:
     CppExampleTPG();
     virtual ~CppExampleTPG();
+
+    /**
+     * Run the TPG to generate the ToolPath code.
+     *
+     * Note: the return will change once the TP Language has been set in stone
+     */
+    virtual void run(TPGSettings *settings, QString action);
 };
 
 } /* namespace Cam */
+
+/// Library functions ///
+// Descriptors
+extern "C" std::vector<Cam::TPGDescriptor*>* getDescriptors();
+extern "C" void delDescriptors(std::vector<Cam::TPGDescriptor*>*);
+
+// TPGs
+extern "C" Cam::TPG* getTPG(QString);
+extern "C" void delTPG(Cam::TPG*);
+
+
 #endif /* CPPEXAMPLETPG_H_ */

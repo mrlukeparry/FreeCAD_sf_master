@@ -23,9 +23,9 @@
 #ifndef _CAM_TPGFACTORYINST_h_
 #define _CAM_TPGFACTORYINST_h_
 
-#include <Base/Exception.h>
 #include <Base/Factory.h>
-#include <QStringList>
+#include <Base/Exception.h>
+//#include <QStringList>
 #include <boost/iterator/iterator_concepts.hpp>
 
 #include "TPG.h"
@@ -33,6 +33,8 @@
 
 namespace Cam
 {
+
+class TPG;
 
 /**
  * A superclass for TPG Descriptors.  These describe the basic information
@@ -93,6 +95,8 @@ public:
 
 class CamExport TPGFactoryInst : public Base::Factory
 {
+    TYPESYSTEM_HEADER();
+
 public:
 
   static TPGFactoryInst& instance(void);
@@ -122,49 +126,51 @@ inline TPGFactoryInst& TPGFactory(void)
     return TPGFactoryInst::instance();
 }
 
-/**
- * Producer is used to register C++ TPG Plugins and produce the objects
- * */
-template <class CLASS>
-class CamExport TPGProducer : public Base::AbstractProducer
-{
-public:
-    TPGProducer (TPGDescriptor *descriptor)
-    {
-        TPGFactory().AddProducer(descriptor->id.toStdString().c_str(), this);
-        this->value = descriptor;
-    }
-
-    virtual ~TPGProducer(){}
-
-    virtual void* Produce () const
-    {
-        CLASS inst;
-        return (void*)inst.makeTPG(value); // Function Pointer
-    }
-
-    TPGDescriptor *value;
-};
-
-// Unfortunatly we have to implement this after the TPGProducer and in the header file.
-template <class CLASS>
-void TPGFactoryInst::registerPlugin(TPGDescriptor *descriptor)
-{
-    // We need to check if plugin of name has been registered and throw exception
-    std::map<const std::string, Base::AbstractProducer*>::const_iterator it;
-    it = _mpcProducers.find(descriptor->id.toStdString());
-
-    if (it != _mpcProducers.end())
-        throw new Base::Exception("A plugin with this ID has already been registered");
-
-    //We must register the producer
-    new Cam::TPGProducer<CLASS>(descriptor);
-
-    //Store some useful information (the descriptor) related to the plugin
-    d->tpgList.push_back(descriptor);
-
-
-};
+///**
+// * Producer is used to register C++ TPG Plugins and produce the objects
+// * */
+//template <class CLASS>
+//class CamExport TPGProducer : public Base::AbstractProducer
+//{
+//public:
+//    TPGProducer (const char* name)
+//    {
+//        TPGFactory().AddProducer(name, this);
+//    }
+//
+//    virtual ~TPGProducer(){}
+//    void setValue(int v)
+//    {
+//        this->value = v;
+//    }
+//    virtual void* Produce () const
+//    {
+//        CLASS inst;
+//        return (void*)inst.makeTPG(); // Function Pointer
+//    }
+//
+//    int value;
+//};
+//
+//// Unfortunatly we have to implement this after the TPGProducer and in the header file.
+//template <class CLASS>
+//void TPGFactoryInst::registerPlugin(TPGDescriptor *descriptor)
+//{
+//    // We need to check if plugin of name has been registered and throw exception
+//    std::map<const std::string, Base::AbstractProducer*>::const_iterator it;
+//    it = _mpcProducers.find(descriptor->id.toStdString());
+//
+//    if (it != _mpcProducers.end())
+//        throw new Base::Exception("A plugin with this ID has already been registered");
+//
+//    //We must register the producer
+//    new Cam::TPGProducer<CLASS>(descriptor->id.toStdString().c_str());
+//
+//    //Store some useful information (the descriptor) related to the plugin
+//    d->tpgList.push_back(descriptor);
+//
+//
+//};
 }
 
 #endif //_CAM_TPGFACTORYINST_h_

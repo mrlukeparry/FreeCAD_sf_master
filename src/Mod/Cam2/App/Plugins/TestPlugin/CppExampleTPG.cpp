@@ -20,17 +20,61 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "CppExampleTPG.h"
+#include "../../PreCompiled.h"
+#ifndef _PreComp_
+#endif
 
+#include "CppExampleTPG.h"
+#include "../../TPG/CppTPGDescriptor.h"
+
+/// Library functions ///
+// Descriptors
+extern "C" std::vector<Cam::TPGDescriptor*>* getDescriptors() {
+    std::vector<Cam::TPGDescriptor*>* descriptors = new std::vector<Cam::TPGDescriptor*>();
+    descriptors->push_back(new Cam::CppTPGDescriptor(QString::fromAscii("95744f1e-360f-11e2-bcd3-08002734b94f"),
+            QString::fromAscii("Example CPP TPG"),
+            QString::fromAscii("A simple example CPP TPG to demonstrating how to create one.")));
+}
+extern "C" void delDescriptors(std::vector<Cam::TPGDescriptor*>* descriptors) {
+    std::vector<Cam::TPGDescriptor*>::iterator itt = descriptors->begin();
+    for (;itt != descriptors->end(); ++itt)
+        delete *itt;
+    descriptors->clear();
+    delete descriptors;
+}
+
+// TPGs
+extern "C" Cam::TPG* getTPG(QString id) {
+    if (id == QString::fromAscii("95744f1e-360f-11e2-bcd3-08002734b94f"))
+        return new Cam::CppExampleTPG();
+    return NULL;
+}
+extern "C" void delTPG(Cam::TPG* tpg) {
+    if (tpg != NULL)
+        delete tpg;
+}
+
+
+/// TPG Implementation ///
 namespace Cam {
 
 CppExampleTPG::CppExampleTPG() {
-    // TODO Auto-generated constructor stub
-
+    id = QString::fromAscii("95744f1e-360f-11e2-bcd3-08002734b94f");
+    name = QString::fromAscii("Example CPP TPG");
+    description = QString::fromAscii("A simple example CPP TPG to demonstrating how to create one.");
 }
 
 CppExampleTPG::~CppExampleTPG() {
-    // TODO Auto-generated destructor stub
+}
+
+/**
+ * Run the TPG to generate the ToolPath code.
+ *
+ * Note: the return will change once the TP Language has been set in stone
+ */
+void TPG::run(TPGSettings *settings, QString action="")
+{
+    return;
 }
 
 } /* namespace Cam */

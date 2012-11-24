@@ -20,7 +20,12 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "../PreCompiled.h"
+#ifndef _PreComp_
+#endif
+
 #include "CppTPGPlugin.h"
+#include "CppTPGDescriptorWrapper.h"
 
 #include <dlfcn.h>
 
@@ -49,7 +54,7 @@ std::vector<TPGDescriptor*>* CppTPGPlugin::getDescriptors() {
             descriptors = getDescriptorsPtr();
         if (descriptors != NULL) {
             // wrap the descriptors
-            std::vector<TPGDescriptor*>* result = new std::vector<TPGDescriptor*>*();
+            std::vector<TPGDescriptor*>* result = new std::vector<TPGDescriptor*>();
             std::vector<TPGDescriptor*>::iterator it = descriptors->begin();
             for (; it != descriptors->end(); ++it)
                 result->push_back(new CppTPGDescriptorWrapper(*it, this));
@@ -89,7 +94,7 @@ bool CppTPGPlugin::isOpen() {
     if (library == NULL) {
         library = dlopen(filename.toAscii(), RTLD_LAZY);
         if (!library) {
-            error = QString(dlerror());
+            error = QString::fromAscii(dlerror());
             return false;
         }
 
@@ -97,16 +102,16 @@ bool CppTPGPlugin::isOpen() {
         dlerror();// reset errors
         getDescriptorsPtr = (getDescriptors_t*) dlsym(library, "getDescriptors");
         const char* dlsym_error = dlerror();
-        if (dlsym_error != NULL) {error = QString(dlsym_error); close(); return false;}
+        if (dlsym_error != NULL) {error = QString::fromAscii(dlsym_error); close(); return false;}
         delDescriptorsPtr = (delDescriptors_t*) dlsym(library, "delDescriptors");
         dlsym_error = dlerror();
-        if (dlsym_error != NULL) {error = QString(dlsym_error); close(); return false;}
+        if (dlsym_error != NULL) {error = QString::fromAscii(dlsym_error); close(); return false;}
         getTPGPtr = (getTPG_t*) dlsym(library, "getTPG");
         dlsym_error = dlerror();
-        if (dlsym_error != NULL) {error = QString(dlsym_error); close(); return false;}
+        if (dlsym_error != NULL) {error = QString::fromAscii(dlsym_error); close(); return false;}
         delTPGPtr = (delTPG_t*) dlsym(library, "delTPG");
         dlsym_error = dlerror();
-        if (dlsym_error != NULL) {error = QString(dlsym_error); close(); return false;}
+        if (dlsym_error != NULL) {error = QString::fromAscii(dlsym_error); close(); return false;}
     }
     return true;
 }

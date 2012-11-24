@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "TPGFactory.h"
+#include "CppTPGPlugin.h"
 
 namespace Cam {
 
@@ -34,6 +35,11 @@ namespace Cam {
  * This is the C++ equivalent to PyTPGManager
  */
 class CppTPGFactory {
+
+protected:
+    std::vector<CppTPGPlugin*> plugins;
+    std::vector<TPGDescriptor*> tpgs;
+
 public:
     CppTPGFactory();
     virtual ~CppTPGFactory();
