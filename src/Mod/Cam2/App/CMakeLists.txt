@@ -25,15 +25,6 @@ add_subdirectory(Libs)
 
 # generate_from_xml(CamPy)
 
-# C++ Plugins
-add_subdirectory(Plugins)
-
-# SET(Plugins_SRCS
-    # Plugins/MyPlugin.cpp
-    # Plugins/MyPlugin.h
-# )
-# SOURCE_GROUP("Plugins" FILES ${Plugins_SRCS})
-
 SET(Features_SRCS
     CamPartsList.cpp
     CamPartsList.h
@@ -54,7 +45,6 @@ SOURCE_GROUP("Features" FILES ${Features_SRCS})
 
 #Classes related to Tool Path Generation
 SET(TPG_SRCS
-    # ${Plugins_SRCS}
     TPG/TPG.cpp
     TPG/TPG.h
     TPG/TPGCache.cpp
@@ -112,35 +102,32 @@ SET(Cam_SRCS
 SET(Cam_Scripts
     Init.py
     InitGui.py
-
 )
 
 SET(TPG_Scripts
-	__init__.py
-	PyCam.py
-	PyTPG/__init__.py
+    __init__.py
+    PyCam.py
+    PyTPG/__init__.py
 
-	### Copy Python TPG's to the distribution directory ###
-	# Add yours here #
-	
-	# ExampleTPG module
-	PyTPG/ExampleTPG/__init__.py
-	PyTPG/ExampleTPG/ExampleTPG.py
+    ### Copy Python TPG's to the distribution directory ###
+    # Add yours here #
+    
+    # ExampleTPG module
+    PyTPG/ExampleTPG/__init__.py
+    PyTPG/ExampleTPG/ExampleTPG.py
 )
+
 SOURCE_GROUP("" FILES ${TPG_Scripts})
 ADD_CUSTOM_TARGET(TPG_Scripts ALL
     SOURCES ${TPG_Scripts}
 )
 fc_copy_sources("Cam" "${CMAKE_BINARY_DIR}/Mod/PyCam" ${TPG_Scripts}) #TODO: sort out the C++/Python conflicting package names so this can be moved back inside the Cam directory
+
 install(
     FILES
         ${TPG_Scripts}
     DESTINATION
         Mod/PyCam
-)
-
-SET(CamPythonPlugins
-    Plugins/Profiling/Profiling.tpg
 )
 
 add_library(Cam SHARED ${Cam_SRCS})
@@ -150,12 +137,6 @@ fc_target_copy_resource(Cam
     ${CMAKE_SOURCE_DIR}/src/Mod/Cam2
     ${CMAKE_BINARY_DIR}/Mod/Cam
     ${Cam_Scripts})
-
-fc_target_copy_resource(Cam
-    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2
-    ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/Mod/Cam
-    ${CamPythonPlugins}
-)
 
 if(MSVC)
     set_target_properties(Cam PROPERTIES SUFFIX ".pyd")
