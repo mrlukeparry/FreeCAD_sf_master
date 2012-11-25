@@ -44,6 +44,7 @@ namespace Cam
 
 class TPGFeature;
 class TPGSettings;
+class TPG;
 
 class CamExport TPG : public Base::BaseClass
 {

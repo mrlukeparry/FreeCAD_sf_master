@@ -53,12 +53,16 @@ std::vector<TPGDescriptor*>* CppTPGFactory::getDescriptors()
         for (; it != plugins.end(); ++it)
         {
             std::vector<TPGDescriptor*>*tpglist = (*it)->getDescriptors();
-            std::vector<TPGDescriptor*>::iterator itt = tpglist->begin();
-            for (;itt != tpglist->end(); ++itt)
-                tpgs.push_back(*itt);
-            delete tpglist;
+            if (tpglist != NULL) {
+                std::vector<TPGDescriptor*>::iterator itt = tpglist->begin();
+                for (;itt != tpglist->end(); ++itt)
+                    tpgs.push_back(*itt);
+                delete tpglist;
+            }
         }
     }
+
+    printf("Found %i CppTPG's\n", tpgs.size());
 
     // copy the tpg list cache
     std::vector<TPGDescriptor*> *result = new std::vector<TPGDescriptor*>();
@@ -68,12 +72,6 @@ std::vector<TPGDescriptor*>* CppTPGFactory::getDescriptors()
 
     return result;
 }
-
-/**
- * Get an instance of the given TPG id.
- * Note: maybe we don't need this with the make method on the descriptor
- */
-//TPG* CppTPGFactory::getTPG(QString id);
 
 /**
  * Searches the C++ TPG Plugin directory for Shared objects that implement the required API.
@@ -107,12 +105,14 @@ void CppTPGFactory::scanPlugins() {
                             QString lib = QString::fromAscii(plugindir);
                             lib.append(QString::fromAscii(ent->d_name));
                             plugins.push_back(new CppTPGPlugin(lib));
+                            printf("CppPlugin: %s\n", lib.toAscii().constData());
                         }
                     }
                 }
             }
         }
         closedir(dir);
+        printf("Found %i CppPlugins\n", plugins.size());
     }
 }
 

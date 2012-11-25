@@ -22,17 +22,17 @@ set(Cam_LIBS
 )
 
 add_subdirectory(Libs)
-add_subdirectory(Plugins)
 
 # generate_from_xml(CamPy)
 
 # C++ Plugins
+add_subdirectory(Plugins)
 
-SET(Plugins_SRCS
-    Plugins/MyPlugin.cpp
-    Plugins/MyPlugin.h
-)
-SOURCE_GROUP("Plugins" FILES ${Plugins_SRCS})
+# SET(Plugins_SRCS
+    # Plugins/MyPlugin.cpp
+    # Plugins/MyPlugin.h
+# )
+# SOURCE_GROUP("Plugins" FILES ${Plugins_SRCS})
 
 SET(Features_SRCS
     CamPartsList.cpp
@@ -54,7 +54,7 @@ SOURCE_GROUP("Features" FILES ${Features_SRCS})
 
 #Classes related to Tool Path Generation
 SET(TPG_SRCS
-    ${Plugins_SRCS}
+    # ${Plugins_SRCS}
     TPG/TPG.cpp
     TPG/TPG.h
     TPG/TPGCache.cpp

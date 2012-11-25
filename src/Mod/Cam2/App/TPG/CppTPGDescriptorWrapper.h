@@ -29,7 +29,7 @@
 
 namespace Cam {
 
-class TPG;
+//class TPG;
 
 /**
  * A wrapper for the C++ TPGDescriptor objects.  This allows them to be deleted

@@ -45,7 +45,7 @@ TPG* CppTPGDescriptorWrapper::make()
     if (plugin != NULL)
         return plugin->getTPG(id);
     if (descriptor != NULL)
-        return descriptor->make();
+        return descriptor->make();  // This doesn't work on a CppTPGDescriptor but will work on the cached version later.
     return NULL;
 }
 

@@ -34,7 +34,7 @@
 namespace Cam
 {
 
-class TPG;
+//class TPG;
 
 /**
  * A superclass for TPG Descriptors.  These describe the basic information
@@ -73,7 +73,7 @@ public:
   /**
    * Creates a new instance of this TPG.  Sub-classes need to implement this
    */
-  virtual TPG* make() = 0;
+  virtual Cam::TPG* make() = 0;
   virtual void print()
   {
     printf("- ('%s', '%s', '%s', '%s')\n",

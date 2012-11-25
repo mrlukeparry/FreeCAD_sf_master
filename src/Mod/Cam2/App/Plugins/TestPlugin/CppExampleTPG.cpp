@@ -34,6 +34,7 @@ extern "C" std::vector<Cam::TPGDescriptor*>* getDescriptors() {
     descriptors->push_back(new Cam::CppTPGDescriptor(QString::fromAscii("95744f1e-360f-11e2-bcd3-08002734b94f"),
             QString::fromAscii("Example CPP TPG"),
             QString::fromAscii("A simple example CPP TPG to demonstrating how to create one.")));
+    return descriptors;
 }
 extern "C" void delDescriptors(std::vector<Cam::TPGDescriptor*>* descriptors) {
     std::vector<Cam::TPGDescriptor*>::iterator itt = descriptors->begin();
@@ -74,6 +75,7 @@ CppExampleTPG::~CppExampleTPG() {
  */
 void TPG::run(TPGSettings *settings, QString action="")
 {
+    printf("This is where the TPG would generate the tool-path!\n");
     return;
 }
 

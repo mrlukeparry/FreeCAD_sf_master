@@ -33,7 +33,7 @@ CppTPGDescriptor::~CppTPGDescriptor() {
 
 
 TPG* make() {
-    return NULL; // NOTE: this isn't called. Just implemented to make it not abstract
+    return NULL; // NOTE: this shouldn't be called. Just implemented to make it not abstract.
 }
 
 } /* namespace Cam */
