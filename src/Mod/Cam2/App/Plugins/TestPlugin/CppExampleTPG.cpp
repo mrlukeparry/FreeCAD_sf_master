@@ -42,9 +42,9 @@ CPPTPG_API_SOURCE(Cam::CppExampleTPG, myID, myName, myDesc)
 namespace Cam {
 
 CppExampleTPG::CppExampleTPG() {
-    id = QString::fromAscii(myID);
-    name = QString::fromAscii(myName);
-    description = QString::fromAscii(myDesc);
+    id = QS(myID);
+    name = QS(myName);
+    description = QS(myDesc);
 }
 
 CppExampleTPG::~CppExampleTPG() {

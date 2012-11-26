@@ -27,15 +27,21 @@
 
 /// Macros to make it simpler to define a new CppTPG ///
 /**
+ * Support macros
+ */
+#define QS(_cs_) QString::fromAscii(_cs_)
+#define _TPGDescriptor(_type_, _id_, _name_, _desc_) new Cam::CppTPGDescriptor(QS(_id_), QS(_name_), QS(_desc_))
+#define _MakeTPG(_type_, _id_, _name_, _desc_) if (id == QString::fromAscii(_id_))\
+        return new _type_();
+/**
  * TPG Plugins that implement a single plugin should add this macro to its
  * source file
+ * TODO: see if its possible to make a nice macro that can handle multiple TPG's at once
  */
 #define CPPTPG_API_SOURCE(_type_, _id_, _name_, _desc_)\
 extern "C" std::vector<Cam::TPGDescriptor*>* getDescriptors() {\
     std::vector<Cam::TPGDescriptor*>* descriptors = new std::vector<Cam::TPGDescriptor*>();\
-    descriptors->push_back(new Cam::CppTPGDescriptor(QString::fromAscii(_id_),\
-            QString::fromAscii(_name_),\
-            QString::fromAscii(_desc_)));\
+    descriptors->push_back(_TPGDescriptor(_type_, _id_, _name_, _desc_));\
     return descriptors;\
 }\
 extern "C" void delDescriptors(std::vector<Cam::TPGDescriptor*>* descriptors) {\
@@ -46,8 +52,7 @@ extern "C" void delDescriptors(std::vector<Cam::TPGDescriptor*>* descriptors) {\
     delete descriptors;\
 }\
 extern "C" Cam::TPG* getTPG(QString id) {\
-    if (id == QString::fromAscii(_id_))\
-        return new Cam::CppExampleTPG();\
+    _MakeTPG(_type_, _id_, _name_, _desc_)\
     return NULL;\
 }\
 extern "C" void delTPG(Cam::TPG* tpg) {\
