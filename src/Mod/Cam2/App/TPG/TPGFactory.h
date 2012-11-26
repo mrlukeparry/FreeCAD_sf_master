@@ -106,8 +106,8 @@ public:
 
   const std::vector<TPGDescriptor*> & getPluginList() { return d->tpgList; }
 
-  template <class CLASS>
-  void registerPlugin(TPGDescriptor *);
+//  template <class CLASS>
+//  void registerPlugin(TPGDescriptor *);
 
 private:
   TPGFactoryInst(void);
