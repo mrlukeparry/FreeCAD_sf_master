@@ -25,8 +25,16 @@
 
 #include <vector>
 
-#include "../../TPG/TPG.h"
-#include "../../TPG/TPGFactory.h"
+#include <TPG/TPG.h>
+#include <TPG/TPGFactory.h>
+#include <TPG/CppTPG.h>
+
+
+/**
+ * Define the Cpp shared library interface functions
+ * Note: this must be outside the namespace declaration
+ */
+CPPTPG_API_HEADER()
 
 namespace Cam {
 
@@ -48,15 +56,5 @@ public:
 };
 
 } /* namespace Cam */
-
-/// Library functions ///
-// Descriptors
-extern "C" std::vector<Cam::TPGDescriptor*>* getDescriptors();
-extern "C" void delDescriptors(std::vector<Cam::TPGDescriptor*>*);
-
-// TPGs
-extern "C" Cam::TPG* getTPG(QString);
-extern "C" void delTPG(Cam::TPG*);
-
 
 #endif /* CPPEXAMPLETPG_H_ */

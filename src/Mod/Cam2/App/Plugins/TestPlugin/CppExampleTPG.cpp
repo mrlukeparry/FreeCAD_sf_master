@@ -20,49 +20,31 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
+#include <TPG/CppTPGDescriptor.h>
+
 #include "CppExampleTPG.h"
-#include "../../TPG/CppTPGDescriptor.h"
 
-/// Library functions ///
-// Descriptors
-extern "C" std::vector<Cam::TPGDescriptor*>* getDescriptors() {
-    std::vector<Cam::TPGDescriptor*>* descriptors = new std::vector<Cam::TPGDescriptor*>();
-    descriptors->push_back(new Cam::CppTPGDescriptor(QString::fromAscii("95744f1e-360f-11e2-bcd3-08002734b94f"),
-            QString::fromAscii("Example CPP TPG"),
-            QString::fromAscii("A simple example CPP TPG to demonstrating how to create one.")));
-    return descriptors;
-}
-extern "C" void delDescriptors(std::vector<Cam::TPGDescriptor*>* descriptors) {
-    std::vector<Cam::TPGDescriptor*>::iterator itt = descriptors->begin();
-    for (;itt != descriptors->end(); ++itt)
-        delete *itt;
-    descriptors->clear();
-    delete descriptors;
-}
+#define myID   "95744f1e-360f-11e2-bcd3-08002734b94f"
+#define myName "Example CPP TPG"
+#define myDesc "A simple example CPP TPG to demonstrating how to create one."
 
-// TPGs
-extern "C" Cam::TPG* getTPG(QString id) {
-    if (id == QString::fromAscii("95744f1e-360f-11e2-bcd3-08002734b94f"))
-        return new Cam::CppExampleTPG();
-    return NULL;
-}
-extern "C" void delTPG(Cam::TPG* tpg) {
-    if (tpg != NULL)
-        delete tpg;
-}
-
+/**
+ * Implement the Cpp shared library interface functions
+ * Note: this must be outside the namespace declaration
+ */
+CPPTPG_API_SOURCE(Cam::CppExampleTPG, myID, myName, myDesc)
 
 /// TPG Implementation ///
 namespace Cam {
 
 CppExampleTPG::CppExampleTPG() {
-    id = QString::fromAscii("95744f1e-360f-11e2-bcd3-08002734b94f");
-    name = QString::fromAscii("Example CPP TPG");
-    description = QString::fromAscii("A simple example CPP TPG to demonstrating how to create one.");
+    id = QString::fromAscii(myID);
+    name = QString::fromAscii(myName);
+    description = QString::fromAscii(myDesc);
 }
 
 CppExampleTPG::~CppExampleTPG() {
