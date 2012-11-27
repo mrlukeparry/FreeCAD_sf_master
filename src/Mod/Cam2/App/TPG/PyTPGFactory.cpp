@@ -142,11 +142,12 @@ bool PyTPGFactoryInst::pytest(PyObject* arg)
 }
 
 //////////// C++ API (to Python TPG's) ///////////////
+
 /**
  * Returns (by reference) the list of found Python Plugins.
  * This is a vector of PythonTPGDescriptors
  */
-std::vector<TPGDescriptor*> &PyTPGFactoryInst::scanPlugins() {
+void PyTPGFactoryInst::scanPlugins() {
     if (this->obj != NULL) {
         PyGILState_STATE state = PyGILState_Ensure();
         PyObject * result = PyObject_CallMethod(obj, "scanPlugins", NULL);
@@ -155,10 +156,10 @@ std::vector<TPGDescriptor*> &PyTPGFactoryInst::scanPlugins() {
 
                 // clean the current list
                 std::vector<Cam::TPGDescriptor*>::iterator it =
-                        this->descriptors.begin();
-                for (; it != this->descriptors.end(); ++it)
+                        this->tpgs.begin();
+                for (; it != this->tpgs.end(); ++it)
                     delete (*it);
-                this->descriptors.clear();
+                this->tpgs.clear();
 
                 // add the new items
                 int len = PyList_Size(result);
@@ -169,7 +170,7 @@ std::vector<TPGDescriptor*> &PyTPGFactoryInst::scanPlugins() {
                         PyObject *pname = PyTuple_GET_ITEM(tuple, 1);
                         PyObject *pdesc = PyTuple_GET_ITEM(tuple, 2);
 
-                        this->descriptors.push_back(
+                        this->tpgs.push_back(
                                 new PyTPGDescriptor(PythonUCToQString(pid),
                                         PythonUCToQString(pname),
                                         PythonUCToQString(pdesc)));
@@ -180,11 +181,31 @@ std::vector<TPGDescriptor*> &PyTPGFactoryInst::scanPlugins() {
         }
         PyGILState_Release(state);
     }
-    return this->descriptors;
+}
+/**
+ * Get a vector of all C++ TPG's that are known about
+ */
+std::vector<TPGDescriptor*>* PyTPGFactoryInst::getDescriptors()
+{
+    // cache a copy of the descriptors
+    if (tpgs.size() == 0)
+        this->scanPlugins();
+
+    printf("Found %i PyTPGs\n", tpgs.size());
+
+    // copy the tpg list cache
+    std::vector<TPGDescriptor*> *result = new std::vector<TPGDescriptor*>();
+    std::vector<TPGDescriptor*>::iterator itt = tpgs.begin();
+    for (;itt != tpgs.end(); ++itt)
+        result->push_back(*itt);
+
+    return result;
 }
 
 /**
  * Gets a TPG given its id.
+ *
+ * Note: used by the PyTPGDecriptor to get the required PyTPG
  */
 TPGPython *PyTPGFactoryInst::getPlugin(QString id)
 {
@@ -193,15 +214,18 @@ TPGPython *PyTPGFactoryInst::getPlugin(QString id)
     {
         PyObject *arg    = QStringToPythonUC(id);
         PyGILState_STATE state = PyGILState_Ensure();
+
+        // get the python class (TPG implementation)
         PyObject *result = PyObject_CallMethod(obj, "getPlugin", "(O)", arg);
         if (result != NULL) {
           if (PyType_Check(result)) {
+
+            // wrap in C++ TPG
             tpg = new TPGPython(result);
             PyGILState_Release(state);
             return tpg;
           } else
               printf("ERROR Unable to get Python Class'%s'\n", Py_TYPE(result)->tp_name);
-
           Py_DecRef(result);
         }
         PyGILState_Release(state);

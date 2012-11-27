@@ -55,7 +55,7 @@ CppExampleTPG::~CppExampleTPG() {
  *
  * Note: the return will change once the TP Language has been set in stone
  */
-void TPG::run(TPGSettings *settings, QString action="")
+void CppExampleTPG::run(TPGSettings *settings, QString action="")
 {
     printf("This is where the TPG would generate the tool-path!\n");
     return;

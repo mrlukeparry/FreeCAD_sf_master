@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2012 Andrew Robinson  (andrewjrobinson@gmail.com)       *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -39,6 +40,8 @@
 #include "TPG.h"
 #include "TPGPython.h"
 #include "TPGFactory.h"
+#include "PyTPGFactory.h"
+#include "CppTPGFactory.h"
 
 using namespace Cam;
 
@@ -52,6 +55,23 @@ TPGFactoryInst& TPGFactoryInst::instance(void)
     }
 
     return *_pcSingleton;
+}
+
+TPGFactoryInst::TPGFactoryInst(void)
+{
+    d = new TPGFactoryInstP;
+}
+
+TPGFactoryInst::~TPGFactoryInst(void)
+{
+    delete d;
+}
+
+void TPGFactoryInst::destruct (void)
+{
+    if (_pcSingleton != 0)
+        delete _pcSingleton;
+    _pcSingleton = 0;
 }
 
 void TPGFactoryInst::clearDescriptors()
@@ -74,19 +94,48 @@ TPG * TPGFactoryInst::getPlugin(QString id)
     return 0;
 }
 
-TPGFactoryInst::TPGFactoryInst(void)
-{
-    d = new TPGFactoryInstP;
+/**
+ * Scans for TPG's and updates internal cache of known tpgs
+ *
+ * @see getDescriptors to get a copy of these.
+ */
+void TPGFactoryInst::scanPlugins(short tpgtype /*= ALL_TPG*/) {
+
+    // scan for plugins
+    if (tpgtype & PYTHON_TPG > 0)
+        Cam::PyTPGFactory().scanPlugins();
+//    if (tpgtype & CPP_TPG > 0)
+//        Cam::CppTPGFactory().scanPlugins();
+
+    // clear my cache (if any)
+    clearDescriptors();
+
+    // update cache
+    std::vector<TPGDescriptor*>* t = Cam::PyTPGFactory().getDescriptors();
+    for (std::vector<TPGDescriptor*>::iterator it = t->begin(); it != t->end(); ++it)
+        d->tpgList.push_back(*it);
+    delete t;
+//    t = Cam::CppTPGFactory().getDescriptors();
+//    for (std::vector<TPGDescriptor*>::iterator it = t->begin(); it != t->end(); ++it)
+//        d->tpgList.push_back(*it);
+//    delete t;
 }
 
-TPGFactoryInst::~TPGFactoryInst(void)
+/**
+ * Get a vector of all C++ TPG's that are known about
+ */
+std::vector<TPGDescriptor*>* TPGFactoryInst::getDescriptors()
 {
-    delete d;
+    // cache a copy of the descriptors
+    if (d->tpgList.size() == 0)
+        this->scanPlugins();
+
+    // copy the tpg list cache
+    std::vector<TPGDescriptor*> *result = new std::vector<TPGDescriptor*>();
+    for (std::vector<TPGDescriptor*>::iterator it = d->tpgList.begin(); it != d->tpgList.end(); ++it)
+        result->push_back(*it);
+
+    return result;
 }
 
-void TPGFactoryInst::destruct (void)
-{
-    if (_pcSingleton != 0)
-        delete _pcSingleton;
-    _pcSingleton = 0;
-}
+

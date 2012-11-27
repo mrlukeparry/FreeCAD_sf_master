@@ -29,7 +29,10 @@
 namespace Cam {
 
 CppTPGDescriptorWrapper::CppTPGDescriptorWrapper(TPGDescriptor *descriptor, CppTPGPlugin *plugin/*=NULL*/)
-        : TPGDescriptor(*descriptor) {
+: TPGDescriptor(descriptor) {
+
+    if (descriptor == NULL)
+        printf("Warning: CppTPGDescriptorWrapper is wrapping NULL\n");
     this->descriptor = descriptor;
     this->plugin = plugin;
 }

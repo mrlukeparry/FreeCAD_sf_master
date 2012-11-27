@@ -29,48 +29,25 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
+#include <App/Application.h>
+
 #include "CppTPGFactory.h"
 
 namespace Cam {
+CppTPGFactoryInst* CppTPGFactoryInst::_pcSingleton = NULL;
 
-CppTPGFactory::CppTPGFactory() {
-}
-
-CppTPGFactory::~CppTPGFactory() {
-}
-
-
-
-/**
- * Get a vector of all C++ TPG's that are known about
- */
-std::vector<TPGDescriptor*>* CppTPGFactory::getDescriptors()
+CppTPGFactoryInst& CppTPGFactoryInst::instance(void)
 {
-    // cache a copy of the descriptors
-    if (tpgs.size() == 0) //TODO: allow this to be done after each reload
-    {
-        std::vector<CppTPGPlugin*>::iterator it = plugins.begin();
-        for (; it != plugins.end(); ++it)
-        {
-            std::vector<TPGDescriptor*>*tpglist = (*it)->getDescriptors();
-            if (tpglist != NULL) {
-                std::vector<TPGDescriptor*>::iterator itt = tpglist->begin();
-                for (;itt != tpglist->end(); ++itt)
-                    tpgs.push_back(*itt);
-                delete tpglist;
-            }
-        }
-    }
+    if (_pcSingleton == NULL)
+        _pcSingleton = new CppTPGFactoryInst();
 
-    printf("Found %i CppTPG's\n", tpgs.size());
+    return *_pcSingleton;
+}
 
-    // copy the tpg list cache
-    std::vector<TPGDescriptor*> *result = new std::vector<TPGDescriptor*>();
-    std::vector<TPGDescriptor*>::iterator itt = tpgs.begin();
-    for (;itt != tpgs.end(); ++itt)
-        result->push_back(*itt);
+CppTPGFactoryInst::CppTPGFactoryInst() {
+}
 
-    return result;
+CppTPGFactoryInst::~CppTPGFactoryInst() {
 }
 
 /**
@@ -78,8 +55,14 @@ std::vector<TPGDescriptor*>* CppTPGFactory::getDescriptors()
  * TODO: make this clear out libraries that aren't used and not reload libs that are in use
  * TODO: ultimately if the TPG lib file has changed this would delete all instances of the old TPG and recreate them from the new library.
  */
-void CppTPGFactory::scanPlugins() {
-    char *plugindir = "./Mod/Cam/CppTPG";
+void CppTPGFactoryInst::scanPlugins() {
+    std::string path = App::GetApplication().Config().at("AppHomePath");
+    path.append("Mod/Cam/CppTPG/");
+    const char *plugindir = path.c_str();
+    unsigned int pathlen = path.size();
+    char *pluginname = new char[pathlen+257];
+    strcpy(pluginname, plugindir);
+    printf("Scanning: %s\n", plugindir);
 
     // open directory
     DIR *dir = opendir(plugindir);
@@ -89,7 +72,8 @@ void CppTPGFactory::scanPlugins() {
 
         // scan the directory
         while ((ent = readdir(dir)) != NULL) {
-            if (stat(plugindir, &info) == 0) {
+            strncpy(&pluginname[pathlen], ent->d_name, 256);
+            if (stat(pluginname, &info) == 0) {
 
                 // for files that are executable
                 if (S_ISREG(info.st_mode) || S_ISLNK(info.st_mode)) {
@@ -102,8 +86,7 @@ void CppTPGFactory::scanPlugins() {
                                 && ent->d_name[len - 1] == 'o') {
 
                             // make library pointer
-                            QString lib = QString::fromAscii(plugindir);
-                            lib.append(QString::fromAscii(ent->d_name));
+                            QString lib = QString::fromAscii(pluginname);
                             plugins.push_back(new CppTPGPlugin(lib));
                             printf("CppPlugin: %s\n", lib.toAscii().constData());
                         }
@@ -114,6 +97,37 @@ void CppTPGFactory::scanPlugins() {
         closedir(dir);
         printf("Found %i CppPlugins\n", plugins.size());
     }
+}
+
+/**
+ * Get a vector of all C++ TPG's that are known about
+ */
+std::vector<TPGDescriptor*>* CppTPGFactoryInst::getDescriptors()
+{
+    // cache a copy of the descriptors
+    if (tpgs.size() == 0) //TODO: allow this to be done after each reload
+    {
+        for (std::vector<CppTPGPlugin*>::iterator it = plugins.begin(); it != plugins.end(); ++it)
+        {
+
+            std::vector<TPGDescriptor*>*tpglist = (*it)->getDescriptors();
+            if (tpglist != NULL) {
+                std::vector<TPGDescriptor*>::iterator itt = tpglist->begin();
+                for (;itt != tpglist->end(); ++itt)
+                    tpgs.push_back(*itt);
+                delete tpglist;
+            }
+        }
+    }
+
+    printf("Found %i CppTPGs\n", tpgs.size());
+
+    // copy the tpg list cache
+    std::vector<TPGDescriptor*> *result = new std::vector<TPGDescriptor*>();
+    for (std::vector<TPGDescriptor*>::iterator itt = tpgs.begin(); itt != tpgs.end(); ++itt)
+        result->push_back(*itt);
+
+    return result;
 }
 
 } /* namespace CamGui */

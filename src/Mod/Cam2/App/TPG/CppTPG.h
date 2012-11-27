@@ -42,6 +42,7 @@
 extern "C" std::vector<Cam::TPGDescriptor*>* getDescriptors() {\
     std::vector<Cam::TPGDescriptor*>* descriptors = new std::vector<Cam::TPGDescriptor*>();\
     descriptors->push_back(_TPGDescriptor(_type_, _id_, _name_, _desc_));\
+    printf("getDescriptors(): %s result: %p\n", _name_, descriptors);\
     return descriptors;\
 }\
 extern "C" void delDescriptors(std::vector<Cam::TPGDescriptor*>* descriptors) {\

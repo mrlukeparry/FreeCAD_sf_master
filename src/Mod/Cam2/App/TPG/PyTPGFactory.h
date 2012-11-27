@@ -48,8 +48,7 @@ protected:
 	PyTPGFactoryInst();
 	~PyTPGFactoryInst();
 
-//	std::vector<QString> plugins;
-	std::vector<TPGDescriptor *> descriptors;
+	std::vector<TPGDescriptor *> tpgs;
 
 
     QString PythonUCToQString(PyObject *obj);
@@ -62,26 +61,39 @@ public:
 	static void destruct (void);
 
 	/**
-	 * Set the PyTPGManager (python) callback object
+	 * Set the PyTPGFactory (python) callback object
 	 */
-	void setCallback(PyObject* obj); //, PyObject* method
+	void setCallback(PyObject* obj);
+
 	/**
-	 * Gets the PyTPGManager python class from the given module and sets it as the
+	 * Gets the PyTPGFactory python class from the given module and sets it as the
 	 * callback
 	 */
 	void loadCallbackFromModule(PyObject *mod);
 
-	// C++ API (to Python TPG's)
-	/**
-	 * Returns (by reference) the list of found Python Plugins.
-	 * This is a list of PythonTPGDescriptors
-	 *
-	 * TODO: make this a const return value.
-	 */
-	std::vector<TPGDescriptor*> &scanPlugins();
+	/// C++ API (to Python TPG's) ///
+//	/**
+//	 * Returns (by reference) the list of found Python Plugins.
+//	 * This is a list of PythonTPGDescriptors
+//	 *
+//	 * TODO: make this a const return value.
+//	 * @deprecated
+//	 */
+//	std::vector<TPGDescriptor*> &scanPlugins();
+
+    /**
+     * Searches for Python TPG's.
+     */
+    void scanPlugins();
+
+    /**
+     * Get a vector of all Python TPG's that are known about
+     */
+    std::vector<TPGDescriptor*>* getDescriptors();
 
 	/**
 	 * Gets a TPG given its id.
+	 * @deprecated, use the descriptors make() method to get a plugin instance
 	 */
 	TPGPython *getPlugin(QString id);
 

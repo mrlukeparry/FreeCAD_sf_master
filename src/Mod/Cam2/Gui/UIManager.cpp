@@ -127,19 +127,14 @@ void UIManagerInst::addTPG(Cam::TPGDescriptor *tpgDescriptor)
  */
 void UIManagerInst::reloadTPGs()
 {
-  if (!Py_IsInitialized())
-    QMessageBox::information( Gui::getMainWindow(), "Information", "Python not initialised" );
-  else {
+    // scan for TPGs
+    Cam::TPGFactory().scanPlugins();
+
     // get the TPGs
-    std::vector<Cam::TPGDescriptor*> *plugins = &Cam::PyTPGFactory().scanPlugins();
-    printf("Plugins:\n");
-    for (int i = 0; i < plugins->size(); i++) {
-      (*plugins)[i]->print();
-    }
+    std::vector<Cam::TPGDescriptor*> *plugins = Cam::TPGFactory().getDescriptors();
 
     CamGui::TPGListModel *model = new CamGui::TPGListModel(plugins);
     Q_EMIT updatedTPGList(model);
-  }
 }
 
 #include "moc_UIManager.cpp"

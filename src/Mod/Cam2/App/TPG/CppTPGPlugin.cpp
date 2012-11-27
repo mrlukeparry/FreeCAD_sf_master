@@ -38,6 +38,7 @@ CppTPGPlugin::CppTPGPlugin(QString filename) {
     delDescriptorsPtr = NULL;
     getTPGPtr = NULL;
     delTPGPtr = NULL;
+    descriptors == NULL;
 }
 
 CppTPGPlugin::~CppTPGPlugin() {
@@ -53,14 +54,19 @@ std::vector<TPGDescriptor*>* CppTPGPlugin::getDescriptors() {
         if (descriptors == NULL)
             descriptors = getDescriptorsPtr();
         if (descriptors != NULL) {
+            printf("Descriptors: %p\n", descriptors);
             // wrap the descriptors
             std::vector<TPGDescriptor*>* result = new std::vector<TPGDescriptor*>();
-            std::vector<TPGDescriptor*>::iterator it = descriptors->begin();
-            for (; it != descriptors->end(); ++it)
-                result->push_back(new CppTPGDescriptorWrapper(*it, this));
+            for (std::vector<TPGDescriptor*>::iterator it = descriptors->begin(); it != descriptors->end(); ++it)
+            {
+                printf("Descriptor: %p\n", it);
+                if (*it != NULL)
+                    result->push_back(new CppTPGDescriptorWrapper(*it, this));
+            }
             return result;
         }
     }
+    printf("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
     return NULL;
 }
 
@@ -74,6 +80,7 @@ TPG* CppTPGPlugin::getTPG(QString id) {
     if (isOpen()) {
         return getTPGPtr(id);
     }
+    printf("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
     return NULL;
 }
 
@@ -85,6 +92,7 @@ void CppTPGPlugin::delTPG(TPG* tpg) {
         if (tpg)
             delTPGPtr(tpg);
     }
+    printf("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
 }
 
 /**
@@ -134,6 +142,7 @@ void CppTPGPlugin::close() {
         getTPGPtr = NULL;
         delTPGPtr = NULL;
     }
+    printf("Closing: %s\n", this->filename.toAscii().constData());
 }
 
 } /* namespace CamGui */

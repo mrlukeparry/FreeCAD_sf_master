@@ -32,17 +32,24 @@ namespace Cam {
 
 /**
  * A C++ TPG Factory class.  It manages the library files and the library cache.
- * This is the C++ equivalent to PyTPGManager
+ * This is the C++ equivalent to PyTPGFactory
  */
-class CppTPGFactory {
+class CppTPGFactoryInst {
 
 protected:
+    static CppTPGFactoryInst* _pcSingleton;
+
     std::vector<CppTPGPlugin*> plugins;
     std::vector<TPGDescriptor*> tpgs;
 
+    CppTPGFactoryInst();
+    virtual ~CppTPGFactoryInst();
+
 public:
-    CppTPGFactory();
-    virtual ~CppTPGFactory();
+
+    // singleton manipators
+    static CppTPGFactoryInst& instance(void);
+    static void destruct (void);
 
     /**
      * Get a vector of all C++ TPG's that are known about
@@ -50,16 +57,16 @@ public:
     std::vector<TPGDescriptor*>* getDescriptors();
 
     /**
-     * Get an instance of the given TPG id.
-     * Note: maybe we don't need this with the make method on the descriptor
-     */
-//    TPG* getTPG(QString id);
-
-    /**
      * Searches the C++ TPG Plugin directory for Shared objects that implement the required API.
      */
     void scanPlugins();
 };
+
+/// Get the global instance
+inline CppTPGFactoryInst& CppTPGFactory(void)
+{
+    return CppTPGFactoryInst::instance();
+}
 
 } /* namespace CamGui */
 #endif /* CPPTPGFACTORY_H_ */

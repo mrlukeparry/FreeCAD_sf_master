@@ -1,24 +1,25 @@
 /***************************************************************************
-* Copyright (c) Luke Parry (l.parry@warwick.ac.uk) 2012 *
-* *
-* This file is part of the FreeCAD CAx development system. *
-* *
-* This library is free software; you can redistribute it and/or *
-* modify it under the terms of the GNU Library General Public *
-* License as published by the Free Software Foundation; either *
-* version 2 of the License, or (at your option) any later version. *
-* *
-* This library is distributed in the hope that it will be useful, *
-* but WITHOUT ANY WARRANTY; without even the implied warranty of *
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the *
-* GNU Library General Public License for more details. *
-* *
-* You should have received a copy of the GNU Library General Public *
-* License along with this library; see the file COPYING.LIB. If not, *
-* write to the Free Software Foundation, Inc., 59 Temple Place, *
-* Suite 330, Boston, MA 02111-1307, USA *
-* *
-***************************************************************************/
+ *   Copyright (c) Luke Parry (l.parry@warwick.ac.uk) 2012                 *
+ *   Copyright (c) 2012 Andrew Robinson  (andrewjrobinson@gmail.com)       *
+ *                                                                         *
+ *   This file is part of the FreeCAD CAx development system.              *
+ *                                                                         *
+ *   This library is free software; you can redistribute it and/or         *
+ *   modify it under the terms of the GNU Library General Public           *
+ *   License as published by the Free Software Foundation; either          *
+ *   version 2 of the License, or (at your option) any later version.      *
+ *                                                                         *
+ *   This library  is distributed in the hope that it will be useful,      *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU Library General Public License for more details.                  *
+ *                                                                         *
+ *   You should have received a copy of the GNU Library General Public     *
+ *   License along with this library; see the file COPYING.LIB. If not,    *
+ *   write to the Free Software Foundation, Inc., 59 Temple Place,         *
+ *   Suite 330, Boston, MA  02111-1307, USA                                *
+ *                                                                         *
+ ***************************************************************************/
 
 #ifndef _CAM_TPGFACTORYINST_h_
 #define _CAM_TPGFACTORYINST_h_
@@ -30,6 +31,10 @@
 
 #include "TPG.h"
 //#include "../Support.h"
+
+#define PYTHON_TPG  1
+#define CPP_TPG     2
+#define ALL_TPG     3
 
 namespace Cam
 {
@@ -68,6 +73,12 @@ public:
       this->description = copy.description;
       this->type = copy.type;
   }
+  TPGDescriptor(const TPGDescriptor *copy) {
+      this->id = copy->id;
+      this->name = copy->name;
+      this->description = copy->description;
+      this->type = copy->type;
+  }
   virtual ~TPGDescriptor() {}
 
   /**
@@ -93,21 +104,28 @@ public:
   std::vector<TPGDescriptor*> tpgList;
 };
 
-class CamExport TPGFactoryInst // : public Base::Factory
+class CamExport TPGFactoryInst
 {
-//    TYPESYSTEM_HEADER();
 
 public:
-
   static TPGFactoryInst& instance(void);
-
   static void destruct (void);
   TPG * getPlugin(QString id);
 
-  const std::vector<TPGDescriptor*> & getPluginList() { return d->tpgList; }
+  /**
+   * Searches for TPG's (both Python and Cpp).
+   */
+  void scanPlugins(short typetype = ALL_TPG);
 
-//  template <class CLASS>
-//  void registerPlugin(TPGDescriptor *);
+  /**
+   * Get a vector of all Python TPG's that are known about
+   */
+  std::vector<TPGDescriptor*>* getDescriptors();
+
+  /**
+   * @deprecated, use getDescriptors() instead
+   */
+  const std::vector<TPGDescriptor*> & getPluginList() { return d->tpgList; }
 
 private:
   TPGFactoryInst(void);
@@ -126,51 +144,6 @@ inline TPGFactoryInst& TPGFactory(void)
     return TPGFactoryInst::instance();
 }
 
-///**
-// * Producer is used to register C++ TPG Plugins and produce the objects
-// * */
-//template <class CLASS>
-//class CamExport TPGProducer : public Base::AbstractProducer
-//{
-//public:
-//    TPGProducer (const char* name)
-//    {
-//        TPGFactory().AddProducer(name, this);
-//    }
-//
-//    virtual ~TPGProducer(){}
-//    void setValue(int v)
-//    {
-//        this->value = v;
-//    }
-//    virtual void* Produce () const
-//    {
-//        CLASS inst;
-//        return (void*)inst.makeTPG(); // Function Pointer
-//    }
-//
-//    int value;
-//};
-//
-//// Unfortunatly we have to implement this after the TPGProducer and in the header file.
-//template <class CLASS>
-//void TPGFactoryInst::registerPlugin(TPGDescriptor *descriptor)
-//{
-//    // We need to check if plugin of name has been registered and throw exception
-//    std::map<const std::string, Base::AbstractProducer*>::const_iterator it;
-//    it = _mpcProducers.find(descriptor->id.toStdString());
-//
-//    if (it != _mpcProducers.end())
-//        throw new Base::Exception("A plugin with this ID has already been registered");
-//
-//    //We must register the producer
-//    new Cam::TPGProducer<CLASS>(descriptor->id.toStdString().c_str());
-//
-//    //Store some useful information (the descriptor) related to the plugin
-//    d->tpgList.push_back(descriptor);
-//
-//
-//};
 }
 
 #endif //_CAM_TPGFACTORYINST_h_
