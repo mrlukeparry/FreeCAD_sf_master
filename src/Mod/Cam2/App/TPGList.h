@@ -87,15 +87,15 @@ public:
     /// from base class
     //     virtual PyObject *getPyObject(void);
     virtual unsigned int getMemSize(void) const;
-    virtual void Save(Base::Writer &/*writer*/) const;
-    virtual void Restore(Base::XMLReader &/*reader*/);
+//     virtual void Save(Base::Writer &/*writer*/) const;
+//     virtual void Restore(Base::XMLReader &/*reader*/);
 
 protected:
 
       /// Useful helpful function for calculating the mesh for individual face
     /// get called by the container when a property has changed
     virtual void onChanged(const App::Property* /*prop*/);
-    virtual void onDocumentRestored();
+//     virtual void onDocumentRestored();
     virtual void onFinishDuplicating();
 
 private:

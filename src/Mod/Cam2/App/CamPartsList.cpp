@@ -117,7 +117,15 @@ int CamPartsList::removePart(const char *name)
         }
     }
     return -1;
+}
 
+int CamPartsList::clearParts()
+{
+    const std::vector<App::DocumentObject *> vals = ExternalGeometry.getValues();
+    std::vector<App::DocumentObject *> newVals;
+
+    ExternalGeometry.setValues(newVals);
+    return ExternalGeometry.getSize();
 }
 
 void CamPartsList::generateGeometry()
@@ -283,8 +291,10 @@ void CamPartsList::transferToArray(const TopoDS_Face& aFace,gp_Vec** vertices,gp
 
 App::DocumentObjectExecReturn *CamPartsList::execute(void)
 {
-    this->touch();
-    return App::DocumentObject::StdReturn;
+    if(this->ExternalGeometry.getValues().size() > 0)
+        return App::DocumentObject::StdReturn;
+    else
+      return new App::DocumentObjectExecReturn("Selection is empty");
 }
 
 // PyObject *CamPartsList::getPyObject(void)

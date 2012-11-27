@@ -36,8 +36,9 @@ qt4_add_resources(CamGui_SRCS Resources/Cam.qrc)
 
 set(CamGui_MOC_HDRS
     TaskDialog/TaskDlgEditCamFeature.h
+    TaskDialog/TaskDlgEditCamPartsList.
+    TaskDialog/TaskDlgEditStockGeometry.h
     TaskDialog/TaskDlgEditTPGFeature.h
-    TaskDialog/TaskDlgEditCamPartsList.h
     CamProjectDockWindow.h
     ToolPathDockWindow.h
     TPGLibraryDockWindow.h    
@@ -62,10 +63,12 @@ SET(CamGui_SRCS
     PreCompiled.h
     TaskDialog/TaskDlgEditCamFeature.cpp
     TaskDialog/TaskDlgEditCamFeature.h
-    TaskDialog/TaskDlgEditTPGFeature.cpp
-    TaskDialog/TaskDlgEditTPGFeature.h
     TaskDialog/TaskDlgEditCamPartsList.cpp
     TaskDialog/TaskDlgEditCamPartsList.h
+    TaskDialog/TaskDlgEditStockGeometry.cpp
+    TaskDialog/TaskDlgEditStockGeometry.h
+    TaskDialog/TaskDlgEditTPGFeature.cpp
+    TaskDialog/TaskDlgEditTPGFeature.h
     Workbench.cpp
     Workbench.h
     ViewProviderCamFeature.cpp

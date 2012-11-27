@@ -38,6 +38,8 @@
 #include <Gui/SoFCBoundingBox.h>
 #include <Gui/View3DInventor.h>
 
+#include "TaskDialog/TaskDlgEditCamFeature.h"
+#include "TaskDialog/TaskDlgEditStockGeometry.h"
 #include "../App/StockGeometry.h"
 #include "ViewProviderStockGeometry.h"
 
@@ -58,39 +60,44 @@ void ViewProviderStockGeometry::setupContextMenu(QMenu *menu, QObject *receiver,
     menu->addAction(QObject::tr("Edit Stock Geometry"), receiver, member);
 }
 
+
 bool ViewProviderStockGeometry::setEdit(int ModNum)
 {
    // When double-clicking on the item for this sketch the
     // object unsets and sets its edit mode without closing
     // the task panel
-//     Gui::TaskView::TaskDialog *dlg = Gui::Control().activeDialog();
-//     TaskDlgRender *taskDlgRender = qobject_cast<TaskDlgRender *>(dlg);
-// //     if (sketchDlg && sketchDlg->getSketchView() != this)
-// //         sketchDlg = 0; // another sketch left open its task panel
-//     if (dlg && !taskDlgRender) {
-//         QMessageBox msgBox;
-//         msgBox.setText(QObject::tr("A dialog is already open in the task panel"));
-//         msgBox.setInformativeText(QObject::tr("Do you want to close this dialog?"));
-//         msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-//         msgBox.setDefaultButton(QMessageBox::Yes);
-//         int ret = msgBox.exec();
-//         if (ret == QMessageBox::Yes)
-//             Gui::Control().closeDialog();
-//         else
-//             return false;
-//     }
-    Gui::Selection().clearSelection();
-// 
-// 
-//     //start the edit dialog
-//     if (taskDlgRender)
-//         Gui::Control().showDialog(taskDlgRender);
-//     else
-//         Gui::Control().showDialog(new TaskDlgRender(this));
-// 
-//     edit = true;
-//     createInventorNodes();
-//     draw();
+    Gui::TaskView::TaskDialog *dlg = Gui::Control().activeDialog();
+    TaskDlgEditStockGeometry *taskDlgStockGeom = qobject_cast<TaskDlgEditStockGeometry *>(dlg);
+    
+//     if (sketchDlg && sketchDlg->getSketchView() != this)
+//         sketchDlg = 0; // another sketch left open its task panel
+    if (dlg && !taskDlgStockGeom ) {
+        QMessageBox msgBox;
+        msgBox.setText(QObject::tr("A dialog is already open in the task panel"));
+        msgBox.setInformativeText(QObject::tr("Do you want to close this dialog?"));
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::Yes);
+        int ret = msgBox.exec();
+        if (ret == QMessageBox::Yes)
+            Gui::Control().closeDialog();
+        else
+            return false;
+    }
+
+    // Set the selection to what was stored
+    if(getObject()->Geometry.getValue() != NULL)
+    {
+        std::vector<App::DocumentObject *> objs;
+        objs.push_back(getObject()->Geometry.getValue());
+        Gui::Selection().setSelection(getObject()->getDocument()->getName(), objs);
+    }
+    
+    //start the edit dialog
+    if (taskDlgStockGeom)
+        Gui::Control().showDialog(taskDlgStockGeom);
+    else
+        Gui::Control().showDialog(new TaskDlgEditStockGeometry(this));
+
     return true;
 }
 
@@ -115,7 +122,11 @@ void ViewProviderStockGeometry::unsetEditViewer(Gui::View3DInventorViewer* viewe
 void ViewProviderStockGeometry::unsetEdit(int ModNum)
 {
     // clear the selection and set the new/edited sketch(convenience)
+  // clear the selection and set the new/edited sketch(convenience)
     Gui::Selection().clearSelection();
+
+    // when pressing ESC make sure to close the dialog
+    Gui::Control().closeDialog();
 }
 
 Cam::StockGeometry* ViewProviderStockGeometry::getObject() const

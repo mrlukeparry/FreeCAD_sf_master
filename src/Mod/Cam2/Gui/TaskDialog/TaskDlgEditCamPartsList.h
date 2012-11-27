@@ -24,13 +24,13 @@
 #define CAMGUI__TaskDlgEditCamPartsList_H
 
 #include <Gui/TaskView/TaskDialog.h>
-
+#include <Gui/Selection.h>
 #include "../ViewProviderCamPartsList.h"
 
 namespace CamGui {
 
 /// simulation dialog for the TaskView
-class CamGuiExport TaskDlgEditCamPartsList : public Gui::TaskView::TaskDialog
+class CamGuiExport TaskDlgEditCamPartsList : public Gui::TaskView::TaskDialog, public Gui::SelectionObserver
 {
     Q_OBJECT
 
@@ -53,9 +53,11 @@ public:
     virtual bool isAllowedAlterDocument(void) const
     { return false; }
 
+    void onSelectionChanged(const Gui::SelectionChanges& msg);
+    
     /// returns for Close and Help button 
     virtual QDialogButtonBox::StandardButtons getStandardButtons(void) const
-    { return QDialogButtonBox::Close|QDialogButtonBox::Help; }
+    { return QDialogButtonBox::Save|QDialogButtonBox::Close; }
 
 protected:
     ViewProviderCamPartsList   *camPartsListView;

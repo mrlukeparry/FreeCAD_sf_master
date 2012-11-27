@@ -199,17 +199,17 @@ unsigned int TPGList::getMemSize(void) const
     return 0;
 }
 
-void TPGList::Save(Writer &writer) const
-{
-    // save the father classes
-    App::DocumentObject::Save(writer);
-}
-
-void TPGList::Restore(XMLReader &reader)
-{
-    // read the father classes
-    App::DocumentObject::Restore(reader);
-}
+// void TPGList::Save(Writer &writer) const
+// {
+//     // save the father classes
+//     App::DocumentObject::Save(writer);
+// }
+// 
+// void TPGList::Restore(XMLReader &reader)
+// {
+//     // read the father classes
+//     App::DocumentObject::Restore(reader);
+// }
 
 void TPGList::onChanged(const App::Property* prop)
 {
@@ -225,13 +225,13 @@ void TPGList::onChanged(const App::Property* prop)
     App::DocumentObject::onChanged(prop);
 }
 
-void TPGList::onDocumentRestored()
-{
-    try {
-    }
-    catch (...) {
-    }
-}
+// void TPGList::onDocumentRestored()
+// {
+//     try {
+//     }
+//     catch (...) {
+//     }
+// }
 
 void TPGList::onFinishDuplicating()
 {

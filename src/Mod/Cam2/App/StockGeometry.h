@@ -42,7 +42,8 @@ public:
     ~StockGeometry();
 
     /// App Properties
-    App::PropertyLink Geometry; // Reference link to the Stock Material
+    App::PropertyLink Geometry; // Reference link to the Stock Material (only one feature)
+    App::PropertyPlacement Base; // Positions and orientation of Origin
 
     short mustExecute() const;
 

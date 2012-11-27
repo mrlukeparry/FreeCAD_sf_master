@@ -20,57 +20,50 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
-#endif
+#ifndef CAMGUI__TaskDlgEditStockGeometry_H
+#define CAMGUI__TaskDlgEditStockGeometry_H
 
-#include <Base/Placement.h>
-#include "StockGeometry.h"
+#include <Gui/TaskView/TaskDialog.h>
+#include <Gui/Selection.h>
 
-using namespace Cam;
+namespace CamGui {
 
-PROPERTY_SOURCE(Cam::StockGeometry, App::DocumentObject)
+class  ViewProviderStockGeometry;
 
-const char *stockGeomGroup = "Stock Geometry Feature";
-
-StockGeometry::StockGeometry()
+/// simulation dialog for the TaskView
+class CamGuiExport TaskDlgEditStockGeometry : public Gui::TaskView::TaskDialog, public Gui::SelectionObserver
 {
-    Base::Placement place = Base::Placement();
-//     ADD_PROPERTY_TYPE(Base, place , stockGeomGroup, (App::PropertyType)(App::Prop_Output) ,"Origin Placement");
-    ADD_PROPERTY_TYPE(Geometry,(0), stockGeomGroup, (App::PropertyType)(App::Prop_None) ,"Stock Geometry");
-}
+    Q_OBJECT
 
-StockGeometry::~StockGeometry()
-{
+public:
+    TaskDlgEditStockGeometry(ViewProviderStockGeometry *stockGeomView);
+    ~TaskDlgEditStockGeometry();
+    ViewProviderStockGeometry* getStockGeometryView() const { return stockGeomView; }
 
-}
+public:
+    /// is called the TaskView when the dialog is opened
+    virtual void open();
+    /// is called by the framework if an button is clicked which has no accept or reject role
+    virtual void clicked(int);
+    /// is called by the framework if the dialog is accepted (Ok)
+    virtual bool accept();
+    /// is called by the framework if the dialog is rejected (Cancel)
+    virtual bool reject();
+    /// is called by the framework if the user presses the help button 
+    virtual void helpRequested();
+    virtual bool isAllowedAlterDocument(void) const
+    { return false; }
 
-short StockGeometry::mustExecute() const
-{
-    if (Geometry.isTouched() ||
-        Base.isTouched())
-        return 1;
-    return 0;
-}
+    void onSelectionChanged(const Gui::SelectionChanges& msg);
+    
+    /// returns for Close and Help button 
+    virtual QDialogButtonBox::StandardButtons getStandardButtons(void) const
+    { return QDialogButtonBox::Save|QDialogButtonBox::Close; }
 
-// void StockGeometry::positionByBase(void)
-// {
-//     Part::Feature *Geometry = static_cast<Part::Feature*>(Geometry.getValue());
-//     if (Geometry && Geometry->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
-//         this->Geometry.setValue(Geometry->Placement.getValue());
-// }
+protected:
+    ViewProviderStockGeometry   *stockGeomView;
+};
 
+} //namespace CamGui
 
-App::DocumentObjectExecReturn *StockGeometry::execute(void)
-{
-    this->touch();
-    return App::DocumentObject::StdReturn;
-}
-
-void StockGeometry::onChanged(const App::Property* prop)
-{
-    if (prop == &Geometry) {
-    }
-
-    App::DocumentObject::onChanged(prop);
-}
+#endif // CAMGUI_TaskDlgEditStockGeometry_H

@@ -28,11 +28,11 @@
 #include <Gui/Command.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
+#include <Gui/SelectionFilter.h>
 
-#include "../../App/CamPartsList.h"
-#include "TaskDlgEditCamFeature.h"
-#include "TaskDlgEditCamPartsList.h"
-#include "../ViewProviderCamPartsList.h"
+#include "../../App/StockGeometry.h"
+#include "../ViewProviderStockGeometry.h"
+#include "TaskDlgEditStockGeometry.h"
 
 using namespace CamGui;
 
@@ -42,46 +42,43 @@ using namespace CamGui;
 // TaskDialog
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TaskDlgEditCamPartsList::TaskDlgEditCamPartsList(ViewProviderCamPartsList *camPartsView)
-    : TaskDialog(), camPartsListView(camPartsView)
+TaskDlgEditStockGeometry::TaskDlgEditStockGeometry(ViewProviderStockGeometry *vp)
+    : TaskDialog(), stockGeomView(vp)
 {
-    assert(camPartsView);
+    assert(vp);
 }
 
-TaskDlgEditCamPartsList::~TaskDlgEditCamPartsList()
+TaskDlgEditStockGeometry::~TaskDlgEditStockGeometry()
 {
 
 }
 
 //==== calls from the TaskView ===============================================================
 
-void TaskDlgEditCamPartsList::open()
+void TaskDlgEditStockGeometry::open()
 {
 
 }
 
-void TaskDlgEditCamPartsList::clicked(int)
+void TaskDlgEditStockGeometry::clicked(int)
 {
     
 }
 
-void TaskDlgEditCamPartsList::onSelectionChanged(const Gui::SelectionChanges& msg)
+void TaskDlgEditStockGeometry::onSelectionChanged(const Gui::SelectionChanges& msg)
 {
 
 }
 
-bool TaskDlgEditCamPartsList::accept()
+bool TaskDlgEditStockGeometry::accept()
 {
-     camPartsListView->getObject()->clearParts();
-     
-     //Iterate through selection and save the current selection from the user 
-    const std::vector<Gui::SelectionObject> selection = Gui::Selection().getSelectionEx();
-    
-    if(selection.size() > 0) {
-        for(std::vector<Gui::SelectionObject>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
-          Gui::SelectionObject obj = (*it);
-          camPartsListView->getObject()->addPart(obj.getObject());
-        }
+
+    Gui::SelectionFilter selectionFilter("SELECT Part::Feature COUNT 1");
+
+    if (selectionFilter.match()) {
+        stockGeomView->getObject()->Geometry.setValue(selectionFilter.Result[0][0].getObject());
+    } else {
+        return false;
     }
 
     std::string document = getDocumentName(); // needed because resetEdit() deletes this instance
@@ -90,7 +87,7 @@ bool TaskDlgEditCamPartsList::accept()
         
 }
 
-bool TaskDlgEditCamPartsList::reject()
+bool TaskDlgEditStockGeometry::reject()
 {
     std::string document = getDocumentName(); // needed because resetEdit() deletes this instance
     Gui::Command::doCommand(Gui::Command::Gui,"Gui.getDocument('%s').resetEdit()", document.c_str());
@@ -98,9 +95,9 @@ bool TaskDlgEditCamPartsList::reject()
     return true;
 }
 
-void TaskDlgEditCamPartsList::helpRequested()
+void TaskDlgEditStockGeometry::helpRequested()
 {
 
 }
 
-#include "TaskDialog/moc_TaskDlgEditCamPartsList.cpp"
+#include "TaskDialog/moc_TaskDlgEditStockGeometry.cpp"

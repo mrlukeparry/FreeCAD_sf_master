@@ -35,7 +35,10 @@
 # include <BRepBuilderAPI_MakeFace.hxx>
 #endif
 
+#include <App/Application.h>
 #include <App/Document.h>
+#include <App/DocumentObject.h>
+
 #include <Base/Writer.h>
 #include <Base/Reader.h>
 #include <Base/Tools.h>
@@ -60,14 +63,11 @@ using namespace Base;
 
 PROPERTY_SOURCE(Cam::CamFeature, App::DocumentObject)
 
-const char *camFeatGroup = "CAM Parts Feature";
+const char *camFeatGroup = "Cam Feature";
 
-CamFeature::CamFeature() :
-    camPartsList(0),
-    stockGeometry(0),
-    tpgList(0)
+CamFeature::CamFeature()
 {
-    ADD_PROPERTY_TYPE(Result,(0), camFeatGroup, App::Prop_None,"Result");
+    ADD_PROPERTY_TYPE(Result,(0), camFeatGroup, (App::Prop_None),"Result");
 }
 
 CamFeature::~CamFeature()
@@ -103,17 +103,13 @@ void CamFeature::initialise()
     if(!camPartsObj || !camPartsObj->isDerivedFrom(CamPartsList::getClassTypeId()))
         throw new Base::Exception("A CamPartsList Feature couldn't successfuly be created");
 
-    camPartsList = dynamic_cast<CamPartsList *>(camPartsObj); // Create Object Link
-
     if(!stockGeomObj || !stockGeomObj->isDerivedFrom(StockGeometry::getClassTypeId()))
         throw new Base::Exception("A Stock Geometry Feature couldn't successfuly be created");
-
-    stockGeometry = dynamic_cast<StockGeometry *>(stockGeomObj); // Create Object Link
 
     if(!TPGListObj || !TPGListObj->isDerivedFrom(TPGList::getClassTypeId()))
         throw new Base::Exception("A TPGList Feature couldn't successfuly be created");
 
-    tpgList = dynamic_cast<TPGList *>(TPGListObj);
+    TPGList *tpgList = dynamic_cast<TPGList *>(TPGListObj);
     tpgList->CamPartsListObject.setValue(camPartsObj); // Create Object Link
     tpgList->StockGeometryObject.setValue(stockGeomObj); // Create Object Link
 
@@ -124,18 +120,20 @@ void CamFeature::initialise()
     gCodeFeat->TPGListObj.setValue(TPGListObj); // Create Object Link
     this->Result.setValue(gcodeFeatObj);
 
-    rebuildLinks();
     doc->recompute();
 }
 
 void CamFeature::onDelete(const App::DocumentObject &docObj)
 {
-    App::Document *pcDoc = getDocument();
-
-    // Automatically remove children linked to this CamFeature
-    pcDoc->remObject(camPartsList->getNameInDocument());
-    pcDoc->remObject(stockGeometry->getNameInDocument());
-    pcDoc->remObject(tpgList->getNameInDocument());
+    // If deleted object matches this cam feature, proceed to delete children
+    if(std::strcmp(docObj.getNameInDocument(), getNameInDocument()) == 0)
+    {
+        App::Document *pcDoc = getDocument();
+        // Automatically remove children linked to this CamFeature
+        pcDoc->remObject(getPartsContainer()->getNameInDocument());
+        pcDoc->remObject(getStockGeometry()->getNameInDocument());
+        pcDoc->remObject(getTPGContainer()->getNameInDocument());
+    }
 }
 
 short int CamFeature::mustExecute() const
@@ -158,6 +156,30 @@ App::DocumentObjectExecReturn *CamFeature::execute(void)
 //     return Py::new_reference_to(PythonObject);
 // }
 
+TPGList * CamFeature::getTPGContainer() const
+{
+    return getGCodeFeature()->getTPGList();
+}
+
+StockGeometry * CamFeature::getStockGeometry() const
+{
+    return getTPGContainer()->getStockGeometry();
+}
+
+CamPartsList * CamFeature::getPartsContainer() const
+{
+    return getTPGContainer()->getCamPartsList();
+}
+
+GCodeFeature * CamFeature::getGCodeResult() const
+{
+    App::DocumentObject *docObj = Result.getValue();
+    if(!docObj || !docObj->isDerivedFrom(GCodeFeature::getClassTypeId()))
+        throw new Base::Exception("Cannot restore this Cam Feature::Invalid Link to Result Property");
+
+     return dynamic_cast<GCodeFeature *>(docObj);
+}
+
 unsigned int CamFeature::getMemSize(void) const
 {
     return 0;
@@ -175,65 +197,24 @@ void CamFeature::Restore(XMLReader &reader)
     App::DocumentObject::Restore(reader);
 }
 
-// void CamFeature::onChanged(const App::Property* prop)
+void CamFeature::onChanged(const App::Property* prop)
+{
+    App::DocumentObject::onChanged(prop);
+    if(prop = &Result) {
+        return;
+    }    
+}
+
+// void CamFeature::onDocumentRestored()
 // {
-//     if(prop = &Result) {
-//         return;
+//     //We need to update the references on restoration. This is achieved by going through the dependency tree
+//     App::DocumentObject::onDocumentRestored();
+//     try {
 //     }
-//     //App::DocumentObject::onChanged(prop);
+//     catch (...) {
+//     }
 // }
-
-GCodeFeature * CamFeature::getGCodeResult() const
-{
-    App::DocumentObject *docObj = Result.getValue();
-    if(!docObj || !docObj->isDerivedFrom(GCodeFeature::getClassTypeId()))
-        throw new Base::Exception("Cannot restore this Cam Feature::Invalid Link to Result Property");
-
-     return dynamic_cast<GCodeFeature *>(docObj);
-}
-
-void CamFeature::rebuildLinks()
-{
-    tpgList = getGCodeFeature()->getTPGList();
-
-    if(!tpgList)
-        throw new Base::Exception("The TPGList Could not be found");
-
-    stockGeometry = tpgList->getStockGeometry();
-    if(!stockGeometry)
-      throw new Base::Exception("The StockGeometry Feature could not be found");
-
-    camPartsList = tpgList->getCamPartsList();
-    if(!camPartsList)
-      throw new Base::Exception("The Cam Parts Feature could not be found");
-
-}
-
-void CamFeature::onDocumentRestored()
-{
-    //We need to update the references on restoration. This is achieved by going through the dependency tree
-    rebuildLinks();
-    try {
-    }
-    catch (...) {
-    }
-}
-
-void CamFeature::onFinishDuplicating()
-{
-}
-
-// Python Cam feature ---------------------------------------------------------
-
-// namespace App {
-// /// @cond DOXERR
-// PROPERTY_SOURCE_TEMPLATE(Sketcher::CamFeaturePython, Sketcher::CamFeature)
-// template<> const char* Sketcher::CamFeaturePython::getViewProviderName(void) const {
-//     return "SketcherGui::ViewProviderPython";
+// 
+// void CamFeature::onFinishDuplicating()
+// {
 // }
-// /// @endcond
-//
-// // explicit template instantiation
-// template class SketcherExport FeaturePythonT<Sketcher::CamFeature>;
-// }
-//

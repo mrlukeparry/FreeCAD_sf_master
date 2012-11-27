@@ -108,7 +108,8 @@ void UIManagerInst::addTPG(Cam::TPGDescriptor *tpgDescriptor)
 
     // Set a friendly label
     tpgFeat->Label.setValue(tpgDescriptor->name.toAscii());
-    
+    Cam::TPG *temp = tpgDescriptor->make();
+    QMessageBox(QMessageBox::Warning, QString::fromAscii("Info"), temp->getName());
     // Attempt to create and load the TPG Plugin
     bool loadPlugin = tpgFeat->loadTPG(tpgDescriptor);
     

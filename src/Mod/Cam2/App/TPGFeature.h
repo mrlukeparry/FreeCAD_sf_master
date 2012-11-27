@@ -76,7 +76,7 @@ public:
 
     /// Convenience method for get the current TPG Status (Undefined if TPG not loaded)
     TPG::State getTPGStatus();
-    bool hasTPG() const { return (tpg == NULL); }
+    bool hasTPG() const { return (tpg != NULL); }
     bool hasRunningTPG();
 
 protected:

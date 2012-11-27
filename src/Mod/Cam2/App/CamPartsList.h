@@ -68,6 +68,7 @@ public:
     int addPart(App::DocumentObject *docObj);
     int addPart(const char *);
     int removePart(const char *);
+    int clearParts();
 
     CamPartsList * getPartsList();
     void setTolerance(float val) { Tolerance.setValue(val); }

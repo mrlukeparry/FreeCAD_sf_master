@@ -66,12 +66,15 @@ bool TPGFeature::loadTPG(TPGDescriptor *tpgDescriptor)
 
 void TPGFeature::run()
 {
-//    if(hasTPG() && tpg->isReady()) {
-//        //Initialise the TPG for running
+   if(hasTPG() /*&& tpg->isReady()*/) {
+       //Initialise the TPG for running
 //        this->tpg->setInputBBox(inputBBox); // Set the bounding box could be null
-//        this->tpg->run();
-//    } else
-//        Base::Console().Log("The TPG is not ready");
+      std::stringstream ss;
+      ss << "Running : " << this->tpg->getName().toStdString() << "\n";
+      Base::Console().Log(ss.str().c_str());
+       //this->tpg->run();
+   } else
+       Base::Console().Log("The TPG is not ready");
 }
 
 void TPGFeature::stop()

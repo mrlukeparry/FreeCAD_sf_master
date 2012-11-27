@@ -81,7 +81,9 @@ bool ViewProviderCamPartsList::setEdit(int ModNum)
         else
             return false;
     }
-    Gui::Selection().clearSelection();
+
+    // Set the selection to what was stored
+    Gui::Selection().setSelection(getObject()->getDocument()->getName(), getObject()->ExternalGeometry.getValues());
 
 
     //start the edit dialog
@@ -114,7 +116,11 @@ void ViewProviderCamPartsList::unsetEditViewer(Gui::View3DInventorViewer* viewer
 void ViewProviderCamPartsList::unsetEdit(int ModNum)
 {
     // clear the selection and set the new/edited sketch(convenience)
+  // clear the selection and set the new/edited sketch(convenience)
     Gui::Selection().clearSelection();
+
+    // when pressing ESC make sure to close the dialog
+    Gui::Control().closeDialog();
 }
 
 Cam::CamPartsList* ViewProviderCamPartsList::getObject() const

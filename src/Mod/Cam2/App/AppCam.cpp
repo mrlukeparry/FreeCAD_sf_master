@@ -30,7 +30,6 @@
 
 #include "GCodeFeature.h"
 #include "TPGFeature.h"
-#include "Feature.h"
 #include "StockGeometry.h"
 #include "CamPartsList.h"
 #include "TPGList.h"
@@ -81,7 +80,6 @@ void CamExport initCam()
     // call PyType_Ready, otherwise we run into a segmentation fault, later on.
     // This function is responsible for adding inherited slots from a type's base class.
 
-    Cam::Feature             ::init();
     Cam::CamFeature          ::init();
     Cam::CamPartsList        ::init();
     Cam::GCodeFeature        ::init();

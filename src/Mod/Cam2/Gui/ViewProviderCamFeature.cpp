@@ -120,7 +120,7 @@ void ViewProviderCamFeature::unsetEdit(int ModNum)
     Gui::Selection().clearSelection();
 }
 
-std::vector<App::DocumentObject*> ViewProviderCamFeature::claimChildren(void)const
+std::vector<App::DocumentObject*> ViewProviderCamFeature::claimChildren(void) const
 {
     // Collect any child fields and put this in the CamFeature tree
     std::vector<App::DocumentObject*> temp;
