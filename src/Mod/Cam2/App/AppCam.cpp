@@ -38,7 +38,7 @@
 
 #include "TPG/TPGFactory.h"
 #include "TPG/TPG.h"
-#include "TPG/PyTPGManager.h"
+#include "TPG/PyTPGFactory.h"
 
 #include "CamFeature.h"
 
@@ -73,7 +73,7 @@ void CamExport initCam()
     if (pyCamMod != NULL)
     {
         PyModule_AddObject(camModule, "PyCam", pyCamMod);
-        Cam::PyTPGManager().loadCallbackFromModule(pyCamMod);
+        Cam::PyTPGFactory().loadCallbackFromModule(pyCamMod);
     	Py_DecRef(pyCamMod);
     }
 

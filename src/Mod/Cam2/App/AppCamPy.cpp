@@ -43,7 +43,7 @@
 #include <Mod/Part/App/TopoShape.h>
 #include <Mod/Part/App/TopoShapePy.h>
 
-#include "TPG/PyTPGManager.h"
+#include "TPG/PyTPGFactory.h"
 #include "TPG/TPG.h"
 #include "Support.h"
 
@@ -98,7 +98,7 @@ static PyObject * open(PyObject *self, PyObject *args)
 }
 
 /* PyTPG API functions */
-static PyObject * _registerPyTPGManager_(PyObject *self, PyObject *args)
+static PyObject * _registerPyTPGFactory_(PyObject *self, PyObject *args)
 {
 	PyObject *obj;
 //	PyObject *method;
@@ -120,7 +120,7 @@ static PyObject * _registerPyTPGManager_(PyObject *self, PyObject *args)
 //	}
 
 	// add the callback to the API
-	Cam::PyTPGManager().setCallback(obj); //, method
+	Cam::PyTPGFactory().setCallback(obj); //, method
 //    Cam::PyTPGAPI().test();
     Py_Return;
 }
@@ -128,12 +128,12 @@ static PyObject *test(PyObject *self, PyObject *args)
 {
 //	Cam::PyTPGManager().test();
 
-	vector<Cam::TPGDescriptor*> plugins = Cam::PyTPGManager().scanPlugins();
+	vector<Cam::TPGDescriptor*> plugins = Cam::PyTPGFactory().scanPlugins();
 	for (int i = 0; i < plugins.size(); i++)
 		plugins[i]->print();
 
 	QString id = QString::fromAscii("10bf335e-2491-11e2-8f39-08002734b94f");
-	Cam::TPG *tpg = Cam::PyTPGManager().getPlugin(id);
+	Cam::TPG *tpg = Cam::PyTPGFactory().getPlugin(id);
 	if (tpg != NULL) {
 		QString desc = tpg->getDescription();
 //		printf("Found PyTPG: %s [%s] '%s'\n",ts(tpg->getName()),ts(tpg->getId()),ts(desc));
@@ -167,7 +167,7 @@ static PyObject *test1(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if (!Cam::PyTPGManager().test1(str))
+	if (!Cam::PyTPGFactory().test1(str))
 		return NULL;
 
 	Py_Return;
@@ -177,7 +177,7 @@ static PyObject *test1(PyObject *self, PyObject *args)
 /* registration table  */
 struct PyMethodDef Cam_methods[] = {
     {"open"   , open,    METH_VARARGS, "A Copy/Paste remnant :P"},
-    {"_registerPyTPGManager_", _registerPyTPGManager_, METH_VARARGS, "Do not use; this is an internal method used by the Cam::PyTPGAPI"},
+    {"_registerPyTPGFactory_", _registerPyTPGFactory_, METH_VARARGS, "Do not use; this is an internal method used by the Cam::PyTPGFactory"},
     {"test"   , test,    METH_VARARGS, "Perform some testing."},
     {"test1"   , test1,    METH_VARARGS, "Perform some testing with 1 arg."},
 //    {"read"   , read,  METH_VARARGS, "A Copy/Paste remnant :P"},

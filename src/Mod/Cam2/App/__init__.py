@@ -20,9 +20,9 @@
 # *                                                                         *
 # ***************************************************************************/
 
-from PyCam import PyTPGBase, UnimplementedTPError, PyTPGManager, TPError, init, scanPlugins, printPlugins
+from PyCam import PyTPGBase, UnimplementedTPError, PyTPGFactory, TPError, init, scanPlugins, printPlugins
 import PyTPG
-__all__=[PyTPGBase, UnimplementedTPError, PyTPGManager, TPError, PyTPG, init, scanPlugins, printPlugins]
+__all__=[PyTPGBase, UnimplementedTPError, PyTPGFactory, TPError, PyTPG, init, scanPlugins, printPlugins]
 
 #init()
 #del init

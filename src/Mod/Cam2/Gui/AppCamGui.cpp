@@ -48,7 +48,7 @@
 #include "TPGListModel.h"
 #include "UIManager.h"
 #include "TPGLibraryDockWindow.h"
-#include "../App/TPG/PyTPGManager.h"
+#include "../App/TPG/PyTPGFactory.h"
 
 // use a different name to CreateCommand()
 void CreateCamCommands(void);

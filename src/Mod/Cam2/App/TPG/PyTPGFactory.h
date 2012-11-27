@@ -38,35 +38,15 @@
 namespace Cam {
 
 /**
- * A descriptor for Python TPG's
- */
-class PythonTPGDescriptor : public TPGDescriptor
-{
-public:
-  PythonTPGDescriptor(QString id, QString name, QString description)
-    : TPGDescriptor(id, name, description, QString::fromAscii("PythonTPG"))
-  {
-//    printf("Creating PythonTPGDescriptor: %p\n", this);
-  }
-
-  ~PythonTPGDescriptor()
-  {
-//    printf("Deleting PythonTPGDescriptor: %p\n", this);
-  }
-
-  TPG* make();
-};
-
-/**
  * A class that manages the interface to the Python TPG implementations.
  */
-class CamExport PyTPGManagerInst
+class CamExport PyTPGFactoryInst
 {
 protected:
-	static PyTPGManagerInst* _pcSingleton;
+	static PyTPGFactoryInst* _pcSingleton;
 	PyObject* obj;
-	PyTPGManagerInst();
-	~PyTPGManagerInst();
+	PyTPGFactoryInst();
+	~PyTPGFactoryInst();
 
 //	std::vector<QString> plugins;
 	std::vector<TPGDescriptor *> descriptors;
@@ -78,7 +58,7 @@ protected:
 public:
 
 	// singleton manipators
-	static PyTPGManagerInst& instance(void);
+	static PyTPGFactoryInst& instance(void);
 	static void destruct (void);
 
 	/**
@@ -112,9 +92,9 @@ public:
 };
 
 /// Get the global instance
-inline PyTPGManagerInst& PyTPGManager(void)
+inline PyTPGFactoryInst& PyTPGFactory(void)
 {
-    return PyTPGManagerInst::instance();
+    return PyTPGFactoryInst::instance();
 }
 
 } /* namespace Cam */

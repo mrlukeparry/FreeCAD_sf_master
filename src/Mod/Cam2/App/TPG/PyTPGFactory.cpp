@@ -20,39 +20,36 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PyTPGManager.h"
-#include <QVector>
+
+#include "../PreCompiled.h"
+#ifndef _PreComp_
+#endif
+
+#include <qvector.h>
 #include <Base/Interpreter.h>
+
+#include "PyTPGFactory.h"
+#include "PyTPGDescriptor.h"
 
 namespace Cam {
 
-///// PythonTPGDescriptor /////
+PyTPGFactoryInst* PyTPGFactoryInst::_pcSingleton = NULL;
 
-TPG* PythonTPGDescriptor::make()
-{
-  return PyTPGManager().getPlugin(id);
-}
-
-
-///// PyTPGManager /////
-
-PyTPGManagerInst* PyTPGManagerInst::_pcSingleton = NULL;
-
-PyTPGManagerInst& PyTPGManagerInst::instance(void)
+PyTPGFactoryInst& PyTPGFactoryInst::instance(void)
 {
     if (_pcSingleton == NULL)
-        _pcSingleton = new PyTPGManagerInst();
+        _pcSingleton = new PyTPGFactoryInst();
 
     return *_pcSingleton;
 }
-void PyTPGManagerInst::destruct (void)
+void PyTPGFactoryInst::destruct (void)
 {
     if (_pcSingleton != NULL)
         delete _pcSingleton;
     _pcSingleton = NULL;
 }
 
-PyTPGManagerInst::PyTPGManagerInst()
+PyTPGFactoryInst::PyTPGFactoryInst()
 {
     Base::Interpreter().runString("import PyTPG");
     this->obj = NULL;
@@ -61,7 +58,7 @@ PyTPGManagerInst::PyTPGManagerInst()
 /**
  * Cleanup the Python objects if set
  */
-PyTPGManagerInst::~PyTPGManagerInst()
+PyTPGFactoryInst::~PyTPGFactoryInst()
 {
     if (this->obj != NULL) {
         Py_DecRef(this->obj);
@@ -75,7 +72,7 @@ PyTPGManagerInst::~PyTPGManagerInst()
  * Saves the callback object for later use.
  * Note: Refcount is increased for both params when it is stored
  */
-void PyTPGManagerInst::setCallback(PyObject* obj)
+void PyTPGFactoryInst::setCallback(PyObject* obj)
 {
   printf("PyTPGManager.setCallback(%p)\n", obj);
     if (this->obj != NULL)
@@ -88,23 +85,23 @@ void PyTPGManagerInst::setCallback(PyObject* obj)
  * Gets the PyTPGManager python class from the given module and sets it as the
  * callback
  */
-void PyTPGManagerInst::loadCallbackFromModule(PyObject *mod)
+void PyTPGFactoryInst::loadCallbackFromModule(PyObject *mod)
 {
-    PyObject *pyTPGManagercls = PyObject_GetAttrString(mod, "PyTPGManager");
-    if (pyTPGManagercls != NULL) {
-        PyObject *obj = PyObject_CallMethod(pyTPGManagercls, "instance", NULL);
+    PyObject *pyTPGFactorycls = PyObject_GetAttrString(mod, "PyTPGFactory");
+    if (pyTPGFactorycls != NULL) {
+        PyObject *obj = PyObject_CallMethod(pyTPGFactorycls, "instance", NULL);
         if (obj != NULL) {
             setCallback(obj);
             Py_DecRef(obj);
         }
-        Py_DecRef(pyTPGManagercls);
+        Py_DecRef(pyTPGFactorycls);
     }
 }
 
 
 ///////// Testing methods ///////////////
 
-void PyTPGManagerInst::test()
+void PyTPGFactoryInst::test()
 {
     if (this->obj != NULL) {
         PyObject * result = PyObject_CallMethod(obj, "printPlugins", "");
@@ -114,7 +111,7 @@ void PyTPGManagerInst::test()
     }
 }
 
-bool PyTPGManagerInst::test1(PyObject* obj)
+bool PyTPGFactoryInst::test1(PyObject* obj)
 {
 //    return this->pytest(obj);
     QString str = this->PythonUCToQString(obj);
@@ -124,7 +121,7 @@ bool PyTPGManagerInst::test1(PyObject* obj)
 }
 
 
-bool PyTPGManagerInst::pytest(PyObject* arg)
+bool PyTPGFactoryInst::pytest(PyObject* arg)
 {
     if (this->obj != NULL)
     {
@@ -149,7 +146,7 @@ bool PyTPGManagerInst::pytest(PyObject* arg)
  * Returns (by reference) the list of found Python Plugins.
  * This is a vector of PythonTPGDescriptors
  */
-std::vector<TPGDescriptor*> &PyTPGManagerInst::scanPlugins() {
+std::vector<TPGDescriptor*> &PyTPGFactoryInst::scanPlugins() {
     if (this->obj != NULL) {
         PyGILState_STATE state = PyGILState_Ensure();
         PyObject * result = PyObject_CallMethod(obj, "scanPlugins", NULL);
@@ -173,7 +170,7 @@ std::vector<TPGDescriptor*> &PyTPGManagerInst::scanPlugins() {
                         PyObject *pdesc = PyTuple_GET_ITEM(tuple, 2);
 
                         this->descriptors.push_back(
-                                new PythonTPGDescriptor(PythonUCToQString(pid),
+                                new PyTPGDescriptor(PythonUCToQString(pid),
                                         PythonUCToQString(pname),
                                         PythonUCToQString(pdesc)));
                     }
@@ -189,7 +186,7 @@ std::vector<TPGDescriptor*> &PyTPGManagerInst::scanPlugins() {
 /**
  * Gets a TPG given its id.
  */
-TPGPython *PyTPGManagerInst::getPlugin(QString id)
+TPGPython *PyTPGFactoryInst::getPlugin(QString id)
 {
     TPGPython *tpg = NULL;
     if (this->obj != NULL)
@@ -214,13 +211,13 @@ TPGPython *PyTPGManagerInst::getPlugin(QString id)
 
 //////////// Support methods /////////////
 //TODO: move to a separate CPP file
-PyObject *PyTPGManagerInst::QStringToPythonUC(const QString &str)
+PyObject *PyTPGFactoryInst::QStringToPythonUC(const QString &str)
 {
     //TODO: check this works properly, it appears to work with the UCS4 characters I tested
     return PyString_FromString((const char*)str.toStdString().c_str());
 }
 
-QString PyTPGManagerInst::PythonUCToQString(PyObject *obj)
+QString PyTPGFactoryInst::PythonUCToQString(PyObject *obj)
 {
   QString conv;
 

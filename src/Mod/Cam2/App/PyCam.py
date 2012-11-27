@@ -24,21 +24,21 @@ import types, inspect
 
 import Cam
 
-PyTPGManagerInst = None
+PyTPGFactoryInst = None
 
 def scanPlugins():
-    '''Short-cut to 'PyTPGManager.instance().scanPlugins()' '''
-    return PyTPGManager.instance().scanPlugins()
+    '''Short-cut to 'PyTPGFactory.instance().scanPlugins()' '''
+    return PyTPGFactory.instance().scanPlugins()
 
 def printPlugins():
-    '''Short-cut to 'PyTPGManager.instance().printPlugins()' '''
-    return PyTPGManager.instance().printPlugins()
+    '''Short-cut to 'PyTPGFactory.instance().printPlugins()' '''
+    return PyTPGFactory.instance().printPlugins()
 
 def init():
     '''Initialises the PyTPG connection between Python and C++'''
-    man = PyTPGManager.instance()
-    if PyTPGManagerInst and PyTPGManagerInst != man:
-        Cam._registerPyTPGManager_(man)
+    man = PyTPGFactory.instance()
+    if PyTPGFactoryInst and PyTPGFactoryInst != man:
+        Cam._registerPyTPGFactory_(man)
 
 class PyTPGBase(object):
     '''The Base class for all Python TPG's'''
@@ -93,19 +93,19 @@ class PyTPGBase(object):
     
 # End PyTPGBase
 
-class PyTPGManager(object):
+class PyTPGFactory(object):
     '''The Manager class on the Python side of the API.'''
     
     _instance_ = None
     @classmethod
     def instance(cls):
-        '''Obtain a reference to the PyTPGManager singleton'''
+        '''Obtain a reference to the PyTPGFactory singleton'''
         if not cls._instance_:
-            cls._instance_ = PyTPGManager()
+            cls._instance_ = PyTPGFactory()
         return cls._instance_
     
     def __init__(self, searchpath=['PyTPG']):
-        '''Use PyTPGManager.instance() to get the singleton instance'''
+        '''Use PyTPGFactory.instance() to get the singleton instance'''
         self._searchpath = searchpath
         self._tpgs = {} # elements {<id>: <class>, ...}
 
@@ -166,7 +166,7 @@ class PyTPGManager(object):
             elif inspect.isclass(mod) and issubclass(mod, PyTPGBase) and mod != PyTPGBase:
                 if reload or modname not in self._tpgs:
                     self._tpgs[mod.getId()] = mod
-# End PyTPGManager
+# End PyTPGFactory
 
 
 class TPError(Exception):
