@@ -93,9 +93,9 @@ public:
   std::vector<TPGDescriptor*> tpgList;
 };
 
-class CamExport TPGFactoryInst : public Base::Factory
+class CamExport TPGFactoryInst // : public Base::Factory
 {
-    TYPESYSTEM_HEADER();
+//    TYPESYSTEM_HEADER();
 
 public:
 

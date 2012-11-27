@@ -43,8 +43,6 @@
 using namespace Cam;
 
 
-//TYPESYSTEM_SOURCE_ABSTRACT(Cam::TPGFactoryInst, Base::Factory)
-
 TPGFactoryInst* TPGFactoryInst::_pcSingleton = NULL;
 
 TPGFactoryInst& TPGFactoryInst::instance(void)
