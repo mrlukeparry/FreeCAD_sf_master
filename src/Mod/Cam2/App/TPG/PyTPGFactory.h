@@ -25,7 +25,7 @@
 
 #include "../PreCompiled.h"
 #ifndef _PreComp_
-# include <Python.h>
+//# include <Python.h>
 #endif
 
 #include <vector>

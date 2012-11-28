@@ -104,8 +104,8 @@ void TPGFactoryInst::scanPlugins(short tpgtype /*= ALL_TPG*/) {
     // scan for plugins
     if (tpgtype & PYTHON_TPG > 0)
         Cam::PyTPGFactory().scanPlugins();
-//    if (tpgtype & CPP_TPG > 0)
-//        Cam::CppTPGFactory().scanPlugins();
+    if (tpgtype & CPP_TPG > 0)
+        Cam::CppTPGFactory().scanPlugins();
 
     // clear my cache (if any)
     clearDescriptors();
@@ -115,10 +115,10 @@ void TPGFactoryInst::scanPlugins(short tpgtype /*= ALL_TPG*/) {
     for (std::vector<TPGDescriptor*>::iterator it = t->begin(); it != t->end(); ++it)
         d->tpgList.push_back(*it);
     delete t;
-//    t = Cam::CppTPGFactory().getDescriptors();
-//    for (std::vector<TPGDescriptor*>::iterator it = t->begin(); it != t->end(); ++it)
-//        d->tpgList.push_back(*it);
-//    delete t;
+    t = Cam::CppTPGFactory().getDescriptors();
+    for (std::vector<TPGDescriptor*>::iterator it = t->begin(); it != t->end(); ++it)
+        d->tpgList.push_back(*it);
+    delete t;
 }
 
 /**

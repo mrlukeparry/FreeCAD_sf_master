@@ -20,6 +20,11 @@
  *                                                                         *
  ***************************************************************************/
 
+
+#include "../PreCompiled.h"
+#ifndef _PreComp_
+#endif
+
 #include "CppTPGDescriptor.h"
 
 namespace Cam {
@@ -32,7 +37,7 @@ CppTPGDescriptor::~CppTPGDescriptor() {
 }
 
 
-TPG* make() {
+TPG* CppTPGDescriptor::make() {
     return NULL; // NOTE: this shouldn't be called. Just implemented to make it not abstract.
 }
 

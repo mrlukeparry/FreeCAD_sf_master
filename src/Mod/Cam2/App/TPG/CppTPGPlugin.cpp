@@ -38,10 +38,12 @@ CppTPGPlugin::CppTPGPlugin(QString filename) {
     delDescriptorsPtr = NULL;
     getTPGPtr = NULL;
     delTPGPtr = NULL;
-    descriptors == NULL;
+    descriptors = NULL;
 }
 
 CppTPGPlugin::~CppTPGPlugin() {
+    if (library != NULL)
+        close();
 }
 
 /**
@@ -54,12 +56,10 @@ std::vector<TPGDescriptor*>* CppTPGPlugin::getDescriptors() {
         if (descriptors == NULL)
             descriptors = getDescriptorsPtr();
         if (descriptors != NULL) {
-            printf("Descriptors: %p\n", descriptors);
             // wrap the descriptors
             std::vector<TPGDescriptor*>* result = new std::vector<TPGDescriptor*>();
             for (std::vector<TPGDescriptor*>::iterator it = descriptors->begin(); it != descriptors->end(); ++it)
             {
-                printf("Descriptor: %p\n", it);
                 if (*it != NULL)
                     result->push_back(new CppTPGDescriptorWrapper(*it, this));
             }
@@ -100,7 +100,7 @@ void CppTPGPlugin::delTPG(TPG* tpg) {
  */
 bool CppTPGPlugin::isOpen() {
     if (library == NULL) {
-        library = dlopen(filename.toAscii(), RTLD_LAZY);
+        library = dlopen(filename.toAscii(), RTLD_NOW);
         if (!library) {
             error = QString::fromAscii(dlerror());
             return false;
@@ -142,7 +142,6 @@ void CppTPGPlugin::close() {
         getTPGPtr = NULL;
         delTPGPtr = NULL;
     }
-    printf("Closing: %s\n", this->filename.toAscii().constData());
 }
 
 } /* namespace CamGui */

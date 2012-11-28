@@ -62,7 +62,7 @@ void CppTPGFactoryInst::scanPlugins() {
     unsigned int pathlen = path.size();
     char *pluginname = new char[pathlen+257];
     strcpy(pluginname, plugindir);
-    printf("Scanning: %s\n", plugindir);
+    printf("Scanning: %s\n", plugindir); //TODO: delete this once the workbench is more stable
 
     // open directory
     DIR *dir = opendir(plugindir);
@@ -88,14 +88,14 @@ void CppTPGFactoryInst::scanPlugins() {
                             // make library pointer
                             QString lib = QString::fromAscii(pluginname);
                             plugins.push_back(new CppTPGPlugin(lib));
-                            printf("CppPlugin: %s\n", lib.toAscii().constData());
+                            printf("CppPlugin: %s\n", lib.toAscii().constData()); //TODO: delete this once the workbench is more stable
                         }
                     }
                 }
             }
         }
         closedir(dir);
-        printf("Found %i CppPlugins\n", plugins.size());
+        printf("Found %i CppPlugins\n", plugins.size()); //TODO: delete this once the workbench is more stable
     }
 }
 
@@ -110,7 +110,7 @@ std::vector<TPGDescriptor*>* CppTPGFactoryInst::getDescriptors()
         for (std::vector<CppTPGPlugin*>::iterator it = plugins.begin(); it != plugins.end(); ++it)
         {
 
-            std::vector<TPGDescriptor*>*tpglist = (*it)->getDescriptors();
+            std::vector<TPGDescriptor*>* tpglist = (*it)->getDescriptors();
             if (tpglist != NULL) {
                 std::vector<TPGDescriptor*>::iterator itt = tpglist->begin();
                 for (;itt != tpglist->end(); ++itt)
@@ -120,7 +120,7 @@ std::vector<TPGDescriptor*>* CppTPGFactoryInst::getDescriptors()
         }
     }
 
-    printf("Found %i CppTPGs\n", tpgs.size());
+    printf("Found %i CppTPGs\n", tpgs.size()); //TODO: delete this once the workbench is more stable
 
     // copy the tpg list cache
     std::vector<TPGDescriptor*> *result = new std::vector<TPGDescriptor*>();

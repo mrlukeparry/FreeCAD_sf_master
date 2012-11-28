@@ -29,13 +29,6 @@
 #include <TPG/TPGFactory.h>
 #include <TPG/CppTPG.h>
 
-
-/**
- * Define the Cpp shared library interface functions
- * Note: this must be outside the namespace declaration
- */
-CPPTPG_API_HEADER()
-
 namespace Cam {
 
 /**
