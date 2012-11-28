@@ -83,10 +83,12 @@ PyObject *TPGPython::getInst(void)
 	if (inst == NULL)
 	{
 		printf("Creating Python Instance\n");
+        PyGILState_STATE state = PyGILState_Ensure();
 		PyObject *result = PyObject_CallObject(cls, NULL);
 
 		if (result != NULL)
 			inst = result;
+        PyGILState_Release(state);
 	}
 	return inst;
 }
@@ -97,12 +99,14 @@ QString TPGPython::getId()
 {
 	if (this->id.size() == 0 && this->cls != NULL)
 	{
+        PyGILState_STATE state = PyGILState_Ensure();
 		PyObject *result = PyObject_CallMethod(this->cls, "getId", NULL);
 		if (result != NULL)
 		{
 			this->id = PythonUCToQString(result);
 			Py_DecRef(result);
 		}
+        PyGILState_Release(state);
 	}
 	return this->id;
 }
@@ -110,12 +114,14 @@ QString TPGPython::getName()
 {
 	if (this->cls != NULL)
 	{
+        PyGILState_STATE state = PyGILState_Ensure();
 		PyObject * result = PyObject_CallMethod(this->cls, "getName", NULL);
 		if (result != NULL)
 		{
 			this->name = PythonUCToQString(result);
 			Py_DecRef(result);
 		}
+        PyGILState_Release(state);
 	}
 	return this->name;
 }
@@ -123,6 +129,7 @@ QString TPGPython::getDescription()
 {
 	if (this->cls != NULL)
 	{
+        PyGILState_STATE state = PyGILState_Ensure();
 		PyObject * result = PyObject_CallMethod(this->cls, "getDescription",
 				NULL);
 		if (result != NULL)
@@ -131,6 +138,7 @@ QString TPGPython::getDescription()
 			//			printf("Description: %s\n", ts(description));
 			Py_DecRef(result);
 		}
+        PyGILState_Release(state);
 	}
 	return this->description;
 }
@@ -145,6 +153,7 @@ std::vector<QString> &TPGPython::getActions()
 	PyObject *inst = getInst();
 	if (inst != NULL)
 	{
+        PyGILState_STATE state = PyGILState_Ensure();
 		PyObject *result = PyObject_CallMethod(inst, "getActions", NULL);
 		if (result != NULL)
 		{
@@ -159,6 +168,7 @@ std::vector<QString> &TPGPython::getActions()
 			}
 			Py_DecRef(result);
 		}
+        PyGILState_Release(state);
 	}
 	return this->actions;
 }
@@ -174,6 +184,7 @@ TPGSettings *TPGPython::getSettings(QString &action)
 	PyObject *inst = getInst();
 	if (inst != NULL)
 	{
+        PyGILState_STATE state = PyGILState_Ensure();
 		PyObject *arg = QStringToPythonUC(action);
 		PyObject *result = PyObject_CallMethod(inst, "getSettings", "(O)", arg);
 		if (result != NULL)
@@ -213,6 +224,7 @@ TPGSettings *TPGPython::getSettings(QString &action)
 			Py_DecRef(result);
 		}
 		Py_DecRef(arg);
+        PyGILState_Release(state);
 	}
 	else
 	{
@@ -231,6 +243,7 @@ void TPGPython::run(TPGSettings *settings, QString action)
 	PyObject *inst = getInst();
 	if (inst != NULL)
 	{
+        PyGILState_STATE state = PyGILState_Ensure();
 		PyObject *actionArg = QStringToPythonUC(action);
 		PyObject *settingsArg = PyList_New(0); //TODO: Populate the settings once the TPGSettings class is implemented
 		PyObject *result = PyObject_CallMethod(inst, "run", "(OO)", actionArg,
@@ -246,6 +259,7 @@ void TPGPython::run(TPGSettings *settings, QString action)
 
 		Py_XDECREF(actionArg);
 		Py_XDECREF(settingsArg);
+        PyGILState_Release(state);
 	}
 	//TODO: make error
 }
