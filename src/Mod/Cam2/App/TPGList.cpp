@@ -78,8 +78,7 @@ TPGList::~TPGList()
 
 short TPGList::mustExecute() const
 {
-    if(StockGeometryObject.isTouched() ||
-       CamPartsListObject.isTouched())
+    if(StockGeometryObject.isTouched() || CamPartsListObject.isTouched())
         return 1;
     return App::DocumentObject::mustExecute();
 }

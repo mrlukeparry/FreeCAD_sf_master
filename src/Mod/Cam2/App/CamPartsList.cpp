@@ -291,8 +291,10 @@ void CamPartsList::transferToArray(const TopoDS_Face& aFace,gp_Vec** vertices,gp
 
 App::DocumentObjectExecReturn *CamPartsList::execute(void)
 {
-    if(this->ExternalGeometry.getValues().size() > 0)
+    if(this->ExternalGeometry.getValues().size() > 0) {
         return App::DocumentObject::StdReturn;
+        this->touch();
+    }
     else
       return new App::DocumentObjectExecReturn("Selection is empty");
 }

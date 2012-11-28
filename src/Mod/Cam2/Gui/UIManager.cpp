@@ -41,7 +41,7 @@
 #include "../App/CamFeature.h"
 #include "../App/TPGList.h"
 #include "../App/TPGFeature.h"
-#include "../App/TPG/PyTPGManager.h"
+#include "../App/TPG/PyTPGFactory.h"
 
 #include "UIManager.h"
 #include "TPGListModel.h"
