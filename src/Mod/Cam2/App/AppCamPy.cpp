@@ -127,30 +127,33 @@ static PyObject * _registerPyTPGFactory_(PyObject *self, PyObject *args)
 static PyObject *test(PyObject *self, PyObject *args)
 {
 //	Cam::PyTPGManager().test();
+    Cam::TPGFactory().scanPlugins();
+	vector<Cam::TPGDescriptor*> *plugins = Cam::TPGFactory().getDescriptors();
+	for (int i = 0; i < plugins->size(); i++)
+		(*plugins)[i]->print();
 
-	vector<Cam::TPGDescriptor*> plugins = Cam::PyTPGFactory().scanPlugins();
-	for (int i = 0; i < plugins.size(); i++)
-		plugins[i]->print();
-
-	QString id = QString::fromAscii("10bf335e-2491-11e2-8f39-08002734b94f");
-	Cam::TPG *tpg = Cam::PyTPGFactory().getPlugin(id);
-	if (tpg != NULL) {
-		QString desc = tpg->getDescription();
-//		printf("Found PyTPG: %s [%s] '%s'\n",ts(tpg->getName()),ts(tpg->getId()),ts(desc));
-		printf("Found PyTPG: %s [%s]",ts(tpg->getName()),ts(tpg->getId()));
-		printf(" '%s'\n", ts(desc));
-		// test the pyTPG API
-		vector<QString> actions = tpg->getActions();
-		for (int i = 0; i < actions.size(); i++) {
-			printf(" - Action: %s\n", ts(actions[i]));
-			Cam::TPGSettings *settings = tpg->getSettings(actions[i]);
-			settings->print();
-			delete settings;
-		}
-		delete tpg;
-	}
-	else {
-		printf("Unable to find TPG with id: [%s]\n", ts(id));
+	if (plugins->size() > 0)
+	{
+	    Cam::TPGDescriptor* descriptor = (*plugins)[0];
+        Cam::TPG *tpg = descriptor->make();
+        if (tpg != NULL) {
+            QString desc = tpg->getDescription();
+    //		printf("Found PyTPG: %s [%s] '%s'\n",ts(tpg->getName()),ts(tpg->getId()),ts(desc));
+            printf("Found TPG: %s [%s]",ts(tpg->getName()),ts(tpg->getId()));
+            printf(" '%s'\n", ts(desc));
+            // test the pyTPG API
+            vector<QString> actions = tpg->getActions();
+            for (int i = 0; i < actions.size(); i++) {
+                printf(" - Action: %s\n", ts(actions[i]));
+                Cam::TPGSettings *settings = tpg->getSettings(actions[i]);
+                settings->print();
+                delete settings;
+            }
+            delete tpg;
+        }
+        else {
+            printf("Unable to make TPG with id: [%s]\n", ts(descriptor->id));
+        }
 	}
 	Py_Return;
 }
