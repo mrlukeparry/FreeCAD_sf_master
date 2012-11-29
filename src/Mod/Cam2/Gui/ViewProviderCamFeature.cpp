@@ -125,11 +125,16 @@ std::vector<App::DocumentObject*> ViewProviderCamFeature::claimChildren(void) co
     // Collect any child fields and put this in the CamFeature tree
     std::vector<App::DocumentObject*> temp;
     Cam::CamFeature *feat = static_cast<Cam::CamFeature*>(getObject());
-    temp.push_back(dynamic_cast<App::DocumentObject* >(feat->getStockGeometry()));
-    temp.push_back(dynamic_cast<App::DocumentObject* >(feat->getPartsContainer()));
-    temp.push_back(dynamic_cast<App::DocumentObject* >(feat->getTPGContainer()));
-    temp.push_back(dynamic_cast<App::DocumentObject* >(feat->getGCodeFeature()));
-    return temp;
+    try {
+      temp.push_back(dynamic_cast<App::DocumentObject* >(feat->getStockGeometry()));
+      temp.push_back(dynamic_cast<App::DocumentObject* >(feat->getPartsContainer()));
+      temp.push_back(dynamic_cast<App::DocumentObject* >(feat->getTPGContainer()));
+      temp.push_back(dynamic_cast<App::DocumentObject* >(feat->getGCodeFeature()));
+      return temp;
+    } catch (...) {
+        std::vector<App::DocumentObject*> tmp;
+        return tmp;
+    }
 }
 
 Cam::CamFeature* ViewProviderCamFeature::getObject() const

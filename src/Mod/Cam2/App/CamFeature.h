@@ -60,6 +60,10 @@ public:
 
     /// Property
     App::PropertyLink     Result;      // Link to the GCodeFeature (End Result - TOP of TPG hierarchy)
+    App::PropertyLink     TPGListLink;      // Link to the GCodeFeature (End Result - TOP of TPG hierarchy)
+    App::PropertyLink     StockGeometryObject;
+    App::PropertyLink     CamPartsListObject;
+    
 
     /** @name methods overide Base Class */
     //@{
@@ -83,9 +87,7 @@ public:
     StockGeometry * getStockGeometry() const;
     CamPartsList  * getPartsContainer() const;
     TPGList       * getTPGContainer() const;
-    GCodeFeature  * getGCodeFeature() const { return getGCodeResult(); }
-
-    GCodeFeature * getGCodeResult() const;
+    GCodeFeature  * getGCodeFeature() const;
 
     void updateTPG();
     // Convenience method (Containment not necessarily needed)
@@ -97,10 +99,9 @@ protected:
 
 protected:
     /// get called by the container when a property has changed
-    virtual void onChanged(const App::Property* /*prop*/);
+    //     virtual void onChanged(const App::Property* /*prop*/);
     virtual void onSettingDocument();
-//     virtual void onDocumentRestored();
-//     virtual void onFinishDuplicating();
+
 private:
 
 };

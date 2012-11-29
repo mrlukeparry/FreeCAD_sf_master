@@ -42,8 +42,6 @@ class CamExport GCodeFeature : public App::DocumentObject
     PROPERTY_HEADER(Cam::GCodeFeature);
 
 public:
-    App::PropertyLink     TPGListObj;
-    //App::PropertyLink     PostProcessor;
 
     /// Constructor & Destructor
     GCodeFeature();
@@ -56,8 +54,6 @@ public:
     const char* getViewProviderName(void) const {
         return "CamGui::ViewProviderGCodeFeature";
     }
-
-    TPGList * getTPGList() const;
 
     QString getResult() { return QString::fromAscii("empty"); }
 

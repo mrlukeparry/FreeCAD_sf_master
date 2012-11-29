@@ -34,23 +34,12 @@ PROPERTY_SOURCE(Cam::GCodeFeature, App::DocumentObject)
 
 GCodeFeature::GCodeFeature()
 {
-    ADD_PROPERTY_TYPE(TPGListObj,(0), "GCodeFeature", App::Prop_None ,"TPG");
 }
 
 GCodeFeature::~GCodeFeature()
 {
 }
 
-
-TPGList * GCodeFeature::getTPGList() const
-{
-    TPGList *tpgList = 0;
-    App::DocumentObject * docObj = TPGListObj.getValue();
-    if(docObj && docObj->isDerivedFrom(TPGList::getClassTypeId()))
-        tpgList = dynamic_cast<TPGList *>(docObj);
-
-    return tpgList;
-}
 App::DocumentObjectExecReturn * GCodeFeature::execute(void)
 {
     return App::DocumentObject::StdReturn;

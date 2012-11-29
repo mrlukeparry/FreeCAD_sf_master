@@ -49,6 +49,7 @@ public:
 
     ///App properties stores (saves and restores references used by the TPG)
     App::PropertyLinkSubList   ExternalGeometry;
+    App::PropertyString        PluginId;
 
     /// Methods for creating external interface to attach input to each TPG
     // [TODO] eventually this could be an APP::Property link list but doesn't make sens
@@ -83,6 +84,8 @@ protected:
     TPG *tpg;
     Base::BoundBox3d inputBBox;
     std::vector<Part::Feature *> inputGeometry;
+    
+    virtual void onDocumentRestored();
 };
 
 } //namespace Cam

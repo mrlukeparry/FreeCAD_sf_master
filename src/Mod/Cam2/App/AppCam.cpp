@@ -87,6 +87,8 @@ void CamExport initCam()
     Cam::TPGFeature          ::init();
     Cam::TPGList             ::init();
 
+    // Perform initial scan to load all TPGDescriptors in the factory to ensure that documents can load these
+    Cam::TPGFactory().scanPlugins();
     Base::Console().Log("Loading CAM module... done\n");
 
 }

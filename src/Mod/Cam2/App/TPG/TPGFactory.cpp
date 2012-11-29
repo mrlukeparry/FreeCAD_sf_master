@@ -137,5 +137,3 @@ std::vector<TPGDescriptor*>* TPGFactoryInst::getDescriptors()
 
     return result;
 }
-
-

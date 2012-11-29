@@ -65,24 +65,14 @@ const char *group = "CAM Parts Feature";
 
 PROPERTY_SOURCE(Cam::TPGList, App::DocumentObject)
 
-TPGList::TPGList()
+TPGList::TPGList() : stockGeometry(NULL), partsList(NULL)
 {
-    ADD_PROPERTY_TYPE(TPGObjects          ,(0), group, (App::PropertyType)(App::Prop_None) ,"TPG Features");
-    ADD_PROPERTY_TYPE(StockGeometryObject ,(0), group, (App::PropertyType)(App::Prop_None) ,"Stock Geometry");
-    ADD_PROPERTY_TYPE(CamPartsListObject  ,(0), group, (App::PropertyType)(App::Prop_None) ,"Cam Parts List");
+    ADD_PROPERTY_TYPE(TPGObjects,(0), group, (App::PropertyType)(App::Prop_None) ,"TPG Features");
 }
 
 TPGList::~TPGList()
 {
 }
-
-short TPGList::mustExecute() const
-{
-    if(StockGeometryObject.isTouched() || CamPartsListObject.isTouched())
-        return 1;
-    return App::DocumentObject::mustExecute();
-}
-
 
 void TPGList::clear()
 {
@@ -93,26 +83,6 @@ void TPGList::clear()
 
     std::vector<App::DocumentObject *> emptyVec;
     TPGObjects.setValues(emptyVec);
-}
-
-CamPartsList * TPGList::getCamPartsList() const
-{
-    CamPartsList *camPartsList = 0;
-    App::DocumentObject * docObj = CamPartsListObject.getValue();
-    if(docObj && docObj->isDerivedFrom(CamPartsList::getClassTypeId()))
-        camPartsList = dynamic_cast<CamPartsList *>(docObj);
-
-    return camPartsList;
-}
-
-StockGeometry * TPGList::getStockGeometry() const
-{
-    StockGeometry * camPartsList = 0;
-    App::DocumentObject * docObj = StockGeometryObject.getValue();
-    if(docObj && docObj->isDerivedFrom(StockGeometry::getClassTypeId()))
-        camPartsList = dynamic_cast<StockGeometry *>(docObj);
-
-    return camPartsList;
 }
 
 std::vector<TPGFeature *> TPGList::getTPGFeatureList()
@@ -210,19 +180,6 @@ unsigned int TPGList::getMemSize(void) const
 //     App::DocumentObject::Restore(reader);
 // }
 
-void TPGList::onChanged(const App::Property* prop)
-{
-    if(prop == &TPGObjects) {
-
-    } else if(prop == &StockGeometryObject) {
-        recompute();
-    } else if(prop == &CamPartsListObject) {
-        recompute();
-    }
-
-    // Update Father class onchanged
-    App::DocumentObject::onChanged(prop);
-}
 
 // void TPGList::onDocumentRestored()
 // {

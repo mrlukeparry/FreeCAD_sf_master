@@ -53,14 +53,11 @@ public:
 
     /// Property
     App::PropertyLinkList    TPGObjects;
-    App::PropertyLink        StockGeometryObject;
-    App::PropertyLink        CamPartsListObject;
 
     /** @name methods overide Feature */
     //@{
     /// recalculate the Feature
     App::DocumentObjectExecReturn *execute(void);
-    short mustExecute(void) const;
 
     /// returns the type name of the ViewProvider
     const char* getViewProviderName(void) const {
@@ -68,9 +65,9 @@ public:
     }
     //@}
 
-    /// Getters
-    CamPartsList * getCamPartsList() const;
-    StockGeometry * getStockGeometry() const;
+    /// Setters
+    void setCamPartsList(CamPartsList *list) { partsList = list; }
+    void setStockGeometry(StockGeometry *stock) {stockGeometry = stock; }
     std::vector<TPGFeature *> getTPGFeatureList();
 
     /// Manage the list of TPG Features
@@ -91,13 +88,9 @@ public:
 //     virtual void Restore(Base::XMLReader &/*reader*/);
 
 protected:
-
-      /// Useful helpful function for calculating the mesh for individual face
-    /// get called by the container when a property has changed
-    virtual void onChanged(const App::Property* /*prop*/);
-//     virtual void onDocumentRestored();
     virtual void onFinishDuplicating();
-
+    CamPartsList *partsList;
+    StockGeometry* stockGeometry;
 private:
 
 };

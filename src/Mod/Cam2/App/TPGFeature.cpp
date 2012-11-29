@@ -29,15 +29,17 @@
 #include "TPGFeature.h"
 #include "TPG/TPGFactory.h"
 
-namespace Cam {
+using namespace Cam;
 
 PROPERTY_SOURCE(Cam::TPGFeature, App::DocumentObject)
 
 TPGFeature::TPGFeature() : tpg(NULL)
 {
     ADD_PROPERTY_TYPE(ExternalGeometry,(0, 0), "TPG Feature", (App::PropertyType)(App::Prop_None) , "External geometry");
+    ADD_PROPERTY_TYPE(PluginId,        (""),   "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
 }
 
+// TODO not sure if this is actually needed anymore.
 TPGFeature::TPGFeature(TPGDescriptor *tpgDescriptor)
 {
     loadTPG(tpgDescriptor);
@@ -46,7 +48,7 @@ TPGFeature::TPGFeature(TPGDescriptor *tpgDescriptor)
 bool TPGFeature::loadTPG(TPGDescriptor *tpgDescriptor)
 {    
     if(tpgDescriptor == NULL)
-        throw new Base::Exception("TPG Plugin Description is null");
+        throw Base::Exception("TPG Plugin Description is null");
     
     // First check if a plugin already exists and quit if already running
     if(this->hasRunningTPG())
@@ -61,12 +63,16 @@ bool TPGFeature::loadTPG(TPGDescriptor *tpgDescriptor)
     
     // Set the TPGFeatures internal TPG member
     this->tpg = myTpg;
+    
+    // Set the PluginID Property
+    PluginId.setValue(myTpg->getId().toStdString());
     return true;
 }
 
 void TPGFeature::run()
 {
-   if(hasTPG() /*&& tpg->isReady()*/) {
+      // Load the TPG, this 
+     if(hasTPG()/*&& tpg->isReady()*/) {
        //Initialise the TPG for running
 //        this->tpg->setInputBBox(inputBBox); // Set the bounding box could be null
       std::stringstream ss;
@@ -112,4 +118,21 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
     return App::DocumentObject::StdReturn;
 }
 
+void TPGFeature::onDocumentRestored()
+{
+    // Attempt to Load the plugin - guarantee no TPG is loaded
+    // TODO not sure if we should catch this higher up but this is the only place
+    try {
+      std::string id = PluginId.getValue();
+      if(id.length() > 0) {
+        // Load the TPG Plugin
+        TPG *tpgPlugin = TPGFactory().getPlugin(QString::fromStdString(id));
+        if(tpgPlugin == NULL)
+          throw Base::Exception("Plugin couldn't be loaded");
+          
+        this->tpg = tpgPlugin;
+      }
+    } catch (...) {
+
+    }    
 }

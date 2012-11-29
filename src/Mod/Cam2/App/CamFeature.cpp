@@ -67,7 +67,10 @@ const char *camFeatGroup = "Cam Feature";
 
 CamFeature::CamFeature()
 {
-    ADD_PROPERTY_TYPE(Result,(0), camFeatGroup, (App::Prop_None),"Result");
+    ADD_PROPERTY_TYPE(Result,              (0), camFeatGroup, (App::Prop_None),"Result");
+    ADD_PROPERTY_TYPE(TPGListLink,         (0), camFeatGroup, (App::Prop_None),"TPGList");
+    ADD_PROPERTY_TYPE(StockGeometryObject ,(0), camFeatGroup, (App::PropertyType)(App::Prop_None) ,"Stock Geometry");
+    ADD_PROPERTY_TYPE(CamPartsListObject  ,(0), camFeatGroup, (App::PropertyType)(App::Prop_None) ,"Cam Parts List");
 }
 
 CamFeature::~CamFeature()
@@ -87,7 +90,7 @@ void CamFeature::onSettingDocument()
 void CamFeature::initialise()
 {    
     App::Document *doc = getDocument();
-    //Generate unique names for the objects
+    //Generate unique na        return App::DocumentObject::StdReturn;mes for the objects
     std::string CamPartsListName  = doc->getUniqueObjectName("CamPartsList");
     std::string StockGeometryName = doc->getUniqueObjectName("StockGeometry");
     std::string TPGListName       = doc->getUniqueObjectName("ToolPaths");
@@ -101,23 +104,24 @@ void CamFeature::initialise()
     App::DocumentObject *gcodeFeatObj = doc->addObject("Cam::GCodeFeature" , GCodeFeatName.c_str());
 
     if(!camPartsObj || !camPartsObj->isDerivedFrom(CamPartsList::getClassTypeId()))
-        throw new Base::Exception("A CamPartsList Feature couldn't successfuly be created");
+        throw Base::Exception("A CamPartsList Feature couldn't successfuly be created");
 
     if(!stockGeomObj || !stockGeomObj->isDerivedFrom(StockGeometry::getClassTypeId()))
-        throw new Base::Exception("A Stock Geometry Feature couldn't successfuly be created");
+        throw Base::Exception("A Stock Geometry Feature couldn't successfuly be created");
 
     if(!TPGListObj || !TPGListObj->isDerivedFrom(TPGList::getClassTypeId()))
-        throw new Base::Exception("A TPGList Feature couldn't successfuly be created");
+        throw Base::Exception("A TPGList Feature couldn't successfuly be created");
 
     TPGList *tpgList = dynamic_cast<TPGList *>(TPGListObj);
-    tpgList->CamPartsListObject.setValue(camPartsObj); // Create Object Link
-    tpgList->StockGeometryObject.setValue(stockGeomObj); // Create Object Link
+    CamPartsListObject.setValue(camPartsObj); // Create Object Link
+    StockGeometryObject.setValue(stockGeomObj); // Create Object Link
 
     if(!gcodeFeatObj || !gcodeFeatObj->isDerivedFrom(GCodeFeature::getClassTypeId()))
-        throw new Base::Exception("A GCode Feature couldn't successfuly be created");
+        throw Base::Exception("A GCode Feature couldn't successfuly be created");
 
     GCodeFeature *gCodeFeat = dynamic_cast<GCodeFeature *>(gcodeFeatObj);
-    gCodeFeat->TPGListObj.setValue(TPGListObj); // Create Object Link
+//     gCodeFeat->TPGListObj.setValue(TPGListObj); // Create Object Link
+    TPGListLink.setValue(TPGListObj); // Create Object Link
     this->Result.setValue(gcodeFeatObj);
 
     doc->recompute();
@@ -130,6 +134,7 @@ void CamFeature::onDelete(const App::DocumentObject &docObj)
     {
         App::Document *pcDoc = getDocument();
         // Automatically remove children linked to this CamFeature
+        pcDoc->remObject(getGCodeFeature()->getNameInDocument());
         pcDoc->remObject(getPartsContainer()->getNameInDocument());
         pcDoc->remObject(getStockGeometry()->getNameInDocument());
         pcDoc->remObject(getTPGContainer()->getNameInDocument());
@@ -138,12 +143,22 @@ void CamFeature::onDelete(const App::DocumentObject &docObj)
 
 short int CamFeature::mustExecute() const
 {
+    if(StockGeometryObject.isTouched() || CamPartsListObject.isTouched())
+        return 1;
     return App::DocumentObject::mustExecute();
 }
 
 
 App::DocumentObjectExecReturn *CamFeature::execute(void)
 {
+  
+    TPGList *tpgList = getTPGContainer();
+    if(tpgList)
+    {
+         tpgList->setCamPartsList(getPartsContainer());
+         tpgList->setStockGeometry(getStockGeometry());
+         tpgList->execute();
+    }
     return App::DocumentObject::StdReturn;
 }
 
@@ -158,26 +173,42 @@ App::DocumentObjectExecReturn *CamFeature::execute(void)
 
 TPGList * CamFeature::getTPGContainer() const
 {
-    return getGCodeFeature()->getTPGList();
+    App::DocumentObject *obj = TPGListLink.getValue();
+    if(obj && obj->isDerivedFrom(TPGList::getClassTypeId()))
+      return dynamic_cast<TPGList *>(obj);
+    else
+      return 0;
 }
 
+    
 StockGeometry * CamFeature::getStockGeometry() const
 {
-    return getTPGContainer()->getStockGeometry();
+    StockGeometry * stockGeom = 0;
+    App::DocumentObject * docObj = StockGeometryObject.getValue();
+    if(docObj && docObj->isDerivedFrom(StockGeometry::getClassTypeId()))
+        stockGeom = dynamic_cast<StockGeometry *>(docObj);
+
+    return stockGeom;
 }
 
 CamPartsList * CamFeature::getPartsContainer() const
 {
-    return getTPGContainer()->getCamPartsList();
+    CamPartsList * camParts= 0;
+    App::DocumentObject * docObj = CamPartsListObject.getValue();
+    if(docObj && docObj->isDerivedFrom(CamPartsList::getClassTypeId()))
+        camParts = dynamic_cast<CamPartsList *>(docObj);
+
+    return camParts;
 }
 
-GCodeFeature * CamFeature::getGCodeResult() const
+GCodeFeature * CamFeature::getGCodeFeature() const
 {
+    GCodeFeature *feat = NULL;
     App::DocumentObject *docObj = Result.getValue();
-    if(!docObj || !docObj->isDerivedFrom(GCodeFeature::getClassTypeId()))
-        throw new Base::Exception("Cannot restore this Cam Feature::Invalid Link to Result Property");
+    if(docObj && docObj->isDerivedFrom(GCodeFeature::getClassTypeId()))
+        feat = dynamic_cast<GCodeFeature *>(docObj);
 
-     return dynamic_cast<GCodeFeature *>(docObj);
+    return feat;
 }
 
 unsigned int CamFeature::getMemSize(void) const
@@ -196,25 +227,3 @@ void CamFeature::Restore(XMLReader &reader)
     //read the father classes
     App::DocumentObject::Restore(reader);
 }
-
-void CamFeature::onChanged(const App::Property* prop)
-{
-    App::DocumentObject::onChanged(prop);
-    if(prop = &Result) {
-        return;
-    }    
-}
-
-// void CamFeature::onDocumentRestored()
-// {
-//     //We need to update the references on restoration. This is achieved by going through the dependency tree
-//     App::DocumentObject::onDocumentRestored();
-//     try {
-//     }
-//     catch (...) {
-//     }
-// }
-// 
-// void CamFeature::onFinishDuplicating()
-// {
-// }
