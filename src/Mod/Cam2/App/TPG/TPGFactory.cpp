@@ -31,12 +31,6 @@
 
 #include <Python.h>
 
-#include <QList>
-#include <QString>
-#include <QFile>
-#include <QFileInfo>
-#include <QDir>
-
 #include "TPG.h"
 #include "TPGPython.h"
 #include "TPGFactory.h"
@@ -44,7 +38,6 @@
 #include "CppTPGFactory.h"
 
 using namespace Cam;
-
 
 TPGFactoryInst* TPGFactoryInst::_pcSingleton = NULL;
 
@@ -81,7 +74,7 @@ void TPGFactoryInst::clearDescriptors()
         delete (*it);
         (*it) = 0;
     }     
-    d->tpgList.clear(); //Clear the Descriptor Array
+    d->tpgList.clear(); //Clear the Descriptor Vector
 }
 
 TPG * TPGFactoryInst::getPlugin(QString id)
@@ -133,10 +126,7 @@ std::vector<TPGDescriptor*>* TPGFactoryInst::getDescriptors()
     if (d->tpgList.size() == 0)
         this->scanPlugins();
 
-    // copy the tpg list cache
-    std::vector<TPGDescriptor*> *result = new std::vector<TPGDescriptor*>();
-    for (std::vector<TPGDescriptor*>::iterator it = d->tpgList.begin(); it != d->tpgList.end(); ++it)
-        result->push_back(*it);
-
+    // Copy the tpg list cache
+    std::vector<TPGDescriptor*> *result = new std::vector<TPGDescriptor*>(d->tpgList);
     return result;
 }

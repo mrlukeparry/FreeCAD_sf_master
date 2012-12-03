@@ -26,11 +26,9 @@
 
 #include <Base/Factory.h>
 #include <Base/Exception.h>
-//#include <QStringList>
 #include <boost/iterator/iterator_concepts.hpp>
 
 #include "TPG.h"
-//#include "../Support.h"
 
 #define PYTHON_TPG  1
 #define CPP_TPG     2
@@ -38,8 +36,6 @@
 
 namespace Cam
 {
-
-//class TPG;
 
 /**
  * A superclass for TPG Descriptors.  These describe the basic information
@@ -121,11 +117,6 @@ public:
    * Get a vector of all Python TPG's that are known about
    */
   std::vector<TPGDescriptor*>* getDescriptors();
-
-  /**
-   * @deprecated, use getDescriptors() instead
-   */
-  const std::vector<TPGDescriptor*> & getPluginList() { return d->tpgList; }
 
 private:
   TPGFactoryInst(void);
