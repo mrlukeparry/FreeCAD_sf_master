@@ -81,7 +81,7 @@ void TPGFactoryInst::clearDescriptors()
         delete (*it);
         (*it) = 0;
     }     
-    d->tpgList.empty();
+    d->tpgList.clear(); //Clear the Descriptor Array
 }
 
 TPG * TPGFactoryInst::getPlugin(QString id)
@@ -110,11 +110,14 @@ void TPGFactoryInst::scanPlugins(short tpgtype /*= ALL_TPG*/) {
     // clear my cache (if any)
     clearDescriptors();
 
-    // update cache
-    std::vector<TPGDescriptor*>* t = Cam::PyTPGFactory().getDescriptors();
+    // ######## Update Cache ###########
+    // Load the Python Descriptors
+    std::vector<TPGDescriptor*> *t = Cam::PyTPGFactory().getDescriptors();
     for (std::vector<TPGDescriptor*>::iterator it = t->begin(); it != t->end(); ++it)
         d->tpgList.push_back(*it);
     delete t;
+    
+    // Load the C++ Descriptors
     t = Cam::CppTPGFactory().getDescriptors();
     for (std::vector<TPGDescriptor*>::iterator it = t->begin(); it != t->end(); ++it)
         d->tpgList.push_back(*it);
