@@ -35,9 +35,13 @@
 #include <Base/BaseClass.h>
 #include <Base/BoundBox.h>
 
+namespace Cam {
+class TPG;
+}
 //#include "../GCode.h"
 //#include "TPGCache.h"
 #include "TPGSettings.h"
+#include "ToolPath.h"
 
 namespace Cam
 {
@@ -105,6 +109,11 @@ public:
      * Note: the return will change once the TP Language has been set in store
      */
     virtual void run(TPGSettings *settings, QString action);
+
+    /**
+     * Returns the toolpath from the last
+     */
+    virtual ToolPath *getToolPath() = 0;
 
     virtual QString getId() { return id; }
     virtual QString getName() { return name; }

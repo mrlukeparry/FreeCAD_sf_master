@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2012 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,46 +20,53 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _CAM_PLUGIN_MYPLUGIN_h_
-#define _CAM_PLUGIN_MYPLUGIN_h_
+#ifndef TOOLPATH_H_
+#define TOOLPATH_H_
 
-#include "../TPG/TPGLib.h"
+#include <vector>
+#include <qstring.h>
 
-namespace Cam
-{
+namespace Cam {
+class ToolPath;
+}
+
+#include "TPG.h"
+
+namespace Cam {
 
 /**
-  * Example My Plugin to demonstrate the basic structure of a c++ based plugin
-  */
+ * Stores the Tool Path output from a single TPG.
+ */
+class ToolPath {
 
-class CamExport MyPlugin: public LibTPG
-{
+protected:
+    TPG *source;
+    std::vector<QString> *toolpath;
+
 public:
-    MyPlugin() {}
-    MyPlugin(TPGDescriptor *descriptor);
-    ~MyPlugin();
-
-    /// Implement the virtual function that is called by the factory method
-    TPG* makeTPG(TPGDescriptor *descriptor)
-    {
-        return new MyPlugin(descriptor);
-    }
-    void run();
-
-
+    ToolPath(TPG* source);
+    virtual ~ToolPath();
 
     /**
-     * Returns the toolpath from the last
+     * Add a single toolpath command to the ToolPath
      */
-    virtual ToolPath *getToolPath() {return NULL;}
+    void addToolPath(QString tp);
+
+    /**
+     * Clear out the toolpath.
+     */
+    void clear();
+
+    /**
+     * Get the TPG that created this toolpath
+     */
+    TPG *getSource();
+
+    /**
+     * Get the Toolpath as strings
+     */
+    std::vector<QString> *getToolPath();
 };
 
-} //namespace Cam
-
-
-#endif //_CAM_PLUGIN_MYPLUGIN_h_
-
-
-
-
-
+} /* namespace Cam */
+#endif /* TOOLPATH_H_ */

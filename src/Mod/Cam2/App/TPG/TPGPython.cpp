@@ -29,6 +29,7 @@
 
 #include "../TPGFeature.h"
 #include "TPGPython.h"
+#include "PyToolPath.h"
 
 using namespace Cam;
 
@@ -262,4 +263,24 @@ void TPGPython::run(TPGSettings *settings, QString action)
         PyGILState_Release(state);
 	}
 	//TODO: make error
+}
+
+/**
+ * Returns the toolpath from the last (or current) tool-path run
+ */
+ToolPath *TPGPython::getToolPath() {
+    PyObject *inst = getInst();
+    ToolPath *res = NULL;
+    if (inst != NULL) {
+        PyGILState_STATE state = PyGILState_Ensure();
+        PyObject *result = PyObject_CallMethod(inst, "getToolPath", "");
+        if (result != NULL) {
+            if (typeid(result) == typeid(cam_PyToolPath)) {
+                res = ((cam_PyToolPath*) result)->tp;
+            }
+            Py_DecRef(result);
+        }
+        PyGILState_Release(state);
+    }
+    return res;
 }

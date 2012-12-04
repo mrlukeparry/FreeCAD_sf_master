@@ -62,6 +62,11 @@ public:
      */
     virtual void run(TPGSettings *settings, QString);
 
+    /**
+     * Returns the toolpath from the last
+     */
+    virtual ToolPath *getToolPath();
+
     virtual QString getId();
     virtual QString getName();
     virtual QString getDescription();

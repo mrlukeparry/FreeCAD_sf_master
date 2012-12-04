@@ -74,7 +74,6 @@ PyTPGFactoryInst::~PyTPGFactoryInst()
  */
 void PyTPGFactoryInst::setCallback(PyObject* obj)
 {
-  printf("PyTPGManager.setCallback(%p)\n", obj);
     if (this->obj != NULL)
         Py_DecRef(this->obj);
     this->obj = obj;

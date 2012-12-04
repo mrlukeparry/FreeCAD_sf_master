@@ -20,6 +20,7 @@
 # *                                                                         *
 # ***************************************************************************/
  
+import Cam
 from PyCam.PyCam import PyTPGBase, UnimplementedTPError
 
 
@@ -72,7 +73,13 @@ class ExampleTPG(PyTPGBase):
     description = u'This is a simple Example Python TPG'
         
     def getActions(self):
-        '''Returns a list of actions that this TPG offers'''
+        '''Returns a list of actions that this TPG offers.  Actions are like
+        methods on a class; they allow a TPG to perform user-selectable tasks.
+        i.e. they might calculate the ToolPath using different strategies, 
+        they might allow a multi-step strategy to be performed in individual
+        steps OR they might provide testing or debug tasks.  If the TPG only
+        supports a single action then it should be called 'default'.'''
+        
         return self.settings.keys()
 
     def getSettings(self, action=None):
@@ -88,8 +95,23 @@ class ExampleTPG(PyTPGBase):
         
     def run(self, action, settings=[]):
         '''Runs the selected action and returns the resulting TP'''
-        #TODO: implement an example (Note: need to define the output interface i.e. what it will return)
-        raise UnimplementedTPError(action)
+        
+        # Create a new ToolPath object to store the toolpath
+        out = Cam.PyToolPath()
+        self._toolPath = out
+        
+        if action == 'default':
+            # Add toolpath primitives
+            out.addToolPath('rapid(0,0,0.1)')
+            out.addToolPath('feed(0,0,-0.5)')
+            out.addToolPath('feed(1,0,-0.5)')
+            out.addToolPath('feed(1,1,-0.5)')
+            out.addToolPath('feed(0,1,-0.5)')
+            out.addToolPath('feed(0,0,-0.5)')
+            out.addToolPath('rapid(0,0,0.1)')
+        elif action == 'test':
+            print 'Testing ExampleTPG'
+    # end run()
     
 
 class SecondTPG(ExampleTPG):
