@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2012 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,46 +20,55 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _CAM_PLUGIN_MYPLUGIN_h_
-#define _CAM_PLUGIN_MYPLUGIN_h_
+#include "../PreCompiled.h"
+#ifndef _PreComp_
+#endif
 
-#include "../TPG/TPGLib.h"
+#include <cstring>
 
-namespace Cam
-{
+#include "ToolPath.h"
+
+namespace Cam {
+
+ToolPath::ToolPath(TPG* source) {
+    this->source = source;
+    this->toolpath = new std::vector<QString>();
+}
+
+ToolPath::~ToolPath() {
+    if (this->toolpath != NULL)
+        delete this->toolpath;
+}
 
 /**
-  * Example My Plugin to demonstrate the basic structure of a c++ based plugin
-  */
+ * Add a single toolpath command to the ToolPath
+ */
+void ToolPath::addToolPath(QString tp) {
+    if (this->toolpath == NULL)
+        this->toolpath = new std::vector<QString>();
+    this->toolpath->push_back(tp);
+}
 
-class CamExport MyPlugin: public LibTPG
-{
-public:
-    MyPlugin() {}
-    MyPlugin(TPGDescriptor *descriptor);
-    ~MyPlugin();
+/**
+ * Clear out the toolpath.
+ */
+void ToolPath::clear() {
+    if (this->toolpath != NULL)
+        this->toolpath->clear();
+}
 
-    /// Implement the virtual function that is called by the factory method
-    TPG* makeTPG(TPGDescriptor *descriptor)
-    {
-        return new MyPlugin(descriptor);
-    }
-    void run();
+/**
+ * Get the TPG that created this toolpath
+ */
+TPG *ToolPath::getSource() {
+    return this->source;
+}
 
+/**
+ * Get the Toolpath as strings
+ */
+std::vector<QString> *ToolPath::getToolPath() {
+    return this->toolpath;
+}
 
-
-    /**
-     * Returns the toolpath from the last
-     */
-    virtual ToolPath *getToolPath() {return NULL;}
-};
-
-} //namespace Cam
-
-
-#endif //_CAM_PLUGIN_MYPLUGIN_h_
-
-
-
-
-
+} /* namespace Cam */

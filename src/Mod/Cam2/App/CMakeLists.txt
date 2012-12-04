@@ -59,11 +59,15 @@ SET(TPG_SRCS
     TPG/TPGPython.h
     TPG/TPGSettings.cpp
     TPG/TPGSettings.h
+    TPG/ToolPath.cpp
+    TPG/ToolPath.h
     
     TPG/PyTPGFactory.cpp
     TPG/PyTPGFactory.h
     TPG/PyTPGDescriptor.cpp
     TPG/PyTPGDescriptor.h
+    TPG/PyToolPath.cpp
+    TPG/PyToolPath.h
     
     TPG/CppTPG.h
     TPG/CppTPGDescriptor.cpp

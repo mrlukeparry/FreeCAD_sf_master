@@ -50,6 +50,9 @@ PyDoc_STRVAR(module_Cam_doc,
 "This module is the CAM module.");
 
 
+#include "TPG/PyToolPath.cpp"
+
+
 /* Python entry */
 extern "C" {
 void CamExport initCam()
@@ -66,6 +69,11 @@ void CamExport initCam()
     PyObject* camModule = Py_InitModule3("Cam", Cam_methods, module_Cam_doc);   /* mod name, table ptr */
 
     // Add Types to module
+    Py_INCREF(&PyToolPathType);
+    PyModule_AddObject(camModule, "ToolPath", (PyObject *)&PyToolPathType);
+
+    if (PyType_Ready(&PyToolPathType) < 0)
+        return;
 
     // Add the PyCam module to the Cam Module
     PyObject* pyCamMod = PyImport_ImportModule("PyCam");
@@ -75,7 +83,6 @@ void CamExport initCam()
         Cam::PyTPGFactory().loadCallbackFromModule(pyCamMod);
     	Py_DecRef(pyCamMod);
     }
-
     // NOTE: To finish the initialization of our own type objects we must
     // call PyType_Ready, otherwise we run into a segmentation fault, later on.
     // This function is responsible for adding inherited slots from a type's base class.

@@ -46,6 +46,11 @@ public:
      * Note: the return will change once the TP Language has been set in stone
      */
     virtual void run(TPGSettings *settings, QString action);
+
+    /**
+     * Returns the toolpath from the last
+     */
+    virtual ToolPath *getToolPath() {return NULL;}
 };
 
 } /* namespace Cam */

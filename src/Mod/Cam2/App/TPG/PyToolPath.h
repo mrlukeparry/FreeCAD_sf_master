@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2012 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,46 +20,20 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _CAM_PLUGIN_MYPLUGIN_h_
-#define _CAM_PLUGIN_MYPLUGIN_h_
+#ifndef PYTOOLPATH_H_
+#define PYTOOLPATH_H_
 
-#include "../TPG/TPGLib.h"
+#include <Python.h>
 
-namespace Cam
-{
+#include "ToolPath.h"
+
 
 /**
-  * Example My Plugin to demonstrate the basic structure of a c++ based plugin
-  */
+ * A wrapper for the ToolPath class to allow access from PyTPGs
+ */
+typedef struct  {
+    PyObject_HEAD
+    Cam::ToolPath *tp;
+} cam_PyToolPath;
 
-class CamExport MyPlugin: public LibTPG
-{
-public:
-    MyPlugin() {}
-    MyPlugin(TPGDescriptor *descriptor);
-    ~MyPlugin();
-
-    /// Implement the virtual function that is called by the factory method
-    TPG* makeTPG(TPGDescriptor *descriptor)
-    {
-        return new MyPlugin(descriptor);
-    }
-    void run();
-
-
-
-    /**
-     * Returns the toolpath from the last
-     */
-    virtual ToolPath *getToolPath() {return NULL;}
-};
-
-} //namespace Cam
-
-
-#endif //_CAM_PLUGIN_MYPLUGIN_h_
-
-
-
-
-
+#endif /* PYTOOLPATH_H_ */
