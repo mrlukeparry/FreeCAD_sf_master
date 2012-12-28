@@ -1,7 +1,7 @@
 /***************************************************************************
- *   Copyright (c) 2011 Werner Mayer <wmayer[at]users.sourceforge.net>     *
+ *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
- *   This file is part of the FreeCAD CAx development system.              *
+ *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
  *   This library is free software; you can redistribute it and/or         *
  *   modify it under the terms of the GNU Library General Public           *
@@ -10,7 +10,7 @@
  *                                                                         *
  *   This library  is distributed in the hope that it will be useful,      *
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   MERCHANTABILITY or FITNESS FOR A DrawingICULAR PURPOSE.  See the      *
  *   GNU Library General Public License for more details.                  *
  *                                                                         *
  *   You should have received a copy of the GNU Library General Public     *
@@ -20,54 +20,45 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifndef _DRAWING_GEOMETRYOBJECT_H
+#define _DRAWING_GEOMETRYOBJECT_H
 
-#ifndef DRAWING_EXPORT_H
-#define DRAWING_EXPORT_H
-
+#include <TopoDS_Shape.hxx>
+#include <Base/Vector3D.h>
 #include <string>
-#include <boost/concept_check.hpp>
-#include <boost/graph/graph_concepts.hpp>
-#include <App/PropertyGeo.h>
+#include <vector>
 
-class TopoDS_Shape;
-class BRepAdaptor_Curve;
+#include "Geometry.h"
 
-namespace Base {
-  class Vector2D;
-}
+class HLRBRep_Algo;
 
-
-namespace Drawing
+namespace DrawingGeometry
 {
 
-class DrawingExport SVGOutput
+class BaseGeom;
+/** Algo class for projecting shapes and creating SVG output of it
+ */
+class DrawingExport GeometryObject
 {
 public:
-    SVGOutput();
-    std::string exportEdges(const TopoDS_Shape&);
+    /// Constructor
+    GeometryObject();
+    virtual ~GeometryObject();
+    
+    void clear();
 
-private:
-    void printCircle(const BRepAdaptor_Curve&, std::ostream&);
-    void printEllipse(const BRepAdaptor_Curve&, int id, std::ostream&);
-    void printBSpline(const BRepAdaptor_Curve&, int id, std::ostream&);
-    void printGeneric(const BRepAdaptor_Curve&, int id, std::ostream&);
+    void setTolerance(double value);
+    const std::vector<BaseGeom *> & getGeometry() const { return geometry; };
+    
+    void extractGeometry(const TopoDS_Shape &input,const Base::Vector3f &direction, double tolerance);
+
+protected:
+    void calculateGeometry(const TopoDS_Shape &input, ExtractionType extractionType);
+    std::vector<BaseGeom *> geometry;
+    double Tolerance;
+    HLRBRep_Algo *brep_hlr;
 };
 
-/* dxf output section - Dan Falck 2011/09/25  */
-class DrawingExport DXFOutput
-{
-public:
-    DXFOutput();
-    std::string exportEdges(const TopoDS_Shape&);
+} //namespace DrawingGeometry
 
-private:
-    void printHeader(std::ostream& out);
-    void printCircle(const BRepAdaptor_Curve&, std::ostream&);
-    void printEllipse(const BRepAdaptor_Curve&, int id, std::ostream&);
-    void printBSpline(const BRepAdaptor_Curve&, int id, std::ostream&);
-    void printGeneric(const BRepAdaptor_Curve&, int id, std::ostream&);
-};
-  
-} //namespace Drawing
-
-#endif // DRAWING_EXPORT_H
+#endif

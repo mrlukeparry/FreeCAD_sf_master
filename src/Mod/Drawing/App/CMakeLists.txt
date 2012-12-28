@@ -42,6 +42,12 @@ SET(Drawing_SRCS
     PreCompiled.h
 )
 
+SET(DrawingGeometry_SRCS
+    Geometry.cpp
+    Geometry.h
+    GeometryObject.cpp
+    GeometryObject.h
+)
 SET(DrawingAlgos_SRCS
     DrawingExport.cpp
     DrawingExport.h
@@ -51,6 +57,7 @@ SET(DrawingAlgos_SRCS
 
 SOURCE_GROUP("Mod" FILES ${Drawing_SRCS})
 SOURCE_GROUP("Features" FILES ${Features_SRCS})
+SOURCE_GROUP("Geometry" FILES ${DrawingGeometry_SRCS})
 SOURCE_GROUP("Algorithms" FILES ${DrawingAlgos_SRCS})
 
 SET(Drawing_Templates
@@ -71,7 +78,7 @@ IF(MSVC)
 SET_SOURCE_FILES_PROPERTIES(ProjectionAlgos.cpp PROPERTIES COMPILE_FLAGS "/EHa")
 ENDIF(MSVC)
 
-add_library(Drawing SHARED ${Drawing_SRCS} ${Features_SRCS} ${DrawingAlgos_SRCS})
+add_library(Drawing SHARED ${Drawing_SRCS} ${Features_SRCS} ${DrawingAlgos_SRCS} ${DrawingGeometry_SRCS})
 target_link_libraries(Drawing ${Drawing_LIBS})
 
 SET(Drawing_Scripts

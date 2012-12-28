@@ -27,6 +27,8 @@
 #include <Gui/MDIView.h>
 #include <QGraphicsView>
 
+#include <App/DocumentObject.h>
+
 QT_BEGIN_NAMESPACE
 class QSlider;
 class QAction;
@@ -41,6 +43,8 @@ QT_END_NAMESPACE
 
 namespace DrawingGui
 {
+
+class CanvasView;
 
 class DrawingGuiExport SvgView : public QGraphicsView
 {
@@ -79,7 +83,7 @@ class DrawingGuiExport DrawingView : public Gui::MDIView
     Q_OBJECT
 
 public:
-    DrawingView(Gui::Document* doc, QWidget* parent = 0);
+    DrawingView(App::DocumentObject* docObj, QWidget* parent = 0);
 
 public Q_SLOTS:
     void load(const QString &path = QString());
@@ -106,7 +110,8 @@ private:
     QAction *m_backgroundAction;
     QAction *m_outlineAction;
 
-    SvgView *m_view;
+    CanvasView *m_view;
+    App::DocumentObject *docObj;
 
     QString m_currentPath;
 };

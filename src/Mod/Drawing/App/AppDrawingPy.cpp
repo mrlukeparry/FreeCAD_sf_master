@@ -98,65 +98,65 @@ projectEx(PyObject *self, PyObject *args)
     } PY_CATCH;
 }
 
-static PyObject * 
-projectToSVG(PyObject *self, PyObject *args)
-{
-    PyObject *pcObjShape;
-    PyObject *pcObjDir=0;
-    const char *type=0;
-    float scale=1.0f;
-    float tol=0.1f;
-
-    if (!PyArg_ParseTuple(args, "O!|O!sff", &(TopoShapePy::Type), &pcObjShape,
-                                            &(Base::VectorPy::Type), &pcObjDir, &type, &scale, &tol))
-        return NULL;
-
-    PY_TRY {
-        TopoShapePy* pShape = static_cast<TopoShapePy*>(pcObjShape);
-        Base::Vector3d Vector(0,0,1);
-        if (pcObjDir)
-            Vector = static_cast<Base::VectorPy*>(pcObjDir)->value();
-        ProjectionAlgos Alg(pShape->getTopoShapePtr()->_Shape,Base::Vector3f((float)Vector.x,(float)Vector.y,(float)Vector.z));
-
-        bool hidden = false;
-        if (type && std::string(type) == "ShowHiddenLines")
-            hidden = true;
-
-        Py::String result(Alg.getSVG(hidden?ProjectionAlgos::WithHidden:ProjectionAlgos::Plain, scale, tol));
-        return Py::new_reference_to(result);
-
-    } PY_CATCH;
-}
-
-static PyObject * 
-projectToDXF(PyObject *self, PyObject *args)
-{
-    PyObject *pcObjShape;
-    PyObject *pcObjDir=0;
-    const char *type=0;
-    float scale=1.0f;
-    float tol=0.1f;
-
-    if (!PyArg_ParseTuple(args, "O!|O!sff", &(TopoShapePy::Type), &pcObjShape,
-                                            &(Base::VectorPy::Type), &pcObjDir, &type, &scale, &tol))
-        return NULL;
-
-    PY_TRY {
-        TopoShapePy* pShape = static_cast<TopoShapePy*>(pcObjShape);
-        Base::Vector3d Vector(0,0,1);
-        if (pcObjDir)
-            Vector = static_cast<Base::VectorPy*>(pcObjDir)->value();
-        ProjectionAlgos Alg(pShape->getTopoShapePtr()->_Shape,Base::Vector3f((float)Vector.x,(float)Vector.y,(float)Vector.z));
-
-        bool hidden = false;
-        if (type && std::string(type) == "ShowHiddenLines")
-            hidden = true;
-
-        Py::String result(Alg.getDXF(hidden?ProjectionAlgos::WithHidden:ProjectionAlgos::Plain, scale, tol));
-        return Py::new_reference_to(result);
-
-    } PY_CATCH;
-}
+// static PyObject * 
+// projectToSVG(PyObject *self, PyObject *args)
+// {
+//     PyObject *pcObjShape;
+//     PyObject *pcObjDir=0;
+//     const char *type=0;
+//     float scale=1.0f;
+//     float tol=0.1f;
+// 
+//     if (!PyArg_ParseTuple(args, "O!|O!sff", &(TopoShapePy::Type), &pcObjShape,
+//                                             &(Base::VectorPy::Type), &pcObjDir, &type, &scale, &tol))
+//         return NULL;
+// 
+//     PY_TRY {
+//         TopoShapePy* pShape = static_cast<TopoShapePy*>(pcObjShape);
+//         Base::Vector3d Vector(0,0,1);
+//         if (pcObjDir)
+//             Vector = static_cast<Base::VectorPy*>(pcObjDir)->value();
+//         ProjectionAlgos Alg(pShape->getTopoShapePtr()->_Shape,Base::Vector3f((float)Vector.x,(float)Vector.y,(float)Vector.z));
+// 
+//         bool hidden = false;
+//         if (type && std::string(type) == "ShowHiddenLines")
+//             hidden = true;
+// 
+//         Py::String result(Alg.getSVG(hidden?ProjectionAlgos::WithHidden:ProjectionAlgos::Plain, scale, tol));
+//         return Py::new_reference_to(result);
+// 
+//     } PY_CATCH;
+// }
+// 
+// static PyObject * 
+// projectToDXF(PyObject *self, PyObject *args)
+// {
+//     PyObject *pcObjShape;
+//     PyObject *pcObjDir=0;
+//     const char *type=0;
+//     float scale=1.0f;
+//     float tol=0.1f;
+// 
+//     if (!PyArg_ParseTuple(args, "O!|O!sff", &(TopoShapePy::Type), &pcObjShape,
+//                                             &(Base::VectorPy::Type), &pcObjDir, &type, &scale, &tol))
+//         return NULL;
+// 
+//     PY_TRY {
+//         TopoShapePy* pShape = static_cast<TopoShapePy*>(pcObjShape);
+//         Base::Vector3d Vector(0,0,1);
+//         if (pcObjDir)
+//             Vector = static_cast<Base::VectorPy*>(pcObjDir)->value();
+//         ProjectionAlgos Alg(pShape->getTopoShapePtr()->_Shape,Base::Vector3f((float)Vector.x,(float)Vector.y,(float)Vector.z));
+// 
+//         bool hidden = false;
+//         if (type && std::string(type) == "ShowHiddenLines")
+//             hidden = true;
+// 
+//         Py::String result(Alg.getDXF(hidden?ProjectionAlgos::WithHidden:ProjectionAlgos::Plain, scale, tol));
+//         return Py::new_reference_to(result);
+// 
+//     } PY_CATCH;
+// }
 
 
 
@@ -165,7 +165,7 @@ struct PyMethodDef Drawing_methods[] = {
    {"project"       ,project      ,METH_VARARGS,
      "[visiblyG0,visiblyG1,hiddenG0,hiddenG1] = project(TopoShape[,App.Vector Direction, string type]) -- Project a shape and return the visible/invisible parts of it."},
    {"projectEx"       ,projectEx      ,METH_VARARGS,
-     "[V,V1,VN,VO,VI,H,H1,HN,HO,HI] = projectEx(TopoShape[,App.Vector Direction, string type]) -- Project a shape and return the all parts of it."},
+     "[V,V1,VN,VO,VI,H,H1,HN,HO,HI] = projectEx(TopoShape[,App.Vector Direction, string type]) -- Project a shape and return the all parts of it."}/*,
    {"projectToSVG"       ,projectToSVG      ,METH_VARARGS,
      "string = projectToSVG(TopoShape[,App.Vector Direction, string type]) -- Project a shape and return the SVG representation as string."},
    {"projectToDXF"       ,projectToDXF      ,METH_VARARGS,

@@ -27,7 +27,6 @@
 # include <sstream>
 #endif
 
-
 #include <HLRBRep_Algo.hxx>
 #include <TopoDS_Shape.hxx>
 #include <HLRTopoBRep_OutLiner.hxx>
@@ -65,7 +64,6 @@
 using namespace Drawing;
 using namespace std;
 
-
 //===========================================================================
 // FeatureViewPart
 //===========================================================================
@@ -74,141 +72,49 @@ App::PropertyFloatConstraint::Constraints FeatureViewPart::floatRange = {0.01f,5
 
 PROPERTY_SOURCE(Drawing::FeatureViewPart, Drawing::FeatureView)
 
-
-FeatureViewPart::FeatureViewPart(void) 
+FeatureViewPart::FeatureViewPart(void) : geometryObject(0)
 {
     static const char *group = "Shape view";
     static const char *vgroup = "Drawing view";
 
     ADD_PROPERTY_TYPE(Direction ,(0,0,1.0),group,App::Prop_None,"Projection direction");
-    ADD_PROPERTY_TYPE(Source ,(0),group,App::Prop_None,"Shape to view");
+    ADD_PROPERTY_TYPE(Source    ,(0),group,App::Prop_None,"Shape to view");
     ADD_PROPERTY_TYPE(ShowHiddenLines ,(false),group,App::Prop_None,"Control the appearance of the dashed hidden lines");
     ADD_PROPERTY_TYPE(ShowSmoothLines ,(false),group,App::Prop_None,"Control the appearance of the smooth lines");
     ADD_PROPERTY_TYPE(LineWidth,(0.35f),vgroup,App::Prop_None,"The thickness of the resulting lines");
     ADD_PROPERTY_TYPE(Tolerance,(0.05f),vgroup,App::Prop_None,"The tessellation tolerance");
     Tolerance.setConstraints(&floatRange);
+    
+    geometryObject = new DrawingGeometry::GeometryObject();
 }
 
 FeatureViewPart::~FeatureViewPart()
 {
+    delete geometryObject;
 }
 
-#if 0 
+const std::vector<DrawingGeometry::BaseGeom  *> & FeatureViewPart::getGeometry() const
+{
+    return geometryObject->getGeometry();
+}
 
 App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
 {
-    std::stringstream result;
-	std::string ViewName = Label.getValue();
-
+    //## Get the Part Link ##/
     App::DocumentObject* link = Source.getValue();
+    
     if (!link)
         return new App::DocumentObjectExecReturn("No object linked");
+    
     if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
         return new App::DocumentObjectExecReturn("Linked object is not a Part object");
+
     TopoDS_Shape shape = static_cast<Part::Feature*>(link)->Shape.getShape()._Shape;
     if (shape.IsNull())
         return new App::DocumentObjectExecReturn("Linked shape object is empty");
-
-    Handle( HLRBRep_Algo ) brep_hlr = new HLRBRep_Algo;
-    brep_hlr->Add( shape );
-
-    gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(0,0,1));
-    HLRAlgo_Projector projector( transform );
-    brep_hlr->Projector( projector );
-    brep_hlr->Update();
-    brep_hlr->Hide();
-
-    // extracting the result sets:
-    HLRBRep_HLRToShape shapes( brep_hlr );
-
-    TopoDS_Shape VisiblyEdges;
-    VisiblyEdges = shapes.VCompound();
-
-    TopoDS_Shape HiddenEdges;
-    HiddenEdges = shapes.HCompound();
-
-	BRepMesh::Mesh(VisiblyEdges,0.1);
-    //HLRBRep_HLRToShape Tool(Hider);
-    //TopoDS_Shape V  = Tool.VCompound       ();// artes vives       vues
-    //TopoDS_Shape V1 = Tool.Rg1LineVCompound();// artes rgulires  vues
-    //TopoDS_Shape VN = Tool.RgNLineVCompound();// artes de couture  vues
-    //TopoDS_Shape VO = Tool.OutLineVCompound();// contours apparents vus
-    //TopoDS_Shape VI = Tool.IsoLineVCompound();// isoparamtriques   vues
-    //TopoDS_Shape H  = Tool.HCompound       ();// artes vives       caches
-    //TopoDS_Shape H1 = Tool.Rg1LineHCompound();// artes rgulires  caches
-    //TopoDS_Shape HN = Tool.RgNLineHCompound();// artes de couture  caches
-    //TopoDS_Shape HO = Tool.OutLineHCompound();// contours apparents cachs
-    //TopoDS_Shape HI = Tool.IsoLineHCompound();// isoparamtriques   caches
-
-    result  << "<g" 
-            << " id=\"" << ViewName << "\"" << endl
-		    << "   stroke=\"rgb(0, 0, 0)\"" << endl 
-			<< "   stroke-width=\"0.35\"" << endl
-			<< "   stroke-linecap=\"butt\"" << endl
-			<< "   stroke-linejoin=\"miter\"" << endl
-			<< "   transform=\"translate("<< X.getValue()<<","<<Y.getValue()<<") scale("<< Scale.getValue()<<","<<Scale.getValue()<<")\"" << endl
-            << "   fill=\"none\"" << endl
-            << "  >" << endl;
-
-    TopExp_Explorer edges( VisiblyEdges, TopAbs_EDGE );
-    for (int i = 1 ; edges.More(); edges.Next(),i++ ) {
-      TopoDS_Edge edge = TopoDS::Edge( edges.Current() );
-      TopLoc_Location location;
-      Handle( Poly_Polygon3D ) polygon = BRep_Tool::Polygon3D( edge, location );
-      if ( !polygon.IsNull() ) {
-        const TColgp_Array1OfPnt& nodes = polygon->Nodes();
-         char c = 'M';
-        result << "<path id= \"" << ViewName << i << "\" d=\" "; 
-        for ( int i = nodes.Lower(); i<= nodes.Upper(); i++ ){
-            result << c << " " << nodes(i).X() << " " << nodes(i).Y()<< " " ; 
-            c = 'L';
-        }
-        result << "\" />" << endl;
-      }
-    }
-
-    result << "</g>" << endl;
-
-    // Apply the resulting fragment
-    ViewResult.setValue(result.str().c_str());
-
-    return App::DocumentObject::StdReturn;
-}
-#else 
-App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
-{
-    std::stringstream result;
-    std::string ViewName = Label.getValue();
-
-    App::DocumentObject* link = Source.getValue();
-    if (!link)
-        return new App::DocumentObjectExecReturn("No object linked");
-    if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
-        return new App::DocumentObjectExecReturn("Linked object is not a Part object");
-    TopoDS_Shape shape = static_cast<Part::Feature*>(link)->Shape.getShape()._Shape;
-    if (shape.IsNull())
-        return new App::DocumentObjectExecReturn("Linked shape object is empty");
-    Base::Vector3f Dir = Direction.getValue();
-    bool hidden = ShowHiddenLines.getValue();
-    bool smooth = ShowSmoothLines.getValue();
-
+   
     try {
-        ProjectionAlgos Alg(ProjectionAlgos::invertY(shape),Dir);
-        result  << "<g" 
-                << " id=\"" << ViewName << "\"" << endl
-                << "   transform=\"rotate("<< Rotation.getValue() << ","<< X.getValue()<<","<<Y.getValue()<<") translate("<< X.getValue()<<","<<Y.getValue()<<") scale("<< Scale.getValue()<<","<<Scale.getValue()<<")\"" << endl
-                << "  >" << endl;
-
-        ProjectionAlgos::ExtractionType type = ProjectionAlgos::Plain;
-        if (hidden) type = (ProjectionAlgos::ExtractionType)(type|ProjectionAlgos::WithHidden);
-        if (smooth) type = (ProjectionAlgos::ExtractionType)(type|ProjectionAlgos::WithSmooth);
-        result << Alg.getSVG(type, this->LineWidth.getValue() / this->Scale.getValue(), this->Tolerance.getValue());
-
-        result << "</g>" << endl;
-
-        // Apply the resulting fragment
-        ViewResult.setValue(result.str().c_str());
-
+        geometryObject->extractGeometry(ProjectionAlgos::invertY(shape), Direction.getValue(), Tolerance.getValue());
         return App::DocumentObject::StdReturn;
     }
     catch (Standard_Failure) {
@@ -216,9 +122,6 @@ App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
         return new App::DocumentObjectExecReturn(e->GetMessageString());
     }
 }
-
-#endif 
-
 
 // Python Drawing feature ---------------------------------------------------------
 

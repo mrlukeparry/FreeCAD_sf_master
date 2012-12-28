@@ -30,7 +30,6 @@
 # include <TopoDS_Compound.hxx>
 #endif
 
-
 #include <strstream>
 #include <Base/Writer.h>
 #include <Base/Reader.h>
@@ -42,15 +41,13 @@
 
 using namespace Drawing;
 
-
 PROPERTY_SOURCE(Drawing::FeatureProjection, Part::Feature)
-
 
 FeatureProjection::FeatureProjection() 
 {
     static const char *group = "Projection";
-    ADD_PROPERTY_TYPE(Source ,(0),group,App::Prop_None,"Shape to project");
-    ADD_PROPERTY_TYPE(Direction ,(Base::Vector3f(0,0,1)),group,App::Prop_None,"Projection direction");
+    ADD_PROPERTY_TYPE(Source           ,(0),group,App::Prop_None,"Shape to project");
+    ADD_PROPERTY_TYPE(Direction        ,(Base::Vector3f(0,0,1)),group,App::Prop_None,"Projection direction");
     ADD_PROPERTY_TYPE(VCompound        ,(true),group,App::Prop_None,"Projection parameter");
     ADD_PROPERTY_TYPE(Rg1LineVCompound ,(true),group,App::Prop_None,"Projection parameter");
     ADD_PROPERTY_TYPE(RgNLineVCompound ,(true),group,App::Prop_None,"Projection parameter");

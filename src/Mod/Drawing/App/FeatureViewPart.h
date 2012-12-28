@@ -32,7 +32,7 @@
 #include "FeatureView.h"
 #include <App/FeaturePython.h>
 
-
+#include "GeometryObject.h"
 namespace Drawing
 {
 
@@ -55,7 +55,8 @@ public:
     App::PropertyFloat  LineWidth;
     App::PropertyFloatConstraint  Tolerance;
 
-
+    const std::vector<DrawingGeometry::BaseGeom  *> & getGeometry() const;
+    
     /** @name methods overide Feature */
     //@{
     /// recalculate the Feature
@@ -67,6 +68,8 @@ public:
         return "DrawingGui::ViewProviderDrawingView";
     }
 
+protected:
+    DrawingGeometry::GeometryObject *geometryObject;
 private:
     static App::PropertyFloatConstraint::Constraints floatRange;
 };

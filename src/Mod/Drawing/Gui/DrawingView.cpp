@@ -54,12 +54,18 @@
 # include <cmath>
 #endif
 
-#include "DrawingView.h"
+#include <App/Document.h>
+#include <App/DocumentObject.h>
 #include <Base/Stream.h>
 #include <Base/gzstream.h>
 #include <Base/PyObjectBase.h>
+
 #include <Gui/FileDialog.h>
 #include <Gui/WaitCursor.h>
+
+#include "CanvasView.h"
+#include "DrawingView.h"
+
 
 using namespace DrawingGui;
 
@@ -201,8 +207,8 @@ void SvgView::wheelEvent(QWheelEvent *event)
 
 /* TRANSLATOR DrawingGui::DrawingView */
 
-DrawingView::DrawingView(Gui::Document* doc, QWidget* parent)
-  : Gui::MDIView(doc, parent), m_view(new SvgView)
+DrawingView::DrawingView(App::DocumentObject *docObj, QWidget* parent)
+  : Gui::MDIView(getGuiDocument(), parent), m_view(new CanvasView)
 {
     m_backgroundAction = new QAction(tr("&Background"), this);
     m_backgroundAction->setEnabled(false);
@@ -261,7 +267,14 @@ void DrawingView::load (const QString & fileName)
             return;
         }
 
-        m_view->openFile(file);
+            // get through the children and collect all the views
+            const std::vector<App::DocumentObject*> &Grp = Group.getValues();
+            for (std::vector<App::DocumentObject*>::const_iterator It= Grp.begin();It!=Grp.end();++It) {
+                if ( (*It)->getTypeId().isDerivedFrom(Drawing::FeatureView::getClassTypeId()) ) {
+                    Drawing::FeatureView *View = dynamic_cast<Drawing::FeatureView *>(*It);
+            }
+        m_view->drawViewPart();
+//         m_view->openFile(file);
 
         if (!fileName.startsWith(QLatin1String(":/"))) {
             m_currentPath = fileName;
@@ -294,15 +307,15 @@ void DrawingView::setRenderer(QAction *action)
 #endif
 
     if (action == m_nativeAction)
-        m_view->setRenderer(SvgView::Native);
+        m_view->setRenderer(CanvasView::Native);
 #ifndef QT_NO_OPENGL
     else if (action == m_glAction) {
         m_highQualityAntialiasingAction->setEnabled(true);
-        m_view->setRenderer(SvgView::OpenGL);
+        m_view->setRenderer(CanvasView::OpenGL);
     }
 #endif
     else if (action == m_imageAction) {
-        m_view->setRenderer(SvgView::Image);
+        m_view->setRenderer(CanvasView::Image);
     }
 }
 

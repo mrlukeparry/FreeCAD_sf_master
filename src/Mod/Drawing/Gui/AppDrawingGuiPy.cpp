@@ -169,7 +169,7 @@ exporter(PyObject *self, PyObject *args)
                                     float tol = view->Tolerance.getValue();
 
                                     Drawing::ProjectionAlgos project(shape, dir);
-                                    str_out << project.getDXF(type, scale, tol);
+//                                     str_out << project.getDXF(type, scale, tol);
                                     break; // TODO: How to add several shapes?
                                 }
                             }
