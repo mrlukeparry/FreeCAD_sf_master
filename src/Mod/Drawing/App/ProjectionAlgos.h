@@ -51,9 +51,8 @@ public:
         WithSmooth = 2
     };
 
-    std::string getSVG(ExtractionType type, float scale, float tolerance);
-    std::string getDXF(ExtractionType type, float scale, float tolerance);//added by Dan Falck 2011/09/25
-
+//     std::string getSVG(ExtractionType type, float scale, float tolerance);
+//     std::string getDXF(ExtractionType type, float scale, float tolerance);//added by Dan Falck 2011/09/25
 
     const TopoDS_Shape &Input;
     const Base::Vector3f &Direction;

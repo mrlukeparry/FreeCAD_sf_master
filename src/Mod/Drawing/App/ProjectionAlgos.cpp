@@ -20,7 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
@@ -88,8 +87,6 @@ using namespace std;
 // ProjectionAlgos
 //===========================================================================
 
-
-
 ProjectionAlgos::ProjectionAlgos(const TopoDS_Shape &Input, const Base::Vector3f &Dir) 
   : Input(Input), Direction(Dir)
 {
@@ -116,13 +113,13 @@ TopoDS_Shape ProjectionAlgos::invertY(const TopoDS_Shape& shape)
 
 void ProjectionAlgos::execute(void)
 {
-    Handle( HLRBRep_Algo ) brep_hlr = new HLRBRep_Algo;
+    HLRBRep_Algo *brep_hlr = new HLRBRep_Algo;
     brep_hlr->Add(Input);
 
     try {
-#if defined(__GNUC__) && defined (FC_OS_LINUX)
+        #if defined(__GNUC__) && defined (FC_OS_LINUX)
         Base::SignalException se;
-#endif
+        #endif
         gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(Direction.x,Direction.y,Direction.z));
         HLRAlgo_Projector projector( transform );
         brep_hlr->Projector(projector);
@@ -146,9 +143,9 @@ void ProjectionAlgos::execute(void)
     HN = shapes.RgNLineHCompound();// contour edges invisibly
     HO = shapes.OutLineHCompound();// contours apparents invisibly
     HI = shapes.IsoLineHCompound();// isoparamtriques   invisibly
-
 }
 
+#if 0
 std::string ProjectionAlgos::getSVG(ExtractionType type, float scale, float tolerance)
 {
     std::stringstream result;
@@ -366,3 +363,8 @@ std::string ProjectionAlgos::getDXF(ExtractionType type, float scale, float tole
 
     return result.str();
 }
+}
+
+#else
+
+#endif

@@ -1,7 +1,7 @@
 /***************************************************************************
- *   Copyright (c) 2011 Werner Mayer <wmayer[at]users.sourceforge.net>     *
+ *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
- *   This file is part of the FreeCAD CAx development system.              *
+ *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
  *   This library is free software; you can redistribute it and/or         *
  *   modify it under the terms of the GNU Library General Public           *
@@ -10,7 +10,7 @@
  *                                                                         *
  *   This library  is distributed in the hope that it will be useful,      *
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   MERCHANTABILITY or FITNESS FOR A DrawingICULAR PURPOSE.  See the      *
  *   GNU Library General Public License for more details.                  *
  *                                                                         *
  *   You should have received a copy of the GNU Library General Public     *
@@ -20,54 +20,45 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifndef _DRAWING_FEATUREDRAWING_H_
+#define _DRAWING_FEATUREDRAWING_H_
 
-#ifndef DRAWING_EXPORT_H
-#define DRAWING_EXPORT_H
-
-#include <string>
-#include <boost/concept_check.hpp>
-#include <boost/graph/graph_concepts.hpp>
-#include <App/PropertyGeo.h>
-
-class TopoDS_Shape;
-class BRepAdaptor_Curve;
-
-namespace Base {
-  class Vector2D;
-}
-
+#include <App/DocumentObjectGroup.h>
+#include <App/PropertyStandard.h>
+#include <App/PropertyFile.h>
 
 namespace Drawing
 {
 
-class DrawingExport SVGOutput
+/** Base class of all View Features in the drawing module
+ */
+class DrawingExport FeatureDrawingPage: public App::DocumentObjectGroup
 {
-public:
-    SVGOutput();
-    std::string exportEdges(const TopoDS_Shape&);
+    PROPERTY_HEADER(Drawing::FeatureDrawingPage);
 
-private:
-    void printCircle(const BRepAdaptor_Curve&, std::ostream&);
-    void printEllipse(const BRepAdaptor_Curve&, int id, std::ostream&);
-    void printBSpline(const BRepAdaptor_Curve&, int id, std::ostream&);
-    void printGeneric(const BRepAdaptor_Curve&, int id, std::ostream&);
+public:
+    /// Constructor
+    FeatureDrawingPage(void);
+     ~FeatureDrawingPage();
+
+    App::PropertyFileIncluded PageResult;
+    App::PropertyFile Template;
+
+    /** @name methods overide Feature */
+    //@{
+    /// recalculate the Feature
+    virtual App::DocumentObjectExecReturn *execute(void);
+    //@}
+
+    /// returns the type name of the ViewProvider
+    virtual const char* getViewProviderName(void) const {
+        return "DrawingGui::ViewProviderFeatureDrawingPage";
+    }
+
+protected:
+    void onChanged(const App::Property* prop);
 };
 
-/* dxf output section - Dan Falck 2011/09/25  */
-class DrawingExport DXFOutput
-{
-public:
-    DXFOutput();
-    std::string exportEdges(const TopoDS_Shape&);
-
-private:
-    void printHeader(std::ostream& out);
-    void printCircle(const BRepAdaptor_Curve&, std::ostream&);
-    void printEllipse(const BRepAdaptor_Curve&, int id, std::ostream&);
-    void printBSpline(const BRepAdaptor_Curve&, int id, std::ostream&);
-    void printGeneric(const BRepAdaptor_Curve&, int id, std::ostream&);
-};
-  
 } //namespace Drawing
 
-#endif // DRAWING_EXPORT_H
+#endif //_DRAWING_FEATUREDRAWING_H_

@@ -23,8 +23,8 @@ set(DrawingGui_LIBS
     FreeCADGui
 )
 
-
 set(DrawingGui_MOC_HDRS
+    CanvasView.h
     DrawingView.h
     TaskOrthoViews.h
     TaskDialog.h
@@ -61,6 +61,8 @@ SET(DrawingGui_SRCS
     Workbench.h
 )
 SET(DrawingGuiView_SRCS
+    CanvasView.cpp
+    CanvasView.h
     DrawingView.cpp
     DrawingView.h
 )

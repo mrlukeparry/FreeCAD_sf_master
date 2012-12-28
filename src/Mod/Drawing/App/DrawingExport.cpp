@@ -74,7 +74,7 @@
 #include <Geom2d_BSplineCurve.hxx>
 
 #include "DrawingExport.h"
-#include <Base/Tools.h>
+#include <Base/Tools2D.h>
 #include <Base/Vector3D.h>
 
 using namespace Drawing;
@@ -164,7 +164,7 @@ void SVGOutput::printEllipse(const BRepAdaptor_Curve& c, int id, std::ostream& o
     // See also https://developer.mozilla.org/en/SVG/Tutorial/Paths
     gp_Dir xaxis = ellp.XAxis().Direction();
     Standard_Real angle = xaxis.AngleWithRef(gp_Dir(1,0,0),gp_Dir(0,0,-1));
-    angle = Base::toDegrees<double>(angle);
+
     if (fabs(l-f) > 1.0 && s.SquareDistance(e) < 0.001) {
         out << "<g transform = \"rotate(" << angle << "," << p.X() << "," << p.Y() << ")\">" << std::endl;
         out << "<ellipse cx =\"" << p.X() << "\" cy =\"" 
@@ -205,23 +205,25 @@ void SVGOutput::printBSpline(const BRepAdaptor_Curve& c, int id, std::ostream& o
         for (Standard_Integer i=1; i<=arcs; i++) {
             Handle_Geom_BezierCurve bezier = crt.Arc(i);
             Standard_Integer poles = bezier->NbPoles();
+            Base::Vector2D pnts[4];
+                
             if (bezier->Degree() == 3) {
                 if (poles != 4)
                     Standard_Failure::Raise("do it the generic way");
+                
                 gp_Pnt p1 = bezier->Pole(1);
                 gp_Pnt p2 = bezier->Pole(2);
                 gp_Pnt p3 = bezier->Pole(3);
                 gp_Pnt p4 = bezier->Pole(4);
                 if (i == 1) {
-                    str << p1.X() << "," << p1.Y() << " C"
-                        << p2.X() << "," << p2.Y() << " "
-                        << p3.X() << "," << p3.Y() << " "
-                        << p4.X() << "," << p4.Y() << " ";
+                    pnts[0] = Base::Vector2D(p1.X(), p1.Y());
+                    pnts[1] = Base::Vector2D(p2.X(), p2.Y());
+                    pnts[2] = Base::Vector2D(p3.X(), p3.Y());
+                    pnts[3] = Base::Vector2D(p4.X(), p4.Y());
                 }
                 else {
-                    str << "S"
-                        << p3.X() << "," << p3.Y() << " "
-                        << p4.X() << "," << p4.Y() << " ";
+                    pnts[2] = Base::Vector2D(p3.X(), p3.Y());
+                    pnts[3] = Base::Vector2D(p4.X(), p4.Y());
                 }
             }
             else if (bezier->Degree() == 2) {
