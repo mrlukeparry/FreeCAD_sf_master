@@ -98,7 +98,7 @@ void SoDatumLabel::drawImage()
     const SbString* s = string.getValues(0);
     int num = string.getNum();
     if (num == 0) {
-        this->image = SoSFImage();
+        this->img = QImage();
         return;
     }
 
@@ -107,10 +107,19 @@ void SoDatumLabel::drawImage()
     QString str = QString::fromUtf8(s[0].getString());
     int w = fm.width(str);
     int h = fm.height();
-
+    
+    this->txtWidth = w;
+    this->txtHeight = h;
+    
+    // Produce a Square Texture
+    if(w > h)
+      h = w;
+    else
+      w = h;
+    
     // No Valid text
     if (!w) {
-        this->image = SoSFImage();
+        this->img = QImage();
         return;
     }
 
@@ -118,18 +127,16 @@ void SoDatumLabel::drawImage()
     QColor front;
     front.setRgbF(t[0],t[1], t[2]);
 
-    QImage image(w, h,QImage::Format_ARGB32_Premultiplied);
-    image.fill(0x00000000);
+    img = QImage(w, h,QImage::Format_ARGB32_Premultiplied);
+    img.fill(0x00000000);
     
-    QPainter painter(&image);
+    QPainter painter(&img);
     painter.setRenderHint(QPainter::Antialiasing);
 
     painter.setPen(front);
     painter.setFont(font);
-    painter.drawText(0,0,w,h, Qt::AlignLeft , str);
+    painter.drawText(0,0,txtWidth,txtHeight, Qt::AlignLeft , str);
     painter.end();
-
-    Gui::BitmapFactory().convert(image, this->image);
 }
 
 void SoDatumLabel::computeBBox(SoAction *action, SbBox3f &box, SbVec3f &center)
@@ -400,21 +407,11 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
     const SbString* s = string.getValues(0);
     bool hasText = (s->getLength() > 0) ? true : false;
 
-    SbVec2s size;
-    int nc;
-    int srcw, srch;
-
     if(hasText) {
         drawImage();
 
-        const unsigned char * dataptr = this->image.getValue(size, nc);
-        if (dataptr == NULL) return; // no image
-
-        srcw = size[0];
-        srch = size[1];
-
-        float aspectRatio =  (float) srcw / (float) srch;
-        this->imgHeight = scale / (float) srch;
+        float aspectRatio =  (float) this->txtWidth/ (float) this->txtHeight;
+        this->imgHeight = scale / (float) this->txtHeight;
         this->imgWidth  = aspectRatio * (float) this->imgHeight;
     }
 
@@ -665,7 +662,6 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         float range      = this->param3.getValue();
         float endangle   = startangle + range;
 
-        
         float r = 2*length;
 
         // Set the Text label angle to zero
@@ -824,8 +820,6 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
 
     if(hasText) {
 
-        const unsigned char * dataptr = this->image.getValue(size, nc);
-
         SbVec3f surfNorm(0.f, 0.f, 1.f) ;
         //Get the camera z-direction
         SbVec3f z = vv.zVector();
@@ -857,10 +851,13 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         glBindTexture(GL_TEXTURE_2D, myTexture);
 #endif
 
+        // Can only be used as a texture for glTexImage2D
+        QImage texture = QGLWidget::convertToGLFormat(this->img);
+        
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, nc, srcw, srch, 0, GL_RGBA, GL_UNSIGNED_BYTE,(const GLvoid*)  dataptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width(), texture.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.bits());
 
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -874,9 +871,12 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
 
         glColor3f(1.f, 1.f, 1.f);
 
-        glTexCoord2f(flip ? 0.f : 1.f, 1.f); glVertex2f( -this->imgWidth / 2,  this->imgHeight / 2);
-        glTexCoord2f(flip ? 0.f : 1.f, 0.f); glVertex2f( -this->imgWidth / 2, -this->imgHeight / 2);
-        glTexCoord2f(flip ? 1.f : 0.f, 0.f); glVertex2f( this->imgWidth / 2, -this->imgHeight / 2);
+        float aspect =  this->imgWidth / this->imgHeight;
+        float texH = 1.f - (this->txtHeight / (float) texture.height());
+        
+        glTexCoord2f(flip ? 0.f : 1.f,  1.f); glVertex2f( -this->imgWidth / 2,  this->imgHeight / 2);
+        glTexCoord2f(flip ? 0.f : 1.f, texH); glVertex2f( -this->imgWidth / 2, -this->imgHeight / 2);
+        glTexCoord2f(flip ? 1.f : 0.f, texH); glVertex2f( this->imgWidth / 2, -this->imgHeight / 2);
         glTexCoord2f(flip ? 1.f : 0.f, 1.f); glVertex2f( this->imgWidth / 2,  this->imgHeight / 2);
 
         glEnd();

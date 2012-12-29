@@ -37,6 +37,8 @@
 #include <Inventor/SbBox3f.h>
 #include <Inventor/fields/SoSFImage.h>
 
+class QImage;
+
 namespace SketcherGui {
 
 class SketcherGuiExport SoDatumLabel : public SoShape {
@@ -67,7 +69,7 @@ public:
     SoSFFloat  param2;
     SoSFFloat  param3;
     SoMFVec3f  pnts;
-    SoSFImage  image;
+    QImage     img;
     SoSFFloat  lineWidth;
 
 protected:
@@ -81,6 +83,8 @@ private:
     SbBox3f bbox;
     float imgWidth;
     float imgHeight;
+    float txtHeight;
+    float txtWidth;
 };
 
 }
