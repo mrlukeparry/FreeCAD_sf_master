@@ -23,7 +23,6 @@
         <file>translations/Raytracing_pl.qm</file>
         <file>translations/Raytracing_ru.qm</file>
         <file>translations/Raytracing_uk.qm</file>
-        <file>translations/Raytracing_zh.qm</file>
         <file>qml/appearancesUi.qml</file>
         <file>qml/materialParametersUi.qml</file>
         <file>qml/materialLibraryUi.qml</file>
