@@ -108,7 +108,7 @@ void SoDatumLabel::drawImage()
     int w = fm.width(str);
     int h = fm.height();
     
-    this->txtWidth = w;
+    this->txtWidth  = w;
     this->txtHeight = h;
     
     // Produce a Square Texture
@@ -443,9 +443,12 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
     // Set GL Properties
     glLineWidth(2.f);
     glColor3f(t[0], t[1], t[2]);
+    
+    std::vector<SbVec3f> corners;
 
-    if(this->datumtype.getValue() == DISTANCE || this->datumtype.getValue() == DISTANCEX || this->datumtype.getValue() == DISTANCEY )
-        {
+    if(this->datumtype.getValue() == DISTANCE || 
+       this->datumtype.getValue() == DISTANCEX || 
+       this->datumtype.getValue() == DISTANCEY ){
         float length = this->param1.getValue();
         float length2 = this->param2.getValue();
         const SbVec3f *pnts = this->pnts.getValues(0);
@@ -495,6 +498,7 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         // Set GL Properties
         glLineWidth(this->lineWidth.getValue());
         glColor3f(t[0], t[1], t[2]);
+
         float margin = 0.01f;
         margin *= scale;
 
@@ -561,23 +565,27 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
           glVertex2f(ar4[0], ar4[1]);
         glEnd();
 
+        SbVec3f img1 = SbVec3f(-this->imgWidth / 2, -this->imgHeight / 2, 0.f);
+        SbVec3f img2 = SbVec3f(-this->imgWidth / 2,  this->imgHeight / 2, 0.f);
+        SbVec3f img3 = SbVec3f( this->imgWidth / 2, -this->imgHeight / 2, 0.f);
+        SbVec3f img4 = SbVec3f( this->imgWidth / 2,  this->imgHeight / 2, 0.f);
+
+        img1 += textOffset;
+        img2 += textOffset;
+        img3 += textOffset;
+        img4 += textOffset;
+
         // BOUNDING BOX CALCULATION - IMPORTANT
         // Finds the mins and maxes
-        std::vector<SbVec3f> corners;
+
         corners.push_back(p1);
         corners.push_back(p2);
         corners.push_back(perp1);
         corners.push_back(perp2);
-
-        float minX = p1[0], minY = p1[1], maxX = p1[0] , maxY = p1[1];
-        for (std::vector<SbVec3f>::const_iterator it=corners.begin(); it != corners.end(); ++it) {
-            minX = ((*it)[0] < minX) ? (*it)[0] : minX;
-            minY = ((*it)[1] < minY) ? (*it)[1] : minY;
-            maxX = ((*it)[0] > maxX) ? (*it)[0] : maxX;
-            maxY = ((*it)[1] > maxY) ? (*it)[1] : maxY;
-        }
-        //Store the bounding box
-        this->bbox.setBounds(SbVec3f(minX, minY, 0.f), SbVec3f (maxX, maxY, 0.f));
+        corners.push_back(img1);
+        corners.push_back(img2);
+        corners.push_back(img3);
+        corners.push_back(img4);
 
     } else if (this->datumtype.getValue() == RADIUS) {
         // Get the Points
@@ -635,23 +643,14 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
           glVertex2f(ar1[0], ar1[1]);
           glVertex2f(ar2[0], ar2[1]);
         glEnd();
+
         // BOUNDING BOX CALCULATION - IMPORTANT
         // Finds the mins and maxes
-        std::vector<SbVec3f> corners;
         corners.push_back(p1);
         corners.push_back(p2);
         corners.push_back(pnt1);
         corners.push_back(pnt2);
 
-        float minX = p1[0], minY = p1[1], maxX = p1[0] , maxY = p1[1];
-        for (std::vector<SbVec3f>::const_iterator it=corners.begin(); it != corners.end(); ++it) {
-            minX = ((*it)[0] < minX) ? (*it)[0] : minX;
-            minY = ((*it)[1] < minY) ? (*it)[1] : minY;
-            maxX = ((*it)[0] > maxX) ? (*it)[0] : maxX;
-            maxY = ((*it)[1] > maxY) ? (*it)[1] : maxY;
-        }
-        //Store the bounding box
-        this->bbox.setBounds(SbVec3f(minX, minY, 0.f), SbVec3f (maxX, maxY, 0.f));
     } else if (this->datumtype.getValue() == ANGLE) {
         // Only the angle intersection point is needed
         SbVec3f p0 = pnts[0];
@@ -738,7 +737,6 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         img3 += textOffset;
         img4 += textOffset;
 
-        std::vector<SbVec3f> corners;
         corners.push_back(pnt1);
         corners.push_back(pnt2);
         corners.push_back(pnt3);
@@ -748,15 +746,6 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         corners.push_back(img3);
         corners.push_back(img4);
 
-        float minX = pnt1[0], minY = pnt1[1], maxX = pnt1[0] , maxY = pnt1[1];
-        for (std::vector<SbVec3f>::const_iterator it=corners.begin(); it != corners.end(); ++it) {
-            minX = ((*it)[0] < minX) ? (*it)[0] : minX;
-            minY = ((*it)[1] < minY) ? (*it)[1] : minY;
-            maxX = ((*it)[0] > maxX) ? (*it)[0] : maxX;
-            maxY = ((*it)[1] > maxY) ? (*it)[1] : maxY;
-        }
-        //Store the bounding box
-        this->bbox.setBounds(SbVec3f(minX, minY, 0.f), SbVec3f (maxX, maxY, 0.f));
     } else if (this->datumtype.getValue() == SYMMETRIC) {
 
         SbVec3f p1 = pnts[0];
@@ -803,20 +792,21 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
 
         // BOUNDING BOX CALCULATION - IMPORTANT
         // Finds the mins and maxes
-        std::vector<SbVec3f> corners;
         corners.push_back(p1);
         corners.push_back(p2);
- 
-        float minX = p1[0], minY = p1[1], maxX = p1[0] , maxY = p1[1];
-        for (std::vector<SbVec3f>::iterator it=corners.begin(); it != corners.end(); ++it) {
-            minX = ((*it)[0] < minX) ? (*it)[0] : minX;
-            minY = ((*it)[1] < minY) ? (*it)[1] : minY;
-            maxX = ((*it)[0] > maxX) ? (*it)[0] : maxX;
-            maxY = ((*it)[1] > maxY) ? (*it)[1] : maxY;
-        }
-        //Store the bounding box
-        this->bbox.setBounds(SbVec3f(minX, minY, 0.f), SbVec3f (maxX, maxY, 0.f));
     }
+    
+    // Find the Bounding Box and Store the Values;
+    float minX = corners[0][0], minY = corners[0][1], maxX = corners[0][0] , maxY = corners[0][1];
+    for (std::vector<SbVec3f>::const_iterator it=corners.begin(); it != corners.end(); ++it) {
+        minX = ((*it)[0] < minX) ? (*it)[0] : minX;
+        minY = ((*it)[1] < minY) ? (*it)[1] : minY;
+        maxX = ((*it)[0] > maxX) ? (*it)[0] : maxX;
+        maxY = ((*it)[1] > maxY) ? (*it)[1] : maxY;
+    }
+    
+    //Store the bounding box
+    this->bbox.setBounds(SbVec3f(minX, minY, 0.f), SbVec3f (maxX, maxY, 0.f));
 
     if(hasText) {
 
@@ -837,20 +827,6 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         glEnable(GL_TEXTURE_2D); // Enable Textures
         glEnable(GL_BLEND);
 
-        // wmayer: see bug report below which is caused by generating but not
-        // deleting the texture. I guess we don't need this texture and thus
-        // comment out the block.
-        // #0000721: massive memory leak when dragging an unconstrained model
-        // 
-#if 0
-        // Copy the text bitmap into memory and bind
-        GLuint myTexture;
-        // generate a texture
-        glGenTextures(1, &myTexture);
-
-        glBindTexture(GL_TEXTURE_2D, myTexture);
-#endif
-
         // Can only be used as a texture for glTexImage2D
         QImage texture = QGLWidget::convertToGLFormat(this->img);
         
@@ -858,8 +834,6 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width(), texture.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.bits());
-
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
@@ -871,7 +845,6 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
 
         glColor3f(1.f, 1.f, 1.f);
 
-        float aspect =  this->imgWidth / this->imgHeight;
         float texH = 1.f - (this->txtHeight / (float) texture.height());
         
         glTexCoord2f(flip ? 0.f : 1.f,  1.f); glVertex2f( -this->imgWidth / 2,  this->imgHeight / 2);
@@ -883,9 +856,6 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
 
         // Reset the Mode
         glPopMatrix();
-#if 0
-        glDeleteTextures(1, &myTexture);
-#endif
     }
 
     glPopAttrib();

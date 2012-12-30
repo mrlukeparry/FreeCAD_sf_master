@@ -49,6 +49,7 @@ class SketcherGuiExport SoDatumLabel : public SoShape {
 public:
   enum Type
   {
+  UNDEFINED = 0,
   ANGLE,
   DISTANCE,
   DISTANCEX,
