@@ -41,7 +41,9 @@ set(PartGui_MOC_HDRS
     TaskFaceColors.h
     TaskShapeBuilder.h
     TaskLoft.h
+    TaskOffset.h
     TaskSweep.h
+    TaskThickness.h
     TaskCheckGeometry.h
 )
 fc_wrap_cpp(PartGui_MOC_SRCS ${PartGui_MOC_HDRS})
@@ -67,6 +69,7 @@ set(PartGui_UIC_SRCS
     TaskFaceColors.ui
     TaskShapeBuilder.ui
     TaskLoft.ui
+    TaskOffset.ui
     TaskSweep.ui
 )
 qt4_wrap_ui(PartGui_UIC_HDRS ${PartGui_UIC_SRCS})
@@ -158,9 +161,14 @@ SET(PartGui_SRCS
     TaskLoft.cpp
     TaskLoft.h
     TaskLoft.ui
+    TaskOffset.cpp
+    TaskOffset.h
+    TaskOffset.ui
     TaskSweep.cpp
     TaskSweep.h
     TaskSweep.ui
+    TaskThickness.cpp
+    TaskThickness.h
     TaskCheckGeometry.cpp
     TaskCheckGeometry.h
 )

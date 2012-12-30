@@ -10,7 +10,7 @@ SUBDIRS += Mesh
 #endif
 
 if HAVE_OPENCASCADE
-SUBDIRS += Part Import PartDesign Raytracing Drawing Arch Surfaces Ship OpenSCAD
+SUBDIRS += Part Import PartDesign Raytracing Drawing Arch Ship OpenSCAD
 endif
 
 if HAVE_EIGEN3
@@ -42,6 +42,8 @@ endif
 if BUILD_CAM
 SUBDIRS += Cam
 endif
+
+SUBDIRS += Plot
 
 EXTRA_DIST = \
 		__init__.py \

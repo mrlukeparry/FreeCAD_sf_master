@@ -33,6 +33,7 @@
 # include <TopTools_ListOfShape.hxx>
 # include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 # include <TopTools_IndexedMapOfShape.hxx>
+# include <BRepAdaptor_Surface.hxx>
 # include <QMessageBox>
 #endif
 
@@ -53,6 +54,63 @@
 using namespace std;
 
 #include "FeaturePickDialog.h"
+
+namespace Gui {
+//===========================================================================
+// Common utility functions
+//===========================================================================
+
+// Take a list of Part2DObjects and erase those which are not eligible for creating a
+// SketchBased feature. If supportRequired is true, also erase those that cannot be used to define
+// a Subtractive feature
+void validateSketches(std::vector<App::DocumentObject*>& sketches, const bool supportRequired)
+{
+    std::vector<App::DocumentObject*>::iterator s = sketches.begin();
+
+    while (s != sketches.end()) {
+        // Check whether this sketch is already being used by another feature
+        if ((*s)->getInList().size() != 0) {
+            // TODO: Display some information message that this sketch was removed?
+            s = sketches.erase(s);
+            continue;
+        }
+
+        // Check whether the sketch shape is valid
+        Part::Part2DObject* sketch = static_cast<Part::Part2DObject*>(*s);
+        const TopoDS_Shape& shape = sketch->Shape.getValue();
+        if (shape.IsNull()) {
+            s = sketches.erase(s);
+            continue;
+            // TODO: Display some information message that this sketch was removed?
+        }
+
+        // count free wires
+        int ctWires=0;
+        TopExp_Explorer ex;
+        for (ex.Init(shape, TopAbs_WIRE); ex.More(); ex.Next()) {
+            ctWires++;
+        }
+        if (ctWires == 0) {
+            s = sketches.erase(s);
+            continue;
+            // TODO: Display some information message that this sketch was removed?
+        }
+
+        // Check for support
+        if (supportRequired) {
+            App::DocumentObject* support = sketch->Support.getValue();
+            if (support == NULL) {
+                s = sketches.erase(s);
+                continue;
+                // TODO: Display some information message that this sketch was removed?
+            }
+        }
+
+        // All checks passed - go on to next candidate
+        s++;
+    }
+}
+} // namespace Gui
 
 //===========================================================================
 // Part_Pad
@@ -118,37 +176,30 @@ CmdPartDesignPad::CmdPartDesignPad()
 
 void CmdPartDesignPad::activated(int iMsg)
 {
-    unsigned int n = getSelection().countObjectsOfType(Part::Part2DObject::getClassTypeId());
-    if (n != 1) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("Select a sketch or 2D object."));
-        return;
+    // Get a valid sketch from the user
+    // First check selections
+    std::vector<App::DocumentObject*> sketches = getSelection().getObjectsOfType(Part::Part2DObject::getClassTypeId());
+    Gui::validateSketches(sketches, false);
+    // Next let the user choose from a list of all eligible objects
+    if (sketches.size() == 0) {
+        sketches = getDocument()->getObjectsOfType(Part::Part2DObject::getClassTypeId());
+        Gui::validateSketches(sketches, false);
+        if (sketches.size() == 0) {
+            QMessageBox::warning(Gui::getMainWindow(), QObject::tr("No valid sketches in this document"),
+                QObject::tr("Please create a sketch or 2D object first"));
+            return;
+        }
+    }
+    // If there is more than one selection/possibility, show dialog and let user pick sketch
+    if (sketches.size() > 1) {
+        PartDesignGui::FeaturePickDialog Dlg(sketches);
+        if ((Dlg.exec() != QDialog::Accepted) || (sketches = Dlg.getFeatures()).empty())
+            return; // Cancelled or nothing selected
     }
 
-    std::string FeatName = getUniqueObjectName("Pad");
-
-    std::vector<App::DocumentObject*> Sel = getSelection().getObjectsOfType(Part::Part2DObject::getClassTypeId());
-    Part::Part2DObject* sketch = static_cast<Part::Part2DObject*>(Sel.front());
-    const TopoDS_Shape& shape = sketch->Shape.getValue();
-    if (shape.IsNull()) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("The shape of the selected object is empty."));
-        return;
-    }
-
-    // count free wires
-    int ctWires=0;
-    TopExp_Explorer ex;
-    for (ex.Init(shape, TopAbs_WIRE); ex.More(); ex.Next()) {
-        ctWires++;
-    }
-    if (ctWires == 0) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("The shape of the selected object is not a wire."));
-        return;
-    }
-
+    Part::Part2DObject* sketch = static_cast<Part::Part2DObject*>(sketches.front());
     App::DocumentObject* support = sketch->Support.getValue();
+    std::string FeatName = getUniqueObjectName("Pad");
 
     openCommand("Make Pad");
     doCommand(Doc,"App.activeDocument().addObject(\"PartDesign::Pad\",\"%s\")",FeatName.c_str());
@@ -196,41 +247,30 @@ CmdPartDesignPocket::CmdPartDesignPocket()
 
 void CmdPartDesignPocket::activated(int iMsg)
 {
-    unsigned int n = getSelection().countObjectsOfType(Part::Part2DObject::getClassTypeId());
-    if (n != 1) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("Select a sketch or 2D object."));
-        return;
+    // Get a valid sketch from the user
+    // First check selections
+    std::vector<App::DocumentObject*> sketches = getSelection().getObjectsOfType(Part::Part2DObject::getClassTypeId());
+    Gui::validateSketches(sketches, true);
+    // Next let the user choose from a list of all eligible objects
+    if (sketches.size() == 0) {
+        sketches = getDocument()->getObjectsOfType(Part::Part2DObject::getClassTypeId());
+        Gui::validateSketches(sketches, true);
+        if (sketches.size() == 0) {
+            QMessageBox::warning(Gui::getMainWindow(), QObject::tr("No valid sketches in this document"),
+                QObject::tr("Please create a sketch or 2D object first. It must have a support face on a solid"));
+            return;
+        }
+    }
+    // If there is more than one selection/possibility, show dialog and let user pick sketch
+    if (sketches.size() > 1) {
+        PartDesignGui::FeaturePickDialog Dlg(sketches);
+        if ((Dlg.exec() != QDialog::Accepted) || (sketches = Dlg.getFeatures()).empty())
+            return; // Cancelled or nothing selected
     }
 
-    std::string FeatName = getUniqueObjectName("Pocket");
-
-    std::vector<App::DocumentObject*> Sel = getSelection().getObjectsOfType(Part::Part2DObject::getClassTypeId());
-    Part::Part2DObject* sketch = static_cast<Part::Part2DObject*>(Sel.front());
-    const TopoDS_Shape& shape = sketch->Shape.getValue();
-    if (shape.IsNull()) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("The shape of the selected object is empty."));
-        return;
-    }
-
-    // count free wires
-    int ctWires=0;
-    TopExp_Explorer ex;
-    for (ex.Init(shape, TopAbs_WIRE); ex.More(); ex.Next()) {
-        ctWires++;
-    }
-    if (ctWires == 0) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("The shape of the selected object is not a wire."));
-        return;
-    }
+    Part::Part2DObject* sketch = static_cast<Part::Part2DObject*>(sketches.front());
     App::DocumentObject* support = sketch->Support.getValue();
-    if (support == 0) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("No Support"),
-            QObject::tr("The sketch has to have a support for the pocket feature.\nCreate the sketch on a face."));
-        return;
-    }
+    std::string FeatName = getUniqueObjectName("Pocket");
 
     openCommand("Make Pocket");
     doCommand(Doc,"App.activeDocument().addObject(\"PartDesign::Pocket\",\"%s\")",FeatName.c_str());
@@ -272,37 +312,30 @@ CmdPartDesignRevolution::CmdPartDesignRevolution()
 
 void CmdPartDesignRevolution::activated(int iMsg)
 {
-    unsigned int n = getSelection().countObjectsOfType(Part::Part2DObject::getClassTypeId());
-    if (n != 1) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("Select a sketch or 2D object."));
-        return;
+    // Get a valid sketch from the user
+    // First check selections
+    std::vector<App::DocumentObject*> sketches = getSelection().getObjectsOfType(Part::Part2DObject::getClassTypeId());
+    Gui::validateSketches(sketches, false);
+    // Next let the user choose from a list of all eligible objects
+    if (sketches.size() == 0) {
+        sketches = getDocument()->getObjectsOfType(Part::Part2DObject::getClassTypeId());
+        Gui::validateSketches(sketches, false);
+        if (sketches.size() == 0) {
+            QMessageBox::warning(Gui::getMainWindow(), QObject::tr("No valid sketches in this document"),
+                QObject::tr("Please create a sketch or 2D object first"));
+            return;
+        }
+    }
+    // If there is more than one selection/possibility, show dialog and let user pick sketch
+    if (sketches.size() > 1) {
+        PartDesignGui::FeaturePickDialog Dlg(sketches);
+        if ((Dlg.exec() != QDialog::Accepted) || (sketches = Dlg.getFeatures()).empty())
+            return; // Cancelled or nothing selected
     }
 
-    std::string FeatName = getUniqueObjectName("Revolution");
-
-    std::vector<App::DocumentObject*> Sel = getSelection().getObjectsOfType(Part::Part2DObject::getClassTypeId());
-    Part::Part2DObject* sketch = static_cast<Part::Part2DObject*>(Sel.front());
-    const TopoDS_Shape& shape = sketch->Shape.getValue();
-    if (shape.IsNull()) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("The shape of the selected object is empty."));
-        return;
-    }
-
-    // count free wires
-    int ctWires=0;
-    TopExp_Explorer ex;
-    for (ex.Init(shape, TopAbs_WIRE); ex.More(); ex.Next()) {
-        ctWires++;
-    }
-    if (ctWires == 0) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("The shape of the selected object is not a wire."));
-        return;
-    }
-
+    Part::Part2DObject* sketch = static_cast<Part::Part2DObject*>(sketches.front());
     App::DocumentObject* support = sketch->Support.getValue();
+    std::string FeatName = getUniqueObjectName("Revolution");
 
     openCommand("Make Revolution");
     doCommand(Doc,"App.activeDocument().addObject(\"PartDesign::Revolution\",\"%s\")",FeatName.c_str());
@@ -349,37 +382,30 @@ CmdPartDesignGroove::CmdPartDesignGroove()
 
 void CmdPartDesignGroove::activated(int iMsg)
 {
-    unsigned int n = getSelection().countObjectsOfType(Part::Part2DObject::getClassTypeId());
-    if (n != 1) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("Select a sketch or 2D object."));
-        return;
+    // Get a valid sketch from the user
+    // First check selections
+    std::vector<App::DocumentObject*> sketches = getSelection().getObjectsOfType(Part::Part2DObject::getClassTypeId());
+    Gui::validateSketches(sketches, true);
+    // Next let the user choose from a list of all eligible objects
+    if (sketches.size() == 0) {
+        sketches = getDocument()->getObjectsOfType(Part::Part2DObject::getClassTypeId());
+        Gui::validateSketches(sketches, true);
+        if (sketches.size() == 0) {
+            QMessageBox::warning(Gui::getMainWindow(), QObject::tr("No valid sketches in this document"),
+                QObject::tr("Please create a sketch or 2D object first. It must have a support face on a solid"));
+            return;
+        }
+    }
+    // If there is more than one selection/possibility, show dialog and let user pick sketch
+    if (sketches.size() > 1) {
+        PartDesignGui::FeaturePickDialog Dlg(sketches);
+        if ((Dlg.exec() != QDialog::Accepted) || (sketches = Dlg.getFeatures()).empty())
+            return; // Cancelled or nothing selected
     }
 
-    std::string FeatName = getUniqueObjectName("Groove");
-
-    std::vector<App::DocumentObject*> Sel = getSelection().getObjectsOfType(Part::Part2DObject::getClassTypeId());
-    Part::Part2DObject* sketch = static_cast<Part::Part2DObject*>(Sel.front());
-    const TopoDS_Shape& shape = sketch->Shape.getValue();
-    if (shape.IsNull()) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("The shape of the selected object is empty."));
-        return;
-    }
-
-    // count free wires
-    int ctWires=0;
-    TopExp_Explorer ex;
-    for (ex.Init(shape, TopAbs_WIRE); ex.More(); ex.Next()) {
-        ctWires++;
-    }
-    if (ctWires == 0) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("The shape of the selected object is not a wire."));
-        return;
-    }
-
+    Part::Part2DObject* sketch = static_cast<Part::Part2DObject*>(sketches.front());
     App::DocumentObject* support = sketch->Support.getValue();
+    std::string FeatName = getUniqueObjectName("Groove");
 
     openCommand("Make Groove");
     doCommand(Doc,"App.activeDocument().addObject(\"PartDesign::Groove\",\"%s\")",FeatName.c_str());
@@ -696,6 +722,117 @@ void CmdPartDesignChamfer::activated(int iMsg)
 }
 
 bool CmdPartDesignChamfer::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+//===========================================================================
+// PartDesign_Draft
+//===========================================================================
+DEF_STD_CMD_A(CmdPartDesignDraft);
+
+CmdPartDesignDraft::CmdPartDesignDraft()
+  :Command("PartDesign_Draft")
+{
+    sAppModule    = "PartDesign";
+    sGroup        = QT_TR_NOOP("PartDesign");
+    sMenuText     = QT_TR_NOOP("Draft");
+    sToolTipText  = QT_TR_NOOP("Make a draft on a face");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "PartDesign_Draft";
+}
+
+void CmdPartDesignDraft::activated(int iMsg)
+{
+    std::vector<Gui::SelectionObject> selection = getSelection().getSelectionEx();
+
+    if (selection.size() < 1) {
+        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
+            QObject::tr("Select one or more faces."));
+        return;
+    }
+
+    if (!selection[0].isObjectTypeOf(Part::Feature::getClassTypeId())){
+        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong object type"),
+            QObject::tr("Draft works only on parts"));
+        return;
+    }
+
+    Part::Feature *base = static_cast<Part::Feature*>(selection[0].getObject());
+
+    const Part::TopoShape& TopShape = base->Shape.getShape();
+    if (TopShape._Shape.IsNull()){
+        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
+            QObject::tr("Shape of selected Part is empty"));
+        return;
+    }
+
+    std::vector<std::string> SubNames = std::vector<std::string>(selection[0].getSubNames());
+    int i = 0;
+
+    while(i < SubNames.size())
+    {
+        std::string aSubName = static_cast<std::string>(SubNames.at(i));
+
+        if(aSubName.size() > 4 && aSubName.substr(0,4) == "Face") {
+            // Check for valid face types
+            TopoDS_Face face = TopoDS::Face(TopShape.getSubShape(aSubName.c_str()));
+            BRepAdaptor_Surface sf(face);
+            if ((sf.GetType() != GeomAbs_Plane) && (sf.GetType() != GeomAbs_Cylinder) && (sf.GetType() != GeomAbs_Cone))
+                SubNames.erase(SubNames.begin()+i);
+        } else {
+            // empty name or any other sub-element
+            SubNames.erase(SubNames.begin()+i);
+        }
+
+        i++;
+    }
+
+    if (SubNames.size() == 0) {
+        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
+        QObject::tr("No draft possible on selected faces"));
+        return;
+    }
+
+    std::string SelString;
+    SelString += "(App.";
+    SelString += "ActiveDocument";
+    SelString += ".";
+    SelString += selection[0].getFeatName();
+    SelString += ",[";
+    for(std::vector<std::string>::const_iterator it = SubNames.begin();it!=SubNames.end();++it){
+        SelString += "\"";
+        SelString += *it;
+        SelString += "\"";
+        if(it != --SubNames.end())
+            SelString += ",";
+    }
+    SelString += "])";
+
+    std::string FeatName = getUniqueObjectName("Draft");
+
+    // We don't create any defaults for neutral plane and pull direction, but Draft::execute()
+    // will choose them.
+    // Note: When the body feature is there, the best thing would be to get pull direction and
+    // neutral plane from the preceding feature in the tree. Or even store them as default in
+    // the Body feature itself
+    openCommand("Make Draft");
+    doCommand(Doc,"App.activeDocument().addObject(\"PartDesign::Draft\",\"%s\")",FeatName.c_str());
+    doCommand(Doc,"App.activeDocument().%s.Base = %s",FeatName.c_str(),SelString.c_str());
+    doCommand(Doc,"App.activeDocument().%s.Angle = %f",FeatName.c_str(), 1.5);
+    updateActive();
+    if (isActiveObjectValid()) {
+        doCommand(Gui,"Gui.activeDocument().hide(\"%s\")",selection[0].getFeatName());
+    }
+    doCommand(Gui,"Gui.activeDocument().setEdit('%s')",FeatName.c_str());
+
+    copyVisual(FeatName.c_str(), "ShapeColor", selection[0].getFeatName());
+    copyVisual(FeatName.c_str(), "LineColor",  selection[0].getFeatName());
+    copyVisual(FeatName.c_str(), "PointColor", selection[0].getFeatName());
+}
+
+bool CmdPartDesignDraft::isActive(void)
 {
     return hasActiveDocument();
 }
@@ -1078,6 +1215,7 @@ void CreatePartDesignCommands(void)
     rcCmdMgr.addCommand(new CmdPartDesignRevolution());
     rcCmdMgr.addCommand(new CmdPartDesignGroove());
     rcCmdMgr.addCommand(new CmdPartDesignFillet());
+    rcCmdMgr.addCommand(new CmdPartDesignDraft());
     //rcCmdMgr.addCommand(new CmdPartDesignNewSketch());
     rcCmdMgr.addCommand(new CmdPartDesignChamfer());
     rcCmdMgr.addCommand(new CmdPartDesignMirrored());

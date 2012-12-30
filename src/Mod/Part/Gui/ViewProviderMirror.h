@@ -108,6 +108,76 @@ public:
     bool onDelete(const std::vector<std::string> &);
 };
 
+class ViewProviderLoft : public ViewProviderPart
+{
+    PROPERTY_HEADER(PartGui::ViewProviderLoft);
+
+public:
+    /// constructor
+    ViewProviderLoft();
+    /// destructor
+    virtual ~ViewProviderLoft();
+
+    /// grouping handling 
+    std::vector<App::DocumentObject*> claimChildren(void)const;
+    bool onDelete(const std::vector<std::string> &);
+};
+
+class ViewProviderSweep : public ViewProviderPart
+{
+    PROPERTY_HEADER(PartGui::ViewProviderSweep);
+
+public:
+    /// constructor
+    ViewProviderSweep();
+    /// destructor
+    virtual ~ViewProviderSweep();
+
+    /// grouping handling 
+    std::vector<App::DocumentObject*> claimChildren(void)const;
+    bool onDelete(const std::vector<std::string> &);
+};
+
+class ViewProviderOffset : public ViewProviderPart
+{
+    PROPERTY_HEADER(PartGui::ViewProviderOffset);
+
+public:
+    /// constructor
+    ViewProviderOffset();
+    /// destructor
+    virtual ~ViewProviderOffset();
+
+    /// grouping handling 
+    std::vector<App::DocumentObject*> claimChildren(void)const;
+    void setupContextMenu(QMenu*, QObject*, const char*);
+    bool onDelete(const std::vector<std::string> &);
+
+protected:
+    virtual bool setEdit(int ModNum);
+    virtual void unsetEdit(int ModNum);
+};
+
+class ViewProviderThickness : public ViewProviderPart
+{
+    PROPERTY_HEADER(PartGui::ViewProviderThickness);
+
+public:
+    /// constructor
+    ViewProviderThickness();
+    /// destructor
+    virtual ~ViewProviderThickness();
+
+    /// grouping handling 
+    std::vector<App::DocumentObject*> claimChildren(void)const;
+    void setupContextMenu(QMenu*, QObject*, const char*);
+    bool onDelete(const std::vector<std::string> &);
+
+protected:
+    virtual bool setEdit(int ModNum);
+    virtual void unsetEdit(int ModNum);
+};
+
 } // namespace PartGui
 
 

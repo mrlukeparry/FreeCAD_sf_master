@@ -193,7 +193,7 @@ fc_py_ac_save_ldflags=$LDFLAGS
 fc_py_ac_save_libs=$LIBS
 CPPFLAGS="$CPPFLAGS -I$fc_py_incs"
 LDFLAGS="$LDFLAGS -L$fc_py_libs"
-LIBS="-lpython$PYTHON_VERSION"
+LIBS="-lpython$PYTHON_VERSION -lpthread -ldl -lutil -lm"
 
 dnl Small test program that only works with Python 2.5 and higher
 fc_cv_lib_py_avail=no
@@ -649,6 +649,23 @@ fi
 
 AM_CONDITIONAL(HAVE_SPNAV_FOUND, test x"$fc_cv_lib_spnav_avail" = xyes)
 
+
+dnl checking for matplotlib
+dnl **************************************************************************
+fc_matplotlib_avail=no
+AC_MSG_CHECKING([for matplotlib])
+fc_matplotlib_ver=`python -c "import matplotlib as m; print m.__version__;"`;
+if test x$fc_py_ver = x; then
+	AC_MSG_WARN([
+	**** Cannot find matplotlib Python module.
+	Plot Module will not available until matplotlib is installed ****
+    ])
+else
+	fc_matplotlib_avail=yes
+fi;
+AC_MSG_RESULT([yes])
+AM_CONDITIONAL(HAVE_MATPLOTLIB, test x"$fc_matplotlib_avail" = xyes)
+
 #---------------------------------------------------------------------
 #
 # Check if 64-bit platform
@@ -1054,9 +1071,9 @@ src/Mod/TemplatePyMod/Makefile
 src/Mod/Sandbox/Makefile
 src/Mod/Sandbox/App/Makefile
 src/Mod/Sandbox/Gui/Makefile
-src/Mod/Surfaces/Makefile
 src/Mod/Ship/Makefile
 src/Mod/OpenSCAD/Makefile
+src/Mod/Plot/Makefile
 src/Tools/Makefile
 src/Tools/_TEMPLATE_/Makefile
 src/Tools/_TEMPLATE_/App/Makefile

@@ -104,6 +104,7 @@
 #include "SoFCVectorizeU3DAction.h"
 #include "SoFCVectorizeSVGAction.h"
 #include "SoFCDB.h"
+#include "Application.h"
 #include "MainWindow.h"
 #include "NavigationStyle.h"
 #include "ViewProvider.h"
@@ -524,9 +525,14 @@ void View3DInventorViewer::savePicture(const char* filename, int w, int h,
     // if we use transparency then we must not set a background color
     switch(eBackgroundType){
         case Current:
-            useBackground = true;
-            cb = new SoCallback;
-            cb->setCallback(clearBuffer);
+            if (backgroundroot->findChild(pcBackGround) == -1) {
+                renderer.setBackgroundColor(this->getBackgroundColor());
+            }
+            else {
+                useBackground = true;
+                cb = new SoCallback;
+                cb->setCallback(clearBuffer);
+            }
             break;
         case White:
             renderer.setBackgroundColor( SbColor(1.0, 1.0, 1.0) );
@@ -594,9 +600,14 @@ void View3DInventorViewer::savePicture(int w, int h, int eBackgroundType, QImage
     // if we use transparency then we must not set a background color
     switch(eBackgroundType){
         case Current:
-            useBackground = true;
-            cb = new SoCallback;
-            cb->setCallback(clearBuffer);
+            if (backgroundroot->findChild(pcBackGround) == -1) {
+                renderer.setBackgroundColor(this->getBackgroundColor());
+            }
+            else {
+                useBackground = true;
+                cb = new SoCallback;
+                cb->setCallback(clearBuffer);
+            }
             break;
         case White:
             renderer.setBackgroundColor( SbColor(1.0, 1.0, 1.0) );
@@ -1378,6 +1389,11 @@ void View3DInventorViewer::viewAll()
         group->mode = SoSkipBoundingGroup::EXCLUDE_BBOX;
     }
 
+    // Set the height angle to 45 deg
+    SoCamera* cam = this->getCamera();
+    if (cam && cam->getTypeId().isDerivedFrom(SoPerspectiveCamera::getClassTypeId()))
+        static_cast<SoPerspectiveCamera*>(cam)->heightAngle = (float)(M_PI / 4.0);
+
     // call the default implementation first to make sure everything is visible
     SoQtViewer::viewAll();
 
@@ -1442,6 +1458,7 @@ void View3DInventorViewer::viewAll(float factor)
 
 void View3DInventorViewer::viewSelection()
 {
+#if 0
     // Search for all SoFCSelection nodes
     SoSearchAction searchAction;
     searchAction.setType(SoFCSelection::getClassTypeId());
@@ -1467,6 +1484,18 @@ void View3DInventorViewer::viewSelection()
             root->addChild(select);
         }
     }
+#else
+    SoGroup* root = new SoGroup();
+    root->ref();
+
+    std::vector<App::DocumentObject*> selection = Selection().getObjectsOfType(App::DocumentObject::getClassTypeId());
+    for (std::vector<App::DocumentObject*>::iterator it = selection.begin(); it != selection.end(); ++it) {
+        ViewProvider* vp = Application::Instance->getViewProvider(*it);
+        if (vp) {
+            root->addChild(vp->getRoot());
+        }
+    }
+#endif
 
     SoCamera* cam = this->getCamera();
     if (cam) cam->viewAll(root, this->getViewportRegion());

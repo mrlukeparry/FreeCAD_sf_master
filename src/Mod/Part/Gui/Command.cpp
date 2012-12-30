@@ -31,6 +31,7 @@
 # include <QPointer>
 # include <Standard_math.hxx>
 # include <TopoDS_Shape.hxx>
+# include <TopExp_Explorer.hxx>
 # include <Inventor/events/SoMouseButtonEvent.h>
 #endif
 
@@ -886,7 +887,7 @@ CmdPartCrossSections::CmdPartCrossSections()
     sToolTipText  = QT_TR_NOOP("Cross-sections");
     sWhatsThis    = "Part_CrossSections";
     sStatusTip    = sToolTipText;
-//  sPixmap       = "Part_Booleans";
+    sPixmap       = "Part_CrossSections";
 }
 
 void CmdPartCrossSections::activated(int iMsg)
@@ -986,6 +987,123 @@ void CmdPartSweep::activated(int iMsg)
 bool CmdPartSweep::isActive(void)
 {
     return (hasActiveDocument() && !Gui::Control().activeDialog());
+}
+
+//--------------------------------------------------------------------------------------
+
+DEF_STD_CMD_A(CmdPartOffset);
+
+CmdPartOffset::CmdPartOffset()
+  : Command("Part_Offset")
+{
+    sAppModule    = "Part";
+    sGroup        = QT_TR_NOOP("Part");
+    sMenuText     = QT_TR_NOOP("Offset...");
+    sToolTipText  = QT_TR_NOOP("Utility to offset");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Part_Offset";
+}
+
+void CmdPartOffset::activated(int iMsg)
+{
+    App::DocumentObject* shape = getSelection().getObjectsOfType(Part::Feature::getClassTypeId()).front();
+    std::string offset = getUniqueObjectName("Offset");
+
+    openCommand("Make Offset");
+    doCommand(Doc,"App.ActiveDocument.addObject(\"Part::Offset\",\"%s\")",offset.c_str());
+    doCommand(Doc,"App.ActiveDocument.%s.Source = App.ActiveDocument.%s" ,offset.c_str(), shape->getNameInDocument());
+    doCommand(Doc,"App.ActiveDocument.%s.Value = 1.0",offset.c_str());
+    updateActive();
+    //if (isActiveObjectValid())
+    //    doCommand(Gui,"Gui.ActiveDocument.hide(\"%s\")",shape->getNameInDocument());
+    doCommand(Gui,"Gui.ActiveDocument.setEdit('%s')",offset.c_str());
+
+    //commitCommand();
+    adjustCameraPosition();
+
+    copyVisual(offset.c_str(), "ShapeColor", shape->getNameInDocument());
+    copyVisual(offset.c_str(), "LineColor" , shape->getNameInDocument());
+    copyVisual(offset.c_str(), "PointColor", shape->getNameInDocument());
+}
+
+bool CmdPartOffset::isActive(void)
+{
+    Base::Type partid = Base::Type::fromName("Part::Feature");
+    bool objectsSelected = Gui::Selection().countObjectsOfType(partid) == 1;
+    return (objectsSelected && !Gui::Control().activeDialog());
+}
+
+//--------------------------------------------------------------------------------------
+
+DEF_STD_CMD_A(CmdPartThickness);
+
+CmdPartThickness::CmdPartThickness()
+  : Command("Part_Thickness")
+{
+    sAppModule    = "Part";
+    sGroup        = QT_TR_NOOP("Part");
+    sMenuText     = QT_TR_NOOP("Thickness...");
+    sToolTipText  = QT_TR_NOOP("Utility to apply a thickness");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Part_Thickness";
+}
+
+void CmdPartThickness::activated(int iMsg)
+{
+    Gui::SelectionFilter faceFilter  ("SELECT Part::Feature SUBELEMENT Face COUNT 1..");
+    if (!faceFilter.match()) {
+        QMessageBox::warning(Gui::getMainWindow(),
+            QApplication::translate("CmdPartThickness", "Wrong selection"),
+            QApplication::translate("CmdPartThickness", "Selected one or more faces of a shape"));
+        return;
+    }
+
+    // get the selected object
+    const std::vector<Gui::SelectionObject>& result = faceFilter.Result[0];
+    std::string selection = result.front().getAsPropertyLinkSubString();
+
+    const Part::Feature* shape = static_cast<const Part::Feature*>(result.front().getObject());
+    if (shape->Shape.getValue().IsNull())
+        return;
+    int countSolids = 0;
+    TopExp_Explorer xp;
+    xp.Init(shape->Shape.getValue(),TopAbs_SOLID);
+    for (;xp.More(); xp.Next()) {
+        countSolids++;
+    }
+    if (countSolids != 1) {
+        QMessageBox::warning(Gui::getMainWindow(),
+            QApplication::translate("CmdPartThickness", "Wrong selection"),
+            QApplication::translate("CmdPartThickness", "Selected shape is not a solid"));
+        return;
+    }
+
+    std::string thick = getUniqueObjectName("Thickness");
+
+    openCommand("Make Thickness");
+    doCommand(Doc,"App.ActiveDocument.addObject(\"Part::Thickness\",\"%s\")",thick.c_str());
+    doCommand(Doc,"App.ActiveDocument.%s.Faces = %s" ,thick.c_str(), selection.c_str());
+    doCommand(Doc,"App.ActiveDocument.%s.Value = 1.0",thick.c_str());
+    updateActive();
+    if (isActiveObjectValid())
+        doCommand(Gui,"Gui.ActiveDocument.hide(\"%s\")",shape->getNameInDocument());
+    doCommand(Gui,"Gui.ActiveDocument.setEdit('%s')",thick.c_str());
+
+    //commitCommand();
+    adjustCameraPosition();
+
+    copyVisual(thick.c_str(), "ShapeColor", shape->getNameInDocument());
+    copyVisual(thick.c_str(), "LineColor" , shape->getNameInDocument());
+    copyVisual(thick.c_str(), "PointColor", shape->getNameInDocument());
+}
+
+bool CmdPartThickness::isActive(void)
+{
+    Base::Type partid = Base::Type::fromName("Part::Feature");
+    bool objectsSelected = Gui::Selection().countObjectsOfType(partid) > 0;
+    return (objectsSelected && !Gui::Control().activeDialog());
 }
 
 //--------------------------------------------------------------------------------------
@@ -1229,6 +1347,42 @@ bool CmdCheckGeometry::isActive(void)
     return (hasActiveDocument() && !Gui::Control().activeDialog() && objectsSelected);
 }
 
+//===========================================================================
+// Part_CheckGeometry
+//===========================================================================
+
+DEF_STD_CMD_A(CmdColorPerFace);
+
+CmdColorPerFace::CmdColorPerFace()
+  : Command("Part_ColorPerFace")
+{
+    sAppModule    = "Part";
+    sGroup        = QT_TR_NOOP("Part");
+    sMenuText     = QT_TR_NOOP("Color per face");
+    sToolTipText  = QT_TR_NOOP("Set color per face");
+    sStatusTip    = sToolTipText;
+    sWhatsThis    = "Part_ColorPerFace";
+}
+
+void CmdColorPerFace::activated(int iMsg)
+{
+    if (getActiveGuiDocument()->getInEdit())
+        getActiveGuiDocument()->resetEdit();
+    std::vector<App::DocumentObject*> sel = Gui::Selection().getObjectsOfType(Part::Feature::getClassTypeId());
+    Gui::ViewProvider* vp = Gui::Application::Instance->getViewProvider(sel.front());
+    // FIXME: Need a way to force 'Color' edit mode
+    // #0000477: Proper interface for edit modes of view provider
+    if (vp)
+        getActiveGuiDocument()->setEdit(vp, Gui::ViewProvider::Color);
+}
+
+bool CmdColorPerFace::isActive(void)
+{
+    Base::Type partid = Base::Type::fromName("Part::Feature");
+    bool objectSelected = Gui::Selection().countObjectsOfType(partid) == 1;
+    return (hasActiveDocument() && !Gui::Control().activeDialog() && objectSelected);
+}
+
 
 void CreatePartCommands(void)
 {
@@ -1260,5 +1414,8 @@ void CreatePartCommands(void)
     rcCmdMgr.addCommand(new CmdPartBuilder());
     rcCmdMgr.addCommand(new CmdPartLoft());
     rcCmdMgr.addCommand(new CmdPartSweep());
+    rcCmdMgr.addCommand(new CmdPartOffset());
+    rcCmdMgr.addCommand(new CmdPartThickness());
     rcCmdMgr.addCommand(new CmdCheckGeometry());
+    rcCmdMgr.addCommand(new CmdColorPerFace());
 } 

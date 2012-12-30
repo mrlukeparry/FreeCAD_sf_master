@@ -226,11 +226,11 @@ void NavigationStyle::initialize()
     this->shiftdown = FALSE;
     this->altdown = FALSE;
     this->invertZoom = App::GetApplication().GetParameterGroupByPath
-        ("User parameter:BaseApp/Preferences/View")->GetBool("InvertZoom",false);
+        ("User parameter:BaseApp/Preferences/View")->GetBool("InvertZoom",true);
     this->zoomAtCursor = App::GetApplication().GetParameterGroupByPath
         ("User parameter:BaseApp/Preferences/View")->GetBool("ZoomAtCursor",false);
     this->zoomStep = App::GetApplication().GetParameterGroupByPath
-        ("User parameter:BaseApp/Preferences/View")->GetFloat("ZoomStep",0.05f);
+        ("User parameter:BaseApp/Preferences/View")->GetFloat("ZoomStep",0.2f);
 }
 
 void NavigationStyle::finalize()
@@ -724,7 +724,10 @@ void NavigationStyle::zoomByCursor(const SbVec2f & thispos, const SbVec2f & prev
 {
     // There is no "geometrically correct" value, 20 just seems to give
     // about the right "feel".
-    zoom(viewer->getCamera(), (thispos[1] - prevpos[1]) * 10.0f/*20.0f*/);
+    float value = (thispos[1] - prevpos[1]) * 10.0f/*20.0f*/;
+    if (this->invertZoom)
+        value = -value;
+    zoom(viewer->getCamera(), value);
 }
 
 void NavigationStyle::zoomIn()

@@ -29,11 +29,13 @@
 #include <Base/Tools2D.h>
 #include <Gui/Selection.h>
 #include <boost/signals.hpp>
+#include <QCoreApplication>
 
 
 class TopoDS_Shape;
 class TopoDS_Face;
 class SoSeparator;
+class SbLine;
 class SbVec3f;
 class SoCoordinate3;
 class SoPointSet;
@@ -70,7 +72,13 @@ class DrawSketchHandler;
   */
 class SketcherGuiExport ViewProviderSketch : public PartGui::ViewProvider2DObject, public Gui::SelectionObserver
 {
-    PROPERTY_HEADER(PartGui::ViewProviderSketch);
+    Q_DECLARE_TR_FUNCTIONS(SketcherGui::ViewProviderSketch)
+    /// generates a warning message about constraint conflicts and appends it to the given message
+    static QString appendConflictMsg(const std::vector<int> &conflicting);
+    /// generates a warning message about redundant constraints and appends it to the given message
+    static QString appendRedundantMsg(const std::vector<int> &redundant);
+
+    PROPERTY_HEADER(SketcherGui::ViewProviderSketch);
 
 public:
     /// constructor
@@ -127,6 +135,9 @@ public:
     /// give the coordinates of a line on the sketch plane in sketcher (2D) coordinates
     void getCoordsOnSketchPlane(double &u, double &v,const SbVec3f &point, const SbVec3f &normal);
 
+    /// give projecting line of position
+    void getProjectingLine(const SbVec2s&, const Gui::View3DInventorViewer *viewer, SbLine&) const;
+
     /// helper to detect preselection
     bool detectPreselection(const SoPickedPoint *Point, int &PtIndex,int &GeoIndex, int &ConstrIndex, int &CrossIndex);
 
@@ -153,6 +164,7 @@ public:
     float getScaleFactor();
     int getPreselectPoint(void) const;
     int getPreselectCurve(void) const;
+    int getPreselectCross(void) const;
     int getPreselectConstraint(void) const;
     //@}
 

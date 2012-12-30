@@ -1,770 +1,1176 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.0">
-<context>
+<TS>
+  <context>
     <name>CmdPartDesignChamfer</name>
     <message>
-        <source>Part</source>
-        <translation type="obsolete">Частина</translation>
+      <source>Part</source>
+      <translation>Частина</translation>
     </message>
     <message>
-        <source>Chamfer...</source>
-        <translation type="obsolete">Згладити...</translation>
+      <source>Chamfer...</source>
+      <translation>Фаска...</translation>
     </message>
     <message>
-        <location filename="../../Command.cpp" line="+561"/>
-        <source>PartDesign</source>
-        <translation type="unfinished">ДизайнДеталі</translation>
+      <location filename="../../Command.cpp" line="+591"/>
+      <source>PartDesign</source>
+      <translation>ДизайнДеталі</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Chamfer</source>
-        <translation type="unfinished"></translation>
+      <source>Chamfer</source>
+      <translation>Chamfer</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Chamfer the selected edges of a shape</source>
-        <translation>Згладити обрані краї фігури</translation>
+      <source>Chamfer the selected edges of a shape</source>
+      <translation>Створити фаску на обраному краю фігури</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
+    <name>CmdPartDesignDraft</name>
+    <message>
+      <source>PartDesign</source>
+      <translation>ДизайнДеталі</translation>
+    </message>
+    <message>
+      <source>Draft</source>
+      <translation>Draft</translation>
+    </message>
+    <message>
+      <source>Make a draft on a face</source>
+      <translation>Make a draft on a face</translation>
+    </message>
+  </context>
+  <context>
     <name>CmdPartDesignFillet</name>
     <message>
-        <location line="-148"/>
-        <source>PartDesign</source>
-        <translation>ДизайнДеталі</translation>
+      <source>PartDesign</source>
+      <translation>ДизайнДеталі</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Fillet</source>
-        <translation>Округлення</translation>
+      <source>Fillet</source>
+      <translation>Округлення</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Make a fillet on an edge, face or body</source>
-        <translation>Зробити округлення краю, поверхні чи тіла</translation>
+      <source>Make a fillet on an edge, face or body</source>
+      <translation>Зробити округлення краю, грані або тіла</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>CmdPartDesignGroove</name>
     <message>
-        <location line="-78"/>
-        <source>PartDesign</source>
-        <translation type="unfinished">ДизайнДеталі</translation>
+      <source>PartDesign</source>
+      <translation>ДизайнДеталі</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Groove</source>
-        <translation type="unfinished"></translation>
+      <source>Groove</source>
+      <translation>Groove</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Groove a selected sketch</source>
-        <translation type="unfinished"></translation>
+      <source>Groove a selected sketch</source>
+      <translation>Groove a selected sketch</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
+    <name>CmdPartDesignLinearPattern</name>
+    <message>
+      <source>PartDesign</source>
+      <translation>ДизайнДеталі</translation>
+    </message>
+    <message>
+      <source>LinearPattern</source>
+      <translation>LinearPattern</translation>
+    </message>
+    <message>
+      <source>create a linear pattern feature</source>
+      <translation>create a linear pattern feature</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdPartDesignMirrored</name>
+    <message>
+      <source>PartDesign</source>
+      <translation>ДизайнДеталі</translation>
+    </message>
+    <message>
+      <source>Mirrored</source>
+      <translation>Mirrored</translation>
+    </message>
+    <message>
+      <source>create a mirrored feature</source>
+      <translation>create a mirrored feature</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdPartDesignMultiTransform</name>
+    <message>
+      <source>PartDesign</source>
+      <translation>ДизайнДеталі</translation>
+    </message>
+    <message>
+      <source>MultiTransform</source>
+      <translation>MultiTransform</translation>
+    </message>
+    <message>
+      <source>create a multitransform feature</source>
+      <translation>create a multitransform feature</translation>
+    </message>
+  </context>
+  <context>
     <name>CmdPartDesignPad</name>
     <message>
-        <location line="-233"/>
-        <source>PartDesign</source>
-        <translation>ДизайнДеталі</translation>
+      <source>PartDesign</source>
+      <translation>ДизайнДеталі</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Pad</source>
-        <translation>Pad</translation>
+      <source>Pad</source>
+      <translation>Панель</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Pad a selected sketch</source>
-        <translation>Pad a selected sketch</translation>
+      <source>Pad a selected sketch</source>
+      <translation>Панель обраного ескізу</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>CmdPartDesignPocket</name>
     <message>
-        <location line="+76"/>
-        <source>PartDesign</source>
-        <translation>ДизайнДеталі</translation>
+      <source>PartDesign</source>
+      <translation>ДизайнДеталі</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Pocket</source>
-        <translation>Pocket</translation>
+      <source>Pocket</source>
+      <translation>Поглиблення</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>create a pocket with the selected sketch</source>
-        <translation>create a pocket with the selected sketch</translation>
+      <source>create a pocket with the selected sketch</source>
+      <translation>Створити поглиблення за обраним ескізом</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
+    <name>CmdPartDesignPolarPattern</name>
+    <message>
+      <source>PartDesign</source>
+      <translation>ДизайнДеталі</translation>
+    </message>
+    <message>
+      <source>PolarPattern</source>
+      <translation>PolarPattern</translation>
+    </message>
+    <message>
+      <source>create a polar pattern feature</source>
+      <translation>create a polar pattern feature</translation>
+    </message>
+  </context>
+  <context>
     <name>CmdPartDesignRevolution</name>
     <message>
-        <location line="+74"/>
-        <source>PartDesign</source>
-        <translation>ДизайнДеталі</translation>
+      <source>PartDesign</source>
+      <translation>ДизайнДеталі</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Revolution</source>
-        <translation>Revolution</translation>
+      <source>Revolution</source>
+      <translation>Обертання</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Revolve a selected sketch</source>
-        <translation>Revolve a selected sketch</translation>
+      <source>Revolve a selected sketch</source>
+      <translation>Обертати обраний ескіз</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
+    <name>CmdPartDesignScaled</name>
+    <message>
+      <source>PartDesign</source>
+      <translation>ДизайнДеталі</translation>
+    </message>
+    <message>
+      <source>Scaled</source>
+      <translation>Scaled</translation>
+    </message>
+    <message>
+      <source>create a scaled feature</source>
+      <translation>create a scaled feature</translation>
+    </message>
+  </context>
+  <context>
     <name>Gui::TaskView::TaskWatcherCommands</name>
     <message>
-        <location filename="../../Workbench.cpp" line="+39"/>
-        <source>Face tools</source>
-        <translation>Face tools</translation>
+      <location filename="../../Workbench.cpp" line="+41"/>
+      <source>Face tools</source>
+      <translation>Інструменти граней</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Sketch tools</source>
-        <translation>Sketch tools</translation>
+      <source>Sketch tools</source>
+      <translation>Інструменти ескізу</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Create Geometry</source>
-        <translation>Create Geometry</translation>
+      <source>Create Geometry</source>
+      <translation>Створити геометрію</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>PartDesignGui::ChamferWidget</name>
     <message>
-        <source>Edges to chamfer</source>
-        <translation type="obsolete">Краї фаски</translation>
+      <source>Edges to chamfer</source>
+      <translation>Зробити фаски на краях</translation>
     </message>
     <message>
-        <source>Start distance</source>
-        <translation type="obsolete">Початок відстані</translation>
+      <source>Start distance</source>
+      <translation>Початок відстані</translation>
     </message>
     <message>
-        <source>End distance</source>
-        <translation type="obsolete">Кінець відстані</translation>
+      <source>End distance</source>
+      <translation>Кінець відстані</translation>
     </message>
     <message>
-        <source>Edge%1</source>
-        <translation type="obsolete">Край%1</translation>
+      <source>Edge%1</source>
+      <translation>Край%1</translation>
     </message>
     <message>
-        <source>Distance</source>
-        <translation type="obsolete">Відстань</translation>
+      <source>Distance</source>
+      <translation>Відстань</translation>
     </message>
     <message>
-        <source>No shape selected</source>
-        <translation type="obsolete">Форму не обрано</translation>
+      <source>No shape selected</source>
+      <translation>Форму не обрано</translation>
     </message>
     <message>
-        <source>No valid shape is selected.
+      <source>No valid shape is selected.
 Please select a valid shape in the drop-down box first.</source>
-        <translation type="obsolete">Не обрано вірної форми.
+      <translation>Не обрано вірної форми.
 Будь ласка, оберіть вірну форму у виринаючому списку.</translation>
     </message>
     <message>
-        <source>No edge selected</source>
-        <translation type="obsolete">Край не обрано</translation>
+      <source>No edge selected</source>
+      <translation>Край не обрано</translation>
     </message>
     <message>
-        <source>No edge entity is checked to chamfer.
+      <source>No edge entity is checked to chamfer.
 Please check one or more edge entities first.</source>
-        <translation type="obsolete">Не обрано край для згладжування.
+      <translation>Не обрано край для згладжування.
 Будь ласка, спочатку оберіть один, або більше країв.</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
+    <name>PartDesignGui::FeaturePickDialog</name>
+    <message>
+      <location filename="../../FeaturePickDialog.ui" line="+14"/>
+      <source>Choose feature</source>
+      <translation>Choose feature</translation>
+    </message>
+  </context>
+  <context>
     <name>PartDesignGui::TaskChamfer</name>
     <message>
-        <source>Chamfer Edges</source>
-        <translation type="obsolete">Згладити краї</translation>
+      <source>Chamfer Edges</source>
+      <translation>Фаски країв</translation>
     </message>
     <message>
-        <source>Shape</source>
-        <translation type="obsolete">Форма</translation>
+      <source>Shape</source>
+      <translation>Форма</translation>
     </message>
     <message>
-        <source>Selected shape:</source>
-        <translation type="obsolete">Обрана форма:</translation>
+      <source>Selected shape:</source>
+      <translation>Обрана форма:</translation>
     </message>
     <message>
-        <source>No selection</source>
-        <translation type="obsolete">Нічого не вибрано</translation>
+      <source>No selection</source>
+      <translation>Нічого не вибрано</translation>
     </message>
     <message>
-        <source>Chamfer Parameter</source>
-        <translation type="obsolete">Параметри згладжування</translation>
+      <source>Chamfer Parameter</source>
+      <translation>Параметри фаски</translation>
     </message>
     <message>
-        <source>All</source>
-        <translation type="obsolete">Все</translation>
+      <source>All</source>
+      <translation>Все</translation>
     </message>
     <message>
-        <source>None</source>
-        <translation type="obsolete">Нічого</translation>
+      <source>None</source>
+      <translation>Нічого</translation>
     </message>
     <message>
-        <source>Chamfer type:</source>
-        <translation type="obsolete">Тип згладжування:</translation>
+      <source>Chamfer type:</source>
+      <translation>Тип фаски:</translation>
     </message>
     <message>
-        <source>Constant Distance</source>
-        <translation type="obsolete">Постійна відстань</translation>
+      <source>Constant Distance</source>
+      <translation>Постійна відстань</translation>
     </message>
     <message>
-        <source>Variable Distance</source>
-        <translation type="obsolete">Змінна відстань</translation>
+      <source>Variable Distance</source>
+      <translation>Змінна відстань</translation>
     </message>
     <message>
-        <source>Distance:</source>
-        <translation type="obsolete">Відстань:</translation>
+      <source>Distance:</source>
+      <translation>Відстань:</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>PartDesignGui::TaskChamferParameters</name>
     <message>
-        <location filename="../../TaskChamferParameters.ui" line="+14"/>
-        <source>Form</source>
-        <translation type="unfinished">Форма</translation>
+      <location filename="../../TaskChamferParameters.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Size:</source>
-        <translation type="unfinished">Розмір:</translation>
+      <source>Size:</source>
+      <translation>Розмір:</translation>
     </message>
     <message>
-        <location filename="../../TaskChamferParameters.cpp" line="+51"/>
-        <source>Chamfer parameters</source>
-        <translation type="unfinished"></translation>
+      <location filename="../../TaskChamferParameters.cpp" line="+51"/>
+      <source>Chamfer parameters</source>
+      <translation>Chamfer parameters</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskDlgDraftParameters</name>
+    <message>
+      <location filename="../../TaskDraftParameters.cpp" line="+394"/>
+      <source>Input error</source>
+      <translation>Помилка вводу</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskDlgLinearPatternParameters</name>
+    <message>
+      <location filename="../../TaskLinearPatternParameters.cpp" line="+408"/>
+      <source>Input error</source>
+      <translation>Помилка вводу</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskDlgMirroredParameters</name>
+    <message>
+      <location filename="../../TaskMirroredParameters.cpp" line="+338"/>
+      <source>Input error</source>
+      <translation>Помилка вводу</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskDlgMultiTransformParameters</name>
+    <message>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="+434"/>
+      <source>Input error</source>
+      <translation>Помилка вводу</translation>
+    </message>
+  </context>
+  <context>
     <name>PartDesignGui::TaskDlgPadParameters</name>
     <message>
-        <location filename="../../TaskPadParameters.cpp" line="+313"/>
-        <source>Input error</source>
-        <translation>Input error</translation>
+      <location filename="../../TaskPadParameters.cpp" line="+493"/>
+      <source>Input error</source>
+      <translation>Помилка вводу</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskDlgPocketParameters</name>
+    <message>
+      <location filename="../../TaskPocketParameters.cpp" line="+450"/>
+      <source>Input error</source>
+      <translation>Помилка вводу</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskDlgPolarPatternParameters</name>
+    <message>
+      <location filename="../../TaskPolarPatternParameters.cpp" line="+411"/>
+      <source>Input error</source>
+      <translation>Помилка вводу</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskDlgScaledParameters</name>
+    <message>
+      <location filename="../../TaskScaledParameters.cpp" line="+235"/>
+      <source>Input error</source>
+      <translation>Помилка вводу</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskDlgTransformedParameters</name>
+    <message>
+      <location filename="../../TaskTransformedParameters.cpp" line="+236"/>
+      <source>Input error</source>
+      <translation>Помилка вводу</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskDraftParameters</name>
+    <message>
+      <location filename="../../TaskDraftParameters.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
+    </message>
+    <message>
+      <source>Add face</source>
+      <translation>Add face</translation>
+    </message>
+    <message>
+      <source>Remove face</source>
+      <translation>Remove face</translation>
+    </message>
+    <message>
+      <source>Draft angle</source>
+      <translation>Draft angle</translation>
+    </message>
+    <message>
+      <source>Neutral plane</source>
+      <translation>Neutral plane</translation>
+    </message>
+    <message>
+      <source>Pull direction</source>
+      <translation>Pull direction</translation>
+    </message>
+    <message>
+      <source>Reverse pull direction</source>
+      <translation>Reverse pull direction</translation>
+    </message>
+    <message>
+      <location filename="../../TaskDraftParameters.cpp" line="-342"/>
+      <source>Draft parameters</source>
+      <translation>Draft parameters</translation>
+    </message>
+    <message>
+      <source>Remove</source>
+      <translation>Видалити</translation>
+    </message>
+  </context>
+  <context>
     <name>PartDesignGui::TaskFilletParameters</name>
     <message>
-        <location filename="../../TaskFilletParameters.ui" line="+14"/>
-        <source>Form</source>
-        <translation>Форма</translation>
+      <location filename="../../TaskFilletParameters.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Radius:</source>
-        <translation>Радіус:</translation>
+      <source>Radius:</source>
+      <translation>Радіус:</translation>
     </message>
     <message>
-        <location filename="../../TaskFilletParameters.cpp" line="+51"/>
-        <source>Fillet parameters</source>
-        <translation>Fillet parameters</translation>
+      <location filename="../../TaskFilletParameters.cpp" line="+51"/>
+      <source>Fillet parameters</source>
+      <translation>Параметри зкруглення</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>PartDesignGui::TaskGrooveParameters</name>
     <message>
-        <location filename="../../TaskGrooveParameters.ui" line="+14"/>
-        <source>Form</source>
-        <translation type="unfinished">Форма</translation>
+      <location filename="../../TaskGrooveParameters.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Axis:</source>
-        <translation type="unfinished">Вісь:</translation>
+      <source>Axis:</source>
+      <translation>Вісь:</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Vertical sketch axis</source>
-        <translation type="unfinished"></translation>
+      <source>Vertical sketch axis</source>
+      <translation>Vertical sketch axis</translation>
     </message>
     <message>
-        <location line="+5"/>
-        <source>Horizontal sketch axis</source>
-        <translation type="unfinished"></translation>
+      <source>Horizontal sketch axis</source>
+      <translation>Horizontal sketch axis</translation>
     </message>
     <message>
-        <location line="+12"/>
-        <source>Angle:</source>
-        <translation type="unfinished">Кут:</translation>
+      <source>Angle:</source>
+      <translation>Кут:</translation>
     </message>
     <message>
-        <location line="+31"/>
-        <source>Symmetric to plane</source>
-        <translation type="unfinished"></translation>
+      <source>Symmetric to plane</source>
+      <translation>Symmetric to plane</translation>
     </message>
     <message>
-        <location line="+7"/>
-        <source>Reversed</source>
-        <translation type="unfinished">Reversed</translation>
+      <source>Reversed</source>
+      <translation>Зворотній</translation>
     </message>
     <message>
-        <location filename="../../TaskGrooveParameters.cpp" line="+51"/>
-        <source>Groove parameters</source>
-        <translation type="unfinished"></translation>
+      <source>Update view</source>
+      <translation>Update view</translation>
     </message>
-</context>
-<context>
+    <message>
+      <location filename="../../TaskGrooveParameters.cpp" line="+51"/>
+      <source>Groove parameters</source>
+      <translation>Groove parameters</translation>
+    </message>
+  </context>
+  <context>
     <name>PartDesignGui::TaskHoleParameters</name>
     <message>
-        <location filename="../../TaskHoleParameters.ui" line="+14"/>
-        <source>Form</source>
-        <translation>Форма</translation>
+      <location filename="../../TaskHoleParameters.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Type:</source>
-        <translation>Тип:</translation>
+      <source>Type:</source>
+      <translation>Тип:</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Dimension</source>
-        <translation>Розмірність</translation>
+      <source>Dimension</source>
+      <translation>Розмірність</translation>
     </message>
     <message>
-        <location line="+5"/>
-        <source>Up to last</source>
-        <translation>До останнього</translation>
+      <source>Up to last</source>
+      <translation>До останнього</translation>
     </message>
     <message>
-        <location line="+5"/>
-        <source>Up to first</source>
-        <translation>Up to first</translation>
+      <source>Up to first</source>
+      <translation>До першого</translation>
     </message>
     <message>
-        <location line="+12"/>
-        <source>Size:</source>
-        <translation>Розмір:</translation>
+      <source>Size:</source>
+      <translation>Розмір:</translation>
     </message>
     <message>
-        <location filename="../../TaskHoleParameters.cpp" line="+47"/>
-        <source>TaskHoleParameters</source>
-        <translation>TaskHoleParameters</translation>
+      <location filename="../../TaskHoleParameters.cpp" line="+47"/>
+      <source>TaskHoleParameters</source>
+      <translation>TaskHoleParameters</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskLinearPatternParameters</name>
+    <message>
+      <location filename="../../TaskLinearPatternParameters.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
+    </message>
+    <message>
+      <source>Original feature</source>
+      <translation>Original feature</translation>
+    </message>
+    <message>
+      <source>Direction</source>
+      <translation>Напрямок</translation>
+    </message>
+    <message>
+      <source>Reverse direction</source>
+      <translation>Reverse direction</translation>
+    </message>
+    <message>
+      <source>Length</source>
+      <translation>Довжина</translation>
+    </message>
+    <message>
+      <source>Occurrences</source>
+      <translation>Occurrences</translation>
+    </message>
+    <message>
+      <source>OK</source>
+      <translation>Гаразд</translation>
+    </message>
+    <message>
+      <source>Update view</source>
+      <translation>Update view</translation>
+    </message>
+    <message>
+      <location filename="../../TaskLinearPatternParameters.cpp" line="-237"/>
+      <source>Select an edge or a face</source>
+      <translation>Select an edge or a face</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskMirroredParameters</name>
+    <message>
+      <location filename="../../TaskMirroredParameters.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
+    </message>
+    <message>
+      <source>Original feature</source>
+      <translation>Original feature</translation>
+    </message>
+    <message>
+      <source>XY</source>
+      <translation>XY</translation>
+    </message>
+    <message>
+      <source>XZ</source>
+      <translation>XZ</translation>
+    </message>
+    <message>
+      <source>YZ</source>
+      <translation>YZ</translation>
+    </message>
+    <message>
+      <source>Plane</source>
+      <translation>Площини</translation>
+    </message>
+    <message>
+      <source>OK</source>
+      <translation>Гаразд</translation>
+    </message>
+    <message>
+      <source>Update view</source>
+      <translation>Update view</translation>
+    </message>
+    <message>
+      <location filename="../../TaskMirroredParameters.cpp" line="-175"/>
+      <source>Select a plane</source>
+      <translation>Select a plane</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskMultiTransformParameters</name>
+    <message>
+      <location filename="../../TaskMultiTransformParameters.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
+    </message>
+    <message>
+      <source>Original feature</source>
+      <translation>Original feature</translation>
+    </message>
+    <message>
+      <source>Transformations</source>
+      <translation>Transformations</translation>
+    </message>
+    <message>
+      <source>Update view</source>
+      <translation>Update view</translation>
+    </message>
+    <message>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="-363"/>
+      <source>Edit</source>
+      <translation>Правка</translation>
+    </message>
+    <message>
+      <source>Delete</source>
+      <translation>Видалити</translation>
+    </message>
+    <message>
+      <source>Add mirrored transformation</source>
+      <translation>Add mirrored transformation</translation>
+    </message>
+    <message>
+      <source>Add linear pattern</source>
+      <translation>Add linear pattern</translation>
+    </message>
+    <message>
+      <source>Add polar pattern</source>
+      <translation>Add polar pattern</translation>
+    </message>
+    <message>
+      <source>Add scaled transformation</source>
+      <translation>Add scaled transformation</translation>
+    </message>
+    <message>
+      <source>Move up</source>
+      <translation>Перемістити вгору</translation>
+    </message>
+    <message>
+      <source>Move down</source>
+      <translation>Перемістити вниз</translation>
+    </message>
+    <message>
+      <source>Right-click to add</source>
+      <translation>Right-click to add</translation>
+    </message>
+  </context>
+  <context>
     <name>PartDesignGui::TaskPadParameters</name>
     <message>
-        <location filename="../../TaskPadParameters.ui" line="+14"/>
-        <source>Form</source>
-        <translation>Форма</translation>
+      <location filename="../../TaskPadParameters.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Type</source>
-        <translation type="unfinished"></translation>
+      <source>Type</source>
+      <translation>Тип</translation>
     </message>
     <message>
-        <location line="+20"/>
-        <source>Length</source>
-        <translation type="unfinished">Length</translation>
+      <source>Length</source>
+      <translation>Довжина</translation>
     </message>
     <message>
-        <location line="+28"/>
-        <source>Symmetric to plane</source>
-        <translation type="unfinished"></translation>
+      <source>Symmetric to plane</source>
+      <translation>Symmetric to plane</translation>
     </message>
     <message>
-        <location line="+16"/>
-        <source>2nd length</source>
-        <translation type="unfinished"></translation>
+      <source>2nd length</source>
+      <translation>2nd length</translation>
     </message>
     <message>
-        <location line="+27"/>
-        <location filename="../../TaskPadParameters.cpp" line="-102"/>
-        <source>Face</source>
-        <translation type="unfinished"></translation>
+      <source>Face</source>
+      <translation>Face</translation>
     </message>
     <message>
-        <source>Type:</source>
-        <translation type="obsolete">Тип:</translation>
+      <source>Update view</source>
+      <translation>Update view</translation>
     </message>
     <message>
-        <location line="-83"/>
-        <location filename="../../TaskPadParameters.cpp" line="-114"/>
-        <source>Dimension</source>
-        <translation>Розмірність</translation>
+      <source>Type:</source>
+      <translation>Тип:</translation>
     </message>
     <message>
-        <source>Length:</source>
-        <translation type="obsolete">Довжина:</translation>
+      <source>Dimension</source>
+      <translation>Розмірність</translation>
     </message>
     <message>
-        <source>Mirrored extent</source>
-        <translation type="obsolete">Mirrored extent</translation>
+      <source>Length:</source>
+      <translation>Довжина:</translation>
     </message>
     <message>
-        <location line="+47"/>
-        <source>Reversed</source>
-        <translation>Reversed</translation>
+      <source>Mirrored extent</source>
+      <translation>Дзеркальне розширення</translation>
     </message>
     <message>
-        <source>Display mode:</source>
-        <translation type="obsolete">Режим показу:</translation>
+      <source>Reversed</source>
+      <translation>Зворотній</translation>
     </message>
     <message>
-        <source>Plot mode:</source>
-        <translation type="obsolete">Plot mode:</translation>
+      <source>Display mode:</source>
+      <translation>Режим показу:</translation>
     </message>
     <message>
-        <source>Point size:</source>
-        <translation type="obsolete">Розмір точки:</translation>
+      <source>Plot mode:</source>
+      <translation>Режим друку:</translation>
     </message>
     <message>
-        <source>Line width:</source>
-        <translation type="obsolete">Товщина лінії:</translation>
+      <source>Point size:</source>
+      <translation>Розмір точки:</translation>
     </message>
     <message>
-        <source>Transparency:</source>
-        <translation type="obsolete">Прозорість:</translation>
+      <source>Line width:</source>
+      <translation>Товщина лінії:</translation>
     </message>
     <message>
-        <source>TaskPadParameters</source>
-        <translation type="obsolete">TaskPadParameters</translation>
+      <source>Transparency:</source>
+      <translation>Прозорість:</translation>
     </message>
     <message>
-        <location filename="../../TaskPadParameters.cpp" line="-45"/>
-        <source>Pad parameters</source>
-        <translation>Pad parameters</translation>
+      <source>TaskPadParameters</source>
+      <translation>TaskPadParameters</translation>
     </message>
     <message>
-        <location line="+43"/>
-        <source>No face selected</source>
-        <translation type="unfinished"></translation>
+      <location filename="../../TaskPadParameters.cpp" line="-353"/>
+      <source>Pad parameters</source>
+      <translation>Панель параметрів</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>To last</source>
-        <translation type="unfinished"></translation>
+      <source>No face selected</source>
+      <translation>No face selected</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>To first</source>
-        <translation type="unfinished"></translation>
+      <source>To last</source>
+      <translation>To last</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Up to face</source>
-        <translation type="unfinished"></translation>
+      <source>To first</source>
+      <translation>To first</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Two dimensions</source>
-        <translation type="unfinished"></translation>
+      <source>Up to face</source>
+      <translation>До лиця</translation>
     </message>
-</context>
-<context>
+    <message>
+      <source>Two dimensions</source>
+      <translation>Two dimensions</translation>
+    </message>
+  </context>
+  <context>
     <name>PartDesignGui::TaskPatternRectangularParameters</name>
     <message>
-        <location filename="../../TaskPatternRectangularParameters.ui" line="+14"/>
-        <source>Form</source>
-        <translation>Форма</translation>
+      <source>Form</source>
+      <translation>Форма</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Spacing1:</source>
-        <translation>Spacing1:</translation>
+      <source>Spacing1:</source>
+      <translation>Інтервал1:</translation>
     </message>
     <message>
-        <location line="+14"/>
-        <source>Number1:</source>
-        <translation>Number1:</translation>
+      <source>Number1:</source>
+      <translation>Число1:</translation>
     </message>
     <message>
-        <location line="+19"/>
-        <source>Second extend</source>
-        <translation>Second extend</translation>
+      <source>Second extend</source>
+      <translation>Друге розширення</translation>
     </message>
     <message>
-        <location line="+9"/>
-        <source>Spacing2:</source>
-        <translation>Spacing2:</translation>
+      <source>Spacing2:</source>
+      <translation>Інтервал2:</translation>
     </message>
     <message>
-        <location line="+14"/>
-        <source>Number2:</source>
-        <translation>Number2:</translation>
+      <source>Number2:</source>
+      <translation>Число2:</translation>
     </message>
     <message>
-        <location filename="../../TaskPatternRectangularParameters.cpp" line="+47"/>
-        <source>TaskPatternRectangularParameters</source>
-        <translation>TaskPatternRectangularParameters</translation>
+      <source>TaskPatternRectangularParameters</source>
+      <translation>TaskPatternRectangularParameters</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>PartDesignGui::TaskPocketParameters</name>
     <message>
-        <location filename="../../TaskPocketParameters.ui" line="+26"/>
-        <source>Form</source>
-        <translation>Форма</translation>
+      <location filename="../../TaskPocketParameters.ui" line="+26"/>
+      <source>Form</source>
+      <translation>Форма</translation>
     </message>
     <message>
-        <source>Type:</source>
-        <translation type="obsolete">Тип:</translation>
+      <source>Type:</source>
+      <translation>Тип:</translation>
     </message>
     <message>
-        <location line="+15"/>
-        <source>Type</source>
-        <translation type="unfinished"></translation>
+      <source>Type</source>
+      <translation>Тип</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <location filename="../../TaskPocketParameters.cpp" line="+74"/>
-        <source>Dimension</source>
-        <translation>Розмірність</translation>
+      <source>Dimension</source>
+      <translation>Розмірність</translation>
     </message>
     <message>
-        <location line="+20"/>
-        <location filename="../../TaskPocketParameters.cpp" line="+90"/>
-        <source>Face</source>
-        <translation type="unfinished"></translation>
+      <source>Symmetric to plane</source>
+      <translation>Symmetric to plane</translation>
     </message>
     <message>
-        <location line="+22"/>
-        <source>Length</source>
-        <translation>Length</translation>
+      <source>Face</source>
+      <translation>Face</translation>
     </message>
     <message>
-        <location filename="../../TaskPocketParameters.cpp" line="-113"/>
-        <source>Pocket parameters</source>
-        <translation>Pocket parameters</translation>
+      <source>Update view</source>
+      <translation>Update view</translation>
     </message>
     <message>
-        <location line="+24"/>
-        <source>To last</source>
-        <translation type="unfinished"></translation>
+      <source>Length</source>
+      <translation>Довжина</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>To first</source>
-        <translation type="unfinished"></translation>
+      <location filename="../../TaskPocketParameters.cpp" line="-329"/>
+      <source>Pocket parameters</source>
+      <translation>Параметри поглиблення</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Through all</source>
-        <translation type="unfinished"></translation>
+      <source>To last</source>
+      <translation>To last</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Up to face</source>
-        <translation type="unfinished"></translation>
+      <source>To first</source>
+      <translation>To first</translation>
     </message>
     <message>
-        <location line="+11"/>
-        <source>No face selected</source>
-        <translation type="unfinished"></translation>
+      <source>Through all</source>
+      <translation>Through all</translation>
     </message>
-</context>
-<context>
+    <message>
+      <source>Up to face</source>
+      <translation>До лиця</translation>
+    </message>
+    <message>
+      <source>No face selected</source>
+      <translation>No face selected</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskPolarPatternParameters</name>
+    <message>
+      <location filename="../../TaskPolarPatternParameters.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
+    </message>
+    <message>
+      <source>Original feature</source>
+      <translation>Original feature</translation>
+    </message>
+    <message>
+      <source>X</source>
+      <translation>X</translation>
+    </message>
+    <message>
+      <source>Y</source>
+      <translation>Y</translation>
+    </message>
+    <message>
+      <source>Z</source>
+      <translation>Z</translation>
+    </message>
+    <message>
+      <source>Direction</source>
+      <translation>Напрямок</translation>
+    </message>
+    <message>
+      <source>Reverse direction</source>
+      <translation>Reverse direction</translation>
+    </message>
+    <message>
+      <source>Angle</source>
+      <translation>Кут</translation>
+    </message>
+    <message>
+      <source>Occurrences</source>
+      <translation>Occurrences</translation>
+    </message>
+    <message>
+      <source>OK</source>
+      <translation>Гаразд</translation>
+    </message>
+    <message>
+      <source>Update view</source>
+      <translation>Update view</translation>
+    </message>
+    <message>
+      <location filename="../../TaskPolarPatternParameters.cpp" line="-234"/>
+      <source>Select an edge</source>
+      <translation>Select an edge</translation>
+    </message>
+  </context>
+  <context>
     <name>PartDesignGui::TaskRevolutionParameters</name>
     <message>
-        <location filename="../../TaskRevolutionParameters.ui" line="+14"/>
-        <source>Form</source>
-        <translation>Форма</translation>
+      <location filename="../../TaskRevolutionParameters.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Axis:</source>
-        <translation>Вісь:</translation>
+      <source>Axis:</source>
+      <translation>Вісь:</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Vertical sketch axis</source>
-        <translation type="unfinished"></translation>
+      <source>Vertical sketch axis</source>
+      <translation>Vertical sketch axis</translation>
     </message>
     <message>
-        <location line="+5"/>
-        <source>Horizontal sketch axis</source>
-        <translation type="unfinished"></translation>
+      <source>Horizontal sketch axis</source>
+      <translation>Horizontal sketch axis</translation>
     </message>
     <message>
-        <location line="+43"/>
-        <source>Symmetric to plane</source>
-        <translation type="unfinished"></translation>
+      <source>Symmetric to plane</source>
+      <translation>Symmetric to plane</translation>
     </message>
     <message>
-        <location line="+7"/>
-        <source>Reversed</source>
-        <translation type="unfinished">Reversed</translation>
+      <source>Reversed</source>
+      <translation>Зворотній</translation>
     </message>
     <message>
-        <source>Vertical</source>
-        <translation type="obsolete">Vertical</translation>
+      <source>Update view</source>
+      <translation>Update view</translation>
     </message>
     <message>
-        <source>Horizontal</source>
-        <translation type="obsolete">Horizontal</translation>
+      <source>Vertical</source>
+      <translation>По вертикалі</translation>
     </message>
     <message>
-        <location line="-38"/>
-        <source>Angle:</source>
-        <translation>Кут:</translation>
+      <source>Horizontal</source>
+      <translation>По горизонталі</translation>
     </message>
     <message>
-        <location filename="../../TaskRevolutionParameters.cpp" line="+51"/>
-        <source>Revolution parameters</source>
-        <translation>Revolution parameters</translation>
+      <source>Angle:</source>
+      <translation>Кут:</translation>
     </message>
-</context>
-<context>
+    <message>
+      <location filename="../../TaskRevolutionParameters.cpp" line="+51"/>
+      <source>Revolution parameters</source>
+      <translation>Параметри обертання</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskScaledParameters</name>
+    <message>
+      <location filename="../../TaskScaledParameters.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
+    </message>
+    <message>
+      <source>Original feature</source>
+      <translation>Original feature</translation>
+    </message>
+    <message>
+      <source>Factor</source>
+      <translation>Factor</translation>
+    </message>
+    <message>
+      <source>Occurrences</source>
+      <translation>Occurrences</translation>
+    </message>
+    <message>
+      <source>OK</source>
+      <translation>Гаразд</translation>
+    </message>
+    <message>
+      <source>Update view</source>
+      <translation>Update view</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskTransformedMessages</name>
+    <message>
+      <location filename="../../TaskTransformedMessages.cpp" line="+43"/>
+      <source>Transformed feature messages</source>
+      <translation>Transformed feature messages</translation>
+    </message>
+  </context>
+  <context>
     <name>QObject</name>
     <message>
-        <location filename="../../Command.cpp" line="-144"/>
-        <location line="+11"/>
-        <location line="+12"/>
-        <location line="+55"/>
-        <location line="+11"/>
-        <location line="+12"/>
-        <location line="+53"/>
-        <location line="+11"/>
-        <location line="+12"/>
-        <location line="+54"/>
-        <location line="+11"/>
-        <location line="+12"/>
-        <location line="+54"/>
-        <location line="+15"/>
-        <location line="+71"/>
-        <location line="+60"/>
-        <location line="+16"/>
-        <location line="+71"/>
-        <source>Wrong selection</source>
-        <translation>Невірний вибір</translation>
+      <location filename="../../Command.cpp" line="-615"/>
+      <source>Wrong selection</source>
+      <translation>Невірний вибір</translation>
     </message>
     <message>
-        <location line="-540"/>
-        <location line="+78"/>
-        <location line="+76"/>
-        <location line="+77"/>
-        <source>Select a sketch or 2D object.</source>
-        <translation>Оберіть ескіз чи 2D об&apos;єкт.</translation>
+      <source>Select a sketch or 2D object.</source>
+      <translation>Оберіть ескіз чи 2D об'єкт.</translation>
     </message>
     <message>
-        <location line="-220"/>
-        <location line="+78"/>
-        <location line="+76"/>
-        <location line="+77"/>
-        <source>The shape of the selected object is empty.</source>
-        <translation>Форма виділеного об&apos;єкта пуста.</translation>
+      <source>The shape of the selected object is empty.</source>
+      <translation>Форма виділеного об'єкта пуста.</translation>
     </message>
     <message>
-        <location line="-219"/>
-        <location line="+78"/>
-        <location line="+76"/>
-        <location line="+77"/>
-        <source>The shape of the selected object is not a wire.</source>
-        <translation>Форма вибраного об&apos;єкта не дріт.</translation>
+      <source>The shape of the selected object is not a wire.</source>
+      <translation>Форма вибраного об'єкта не дріт.</translation>
     </message>
     <message>
-        <location line="+54"/>
-        <location line="+146"/>
-        <source>Select an edge, face or body. Only one body is allowed.</source>
-        <translation>Виберіть край, поверхню чи тіло. Допускається вибір лише одного тіла.</translation>
+      <source>No valid sketches in this document</source>
+      <translation>No valid sketches in this document</translation>
     </message>
     <message>
-        <location line="-141"/>
-        <location line="+146"/>
-        <source>Wrong object type</source>
-        <translation>Невірний тип об&apos;єкта</translation>
+      <source>Please create a sketch or 2D object first</source>
+      <translation>Please create a sketch or 2D object first</translation>
     </message>
     <message>
-        <location line="-145"/>
-        <source>Fillet works only on parts</source>
-        <translation>Округлення працює лише для деталей</translation>
+      <source>Please create a sketch or 2D object first. It must have a support face on a solid</source>
+      <translation>Please create a sketch or 2D object first. It must have a support face on a solid</translation>
     </message>
     <message>
-        <location line="+9"/>
-        <source>Shape of selected Part is empty</source>
-        <translation type="unfinished"></translation>
+      <source>Select an edge, face or body. Only one body is allowed.</source>
+      <translation>Обрати край, грань або тіло. Можливо обрати лише одне тіло.</translation>
     </message>
     <message>
-        <location line="+71"/>
-        <source>No fillet possible on selected faces/edges</source>
-        <translation type="unfinished"></translation>
+      <source>Wrong object type</source>
+      <translation>Невірний тип об'єкта</translation>
     </message>
     <message>
-        <location line="+66"/>
-        <source>Chamfer works only on parts</source>
-        <translation type="unfinished"></translation>
+      <source>Fillet works only on parts</source>
+      <translation>Округлення можливе лише для деталей</translation>
     </message>
     <message>
-        <location line="+10"/>
-        <source>Shape of selected part is empty</source>
-        <translation type="unfinished"></translation>
+      <source>Shape of selected Part is empty</source>
+      <translation>Shape of selected Part is empty</translation>
     </message>
     <message>
-        <location line="+71"/>
-        <source>No chamfer possible on selected faces/edges</source>
-        <translation type="unfinished"></translation>
+      <source>No fillet possible on selected faces/edges</source>
+      <translation>No fillet possible on selected faces/edges</translation>
     </message>
     <message>
-        <location line="-435"/>
-        <source>No Support</source>
-        <translation>Не підтримується</translation>
+      <source>Chamfer works only on parts</source>
+      <translation>Chamfer works only on parts</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>The sketch has to have a support for the pocket feature.
+      <source>Shape of selected part is empty</source>
+      <translation>Shape of selected part is empty</translation>
+    </message>
+    <message>
+      <source>No chamfer possible on selected faces/edges</source>
+      <translation>No chamfer possible on selected faces/edges</translation>
+    </message>
+    <message>
+      <source>Select one or more faces.</source>
+      <translation>Select one or more faces.</translation>
+    </message>
+    <message>
+      <source>Draft works only on parts</source>
+      <translation>Draft works only on parts</translation>
+    </message>
+    <message>
+      <source>No draft possible on selected faces</source>
+      <translation>No draft possible on selected faces</translation>
+    </message>
+    <message>
+      <source>No valid features in this document</source>
+      <translation>No valid features in this document</translation>
+    </message>
+    <message>
+      <source>Please create a subtractive or additive feature first, please</source>
+      <translation>Please create a subtractive or additive feature first, please</translation>
+    </message>
+    <message>
+      <source>No Support</source>
+      <translation>Не підтримується</translation>
+    </message>
+    <message>
+      <source>The sketch has to have a support for the pocket feature.
 Create the sketch on a face.</source>
-        <translation>The sketch has to have a support for the pocket feature.
-Create the sketch on a face.</translation>
+      <translation>Ескіз повинен підтримувати створення поглиблення. Створіть ескіз на грані.</translation>
     </message>
     <message>
-        <location filename="../../ViewProviderPad.cpp" line="+60"/>
-        <source>Edit pad</source>
-        <translation>Edit pad</translation>
+      <location filename="../../ViewProviderPad.cpp" line="+60"/>
+      <source>Edit pad</source>
+      <translation>Панель редагування</translation>
     </message>
     <message>
-        <location filename="../../ViewProviderChamfer.cpp" line="+54"/>
-        <location filename="../../ViewProviderFillet.cpp" line="+54"/>
-        <location filename="../../ViewProviderPocket.cpp" line="+61"/>
-        <source>Edit pocket</source>
-        <translation>Edit pocket</translation>
+      <location filename="../../ViewProviderPocket.cpp" line="+61"/>
+      <source>Edit pocket</source>
+      <translation>Редагувати поглиблення</translation>
     </message>
     <message>
-        <location line="+17"/>
-        <location filename="../../ViewProviderFillet.cpp" line="+17"/>
-        <location filename="../../ViewProviderGroove.cpp" line="+78"/>
-        <location filename="../../ViewProviderPad.cpp" line="+17"/>
-        <location filename="../../ViewProviderPocket.cpp" line="+17"/>
-        <location filename="../../ViewProviderRevolution.cpp" line="+78"/>
-        <source>A dialog is already open in the task panel</source>
-        <translation>A dialog is already open in the task panel</translation>
+      <location filename="../../ViewProviderChamfer.cpp" line="+54"/>
+      <source>Edit chamfer</source>
+      <translation>Edit chamfer</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <location filename="../../ViewProviderFillet.cpp" line="+1"/>
-        <location filename="../../ViewProviderGroove.cpp" line="+1"/>
-        <location filename="../../ViewProviderPad.cpp" line="+1"/>
-        <location filename="../../ViewProviderPocket.cpp" line="+1"/>
-        <location filename="../../ViewProviderRevolution.cpp" line="+1"/>
-        <source>Do you want to close this dialog?</source>
-        <translation>Do you want to close this dialog?</translation>
+      <source>A dialog is already open in the task panel</source>
+      <translation>Діалогове вікно вже відкрито в панелі задач</translation>
     </message>
     <message>
-        <location filename="../../ViewProviderRevolution.cpp" line="-18"/>
-        <source>Edit revolution</source>
-        <translation>Edit revolution</translation>
+      <source>Do you want to close this dialog?</source>
+      <translation>Ви бажаєте закрити це діалогове вікно?</translation>
     </message>
     <message>
-        <location filename="../../ViewProviderGroove.cpp" line="-18"/>
-        <source>Edit Groove</source>
-        <translation type="unfinished"></translation>
+      <location filename="../../ViewProviderRevolution.cpp" line="-18"/>
+      <source>Edit revolution</source>
+      <translation>Редагувати обертання</translation>
     </message>
-</context>
-<context>
+    <message>
+      <location filename="../../ViewProviderGroove.cpp" line="-18"/>
+      <source>Edit Groove</source>
+      <translation>Edit Groove</translation>
+    </message>
+    <message>
+      <location filename="../../TaskDraftParameters.cpp" line="+279"/>
+      <source>Missing neutral plane</source>
+      <translation>Missing neutral plane</translation>
+    </message>
+    <message>
+      <source>Please select a plane or an edge plus a pull direction</source>
+      <translation>Please select a plane or an edge plus a pull direction</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProviderDraft.cpp" line="-18"/>
+      <source>Edit draft</source>
+      <translation>Edit draft</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProviderFillet.cpp" line="-18"/>
+      <source>Edit fillet</source>
+      <translation>Edit fillet</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProviderTransformed.cpp" line="+27"/>
+      <source>One transformed shape does not intersect support</source>
+      <translation>One transformed shape does not intersect support</translation>
+    </message>
+    <message>
+      <source>%1 transformed shapes do not intersect support</source>
+      <translation>%1 transformed shapes do not intersect support</translation>
+    </message>
+    <message>
+      <source>Transformation succeeded</source>
+      <translation>Transformation succeeded</translation>
+    </message>
+  </context>
+  <context>
+    <name>TaskTransformedMessages</name>
+    <message>
+      <location filename="../../TaskTransformedMessages.ui" line="+14"/>
+      <source>Form</source>
+      <translation>Форма</translation>
+    </message>
+    <message>
+      <source>No message</source>
+      <translation>No message</translation>
+    </message>
+  </context>
+  <context>
     <name>Workbench</name>
     <message>
-        <location filename="../../Workbench.cpp" line="-3"/>
-        <source>Part Design</source>
-        <translation>Дизайн частини</translation>
+      <location filename="../../Workbench.cpp" line="-3"/>
+      <source>Part Design</source>
+      <translation>Дизайн частини</translation>
     </message>
-</context>
+  </context>
 </TS>

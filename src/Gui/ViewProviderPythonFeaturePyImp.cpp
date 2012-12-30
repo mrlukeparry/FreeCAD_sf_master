@@ -73,7 +73,8 @@ PyObject*  ViewProviderPythonFeaturePy::addProperty(PyObject *args)
         return NULL;                             // NULL triggers exception 
 
     App::Property* prop=0;
-    prop = getViewProviderPythonFeaturePtr()->addDynamicProperty(sType,sName,sGroup,sDoc,attr,ro==Py_True,hd==Py_True);
+    prop = getViewProviderPythonFeaturePtr()->addDynamicProperty(sType,sName,sGroup,sDoc,attr,
+        PyObject_IsTrue(ro) ? true : false, PyObject_IsTrue(hd) ? true : false);
     
     if (!prop) {
         std::stringstream str;
@@ -82,6 +83,16 @@ PyObject*  ViewProviderPythonFeaturePy::addProperty(PyObject *args)
     }
 
     return Py::new_reference_to(this);
+}
+
+PyObject*  ViewProviderPythonFeaturePy::removeProperty(PyObject *args)
+{
+    char *sName;
+    if (!PyArg_ParseTuple(args, "s", &sName))
+        return NULL;
+
+    bool ok = getViewProviderPythonFeaturePtr()->removeDynamicProperty(sName);
+    return Py_BuildValue("O", (ok ? Py_True : Py_False));
 }
 
 PyObject*  ViewProviderPythonFeaturePy::supportedProperties(PyObject *args)

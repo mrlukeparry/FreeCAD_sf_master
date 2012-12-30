@@ -64,9 +64,11 @@
 # include <QMenu>
 # include <QMessageBox>
 # include <QPainter>
+# include <QTextStream>
 #endif
 
 #include <Inventor/SbTime.h>
+#include <boost/scoped_ptr.hpp>
 
 /// Here the FreeCAD includes sorted by Base,App,Gui......
 #include <Base/Tools.h>
@@ -105,8 +107,8 @@ SbColor ViewProviderSketch::VertexColor           (1.0f,0.149f,0.0f);   // #FF26
 SbColor ViewProviderSketch::CurveColor            (1.0f,1.0f,1.0f);     // #FFFFFF -> (255,255,255)
 SbColor ViewProviderSketch::CurveDraftColor       (0.0f,0.0f,0.86f);    // #0000DC -> (  0,  0,220)
 SbColor ViewProviderSketch::CurveExternalColor    (0.8f,0.2f,0.6f);     // #CC3399 -> (204, 51,153)
-SbColor ViewProviderSketch::CrossColorV           (0.8f,0.4f,0.4f);     // #CC6666 -> (204,102,102)
-SbColor ViewProviderSketch::CrossColorH           (0.4f,0.8f,0.4f);     // #66CC66 -> (102,204,102)
+SbColor ViewProviderSketch::CrossColorH           (0.8f,0.4f,0.4f);     // #CC6666 -> (204,102,102)
+SbColor ViewProviderSketch::CrossColorV           (0.4f,0.8f,0.4f);     // #66CC66 -> (102,204,102)
 SbColor ViewProviderSketch::FullyConstrainedColor (0.0f,1.0f,0.0f);     // #00FF00 -> (  0,255,  0)
 SbColor ViewProviderSketch::ConstrDimColor        (1.0f,0.149f,0.0f);   // #FF2600 -> (255, 38,  0)
 SbColor ViewProviderSketch::ConstrIcoColor        (1.0f,0.149f,0.0f);   // #FF2600 -> (255, 38,  0)
@@ -206,6 +208,8 @@ const Part::Geometry* GeoById(const std::vector<Part::Geometry*> GeoList, int Id
 
 //**************************************************************************
 // Construction/Destruction
+
+/* TRANSLATOR SketcherGui::ViewProviderSketch */
 
 PROPERTY_SOURCE(SketcherGui::ViewProviderSketch, PartGui::ViewProvider2DObject)
 
@@ -322,6 +326,36 @@ void ViewProviderSketch::snapToGrid(double &x, double &y)
     }
 }
 
+void ViewProviderSketch::getProjectingLine(const SbVec2s& pnt, const Gui::View3DInventorViewer *viewer, SbLine& line) const
+{
+    const SbViewportRegion& vp = viewer->getViewportRegion();
+
+    short x,y; pnt.getValue(x,y);
+    SbVec2f siz = vp.getViewportSize();
+    float dX, dY; siz.getValue(dX, dY);
+
+    float fRatio = vp.getViewportAspectRatio();
+    float pX = (float)x / float(vp.getViewportSizePixels()[0]);
+    float pY = (float)y / float(vp.getViewportSizePixels()[1]);
+
+    // now calculate the real points respecting aspect ratio information
+    //
+    if (fRatio > 1.0f) {
+        pX = (pX - 0.5f*dX) * fRatio + 0.5f*dX;
+    }
+    else if (fRatio < 1.0f) {
+        pY = (pY - 0.5f*dY) / fRatio + 0.5f*dY;
+    }
+
+    SoCamera* pCam = viewer->getCamera();
+    if (!pCam) return;
+    SbViewVolume  vol = pCam->getViewVolume();
+
+    float focalDist = pCam->focalDistance.getValue();
+
+    vol.projectPointToLine(SbVec2f(pX,pY), line);
+}
+
 void ViewProviderSketch::getCoordsOnSketchPlane(double &u, double &v,const SbVec3f &point, const SbVec3f &normal)
 {
     // Plane form
@@ -356,10 +390,13 @@ bool ViewProviderSketch::mouseButtonPressed(int Button, bool pressed, const SbVe
     assert(edit);
 
     // Calculate 3d point to the mouse position
-    SbVec3f point = viewer->getPointOnScreen(cursorPos);
-    SbVec3f normal = viewer->getViewDirection();
+    SbLine line;
+    getProjectingLine(cursorPos, viewer, line);
+    SbVec3f point = line.getPosition();
+    SbVec3f normal = line.getDirection();
 
-    SoPickedPoint *pp = this->getPointOnRay(cursorPos, viewer);
+    // use scoped_ptr to make sure that instance gets deleted in all cases
+    boost::scoped_ptr<SoPickedPoint> pp(this->getPointOnRay(cursorPos, viewer));
 
     // Radius maximum to allow double click event
     const int dblClickRadius = 5;
@@ -769,11 +806,11 @@ bool ViewProviderSketch::mouseMove(const SbVec2s &cursorPos, Gui::View3DInventor
     assert(edit);
 
     // Calculate 3d point to the mouse position
-    SbVec3f point = viewer->getPointOnScreen(cursorPos);
-    SbVec3f normal = viewer->getViewDirection();
+    SbLine line;
+    getProjectingLine(cursorPos, viewer, line);
 
     double x,y;
-    getCoordsOnSketchPlane(x,y,point,normal);
+    getCoordsOnSketchPlane(x,y,line.getPosition(),line.getDirection());
     snapToGrid(x, y);
 
     bool preselectChanged;
@@ -781,9 +818,9 @@ bool ViewProviderSketch::mouseMove(const SbVec2s &cursorPos, Gui::View3DInventor
         Mode!=STATUS_SKETCH_DragConstraint) {
 
         SoPickedPoint *pp = this->getPointOnRay(cursorPos, viewer);
-
         int PtIndex,GeoIndex,ConstrIndex,CrossIndex;
         preselectChanged = detectPreselection(pp,PtIndex,GeoIndex,ConstrIndex,CrossIndex);
+        delete pp;
     }
 
     switch (Mode) {
@@ -1257,6 +1294,9 @@ bool ViewProviderSketch::detectPreselection(const SoPickedPoint *Point, int &PtI
             if (point_detail && point_detail->getTypeId() == SoPointDetail::getClassTypeId()) {
                 // get the index
                 PtIndex = static_cast<const SoPointDetail *>(point_detail)->getCoordinateIndex();
+                PtIndex -= 1; // shift corresponding to RootPoint
+                if (PtIndex == -1)
+                    CrossIndex = 0; // RootPoint was hit
             }
         } else {
             // checking for a hit in the curves
@@ -1345,7 +1385,10 @@ bool ViewProviderSketch::detectPreselection(const SoPickedPoint *Point, int &PtI
                                          ,Point->getPoint()[2]);
             edit->blockedPreselection = !accepted;
             if (accepted) {
-                resetPreselectPoint();
+                if (CrossIndex == 0)
+                    setPreselectPoint(-1);
+                else
+                    resetPreselectPoint();
                 edit->PreselectCurve = -1;
                 edit->PreselectCross = CrossIndex;
                 edit->PreselectConstraint = -1;
@@ -1610,6 +1653,9 @@ void ViewProviderSketch::doBoxSelection(const SbVec2s &startPos, const SbVec2s &
         }
     }
 
+    pnt0 = proj(Plm.getPosition());
+    if (polygon.Contains(Base::Vector2D(pnt0.x, pnt0.y)))
+        Gui::Selection().addSelection(doc->getName(), sketchObject->getNameInDocument(), "RootPoint");
 }
 
 void ViewProviderSketch::updateColor(void)
@@ -1624,16 +1670,21 @@ void ViewProviderSketch::updateColor(void)
     SbColor *crosscolor = edit->RootCrossMaterials->diffuseColor.startEditing();
 
     // colors of the point set
-    for (int  i=0; i < PtNum; i++) {
-        if (edit->SelPointSet.find(i) != edit->SelPointSet.end())
-            pcolor[i] = SelectColor;
-        else if (edit->PreselectPoint == i)
-            pcolor[i] = PreselectColor;
-        else if (edit->FullyConstrained)
+    if (edit->FullyConstrained)
+        for (int  i=0; i < PtNum; i++)
             pcolor[i] = FullyConstrainedColor;
-        else
+    else
+        for (int  i=0; i < PtNum; i++)
             pcolor[i] = VertexColor;
-    }
+
+    if (edit->PreselectCross == 0)
+        pcolor[0] = PreselectColor;
+    else if (edit->PreselectPoint != -1)
+        pcolor[edit->PreselectPoint + 1] = PreselectColor;
+
+    for (std::set<int>::iterator it=edit->SelPointSet.begin();
+         it != edit->SelPointSet.end(); it++)
+        pcolor[*it] = SelectColor;
 
     // colors of the curves
     int intGeoCount = getSketchObject()->getHighestCurveIndex() + 1;
@@ -1896,6 +1947,10 @@ void ViewProviderSketch::draw(bool temp)
 
     edit->CurvIdToGeoId.clear();
     int GeoId = 0;
+
+    // RootPoint
+    Points.push_back(Base::Vector3d(0.,0.,0.));
+
     for (std::vector<Part::Geometry *>::const_iterator it = geomlist->begin(); it != geomlist->end()-2; ++it, GeoId++) {
         if (GeoId >= intGeoCount)
             GeoId = -extGeoCount;
@@ -2621,12 +2676,14 @@ void ViewProviderSketch::rebuildConstraintsVisual(void)
     for (std::vector<Sketcher::Constraint *>::const_iterator it=constrlist.begin(); it != constrlist.end(); ++it) {
         // root separator for one constraint
         SoSeparator *sep = new SoSeparator();
+        sep->ref();
         // no caching for fluctuand data structures
         sep->renderCaching = SoSeparator::OFF;
 
         // every constrained visual node gets its own material for preselection and selection
-        SoMaterial *Material = new SoMaterial;
-        Material->diffuseColor = ConstrDimColor;
+        SoMaterial *mat = new SoMaterial;
+        mat->ref();
+        mat->diffuseColor = ConstrDimColor;
 
         // distinguish different constraint types to build up
         switch ((*it)->Type) {
@@ -2645,13 +2702,16 @@ void ViewProviderSketch::rebuildConstraintsVisual(void)
                     sep->addChild(text);
                     edit->constrGroup->addChild(anno);
                     edit->vConstrType.push_back((*it)->Type);
+                    // nodes not needed
+                    sep->unref();
+                    mat->unref();
                     continue; // jump to next constraint
                 }
                 break;
             case Horizontal:
             case Vertical:
                 {
-                    sep->addChild(Material);
+                    sep->addChild(mat);
                     sep->addChild(new SoZoomTranslation()); // 1.
                     sep->addChild(new SoImage());       // 2. constraint icon
 
@@ -2667,7 +2727,7 @@ void ViewProviderSketch::rebuildConstraintsVisual(void)
             case Equal:
                 {
                     // Add new nodes to Constraint Seperator
-                    sep->addChild(Material);
+                    sep->addChild(mat);
                     sep->addChild(new SoZoomTranslation()); // 1.
                     sep->addChild(new SoImage());           // 2. first constraint icon
                     sep->addChild(new SoZoomTranslation()); // 3.
@@ -2681,7 +2741,7 @@ void ViewProviderSketch::rebuildConstraintsVisual(void)
             case Tangent:
                 {
                     // Add new nodes to Constraint Seperator
-                    sep->addChild(Material);
+                    sep->addChild(mat);
                     sep->addChild(new SoZoomTranslation()); // 1.
                     sep->addChild(new SoImage());           // 2. constraint icon
 
@@ -2713,9 +2773,12 @@ void ViewProviderSketch::rebuildConstraintsVisual(void)
                 break;
             default:
                 edit->vConstrType.push_back(None);
-            }
+        }
 
         edit->constrGroup->addChild(sep);
+        // decrement ref counter again
+        sep->unref();
+        mat->unref();
     }
 }
 
@@ -2741,7 +2804,8 @@ void ViewProviderSketch::updateData(const App::Property *prop)
 {
     ViewProvider2DObject::updateData(prop);
 
-    if (edit && (prop == &(getSketchObject()->Geometry) || &(getSketchObject()->Constraints))) {
+    if (edit && (prop == &(getSketchObject()->Geometry) ||
+                 prop == &(getSketchObject()->Constraints))) {
         edit->FullyConstrained = false;
         solveSketch();
         draw(true);
@@ -2851,6 +2915,42 @@ bool ViewProviderSketch::setEdit(int ModNum)
     return true;
 }
 
+QString ViewProviderSketch::appendConflictMsg(const std::vector<int> &conflicting)
+{
+    QString msg;
+    QTextStream ss(&msg);
+    if (conflicting.size() > 0) {
+        if (conflicting.size() == 1)
+            ss << tr("Please remove the following constraint:");
+        else
+            ss << tr("Please remove at least one of the following constraints:");
+        ss << "\n";
+        ss << conflicting[0];
+        for (unsigned int i=1; i < conflicting.size(); i++)
+            ss << ", " << conflicting[i];
+        ss << "\n";
+    }
+    return msg;
+}
+
+QString ViewProviderSketch::appendRedundantMsg(const std::vector<int> &redundant)
+{
+    QString msg;
+    QTextStream ss(&msg);
+    if (redundant.size() > 0) {
+        if (redundant.size() == 1)
+            ss << tr("Please remove the following redundant constraint:");
+        else
+            ss << tr("Please remove the following redundant constraints:");
+        ss << "\n";
+        ss << redundant[0];
+        for (unsigned int i=1; i < redundant.size(); i++)
+            ss << ", " << redundant[i];
+        ss << "\n";
+    }
+    return msg;
+}
+
 void ViewProviderSketch::solveSketch(void)
 {
     // set up the sketch and diagnose possible conflicts
@@ -2858,47 +2958,46 @@ void ViewProviderSketch::solveSketch(void)
                                            getSketchObject()->Constraints.getValues(),
                                            getSketchObject()->getExternalGeometryCount());
     if (getSketchObject()->Geometry.getSize() == 0) {
-        signalSetUp(QString::fromLatin1("Empty sketch"));
+        signalSetUp(tr("Empty sketch"));
         signalSolved(QString());
     }
     else if (dofs < 0) { // over-constrained sketch
         std::string msg;
         SketchObject::appendConflictMsg(edit->ActSketch.getConflicting(), msg);
-        signalSetUp(QString::fromLatin1("<font color='red'>Over-constrained sketch<br/>%1</font>")
+        signalSetUp(QString::fromLatin1("<font color='red'>%1<br/>%2</font>")
+                    .arg(tr("Over-constrained sketch"))
                     .arg(QString::fromStdString(msg)));
         signalSolved(QString());
     }
     else if (edit->ActSketch.hasConflicts()) { // conflicting constraints
-        std::string msg;
-        SketchObject::appendConflictMsg(edit->ActSketch.getConflicting(), msg);
-        signalSetUp(QString::fromLatin1("<font color='red'>Sketch contains conflicting constraints<br/>%1</font>")
-                    .arg(QString::fromStdString(msg)));
+        signalSetUp(QString::fromLatin1("<font color='red'>%1<br/>%2</font>")
+                    .arg(tr("Sketch contains conflicting constraints"))
+                    .arg(appendConflictMsg(edit->ActSketch.getConflicting())));
         signalSolved(QString());
     }
     else {
         if (edit->ActSketch.hasRedundancies()) { // redundant constraints
-            std::string msg;
-            SketchObject::appendRedundantMsg(edit->ActSketch.getRedundant(), msg);
-            signalSetUp(QString::fromLatin1("<font color='orange'>Sketch contains redundant constraints<br/>%1</font>")
-                        .arg(QString::fromStdString(msg)));
+            signalSetUp(QString::fromLatin1("<font color='orange'>%1<br/>%2</font>")
+                        .arg(tr("Sketch contains redundant constraints"))
+                        .arg(appendRedundantMsg(edit->ActSketch.getRedundant())));
         }
         if (edit->ActSketch.solve() == 0) { // solving the sketch
             if (dofs == 0) {
                 // color the sketch as fully constrained
                 edit->FullyConstrained = true;
                 if (!edit->ActSketch.hasRedundancies())
-                    signalSetUp(QString::fromLatin1("<font color='green'>Fully constrained sketch </font>"));
+                    signalSetUp(QString::fromLatin1("<font color='green'>%1</font>").arg(tr("Fully constrained sketch")));
             }
             else if (!edit->ActSketch.hasRedundancies()) {
                 if (dofs == 1)
-                    signalSetUp(QString::fromLatin1("Under-constrained sketch with 1 degree of freedom"));
+                    signalSetUp(tr("Under-constrained sketch with 1 degree of freedom"));
                 else
-                    signalSetUp(QString::fromLatin1("Under-constrained sketch with %1 degrees of freedom").arg(dofs));
+                    signalSetUp(tr("Under-constrained sketch with %1 degrees of freedom").arg(dofs));
             }
-            signalSolved(QString::fromLatin1("Solved in %1 sec").arg(edit->ActSketch.SolveTime));
+            signalSolved(tr("Solved in %1 sec").arg(edit->ActSketch.SolveTime));
         }
         else {
-            signalSolved(QString::fromLatin1("Unsolved (%1 sec)").arg(edit->ActSketch.SolveTime));
+            signalSolved(tr("Unsolved (%1 sec)").arg(edit->ActSketch.SolveTime));
         }
     }
 }
@@ -3102,17 +3201,23 @@ void ViewProviderSketch::resetPositionText(void)
 void ViewProviderSketch::setPreselectPoint(int PreselectPoint)
 {
     if (edit) {
+        int oldPtId = -1;
+        if (edit->PreselectPoint != -1)
+            oldPtId = edit->PreselectPoint + 1;
+        else if (edit->PreselectCross == 0)
+            oldPtId = 0;
+        int newPtId = PreselectPoint + 1;
         SbVec3f *pverts = edit->PointsCoordinate->point.startEditing();
         float x,y,z;
-        if (edit->PreselectPoint != -1 &&
-            edit->SelPointSet.find(edit->PreselectPoint) == edit->SelPointSet.end()) {
+        if (oldPtId != -1 &&
+            edit->SelPointSet.find(oldPtId) == edit->SelPointSet.end()) {
             // send to background
-            pverts[edit->PreselectPoint].getValue(x,y,z);
-            pverts[edit->PreselectPoint].setValue(x,y,zPoints);
+            pverts[oldPtId].getValue(x,y,z);
+            pverts[oldPtId].setValue(x,y,zPoints);
         }
         // bring to foreground
-        pverts[PreselectPoint].getValue(x,y,z);
-        pverts[PreselectPoint].setValue(x,y,zHighlight);
+        pverts[newPtId].getValue(x,y,z);
+        pverts[newPtId].setValue(x,y,zHighlight);
         edit->PreselectPoint = PreselectPoint;
         edit->PointsCoordinate->point.finishEditing();
     }
@@ -3121,13 +3226,18 @@ void ViewProviderSketch::setPreselectPoint(int PreselectPoint)
 void ViewProviderSketch::resetPreselectPoint(void)
 {
     if (edit) {
-        if (edit->PreselectPoint != -1 &&
-            edit->SelPointSet.find(edit->PreselectPoint) == edit->SelPointSet.end()) {
+        int oldPtId = -1;
+        if (edit->PreselectPoint != -1)
+            oldPtId = edit->PreselectPoint + 1;
+        else if (edit->PreselectCross == 0)
+            oldPtId = 0;
+        if (oldPtId != -1 &&
+            edit->SelPointSet.find(oldPtId) == edit->SelPointSet.end()) {
             // send to background
             SbVec3f *pverts = edit->PointsCoordinate->point.startEditing();
             float x,y,z;
-            pverts[edit->PreselectPoint].getValue(x,y,z);
-            pverts[edit->PreselectPoint].setValue(x,y,zPoints);
+            pverts[oldPtId].getValue(x,y,z);
+            pverts[oldPtId].setValue(x,y,zPoints);
             edit->PointsCoordinate->point.finishEditing();
         }
         edit->PreselectPoint = -1;
@@ -3137,12 +3247,13 @@ void ViewProviderSketch::resetPreselectPoint(void)
 void ViewProviderSketch::addSelectPoint(int SelectPoint)
 {
     if (edit) {
+        int PtId = SelectPoint + 1;
         SbVec3f *pverts = edit->PointsCoordinate->point.startEditing();
         // bring to foreground
         float x,y,z;
-        pverts[SelectPoint].getValue(x,y,z);
-        pverts[SelectPoint].setValue(x,y,zHighlight);
-        edit->SelPointSet.insert(SelectPoint);
+        pverts[PtId].getValue(x,y,z);
+        pverts[PtId].setValue(x,y,zHighlight);
+        edit->SelPointSet.insert(PtId);
         edit->PointsCoordinate->point.finishEditing();
     }
 }
@@ -3150,12 +3261,13 @@ void ViewProviderSketch::addSelectPoint(int SelectPoint)
 void ViewProviderSketch::removeSelectPoint(int SelectPoint)
 {
     if (edit) {
+        int PtId = SelectPoint + 1;
         SbVec3f *pverts = edit->PointsCoordinate->point.startEditing();
         // send to background
         float x,y,z;
-        pverts[SelectPoint].getValue(x,y,z);
-        pverts[SelectPoint].setValue(x,y,zPoints);
-        edit->SelPointSet.erase(SelectPoint);
+        pverts[PtId].getValue(x,y,z);
+        pverts[PtId].setValue(x,y,zPoints);
+        edit->SelPointSet.erase(PtId);
         edit->PointsCoordinate->point.finishEditing();
     }
 }
@@ -3187,6 +3299,13 @@ int ViewProviderSketch::getPreselectCurve(void) const
 {
     if (edit)
         return edit->PreselectCurve;
+    return -1;
+}
+
+int ViewProviderSketch::getPreselectCross(void) const
+{
+    if (edit)
+        return edit->PreselectCross;
     return -1;
 }
 
@@ -3234,6 +3353,8 @@ bool ViewProviderSketch::onDelete(const std::vector<std::string> &subList)
                     delGeometries.insert(GeoId);
                 else
                     delCoincidents.insert(VtId);
+            } else if (*it == "RootPoint") {
+                delCoincidents.insert(-1);
             } else if (it->size() > 10 && it->substr(0,10) == "Constraint") {
                 int ConstrId = std::atoi(it->substr(10,4000).c_str());
                 delConstraints.insert(ConstrId);

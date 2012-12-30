@@ -92,6 +92,10 @@ public:
     boost::signal<void (const App::DocumentObject&)> signalRenamedObject;
     /// signal on activated Object
     boost::signal<void (const App::DocumentObject&)> signalActivatedObject;
+    /// signal on undo
+    boost::signal<void (const App::Document&)> signalUndo;
+    /// signal on redo
+    boost::signal<void (const App::Document&)> signalRedo;
     /** signal on load/save document
      * this signal is given when the document gets streamed.
      * you can use this hook to write additional information in 
@@ -115,7 +119,7 @@ public:
     void restore (void);
     void exportObjects(const std::vector<App::DocumentObject*>&, std::ostream&);
     void exportGraphviz(std::ostream&);
-    std::vector<App::DocumentObject*> importObjects(std::istream&);
+    std::vector<App::DocumentObject*> importObjects(Base::XMLReader& reader);
     /// Opens the document from its file name
     //void open (void);
     /// Is the document already saved to a file
@@ -208,6 +212,8 @@ public:
     void commitTransaction();
     /// Abort the  actually running transaction. 
     void abortTransaction();
+    /// Check if a transaction is open
+    bool hasPendingTransaction() const;
     /// Set the Undo limit in Byte!
     void setUndoLimit(unsigned int UndoMemSize=0);
     /// Returns the actual memory consumption of the Undo redo stuff.
@@ -266,6 +272,8 @@ protected:
     /// checks if a valid transaction is open
     void _checkTransaction(void);
     void breakDependency(DocumentObject* pcObject, bool clear);
+    std::vector<App::DocumentObject*> readObjects(Base::XMLReader& reader);
+    void writeObjects(const std::vector<App::DocumentObject*>&, Base::Writer &writer) const;
 
     void onChanged(const Property* prop);
     /// callback from the Document objects before property will be changed

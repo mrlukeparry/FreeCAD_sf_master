@@ -295,9 +295,10 @@ void StdCmdMergeProjects::activated(int iMsg)
 {
     QString exe = qApp->applicationName();
     QString project = QFileDialog::getOpenFileName(Gui::getMainWindow(),
-        QString::fromUtf8(QT_TR_NOOP("Merge project")), QDir::homePath(),
+        QString::fromUtf8(QT_TR_NOOP("Merge project")), FileDialog::getWorkingDirectory(),
         QString::fromUtf8(QT_TR_NOOP("%1 document (*.fcstd)")).arg(exe));
     if (!project.isEmpty()) {
+        FileDialog::setWorkingDirectory(project);
         App::Document* doc = App::GetApplication().getActiveDocument();
         QFileInfo info(QString::fromUtf8(doc->FileName.getValue()));
         QFileInfo proj(project);
@@ -1057,30 +1058,32 @@ bool StdCmdDelete::isActive(void)
 DEF_STD_CMD_A(StdCmdRefresh);
 
 StdCmdRefresh::StdCmdRefresh()
-  :Command("Std_Refresh")
+  : Command("Std_Refresh")
 {
-  sGroup        = QT_TR_NOOP("Edit");
-  sMenuText     = QT_TR_NOOP("&Refresh");
-  sToolTipText  = QT_TR_NOOP("Recomputes the current active document");
-  sWhatsThis    = "Std_Refresh";
-  sStatusTip    = QT_TR_NOOP("Recomputes the current active document");
-  sPixmap       = "view-refresh";
-  sAccel        = keySequenceToAccel(QKeySequence::Refresh);
+    sGroup        = QT_TR_NOOP("Edit");
+    sMenuText     = QT_TR_NOOP("&Refresh");
+    sToolTipText  = QT_TR_NOOP("Recomputes the current active document");
+    sWhatsThis    = "Std_Refresh";
+    sStatusTip    = QT_TR_NOOP("Recomputes the current active document");
+    sPixmap       = "view-refresh";
+    sAccel        = keySequenceToAccel(QKeySequence::Refresh);
+    eType         = AlterDoc | Alter3DView | AlterSelection | ForEdit;
 }
 
 void StdCmdRefresh::activated(int iMsg)
 {
-  if ( getActiveGuiDocument() )
-  {
-    openCommand("Refresh active document");
-    doCommand(Doc,"App.activeDocument().recompute()");
-    commitCommand(); 
-  }
+    if (getActiveGuiDocument()) {
+        //Note: Don't add the recompute to undo/redo because it complicates
+        //testing the changes of properties.
+        //openCommand("Refresh active document");
+        doCommand(Doc,"App.activeDocument().recompute()");
+        //commitCommand(); 
+    }
 }
 
 bool StdCmdRefresh::isActive(void)
 {
-  return this->getDocument() && this->getDocument()->isTouched();
+    return this->getDocument() && this->getDocument()->isTouched();
 }
 
 //===========================================================================
@@ -1138,6 +1141,38 @@ void StdCmdPlacement::activated(int iMsg)
 bool StdCmdPlacement::isActive(void)
 {
     return (Gui::Control().activeDialog()==0);
+}
+
+//===========================================================================
+// Std_TransformManip
+//===========================================================================
+DEF_STD_CMD_A(StdCmdTransformManip);
+
+StdCmdTransformManip::StdCmdTransformManip()
+  : Command("Std_TransformManip")
+{
+    sGroup        = QT_TR_NOOP("Edit");
+    sMenuText     = QT_TR_NOOP("Transform");
+    sToolTipText  = QT_TR_NOOP("Transform the selected object in the 3d view");
+    sStatusTip    = QT_TR_NOOP("Transform the selected object in the 3d view");
+    sWhatsThis    = "Std_TransformManip";
+}
+
+void StdCmdTransformManip::activated(int iMsg)
+{
+    if (getActiveGuiDocument()->getInEdit())
+        getActiveGuiDocument()->resetEdit();
+    std::vector<App::DocumentObject*> sel = Gui::Selection().getObjectsOfType(App::GeoFeature::getClassTypeId());
+    Gui::ViewProvider* vp = Application::Instance->getViewProvider(sel.front());
+    // FIXME: Need a way to force 'Transform' edit mode
+    // #0000477: Proper interface for edit modes of view provider
+    if (vp)
+        getActiveGuiDocument()->setEdit(vp, Gui::ViewProvider::Transform);
+}
+
+bool StdCmdTransformManip::isActive(void)
+{
+    return Gui::Selection().countObjectsOfType(App::GeoFeature::getClassTypeId()) == 1;
 }
 
 //===========================================================================
@@ -1214,17 +1249,17 @@ bool StdCmdAlignment::isActive(void)
 DEF_STD_CMD_A(StdCmdEdit);
 
 StdCmdEdit::StdCmdEdit()
-  :Command("Std_Edit")
+  : Command("Std_Edit")
 {
-  sGroup        = QT_TR_NOOP("Edit");
-  sMenuText     = QT_TR_NOOP("Toggle &Edit mode");
-  sToolTipText  = QT_TR_NOOP("Toggles the selected object's edit mode");
-  sWhatsThis    = "Std_Edit";
-  sStatusTip    = QT_TR_NOOP("Enters or leaves the selected object's edit mode");
+    sGroup        = QT_TR_NOOP("Edit");
+    sMenuText     = QT_TR_NOOP("Toggle &Edit mode");
+    sToolTipText  = QT_TR_NOOP("Toggles the selected object's edit mode");
+    sWhatsThis    = "Std_Edit";
+    sStatusTip    = QT_TR_NOOP("Enters or leaves the selected object's edit mode");
 #if QT_VERSION >= 0x040200
-  sPixmap       = "edit-edit";
+    sPixmap       = "edit-edit";
 #endif
-  eType         = ForEdit;
+    eType         = ForEdit;
 }
 
 void StdCmdEdit::activated(int iMsg)
@@ -1281,6 +1316,7 @@ void CreateDocCommands(void)
     rcCmdMgr.addCommand(new StdCmdRefresh());
     rcCmdMgr.addCommand(new StdCmdTransform());
     rcCmdMgr.addCommand(new StdCmdPlacement());
+    rcCmdMgr.addCommand(new StdCmdTransformManip());
     rcCmdMgr.addCommand(new StdCmdAlignment());
     rcCmdMgr.addCommand(new StdCmdEdit());
 }

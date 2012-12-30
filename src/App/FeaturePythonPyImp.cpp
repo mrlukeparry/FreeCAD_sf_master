@@ -51,7 +51,8 @@ PyObject*  FeaturePythonPy::addProperty(PyObject *args)
         return NULL;                             // NULL triggers exception 
 
     Property* prop=0;
-    prop = getFeaturePythonPtr()->addDynamicProperty(sType,sName,sGroup,sDoc,attr,ro==Py_True,hd==Py_True);
+    prop = getFeaturePythonPtr()->addDynamicProperty(sType,sName,sGroup,sDoc,attr,
+        PyObject_IsTrue(ro) ? true : false, PyObject_IsTrue(hd) ? true : false);
     
     if (!prop) {
         std::stringstream str;
@@ -60,6 +61,16 @@ PyObject*  FeaturePythonPy::addProperty(PyObject *args)
     }
 
     return Py::new_reference_to(this);
+}
+
+PyObject*  FeaturePythonPy::removeProperty(PyObject *args)
+{
+    char *sName;
+    if (!PyArg_ParseTuple(args, "s", &sName))
+        return NULL;
+
+    bool ok = getFeaturePythonPtr()->removeDynamicProperty(sName);
+    return Py_BuildValue("O", (ok ? Py_True : Py_False));
 }
 
 PyObject*  FeaturePythonPy::supportedProperties(PyObject *args)

@@ -123,8 +123,8 @@ EXTRA_DIST = \
 		Resources/translations/Raytracing_af.ts \
 		Resources/translations/Raytracing_de.qm \
 		Resources/translations/Raytracing_de.ts \
-		Resources/translations/Raytracing_es.qm \
-		Resources/translations/Raytracing_es.ts \
+		Resources/translations/Raytracing_es-ES.qm \
+		Resources/translations/Raytracing_es-ES.ts \
 		Resources/translations/Raytracing_fi.qm \
 		Resources/translations/Raytracing_fi.ts \
 		Resources/translations/Raytracing_fr.qm \
@@ -139,12 +139,12 @@ EXTRA_DIST = \
 		Resources/translations/Raytracing_no.ts \
 		Resources/translations/Raytracing_pl.qm \
 		Resources/translations/Raytracing_pl.ts \
-		Resources/translations/Raytracing_pt.qm \
-		Resources/translations/Raytracing_pt.ts \
+		Resources/translations/Raytracing_pt-BR.qm \
+		Resources/translations/Raytracing_pt-BR.ts \
 		Resources/translations/Raytracing_ru.qm \
 		Resources/translations/Raytracing_ru.ts \
-		Resources/translations/Raytracing_se.qm \
-		Resources/translations/Raytracing_se.ts \
+		Resources/translations/Raytracing_sv-SE.qm \
+		Resources/translations/Raytracing_sv-SE.ts \
 		Resources/translations/Raytracing_uk.qm \
 		Resources/translations/Raytracing_uk.ts \
 		Resources/translations/Raytracing_zh.qm \
@@ -160,4 +160,5 @@ EXTRA_DIST = \
 		Resources/qml/renderUi.qml \
 		Resources/qml/ScrollBar.qml \
 		Resources/qml/Slider.qml \
+
 		CMakeLists.txt

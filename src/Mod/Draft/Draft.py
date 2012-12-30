@@ -1548,12 +1548,12 @@ def makeShape2DView(baseobj,projectionVector=None,facenumbers=[]):
     select(obj)
     return obj
 
-def makeSketch(objectslist,autoconstraints=False,addTo=None,name="Sketch"):
-    '''makeSketch(objectslist,[autoconstraints],[addTo],[name]): makes a Sketch
+def makeSketch(objectslist,autoconstraints=False,addTo=None,delete=False,name="Sketch"):
+    '''makeSketch(objectslist,[autoconstraints],[addTo],[delete],[name]): makes a Sketch
     objectslist with the given Draft objects. If autoconstraints is True,
     constraints will be automatically added to wire nodes, rectangles
     and circles. If addTo is an existing sketch, geometry will be added to it instead of
-    creating a new one.'''
+    creating a new one. If delete is True, the original object will be deleted'''
     import Part, DraftGeomUtils
     from Sketcher import Constraint
 
@@ -1620,6 +1620,10 @@ def makeSketch(objectslist,autoconstraints=False,addTo=None,name="Sketch"):
             if not DraftGeomUtils.isPlanar(obj.Shape):
                 print "Error: The given object is not planar and cannot be converted into a sketch."
                 return None
+            for e in obj.Shape.Edges:
+                if isinstance(e.Curve,Part.BSplineCurve):
+                    print "Error: One of the selected object contains BSplines, unable to convert"
+                    return None
             if not addTo:
                 nobj.Placement.Rotation = DraftGeomUtils.calculatePlacement(obj.Shape).Rotation
             edges = []
@@ -1628,7 +1632,8 @@ def makeSketch(objectslist,autoconstraints=False,addTo=None,name="Sketch"):
                 if g:
                     nobj.addGeometry(g)
             ok = True
-        if ok:
+        formatObject(nobj,obj)
+        if ok and delete:
             FreeCAD.ActiveDocument.removeObject(obj.Name)
     FreeCAD.ActiveDocument.recompute()
     return nobj
@@ -1791,7 +1796,8 @@ class _ViewProviderDraft:
     def unsetEdit(self,vp,mode):
         if FreeCAD.activeDraftCommand:
             FreeCAD.activeDraftCommand.finish()
-        return
+        FreeCADGui.Control.closeDialog()
+        return False
     
     def getIcon(self):
         return(":/icons/Draft_Draft.svg")
@@ -1987,6 +1993,8 @@ class _ViewProviderDimension(_ViewProviderDraft):
         self.onChanged(obj,"FontName")
             
     def updateData(self, obj, prop):
+        if not prop in ["Start","End","Dimline"]:
+            return
         from pivy import coin
         try:
             dm = obj.ViewObject.DisplayMode
@@ -2012,6 +2020,7 @@ class _ViewProviderDimension(_ViewProviderDraft):
                 if v1 != obj.Start: obj.Start = v1
                 if v2 != obj.End: obj.End = v2
         p1,p2,p3,p4,tbase,norm,rot = self.calcGeom(obj)
+        # print p1,p2,p3,p4,tbase,norm,rot
         if 'Override' in obj.ViewObject.PropertiesList:
             text = str(obj.ViewObject.Override)
         dtext = getParam("dimPrecision")
@@ -2776,8 +2785,11 @@ class _Shape2DView(_DraftObject):
                         "The way the viewed object must be projected")
         obj.addProperty("App::PropertyIntegerList","FaceNumbers","Base",
                         "The indices of the faces to be projected in Individual Faces mode")
+        obj.addProperty("App::PropertyBool","HiddenLines","Base",
+                        "Show hidden lines")
         obj.Projection = Vector(0,0,1)
         obj.ProjectionMode = ["Solid","Individual Faces","Cutlines"]
+        obj.HiddenLines = False
         _DraftObject.__init__(self,obj,"Shape2DView")
 
     def execute(self,obj):
@@ -2788,19 +2800,58 @@ class _Shape2DView(_DraftObject):
             self.createGeometry(obj)
 
     def clean(self,shape):
-        "returns a valid compound of edges"
-        import Part
+        "returns a valid compound of edges, by recreating them"
+        # this is because the projection algorithm somehow creates wrong shapes.
+        # they dispay fine, but on loading the file the shape is invalid
+        import Part,DraftGeomUtils
         oldedges = shape.Edges
         newedges = []
         for e in oldedges:
             try:
-                newedges.append(e.Curve.toShape())
+                if isinstance(e.Curve,Part.Line):
+                    newedges.append(e.Curve.toShape())
+                elif isinstance(e.Curve,Part.Circle):
+                    if len(e.Vertexes) > 1:
+                        mp = DraftGeomUtils.findMidpoint(e)
+                        a = Part.Arc(e.Vertexes[0].Point,mp,e.Vertexes[-1].Point).toShape()
+                        newedges.append(a)
+                    else:
+                        newedges.append(e.Curve.toShape())
+                elif isinstance(e.Curve,Part.Ellipse):
+                    if len(e.Vertexes) > 1:
+                        a = Part.Arc(e.Curve,e.FirstParameter,e.LastParameter).toShape()
+                        newedges.append(a)
+                    else:
+                        newedges.append(e.Curve.toShape())
+                elif isinstance(e.Curve,Part.BSplineCurve):
+                    if DraftGeomUtils.isLine(e.Curve):
+                        l = Part.Line(e.Vertexes[0].Point,e.Vertexes[-1].Point).toShape()
+                        newedges.append(l)
+                    else:
+                        newedges.append(e.Curve.toShape())
+                else:
+                    newedges.append(e)
             except:
                 print "Debug: error cleaning edge ",e
         return Part.makeCompound(newedges)
 
+    def getProjected(self,obj,shape,direction):
+        "returns projected edges from a shape and a direction"
+        import Part,Drawing
+        edges = []
+        groups = Drawing.projectEx(shape,direction)
+        for g in groups[0:5]:
+            if g:
+                edges.append(g)
+        if hasattr(obj,"HiddenLines"):
+            if obj.HiddenLines:
+                for g in groups[5:]:
+                    edges.append(g)
+        #return Part.makeCompound(edges)
+        return self.clean(Part.makeCompound(edges))
+
     def createGeometry(self,obj):
-        import Drawing, DraftGeomUtils
+        import DraftGeomUtils
         pl = obj.Placement
         if obj.Base:
             if getType(obj.Base) == "SectionPlane":
@@ -2823,9 +2874,7 @@ class _Shape2DView(_DraftObject):
                         comp = Part.makeCompound(cuts)
                         opl = FreeCAD.Placement(obj.Base.Placement)
                         proj = opl.Rotation.multVec(FreeCAD.Vector(0,0,1))
-                        [visibleG0,visibleG1,hiddenG0,hiddenG1] = Drawing.project(comp,proj)
-                        if visibleG0:
-                            obj.Shape = self.clean(visibleG0)
+                        obj.Shape = self.getProjected(obj,comp,proj)
                     elif obj.ProjectionMode == "Cutlines":
                         for sh in shapes:
                             if sh.Volume < 0:
@@ -2841,9 +2890,7 @@ class _Shape2DView(_DraftObject):
             elif obj.Base.isDerivedFrom("Part::Feature"):
                 if not DraftVecUtils.isNull(obj.Projection):
                     if obj.ProjectionMode == "Solid":
-                        [visibleG0,visibleG1,hiddenG0,hiddenG1] = Drawing.project(obj.Base.Shape,obj.Projection)
-                        if visibleG0:
-                            obj.Shape = self.clean(visibleG0)
+                        obj.Shape = self.getProjected(obj,obj.Base.Shape,obj.Projection)
                     elif obj.ProjectionMode == "Individual Faces":
                         import Part
                         if obj.FaceNumbers:
@@ -2853,9 +2900,7 @@ class _Shape2DView(_DraftObject):
                                     faces.append(obj.Base.Shape.Faces[i])
                             views = []
                             for f in faces:
-                                [visibleG0,visibleG1,hiddenG0,hiddenG1] = Drawing.project(f,obj.Projection)
-                                if visibleG0:
-                                    views.append(visibleG0)
+                                views.append(self.getProjected(obj,f,obj.Projection))
                             if views:
                                 obj.Shape = Part.makeCompound(views)
         if not DraftGeomUtils.isNull(pl):
@@ -3071,6 +3116,6 @@ class _ViewProviderClone(_ViewProviderDraftAlt):
     def getIcon(self):
         return ":/icons/Draft_Clone.svg"
 
-    
-if not hasattr(FreeCADGui,"Snapper"):
-    import DraftSnap
+if gui:    
+    if not hasattr(FreeCADGui,"Snapper"):
+        import DraftSnap

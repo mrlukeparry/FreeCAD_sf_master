@@ -120,7 +120,7 @@ void SoDatumLabel::drawImage()
 
     QImage image(w, h,QImage::Format_ARGB32_Premultiplied);
     image.fill(0x00000000);
-
+    
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing);
 
@@ -129,9 +129,7 @@ void SoDatumLabel::drawImage()
     painter.drawText(0,0,w,h, Qt::AlignLeft , str);
     painter.end();
 
-    SoSFImage sfimage;
-    Gui::BitmapFactory().convert(image, sfimage);
-    this->image = sfimage;
+    Gui::BitmapFactory().convert(image, this->image);
 }
 
 void SoDatumLabel::computeBBox(SoAction *action, SbBox3f &box, SbVec3f &center)
@@ -155,8 +153,6 @@ void SoDatumLabel::generatePrimitives(SoAction * action)
     const SbVec3f *pnts = this->pnts.getValues(0);
     SbVec3f p1 = pnts[0];
     SbVec3f p2 = pnts[1];
-
-    float offsetX, offsetY;
 
     // Change the offset and bounding box parameters depending on Datum Type
     if(this->datumtype.getValue() == DISTANCE || this->datumtype.getValue() == DISTANCEX || this->datumtype.getValue() == DISTANCEY ){
@@ -192,7 +188,7 @@ void SoDatumLabel::generatePrimitives(SoAction * action)
         float c = cos(angle);
 
         img1 = SbVec3f((img1[0] * c) - (img1[1] * s), (img1[0] * s) + (img1[1] * c), 0.f);
-        img2 = SbVec3f((img2[0] * c) - (img2[1] * s), (img2[0] * s) + (img2[1] * c), 0.f);
+        img2 = SbVec3f((img2[0] * c) - (img2[1] * s), (img2[0] * s) + (img2[1] * c), 0.f); 
         img3 = SbVec3f((img3[0] * c) - (img3[1] * s), (img3[0] * s) + (img3[1] * c), 0.f);
         img4 = SbVec3f((img4[0] * c) - (img4[1] * s), (img4[0] * s) + (img4[1] * c), 0.f);
 
@@ -440,7 +436,7 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
       glHint(GL_LINE_SMOOTH_HINT,GL_NICEST);
     }
     // Position for Datum Text Label
-    float offsetX, offsetY, angle;
+    float angle;
 
     SbVec3f textOffset;
 
@@ -487,10 +483,10 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         angle = atan2f(dir[1],dir[0]);
         bool flip=false;
         if (angle > M_PI_2+M_PI/12) {
-            angle -= M_PI;
+            angle -= (float)M_PI;
             flip = true;
         } else if (angle <= -M_PI_2+M_PI/12) {
-            angle += M_PI;
+            angle += (float)M_PI;
             flip = true;
         }
 
@@ -590,7 +586,7 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         // Get the Points
         SbVec3f p1 = pnts[0];
         SbVec3f p2 = pnts[1];
-
+        
         SbVec3f dir = (p2-p1);
         dir.normalize();
         SbVec3f norm (-dir[1],dir[0],0);
@@ -602,10 +598,10 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         angle = atan2f(dir[1],dir[0]);
         bool flip=false;
         if (angle > M_PI_2+M_PI/12) {
-            angle -= M_PI;
+            angle -= (float)M_PI;
             flip = true;
         } else if (angle <= -M_PI_2+M_PI/12) {
-            angle += M_PI;
+            angle += (float)M_PI;
             flip = true;
         }
 
@@ -669,7 +665,7 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         float range      = this->param3.getValue();
         float endangle   = startangle + range;
 
-
+        
         float r = 2*length;
 
         // Set the Text label angle to zero
@@ -814,7 +810,7 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         std::vector<SbVec3f> corners;
         corners.push_back(p1);
         corners.push_back(p2);
-
+ 
         float minX = p1[0], minY = p1[1], maxX = p1[0] , maxY = p1[1];
         for (std::vector<SbVec3f>::iterator it=corners.begin(); it != corners.end(); ++it) {
             minX = ((*it)[0] < minX) ? (*it)[0] : minX;
@@ -835,10 +831,10 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         SbVec3f z = vv.zVector();
         const SbViewportRegion & vpr = SoViewportRegionElement::get(state);
 
-        SoGetMatrixAction * getmatrixaction = new SoGetMatrixAction(vpr);
-        getmatrixaction->apply(action);
+        SoGetMatrixAction getmatrixaction(vpr);
+        getmatrixaction.apply(action);
 
-        SbMatrix transform = getmatrixaction->getMatrix();
+        SbMatrix transform = getmatrixaction.getMatrix();
         transform.multVecMatrix(surfNorm, surfNorm);
 
         bool flip = surfNorm.dot(z) > FLT_EPSILON;
@@ -847,12 +843,19 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         glEnable(GL_TEXTURE_2D); // Enable Textures
         glEnable(GL_BLEND);
 
+        // wmayer: see bug report below which is caused by generating but not
+        // deleting the texture. I guess we don't need this texture and thus
+        // comment out the block.
+        // #0000721: massive memory leak when dragging an unconstrained model
+        // 
+#if 0
         // Copy the text bitmap into memory and bind
         GLuint myTexture;
         // generate a texture
         glGenTextures(1, &myTexture);
 
         glBindTexture(GL_TEXTURE_2D, myTexture);
+#endif
 
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -880,6 +883,9 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
 
         // Reset the Mode
         glPopMatrix();
+#if 0
+        glDeleteTextures(1, &myTexture);
+#endif
     }
 
     glPopAttrib();
