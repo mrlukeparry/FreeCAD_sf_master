@@ -339,7 +339,6 @@ void ViewProviderSketch::getProjectingLine(const SbVec2s& pnt, const Gui::View3D
     float pY = (float)y / float(vp.getViewportSizePixels()[1]);
 
     // now calculate the real points respecting aspect ratio information
-    //
     if (fRatio > 1.0f) {
         pX = (pX - 0.5f*dX) * fRatio + 0.5f*dX;
     }

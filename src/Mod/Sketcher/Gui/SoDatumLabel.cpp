@@ -439,15 +439,14 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
     if (action->handleTransparency(true))
       return;
 
-    // Get the Scale
+       bool hasText = (value.getValue().getLength() > 0) ? true : false;
+
+        // Get the Scale
     const SbViewVolume & vv = SoViewVolumeElement::get(state);
     float scale = vv.getWorldToScreenScale(SbVec3f(0.f,0.f,0.f), 0.4f);
 
-    bool hasText = (value.getValue().getLength() > 0) ? true : false;
-
     if(hasText) {
         drawLabel();
-
         float aspectRatio =  (float) this->txtWidth/ (float) this->txtHeight;
         this->labelHeight = scale / (float) this->txtHeight;
         this->labelWidth  = aspectRatio * (float) this->labelHeight;
@@ -479,7 +478,6 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
     const SbColor& t = labelColor.getValue();
 
     // Set GL Properties
-    glLineWidth(2.f);
     glColor3f(t[0], t[1], t[2]);
     
     std::vector<SbVec3f> corners;
