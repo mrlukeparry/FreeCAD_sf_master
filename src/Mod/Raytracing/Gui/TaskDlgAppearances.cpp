@@ -128,6 +128,8 @@ TaskDlgAppearances::~TaskDlgAppearances()
     delete model;
     model = 0;
 
+    view->deleteLater();
+    Content.clear();
     clearParamsData();
 }
 
@@ -158,6 +160,7 @@ void TaskDlgAppearances::dragInit(QString str)
 
     Gui::MDIView *mdi = Gui::Application::Instance->activeDocument()->getActiveView();
 
+    mdi->setAcceptDrops(true);
     // Catch all the drag events occuring
     mdi->installEventFilter(this);
     Qt::DropAction dropAction = drag->exec();
@@ -365,7 +368,6 @@ bool TaskDlgAppearances::accept()
         if (doc->getInEdit() && doc->getInEdit()->isDerivedFrom(ViewProviderRender::getClassTypeId())) {
             ViewProviderRender *vp = dynamic_cast<ViewProviderRender*>(doc->getInEdit());
 
-            view->deleteLater();
             Content.clear();  // Must clear contents to prevent seg fault
             Gui::Control().closeDialog();
             Gui::Selection().clearSelection();
@@ -385,7 +387,6 @@ bool TaskDlgAppearances::reject()
         if (doc->getInEdit() && doc->getInEdit()->isDerivedFrom(ViewProviderRender::getClassTypeId())) {
             ViewProviderRender *vp = dynamic_cast<ViewProviderRender*>(doc->getInEdit());
 
-            view->deleteLater();
             Content.clear();  // Must clear contents to prevent seg fault
             Gui::Control().closeDialog();
             Gui::Selection().clearSelection();

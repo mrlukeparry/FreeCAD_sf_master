@@ -861,10 +861,11 @@ void View3DInventor::dragMoveEvent (QDragMoveEvent * e)
 {
     // Here we must allow uri drafs and check them in dropEvent
     const QMimeData* data = e->mimeData();
-    if (data->hasUrls())
-        e->accept();
-    else
-        e->ignore();
+    e->accept();
+//     if (data->hasUrls())
+//         e->accept();
+//     else
+//         e->ignore();
 }
 
 void View3DInventor::dragEnterEvent (QDragEnterEvent * e)

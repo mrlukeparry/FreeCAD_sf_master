@@ -345,6 +345,7 @@ TaskDlgRender::TaskDlgRender(ViewProviderRender *vp)
 TaskDlgRender::~TaskDlgRender()
 {
     view->deleteLater();
+    Content.clear();
     // These models only stopy copy of data or act as references so we can just remove from heap
     delete featViewData;
     featViewData = 0;
