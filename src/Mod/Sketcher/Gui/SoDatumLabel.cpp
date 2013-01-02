@@ -55,7 +55,7 @@
 #include <Inventor/elements/SoViewportRegionElement.h>
 
 #include "SoDatumLabel.h"
-#include <Gui/BitmapFactory.h>
+
 
 using namespace SketcherGui;
 
@@ -92,8 +92,17 @@ SoDatumLabel::SoDatumLabel()
     this->labelWidth = 0;
     this->labelHeight = 0;
     labelDirty = true;
+    
+    // Generate OpenGL textures for storing the label
+    glGenTextures(1, &tid);
+    
 }
 
+SoDatumLabel::~SoDatumLabel()
+{
+    // Delete the GL Texture when the node is deleted
+    glDeleteTextures(1,&tid);
+}
 void SoDatumLabel::setValue(const SbString &str)
 {
     value.setValue(str);
@@ -154,7 +163,19 @@ void SoDatumLabel::drawLabel()
     painter.drawText(0,0,txtWidth,txtHeight, Qt::AlignLeft , str);
     painter.end();
     
-    // The label is not dirty now, so we can cache
+
+    // Can only be used as a texture for glTexImage2D
+    QImage texture = QGLWidget::convertToGLFormat(img);
+
+    glBindTexture(GL_TEXTURE_2D, tid);
+    // Store the new label into OpenGL texture memory
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width(), texture.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.bits());
+        
+    // Set Mipmapping if available
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    
+    // The label is not dirty now, so we can cache this in the future
     labelDirty = false;
 }
 
@@ -843,13 +864,8 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         glEnable(GL_TEXTURE_2D); // Enable Textures
         glEnable(GL_BLEND);
 
-        // Can only be used as a texture for glTexImage2D
-        QImage texture = QGLWidget::convertToGLFormat(this->img);
-        
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width(), texture.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.bits());
+        // Bind the stored texture to be used for the label
+        glBindTexture(GL_TEXTURE_2D, tid);
 
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
@@ -861,7 +877,7 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
 
         glColor3f(1.f, 1.f, 1.f);
 
-        float texH = 1.f - (this->txtHeight / (float) texture.height());
+        float texH = 1.f - (this->txtHeight / (float) this->img.height());
         
         glTexCoord2f(flip ? 0.f : 1.f,  1.f); glVertex2f( -this->labelWidth / 2,  this->labelHeight / 2);
         glTexCoord2f(flip ? 0.f : 1.f, texH); glVertex2f( -this->labelWidth / 2, -this->labelHeight / 2);

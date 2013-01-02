@@ -59,6 +59,7 @@ public:
 
     static void initClass();
     SoDatumLabel();
+    ~SoDatumLabel();
 
     void setValue(const SbString &str);
     void setLabelColor(const SbColor &color);
@@ -73,7 +74,6 @@ public:
     SoMFVec3f  pnts;
 
 protected:
-    virtual ~SoDatumLabel() {};
     virtual void GLRender(SoGLRenderAction *action);
     virtual void computeBBox(SoAction *, SbBox3f &box, SbVec3f &center);
     virtual void generatePrimitives(SoAction * action);
@@ -90,6 +90,7 @@ protected:
     float txtHeight;
     float txtWidth;
     QImage     img;
+    unsigned int tid; // GL Texture ID
 };
 
 }
