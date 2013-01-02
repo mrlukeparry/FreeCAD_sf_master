@@ -31,11 +31,10 @@
 #include <Inventor/fields/SoSFFloat.h>
 #include <Inventor/fields/SoSFBool.h>
 #include <Inventor/fields/SoSFName.h>
-#include <Inventor/fields/SoMFString.h>
+#include <Inventor/fields/SoSFString.h>
 #include <Inventor/fields/SoSFInt32.h>
 #include <Inventor/fields/SoMFVec3f.h>
 #include <Inventor/SbBox3f.h>
-#include <Inventor/fields/SoSFImage.h>
 
 class QImage;
 
@@ -49,43 +48,48 @@ class SketcherGuiExport SoDatumLabel : public SoShape {
 public:
   enum Type
   {
-  UNDEFINED = 0,
-  ANGLE,
-  DISTANCE,
-  DISTANCEX,
-  DISTANCEY,
-  RADIUS,
-  SYMMETRIC
+    UNDEFINED = 0,
+    ANGLE,
+    DISTANCE,
+    DISTANCEX,
+    DISTANCEY,
+    RADIUS,
+    SYMMETRIC
   };
 
     static void initClass();
     SoDatumLabel();
 
-    SoMFString string;
-    SoSFColor  textColor;
+    void setValue(const SbString &str);
+    void setLabelColor(const SbColor &color);
+
     SoSFEnum   datumtype;
     SoSFName   name;
     SoSFInt32  size;
     SoSFFloat  param1;
     SoSFFloat  param2;
     SoSFFloat  param3;
-    SoMFVec3f  pnts;
-    QImage     img;
     SoSFFloat  lineWidth;
+    SoMFVec3f  pnts;
 
 protected:
     virtual ~SoDatumLabel() {};
     virtual void GLRender(SoGLRenderAction *action);
     virtual void computeBBox(SoAction *, SbBox3f &box, SbVec3f &center);
     virtual void generatePrimitives(SoAction * action);
-
-private:
-    void drawImage();
+    void drawLabel();
+    
+protected:
+    SoSFString value;
+    SoSFColor  labelColor;
+   
+    bool labelDirty;    
     SbBox3f bbox;
-    float imgWidth;
-    float imgHeight;
+    float labelWidth;
+    float labelHeight;
     float txtHeight;
     float txtWidth;
+    QImage     img;
 };
 
 }

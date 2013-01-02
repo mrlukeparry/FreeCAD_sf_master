@@ -1744,20 +1744,20 @@ void ViewProviderSketch::updateColor(void)
         if (edit->SelConstraintSet.find(i) != edit->SelConstraintSet.end()) {
             if (hasDatumLabel) {
                 SoDatumLabel *l = dynamic_cast<SoDatumLabel *>(s->getChild(0));
-                l->textColor = SelectColor;
+                l->setLabelColor(SelectColor);
             } else if (hasMaterial) 
               m->diffuseColor = SelectColor;
         } else if (edit->PreselectConstraint == i) {
             if (hasDatumLabel) {
                 SoDatumLabel *l = dynamic_cast<SoDatumLabel *>(s->getChild(0));
-                l->textColor = PreselectColor;
+                l->setLabelColor(PreselectColor);
             } else if (hasMaterial)
               m->diffuseColor = PreselectColor;
         }
         else {
             if (hasDatumLabel) {
                 SoDatumLabel *l = dynamic_cast<SoDatumLabel *>(s->getChild(0));
-                l->textColor = ConstrDimColor;
+                l->setLabelColor(ConstrDimColor);
             } else if (hasMaterial)
               m->diffuseColor = ConstrDimColor;
         }
@@ -2364,33 +2364,33 @@ Restart:
                     } else
                         break;
 
-                    SoDatumLabel *asciiText = dynamic_cast<SoDatumLabel *>(sep->getChild(0));
+                    SoDatumLabel *datumLabel = dynamic_cast<SoDatumLabel *>(sep->getChild(0));
                     if ((Constr->Type == DistanceX || Constr->Type == DistanceY) &&
                         Constr->FirstPos != Sketcher::none && Constr->Second == Constraint::GeoUndef)
                         // display negative sign for absolute coordinates
-                        asciiText->string = SbString().sprintf("%.2f",Constr->Value);
+                        datumLabel->setValue(SbString().sprintf("%.2f",Constr->Value));
                     else // hide negative sign
-                        asciiText->string = SbString().sprintf("%.2f",std::abs(Constr->Value));
+                        datumLabel->setValue(SbString().sprintf("%.2f",std::abs(Constr->Value)));
 
                     if (Constr->Type == Distance)
-                        asciiText->datumtype = SoDatumLabel::DISTANCE;
+                        datumLabel->datumtype = SoDatumLabel::DISTANCE;
                     else if (Constr->Type == DistanceX)
-                        asciiText->datumtype = SoDatumLabel::DISTANCEX;
+                        datumLabel->datumtype = SoDatumLabel::DISTANCEX;
                     else if (Constr->Type == DistanceY)
-                         asciiText->datumtype = SoDatumLabel::DISTANCEY;
+                        datumLabel->datumtype = SoDatumLabel::DISTANCEY;
 
                     // Assign the Datum Points
-                    asciiText->pnts.setNum(2);
-                    SbVec3f *verts = asciiText->pnts.startEditing();
+                    datumLabel->pnts.setNum(2);
+                    SbVec3f *verts = datumLabel->pnts.startEditing();
 
                     verts[0] = SbVec3f (pnt1.x,pnt1.y,zConstr);
                     verts[1] = SbVec3f (pnt2.x,pnt2.y,zConstr);
 
-                    asciiText->pnts.finishEditing();
+                    datumLabel->pnts.finishEditing();
 
                     //Assign the Label Distance
-                    asciiText->param1 = Constr->LabelDistance;
-                    asciiText->param2 = Constr->LabelPosition;
+                    datumLabel->param1 = Constr->LabelDistance;
+                    datumLabel->param2 = Constr->LabelPosition;
                 }
                 break;
             case PointOnObject:
@@ -2515,16 +2515,16 @@ Restart:
                     dir.normalize();
                     SbVec3f norm (-dir[1],dir[0],0);
 
-                    SoDatumLabel *asciiText = dynamic_cast<SoDatumLabel *>(sep->getChild(0));
-                    asciiText->datumtype    = SoDatumLabel::SYMMETRIC;
+                    SoDatumLabel *datumLabel = dynamic_cast<SoDatumLabel *>(sep->getChild(0));
+                    datumLabel->datumtype    = SoDatumLabel::SYMMETRIC;
 
-                    asciiText->pnts.setNum(2);
-                    SbVec3f *verts = asciiText->pnts.startEditing();
+                    datumLabel->pnts.setNum(2);
+                    SbVec3f *verts = datumLabel->pnts.startEditing();
 
                     verts[0] = p1;
                     verts[1] = p2;
 
-                    asciiText->pnts.finishEditing();
+                    datumLabel->pnts.finishEditing();
 
                     dynamic_cast<SoTranslation *>(sep->getChild(1))->translation = (p1 + p2)/2;
                 }
@@ -2585,19 +2585,19 @@ Restart:
                     } else
                         break;
 
-                    SoDatumLabel *asciiText = dynamic_cast<SoDatumLabel *>(sep->getChild(0));
-                    asciiText->string    = SbString().sprintf("%.2f",Base::toDegrees<double>(std::abs(Constr->Value)));
-                    asciiText->datumtype = SoDatumLabel::ANGLE;
-                    asciiText->param1    = Constr->LabelDistance;
-                    asciiText->param2    = startangle;
-                    asciiText->param3    = range;
+                    SoDatumLabel *datumLabel = dynamic_cast<SoDatumLabel *>(sep->getChild(0));
+                    datumLabel->setValue(SbString().sprintf("%.2f",Base::toDegrees<double>(std::abs(Constr->Value))));
+                    datumLabel->datumtype = SoDatumLabel::ANGLE;
+                    datumLabel->param1    = Constr->LabelDistance;
+                    datumLabel->param2    = startangle;
+                    datumLabel->param3    = range;
 
-                    asciiText->pnts.setNum(2);
-                    SbVec3f *verts = asciiText->pnts.startEditing();
+                    datumLabel->pnts.setNum(2);
+                    SbVec3f *verts = datumLabel->pnts.startEditing();
 
                     verts[0] = p0;
 
-                    asciiText->pnts.finishEditing();
+                    datumLabel->pnts.finishEditing();
 
                 }
                 break;
@@ -2632,19 +2632,19 @@ Restart:
                     SbVec3f p1(pnt1.x,pnt1.y,zConstr);
                     SbVec3f p2(pnt2.x,pnt2.y,zConstr);
 
-                    SoDatumLabel *asciiText = dynamic_cast<SoDatumLabel *>(sep->getChild(0));
-                    asciiText->string       = SbString().sprintf("%.2f",Constr->Value);
-                    asciiText->datumtype    = SoDatumLabel::RADIUS;
-                    asciiText->param1       = Constr->LabelDistance;
-                    asciiText->param2       = Constr->LabelPosition;
+                    SoDatumLabel *datumLabel = dynamic_cast<SoDatumLabel *>(sep->getChild(0));
+                    datumLabel->setValue(SbString().sprintf("%.2f",Constr->Value));
+                    datumLabel->datumtype    = SoDatumLabel::RADIUS;
+                    datumLabel->param1       = Constr->LabelDistance;
+                    datumLabel->param2       = Constr->LabelPosition;
 
-                    asciiText->pnts.setNum(2);
-                    SbVec3f *verts = asciiText->pnts.startEditing();
+                    datumLabel->pnts.setNum(2);
+                    SbVec3f *verts = datumLabel->pnts.startEditing();
 
                     verts[0] = p1;
                     verts[1] = p2;
 
-                    asciiText->pnts.finishEditing();
+                    datumLabel->pnts.finishEditing();
                 }
                 break;
             case Coincident: // nothing to do for coincident
@@ -2693,13 +2693,13 @@ void ViewProviderSketch::rebuildConstraintsVisual(void)
             case Radius:
             case Angle:
                 {
-                    SoDatumLabel *text = new SoDatumLabel();
-                    text->string = "";
-                    text->textColor = ConstrDimColor;
+                    SoDatumLabel *datumLabel = new SoDatumLabel();
+                    datumLabel->setValue(SbString(""));
+                    datumLabel->setLabelColor(ConstrDimColor);
                     SoAnnotation *anno = new SoAnnotation();
                     anno->renderCaching = SoSeparator::OFF;
-                    anno->addChild(text);
-                    sep->addChild(text);
+                    anno->addChild(datumLabel);
+                    sep->addChild(datumLabel);
                     edit->constrGroup->addChild(anno);
                     edit->vConstrType.push_back((*it)->Type);
                     // nodes not needed
@@ -2761,8 +2761,8 @@ void ViewProviderSketch::rebuildConstraintsVisual(void)
             case Symmetric:
                 {
                     SoDatumLabel *arrows = new SoDatumLabel();
-                    arrows->string = "";
-                    arrows->textColor = ConstrDimColor;
+                    arrows->setValue(SbString(""));
+                    arrows->setLabelColor(ConstrDimColor);
 
                     sep->addChild(arrows);              // 0.
                     sep->addChild(new SoTranslation()); // 1.

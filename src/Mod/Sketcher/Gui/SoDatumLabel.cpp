@@ -72,8 +72,8 @@ void SoDatumLabel::initClass()
 SoDatumLabel::SoDatumLabel()
 {
     SO_NODE_CONSTRUCTOR(SoDatumLabel);
-    SO_NODE_ADD_FIELD(string, (""));
-    SO_NODE_ADD_FIELD(textColor, (SbVec3f(1.0f,1.0f,1.0f)));
+    SO_NODE_ADD_FIELD(value, (""));
+    SO_NODE_ADD_FIELD(labelColor, (SbVec3f(1.0f,1.0f,1.0f)));
     SO_NODE_ADD_FIELD(pnts, (SbVec3f(.0f,.0f,.0f)));
 
     SO_NODE_ADD_FIELD(name, ("Helvetica"));
@@ -89,22 +89,38 @@ SoDatumLabel::SoDatumLabel()
     SO_NODE_DEFINE_ENUM_VALUE(Type, RADIUS);
     SO_NODE_SET_SF_ENUM_TYPE(datumtype, Type);
 
-    this->imgWidth = 0;
-    this->imgHeight = 0;
+    this->labelWidth = 0;
+    this->labelHeight = 0;
+    labelDirty = true;
 }
 
-void SoDatumLabel::drawImage()
+void SoDatumLabel::setValue(const SbString &str)
 {
-    const SbString* s = string.getValues(0);
-    int num = string.getNum();
-    if (num == 0) {
+    value.setValue(str);
+    labelDirty = true;
+}
+
+void SoDatumLabel::setLabelColor(const SbColor &color)
+{
+    labelColor.setValue(color);
+    labelDirty = true;
+}
+
+void SoDatumLabel::drawLabel()
+{
+    if(!labelDirty)
+        return;
+
+    const SbString s = value.getValue();
+
+    if (s.getLength() == 0) {
         this->img = QImage();
         return;
     }
 
     QFont font(QString::fromAscii(name.getValue()), size.getValue());
     QFontMetrics fm(font);
-    QString str = QString::fromUtf8(s[0].getString());
+    QString str = QString::fromUtf8(s.getString());
     int w = fm.width(str);
     int h = fm.height();
     
@@ -123,7 +139,7 @@ void SoDatumLabel::drawImage()
         return;
     }
 
-    const SbColor& t = textColor.getValue();
+    const SbColor& t = labelColor.getValue();
     QColor front;
     front.setRgbF(t[0],t[1], t[2]);
 
@@ -137,6 +153,9 @@ void SoDatumLabel::drawImage()
     painter.setFont(font);
     painter.drawText(0,0,txtWidth,txtHeight, Qt::AlignLeft , str);
     painter.end();
+    
+    // The label is not dirty now, so we can cache
+    labelDirty = false;
 }
 
 void SoDatumLabel::computeBBox(SoAction *action, SbBox3f &box, SbVec3f &center)
@@ -153,7 +172,7 @@ void SoDatumLabel::generatePrimitives(SoAction * action)
 {
 
     // Initialisation check (needs something more sensible) prevents an infinite loop bug
-    if(this->imgHeight <= FLT_EPSILON || this->imgWidth <= FLT_EPSILON)
+    if(this->labelHeight <= FLT_EPSILON || this->labelWidth <= FLT_EPSILON)
       return;
 
     // Get the points stored
@@ -185,10 +204,10 @@ void SoDatumLabel::generatePrimitives(SoAction * action)
         // Get magnitude of angle between horizontal
         float angle = atan2f(dir[1],dir[0]);
 
-        SbVec3f img1 = SbVec3f(-this->imgWidth / 2, -this->imgHeight / 2, 0.f);
-        SbVec3f img2 = SbVec3f(-this->imgWidth / 2,  this->imgHeight / 2, 0.f);
-        SbVec3f img3 = SbVec3f( this->imgWidth / 2, -this->imgHeight / 2, 0.f);
-        SbVec3f img4 = SbVec3f( this->imgWidth / 2,  this->imgHeight / 2, 0.f);
+        SbVec3f img1 = SbVec3f(-this->labelWidth / 2, -this->labelHeight / 2, 0.f);
+        SbVec3f img2 = SbVec3f(-this->labelWidth / 2,  this->labelHeight / 2, 0.f);
+        SbVec3f img3 = SbVec3f( this->labelWidth / 2, -this->labelHeight / 2, 0.f);
+        SbVec3f img4 = SbVec3f( this->labelWidth / 2,  this->labelHeight / 2, 0.f);
 
         // Rotate through an angle
         float s = sin(angle);
@@ -239,10 +258,10 @@ void SoDatumLabel::generatePrimitives(SoAction * action)
 
         float angle = atan2f(dir[1],dir[0]);
 
-        SbVec3f img1 = SbVec3f(-this->imgWidth / 2, -this->imgHeight / 2, 0.f);
-        SbVec3f img2 = SbVec3f(-this->imgWidth / 2,  this->imgHeight / 2, 0.f);
-        SbVec3f img3 = SbVec3f( this->imgWidth / 2, -this->imgHeight / 2, 0.f);
-        SbVec3f img4 = SbVec3f( this->imgWidth / 2,  this->imgHeight / 2, 0.f);
+        SbVec3f img1 = SbVec3f(-this->labelWidth / 2, -this->labelHeight / 2, 0.f);
+        SbVec3f img2 = SbVec3f(-this->labelWidth / 2,  this->labelHeight / 2, 0.f);
+        SbVec3f img3 = SbVec3f( this->labelWidth / 2, -this->labelHeight / 2, 0.f);
+        SbVec3f img4 = SbVec3f( this->labelWidth / 2,  this->labelHeight / 2, 0.f);
 
         // Rotate through an angle
         float s = sin(angle);
@@ -301,10 +320,10 @@ void SoDatumLabel::generatePrimitives(SoAction * action)
 
         SbVec3f textOffset = p0 + v0 * r;
 
-        SbVec3f img1 = SbVec3f(-this->imgWidth / 2, -this->imgHeight / 2, 0.f);
-        SbVec3f img2 = SbVec3f(-this->imgWidth / 2,  this->imgHeight / 2, 0.f);
-        SbVec3f img3 = SbVec3f( this->imgWidth / 2, -this->imgHeight / 2, 0.f);
-        SbVec3f img4 = SbVec3f( this->imgWidth / 2,  this->imgHeight / 2, 0.f);
+        SbVec3f img1 = SbVec3f(-this->labelWidth / 2, -this->labelHeight / 2, 0.f);
+        SbVec3f img2 = SbVec3f(-this->labelWidth / 2,  this->labelHeight / 2, 0.f);
+        SbVec3f img3 = SbVec3f( this->labelWidth / 2, -this->labelHeight / 2, 0.f);
+        SbVec3f img4 = SbVec3f( this->labelWidth / 2,  this->labelHeight / 2, 0.f);
 
         img1 += textOffset;
         img2 += textOffset;
@@ -389,7 +408,6 @@ void SoDatumLabel::generatePrimitives(SoAction * action)
 
         this->endShape();
     }
-
 }
 
 void SoDatumLabel::GLRender(SoGLRenderAction * action)
@@ -404,15 +422,14 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
     const SbViewVolume & vv = SoViewVolumeElement::get(state);
     float scale = vv.getWorldToScreenScale(SbVec3f(0.f,0.f,0.f), 0.4f);
 
-    const SbString* s = string.getValues(0);
-    bool hasText = (s->getLength() > 0) ? true : false;
+    bool hasText = (value.getValue().getLength() > 0) ? true : false;
 
     if(hasText) {
-        drawImage();
+        drawLabel();
 
         float aspectRatio =  (float) this->txtWidth/ (float) this->txtHeight;
-        this->imgHeight = scale / (float) this->txtHeight;
-        this->imgWidth  = aspectRatio * (float) this->imgHeight;
+        this->labelHeight = scale / (float) this->txtHeight;
+        this->labelWidth  = aspectRatio * (float) this->labelHeight;
     }
 
     // Get the points stored in the pnt field
@@ -438,7 +455,7 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
     SbVec3f textOffset;
 
     // Get the colour
-    const SbColor& t = textColor.getValue();
+    const SbColor& t = labelColor.getValue();
 
     // Set GL Properties
     glLineWidth(2.f);
@@ -493,7 +510,7 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         textOffset = midpos + norm * length + dir * length2;
 
         // Get the colour
-        const SbColor& t = textColor.getValue();
+        const SbColor& t = labelColor.getValue();
 
         // Set GL Properties
         glLineWidth(this->lineWidth.getValue());
@@ -507,8 +524,8 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
 
         // Calculate the coordinates for the parallel datum lines
         SbVec3f par1 = p1_ + norm * length;
-        SbVec3f par2 = midpos + norm * length + dir * (length2 - this->imgWidth / 2 - margin);
-        SbVec3f par3 = midpos + norm * length + dir * (length2 + this->imgWidth / 2 + margin);
+        SbVec3f par2 = midpos + norm * length + dir * (length2 - this->labelWidth / 2 - margin);
+        SbVec3f par3 = midpos + norm * length + dir * (length2 + this->labelWidth / 2 + margin);
         SbVec3f par4 = p2  + norm * length;
 
         bool flipTriang = false;
@@ -565,10 +582,10 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
           glVertex2f(ar4[0], ar4[1]);
         glEnd();
 
-        SbVec3f img1 = SbVec3f(-this->imgWidth / 2, -this->imgHeight / 2, 0.f);
-        SbVec3f img2 = SbVec3f(-this->imgWidth / 2,  this->imgHeight / 2, 0.f);
-        SbVec3f img3 = SbVec3f( this->imgWidth / 2, -this->imgHeight / 2, 0.f);
-        SbVec3f img4 = SbVec3f( this->imgWidth / 2,  this->imgHeight / 2, 0.f);
+        SbVec3f img1 = SbVec3f(-this->labelWidth / 2, -this->labelHeight / 2, 0.f);
+        SbVec3f img2 = SbVec3f(-this->labelWidth / 2,  this->labelHeight / 2, 0.f);
+        SbVec3f img3 = SbVec3f( this->labelWidth / 2, -this->labelHeight / 2, 0.f);
+        SbVec3f img4 = SbVec3f( this->labelWidth / 2,  this->labelHeight / 2, 0.f);
 
         img1 += textOffset;
         img2 += textOffset;
@@ -577,7 +594,6 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
 
         // BOUNDING BOX CALCULATION - IMPORTANT
         // Finds the mins and maxes
-
         corners.push_back(p1);
         corners.push_back(p2);
         corners.push_back(perp1);
@@ -621,13 +637,13 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         SbVec3f ar2  = ar1 + norm * margin;
         ar1 -= norm * margin;
 
-        SbVec3f p3 = pos +  dir * (this->imgWidth / 2 + margin);
+        SbVec3f p3 = pos +  dir * (this->labelWidth / 2 + margin);
         if ((p3-p1).length() > (p2-p1).length())
         p2 = p3;
 
         // Calculate the points
-        SbVec3f pnt1 = pos - dir * (margin + this->imgWidth / 2);
-        SbVec3f pnt2 = pos + dir * (margin + this->imgWidth / 2);
+        SbVec3f pnt1 = pos - dir * (margin + this->labelWidth / 2);
+        SbVec3f pnt2 = pos + dir * (margin + this->labelWidth / 2);
 
         // Draw the Lines
         glBegin(GL_LINES);
@@ -673,9 +689,9 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
 
         // leave some space for the text
         if (range >= 0)
-            range = std::max(0.2f*range, range - this->imgWidth/(2*r));
+            range = std::max(0.2f*range, range - this->labelWidth/(2*r));
         else
-            range = std::min(0.2f*range, range + this->imgWidth/(2*r));
+            range = std::min(0.2f*range, range + this->labelWidth/(2*r));
 
         int countSegments = std::max(6, abs(int(50.0 * range / (2 * M_PI))));
         double segment = range / (2*countSegments-2);
@@ -727,10 +743,10 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         // Finds the mins and maxes
         // We may need to include the text position too
 
-        SbVec3f img1 = SbVec3f(-this->imgWidth / 2, -this->imgHeight / 2, 0.f);
-        SbVec3f img2 = SbVec3f(-this->imgWidth / 2,  this->imgHeight / 2, 0.f);
-        SbVec3f img3 = SbVec3f( this->imgWidth / 2, -this->imgHeight / 2, 0.f);
-        SbVec3f img4 = SbVec3f( this->imgWidth / 2,  this->imgHeight / 2, 0.f);
+        SbVec3f img1 = SbVec3f(-this->labelWidth / 2, -this->labelHeight / 2, 0.f);
+        SbVec3f img2 = SbVec3f(-this->labelWidth / 2,  this->labelHeight / 2, 0.f);
+        SbVec3f img3 = SbVec3f( this->labelWidth / 2, -this->labelHeight / 2, 0.f);
+        SbVec3f img4 = SbVec3f( this->labelWidth / 2,  this->labelHeight / 2, 0.f);
 
         img1 += textOffset;
         img2 += textOffset;
@@ -808,7 +824,7 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
     //Store the bounding box
     this->bbox.setBounds(SbVec3f(minX, minY, 0.f), SbVec3f (maxX, maxY, 0.f));
 
-    if(hasText) {
+    if(hasText){
 
         SbVec3f surfNorm(0.f, 0.f, 1.f) ;
         //Get the camera z-direction
@@ -847,10 +863,10 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
 
         float texH = 1.f - (this->txtHeight / (float) texture.height());
         
-        glTexCoord2f(flip ? 0.f : 1.f,  1.f); glVertex2f( -this->imgWidth / 2,  this->imgHeight / 2);
-        glTexCoord2f(flip ? 0.f : 1.f, texH); glVertex2f( -this->imgWidth / 2, -this->imgHeight / 2);
-        glTexCoord2f(flip ? 1.f : 0.f, texH); glVertex2f( this->imgWidth / 2, -this->imgHeight / 2);
-        glTexCoord2f(flip ? 1.f : 0.f, 1.f); glVertex2f( this->imgWidth / 2,  this->imgHeight / 2);
+        glTexCoord2f(flip ? 0.f : 1.f,  1.f); glVertex2f( -this->labelWidth / 2,  this->labelHeight / 2);
+        glTexCoord2f(flip ? 0.f : 1.f, texH); glVertex2f( -this->labelWidth / 2, -this->labelHeight / 2);
+        glTexCoord2f(flip ? 1.f : 0.f, texH); glVertex2f( this->labelWidth / 2, -this->labelHeight / 2);
+        glTexCoord2f(flip ? 1.f : 0.f, 1.f); glVertex2f( this->labelWidth / 2,  this->labelHeight / 2);
 
         glEnd();
 
