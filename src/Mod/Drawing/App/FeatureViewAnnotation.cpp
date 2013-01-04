@@ -82,8 +82,6 @@ App::DocumentObjectExecReturn *FeatureViewAnnotation::execute(void)
     result << "</text>" << endl << "</g>" << endl;
 
     // Apply the resulting fragment
-    ViewResult.setValue(result.str().c_str());
-
     return App::DocumentObject::StdReturn;
 }
 

@@ -24,7 +24,6 @@
 #ifndef _PreComp_
 # include <QAction>
 # include <QApplication>
-# include <QBuffer>
 # include <QContextMenuEvent>
 # include <QFileInfo>
 # include <QFileDialog>
@@ -54,6 +53,7 @@
 # include <cmath>
 #endif
 
+#include <Base/Tools2D.h>
 #include <Base/Stream.h>
 #include <Base/gzstream.h>
 #include <Base/PyObjectBase.h>
@@ -61,10 +61,11 @@
 #include <Gui/WaitCursor.h>
 
 #include "../App/Geometry.h"
+#include "../App/FeaturePage.h"
+#include "../App/FeatureViewPart.h"
 #include "CanvasView.h"
 
 using namespace DrawingGui;
-
 
 CanvasView::CanvasView(QWidget *parent)
     : QGraphicsView(parent)
@@ -85,7 +86,7 @@ CanvasView::CanvasView(QWidget *parent)
     tilePainter.fillRect(32, 32, 32, 32, color);
     tilePainter.end();
 
-    setBackgroundBrush(tilePixmap);
+    setBackgroundBrush(tilePixmap);    
 }
 
 void CanvasView::drawBackground(QPainter *p, const QRectF &)
@@ -96,9 +97,10 @@ void CanvasView::drawBackground(QPainter *p, const QRectF &)
     p->restore();
 }
 
-QGraphicsItemGroup * CanvasView::drawViewPart(const std::vector<DrawingGeometry::BaseGeom *> &geoms)
+void CanvasView::drawViewPart(Drawing::FeatureViewPart *part)
 {
     // Iterate
+    const std::vector<DrawingGeometry::BaseGeom *> &geoms = part->getGeometry();
     std::vector<DrawingGeometry::BaseGeom *>::const_iterator it = geoms.begin();
     QGraphicsScene *scene = this->scene();
     QGraphicsItemGroup *group = new QGraphicsItemGroup();
@@ -107,24 +109,62 @@ QGraphicsItemGroup * CanvasView::drawViewPart(const std::vector<DrawingGeometry:
     for( ; it != geoms.end(); ++it) {
       switch((*it)->geomType) {
         case DrawingGeometry::CIRCLE: {
-          DrawingGeometry::Circle *geom = static_cast<DrawingGeometry::CIRCLE>(*it);
+          DrawingGeometry::Circle *geom = static_cast<DrawingGeometry::Circle *>(*it);
           QGraphicsEllipseItem *item = new  QGraphicsEllipseItem();
           item->setRect(0, 0, geom->radius * 2, geom->radius * 2);
+          item->setPos(geom->x - geom->radius, geom->y - geom->radius);
+          group->addToGroup(item);
+        } break;
+        case DrawingGeometry::ARCOFCIRCLE: {
+          DrawingGeometry::AOC  *geom = static_cast<DrawingGeometry::AOC *>(*it);
+          QGraphicsPathItem *item = new  QGraphicsPathItem();
+          QPainterPath path;
+
+          double startAngle = (geom->startAngle);
+          double spanAngle =  (geom->endAngle - startAngle);
+
+          path.arcMoveTo(0, 0, geom->radius * 2, geom->radius * 2, -startAngle);
+          path.arcTo(0, 0, geom->radius * 2, geom->radius * 2, -startAngle, -spanAngle);
+          item->setPath(path);
+          item->setPos(geom->x - geom->radius, geom->y - geom->radius);
+          group->addToGroup(item);
+        } break;
+        case DrawingGeometry::ELLIPSE: {
+          DrawingGeometry::Ellipse *geom = static_cast<DrawingGeometry::Ellipse *>(*it);
+          QGraphicsEllipseItem *item = new  QGraphicsEllipseItem();
+          item->setRect(0, 0, geom->major * 2, geom->minor * 2);
+          item->setPos(geom->x - geom->radius, geom->y - geom->radius);
+          group->addToGroup(item);
+        } break;
+        case DrawingGeometry::ARCOFELLIPSE: {
+          DrawingGeometry::AOE *geom = static_cast<DrawingGeometry::AOE *>(*it);
+          QGraphicsEllipseItem *item = new  QGraphicsEllipseItem();
+          item->setRect(0, 0, geom->major * 2, geom->minor * 2);
+          int startAngle = geom->startAngle * 16;
+          int spanAngle = (geom->endAngle - geom->startAngle) * 16;
+          item->setStartAngle(startAngle);
+          item->setSpanAngle(spanAngle);
           item->setPos(geom->x, geom->y);
           group->addToGroup(item);
         } break;
-        case DrawingGeometry::AOC: {
-          DrawingGeometry::AOC  *geom = static_cast<DrawingGeometry::ARCOFCIRCLE>(*it);
-          QGraphicsEllipseItem *item = new  QGraphicsEllipseItem();
-          item->setRect(0, 0, geom->radius * 2, geom->radius * 2);
-          item->setPos(geom->x, geom->y);
+        case DrawingGeometry::GENERIC: {
+          DrawingGeometry::Generic  *geom = static_cast<DrawingGeometry::Generic *>(*it);
+          QGraphicsPathItem *item = new  QGraphicsPathItem();
+          QPainterPath path;
+          path.moveTo(geom->points[0].fX, geom->points[0].fY);
+          std::vector<Base::Vector2D>::const_iterator it = geom->points.begin();
+
+          for(++it; it != geom->points.end(); ++it) {
+              path.lineTo((*it).fX, (*it).fY);
+          }
+          item->setPath(path);
           group->addToGroup(item);
         } break;
         default:
           break;
       }
     }
-    scene->addItem(group);
+    this->scene()->addItem(group);
 }
 void CanvasView::setRenderer(RendererType type)
 {

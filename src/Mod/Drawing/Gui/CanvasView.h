@@ -31,12 +31,17 @@ class QSlider;
 class QAction;
 class QActionGroup;
 class QFile;
+class QGraphicsItemGroup;
 class QPopupMenu;
 class QToolBar;
 class QSvgWidget;
 class QScrollArea;
 class QPrinter;
 QT_END_NAMESPACE
+
+namespace Drawing {
+class FeatureViewPart;  
+}
 
 namespace DrawingGeometry
 {
@@ -58,7 +63,7 @@ public:
 
     void setRenderer(RendererType type = Native);
     void drawBackground(QPainter *p, const QRectF &rect);
-    QGraphicsItemGroup * drawViewPart(const std::vector<DrawingGeometry::BaseGeom *> &geoms);
+    void drawViewPart(Drawing::FeatureViewPart *part);
 
 public Q_SLOTS:
     void setHighQualityAntialiasing(bool highQualityAntialiasing);
@@ -68,6 +73,7 @@ public Q_SLOTS:
 protected:
     void wheelEvent(QWheelEvent *event);
     void paintEvent(QPaintEvent *event);
+    
 
 private:
     RendererType m_renderer;

@@ -41,11 +41,16 @@ class QScrollArea;
 class QPrinter;
 QT_END_NAMESPACE
 
+namespace Drawing {
+class FeaturePage;  
+}
+
 namespace DrawingGui
 {
 
 class CanvasView;
 
+#if 0
 class DrawingGuiExport SvgView : public QGraphicsView
 {
     Q_OBJECT
@@ -78,15 +83,17 @@ private:
     QImage m_image;
 };
 
+#endif
+
 class DrawingGuiExport DrawingView : public Gui::MDIView
 {
     Q_OBJECT
 
 public:
-    DrawingView(App::DocumentObject* docObj, QWidget* parent = 0);
+    DrawingView(Gui::Document* doc, QWidget* parent = 0);
 
 public Q_SLOTS:
-    void load(const QString &path = QString());
+    void attachPageObject(Drawing::FeaturePage *pageFeature);
     void setRenderer(QAction *action);
     void viewAll();
 

@@ -20,9 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
-
 #ifndef _PreComp_
 # ifdef FC_OS_WIN32
 #  include <windows.h>
@@ -30,6 +28,7 @@
 # include <QAction>
 # include <QMenu>
 # include <QTimer>
+#include <QPointer>
 #endif
 
 /// Here the FreeCAD includes sorted by Base,App,Gui......
@@ -47,14 +46,13 @@
 #include <Gui/BitmapFactory.h>
 #include <Gui/ViewProviderDocumentObjectGroup.h>
 
-
-#include "ViewProviderPage.h"
 #include <Mod/Drawing/App/FeaturePage.h>
+#include "DrawingView.h"
+#include "ViewProviderPage.h"
 
 using namespace DrawingGui;
 
 PROPERTY_SOURCE(DrawingGui::ViewProviderDrawingPage, Gui::ViewProviderDocumentObjectGroup)
-
 
 //**************************************************************************
 // Construction/Destruction
@@ -97,11 +95,12 @@ void ViewProviderDrawingPage::updateData(const App::Property* prop)
     if (prop->getTypeId() == App::PropertyFileIncluded::getClassTypeId()) {
         if (std::string(getPageObject()->PageResult.getValue()) != "") {
             DrawingView* view = showDrawingView();
-            view->load(QString::fromUtf8(getPageObject()->PageResult.getValue()));
+            view->attachPageObject(getPageObject());
             if (view->isHidden())
                 QTimer::singleShot(300, view, SLOT(viewAll()));
-            else
-                view->viewAll();
+            else {
+//                 view->viewAll();
+            }
         }
     }
 }
@@ -122,8 +121,8 @@ bool ViewProviderDrawingPage::doubleClicked(void)
 {
     if (!this->view) {
         showDrawingView();
-        this->view->load(QString::fromUtf8(getPageObject()->PageResult.getValue()));
-        view->viewAll();
+        view->attachPageObject(getPageObject());
+//         view->viewAll();
     }
     Gui::getMainWindow()->setActiveWindow(this->view);
     return true;

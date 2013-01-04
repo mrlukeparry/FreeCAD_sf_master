@@ -54,7 +54,7 @@
 # include <cmath>
 #endif
 
-#include <App/Document.h>
+#include <Gui/Document.h>
 #include <App/DocumentObject.h>
 #include <Base/Stream.h>
 #include <Base/gzstream.h>
@@ -63,12 +63,14 @@
 #include <Gui/FileDialog.h>
 #include <Gui/WaitCursor.h>
 
+#include "../App/FeaturePage.h"
+#include "../App/FeatureViewPart.h"
 #include "CanvasView.h"
 #include "DrawingView.h"
 
-
 using namespace DrawingGui;
 
+#if 0
 SvgView::SvgView(QWidget *parent)
     : QGraphicsView(parent)
     , m_renderer(Native)
@@ -202,13 +204,13 @@ void SvgView::wheelEvent(QWheelEvent *event)
     scale(factor, factor);
     event->accept();
 }
-
+#endif
 // ----------------------------------------------------------------------------
 
 /* TRANSLATOR DrawingGui::DrawingView */
 
-DrawingView::DrawingView(App::DocumentObject *docObj, QWidget* parent)
-  : Gui::MDIView(getGuiDocument(), parent), m_view(new CanvasView)
+DrawingView::DrawingView(Gui::Document* doc, QWidget* parent)
+  : Gui::MDIView(doc, parent), m_view(new CanvasView)
 {
     m_backgroundAction = new QAction(tr("&Background"), this);
     m_backgroundAction->setEnabled(false);
@@ -254,35 +256,15 @@ DrawingView::DrawingView(App::DocumentObject *docObj, QWidget* parent)
     //setWindowTitle(tr("SVG Viewer"));
 }
 
-void DrawingView::load (const QString & fileName)
+void DrawingView::attachPageObject(Drawing::FeaturePage *pageFeature)
 {
-    if (!fileName.isEmpty()) {
-        QFile file(fileName);
-        if (!file.exists()) {
-            QMessageBox::critical(this, tr("Open SVG File"),
-                           tr("Could not open file '%1'.").arg(fileName));
-
-            m_outlineAction->setEnabled(false);
-            m_backgroundAction->setEnabled(false);
-            return;
+      // get through the children and collect all the views
+    const std::vector<App::DocumentObject*> &grp = pageFeature->getObjects();
+    for (std::vector<App::DocumentObject*>::const_iterator it = grp.begin();it != grp.end(); ++it) {
+        if ( (*it)->getTypeId().isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()) ) {
+            Drawing::FeatureViewPart *view = dynamic_cast<Drawing::FeatureViewPart *>(*it);
+            m_view->drawViewPart(view);
         }
-
-            // get through the children and collect all the views
-            const std::vector<App::DocumentObject*> &Grp = Group.getValues();
-            for (std::vector<App::DocumentObject*>::const_iterator It= Grp.begin();It!=Grp.end();++It) {
-                if ( (*It)->getTypeId().isDerivedFrom(Drawing::FeatureView::getClassTypeId()) ) {
-                    Drawing::FeatureView *View = dynamic_cast<Drawing::FeatureView *>(*It);
-            }
-        m_view->drawViewPart();
-//         m_view->openFile(file);
-
-        if (!fileName.startsWith(QLatin1String(":/"))) {
-            m_currentPath = fileName;
-            //setWindowTitle(tr("%1 - SVG Viewer").arg(m_currentPath));
-        }
-
-        m_outlineAction->setEnabled(true);
-        m_backgroundAction->setEnabled(true);
     }
 }
 

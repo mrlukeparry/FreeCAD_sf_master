@@ -59,7 +59,7 @@ open(PyObject *self, PyObject *args)
             QString fileName = QString::fromUtf8(Name);
             // Displaying the image in a view
             DrawingView* view = new DrawingView(0, Gui::getMainWindow());
-            view->load(fileName);
+//             view->load(fileName);
             view->setWindowIcon(Gui::BitmapFactory().pixmap("actions/drawing-landscape"));
             view->setWindowTitle(QObject::tr("Drawing viewer"));
             view->resize( 400, 300 );
@@ -89,7 +89,7 @@ importer(PyObject *self, PyObject *args)
             QString fileName = QString::fromUtf8(Name);
             // Displaying the image in a view
             DrawingView* view = new DrawingView(0, Gui::getMainWindow());
-            view->load(fileName);
+//             view->load(fileName);
             view->setWindowIcon(Gui::BitmapFactory().pixmap("actions/drawing-landscape"));
             view->setWindowTitle(QObject::tr("Drawing viewer"));
             view->resize( 400, 300 );

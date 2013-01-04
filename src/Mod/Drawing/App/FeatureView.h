@@ -48,9 +48,10 @@ public:
     FeatureView(void);
     virtual ~FeatureView();
 
-    App::PropertyFloat X,Y,Scale,Rotation;
-    App::PropertyString ViewResult;
-
+    App::PropertyFloat X;
+    App::PropertyFloat Y;
+    App::PropertyFloat Scale;
+    App::PropertyFloat Rotation;
 
     /** @name methods overide Feature */
     //@{

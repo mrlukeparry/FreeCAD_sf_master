@@ -54,6 +54,7 @@ public:
 
 protected:
     void calculateGeometry(const TopoDS_Shape &input, ExtractionType extractionType);
+    TopoDS_Shape invertY(const TopoDS_Shape& shape);
     std::vector<BaseGeom *> geometry;
     double Tolerance;
     HLRBRep_Algo *brep_hlr;

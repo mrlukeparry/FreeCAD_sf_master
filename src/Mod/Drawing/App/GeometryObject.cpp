@@ -108,13 +108,27 @@ void GeometryObject::clear()
         brep_hlr->Delete();
 }
 
+TopoDS_Shape GeometryObject::invertY(const TopoDS_Shape& shape)
+{
+    // make sure to have the y coordinates inverted
+    gp_Trsf mat;
+    Bnd_Box bounds;
+    BRepBndLib::Add(shape, bounds);
+    bounds.SetGap(0.0);
+    Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
+    bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+    mat.SetMirror(gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2), gp_Dir(0,1,0)));
+    BRepBuilderAPI_Transform mkTrf(shape, mat);
+    return mkTrf.Shape();
+}
+
 void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vector3f &direction, double tolerance)
 {
     // Clear previous Geometry that may have been stored
     this->clear();
     
     HLRBRep_Algo *brep_hlr = new HLRBRep_Algo();
-    brep_hlr->Add(input);
+    brep_hlr->Add(invertY(input));
 
     try {
         #if defined(__GNUC__) && defined (FC_OS_LINUX)
@@ -184,7 +198,7 @@ void GeometryObject::calculateGeometry(const TopoDS_Shape &input, ExtractionType
                   aoc->extractType = extractionType;
                   geometry.push_back(aoc);
             }
-        } break;
+          } break;
           case GeomAbs_Ellipse: {
             double f = adapt.FirstParameter();
             double l = adapt.LastParameter();
@@ -204,7 +218,7 @@ void GeometryObject::calculateGeometry(const TopoDS_Shape &input, ExtractionType
             Generic *primitive = new Generic(adapt);
             primitive->extractType = extractionType;
             geometry.push_back(primitive);
-            break;/*else if (adapt.GetType() == GeomAbs_Ellipse) {
+          }  break;/*else if (adapt.GetType() == GeomAbs_Ellipse) {
             (adapt, i, result);
         }
         else if (adapt.GetType() == GeomAbs_BSplineCurve) {
@@ -214,7 +228,7 @@ void GeometryObject::calculateGeometry(const TopoDS_Shape &input, ExtractionType
         else {
             printGeneric(adapt, i, result);
         }*/
-      } 
+        }  
     }
 }
 
