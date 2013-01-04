@@ -24,15 +24,12 @@
 #ifndef _FeaturePage_h_
 #define _FeaturePage_h_
 
-
 #include <App/DocumentObjectGroup.h>
 #include <App/PropertyStandard.h>
 #include <App/PropertyFile.h>
 
-
 namespace Drawing
 {
-
 
 /** Base class of all View Features in the drawing module
  */
@@ -41,13 +38,11 @@ class DrawingExport FeaturePage: public App::DocumentObjectGroup
     PROPERTY_HEADER(Drawing::FeaturePage);
 
 public:
-    /// Constructor
-    FeaturePage(void);
-    virtual ~FeaturePage();
+    FeaturePage(); /// Constructor
+    ~FeaturePage();
 
     App::PropertyFileIncluded PageResult;
     App::PropertyFile Template;
-    App::PropertyStringList EditableTexts;
 
     /** @name methods overide Feature */
     //@{
@@ -59,7 +54,6 @@ public:
     virtual const char* getViewProviderName(void) const {
         return "DrawingGui::ViewProviderDrawingPage";
     }
-    virtual std::vector<std::string> getEditableTextsFromTemplate(void) const;
 
 protected:
     void onChanged(const App::Property* prop);

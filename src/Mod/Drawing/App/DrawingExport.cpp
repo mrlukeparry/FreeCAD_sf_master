@@ -438,6 +438,7 @@ void DXFOutput::printEllipse(const BRepAdaptor_Curve& c, int id, std::ostream& o
 	double bx = e.X() - p.X();
 	double by = e.Y() - p.Y();
 
+
 	double start_angle = atan2(ay, ax) * 180/D_PI;
 	double end_angle = atan2(by, bx) * 180/D_PI;
 

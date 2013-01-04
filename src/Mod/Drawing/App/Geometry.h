@@ -23,6 +23,7 @@
 #ifndef DRAWING_GEOMETRY_H
 #define DRAWING_GEOMETRY_H
 
+#include <Base/Tools2D.h>
 class BRepAdaptor_Curve;
 
 namespace DrawingGeometry {
@@ -47,7 +48,7 @@ class DrawingExport BaseGeom
 public:  
    BaseGeom() {}
    ~BaseGeom() {}
-   
+public:   
    GeomType geomType;
    ExtractionType extractType;   
 };
@@ -57,7 +58,7 @@ class DrawingExport Circle: public BaseGeom
 public:
   Circle(const BRepAdaptor_Curve &c);
   ~Circle() {}
-  
+public: 
   double radius;
   double x;
   double y;
@@ -68,7 +69,7 @@ class DrawingExport Ellipse: public BaseGeom
 public:
   Ellipse(const BRepAdaptor_Curve &c);
   ~Ellipse() {}
-  
+public:
   double radius;
   double x;
   double y;
@@ -81,7 +82,7 @@ class DrawingExport AOE: public Ellipse
 public:
   AOE(const BRepAdaptor_Curve &c);
   ~AOE() {}
-  
+public:
   double startAngle;
   double endAngle;
 };
@@ -91,7 +92,7 @@ class DrawingExport AOC: public Circle
 public:
   AOC(const BRepAdaptor_Curve &c);
   ~AOC() {}
-
+public:
   double startAngle;
   double endAngle;
 };
@@ -106,7 +107,8 @@ class DrawingExport BSpline: public BaseGeom
 {
 public:
   BSpline(const BRepAdaptor_Curve &c);
-  ~BSpline() {}  
+  ~BSpline(){}
+public:
   std::vector<BezierSegment> segments;
 };
 

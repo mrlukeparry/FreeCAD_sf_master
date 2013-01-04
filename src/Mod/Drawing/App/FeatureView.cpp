@@ -56,7 +56,6 @@ FeatureView::FeatureView(void)
     ADD_PROPERTY_TYPE(Rotation ,(0),group,App::Prop_None,"Rotation of the view in degrees counterclockwise");
 
     App::PropertyType type = (App::PropertyType)(App::Prop_Hidden);
-    ADD_PROPERTY_TYPE(ViewResult ,(0),group,type,"Resulting SVG fragment of that view");
 }
 
 FeatureView::~FeatureView()

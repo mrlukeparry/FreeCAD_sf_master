@@ -198,15 +198,17 @@ BSpline::BSpline(const BRepAdaptor_Curve& c)
 
 AOC::AOC(const BRepAdaptor_Curve& c) : Circle(c)
 {
+
     double f = c.FirstParameter();
     double l = c.LastParameter();
-    gp_Pnt s = c.Value(f);
+    gp_Pnt s = c.Value(l);
     gp_Pnt m = c.Value((l+f)/2.0);
-    gp_Pnt e = c.Value(l);
+    gp_Pnt e = c.Value(f);
 
     gp_Vec v1(m,s);
     gp_Vec v2(m,e);
     gp_Vec v3(0,0,1);
+    double a = v3.DotCross(v1,v2);
     
     double ax = s.X() - this->x;
     double ay = s.Y() - this->y;
@@ -214,9 +216,11 @@ AOC::AOC(const BRepAdaptor_Curve& c) : Circle(c)
     double by = e.Y() - this->y;
 
     this->geomType = ARCOFCIRCLE;
-    this->startAngle = atan2(ay, ax) * 180 / M_PI;
-    this->endAngle   = atan2(by, bx) * 180 / M_PI;
+    this->startAngle = atan2(ay,ax);
+    float range = atan2(-ay*bx+ax*by,
+                  ax*bx+ay*by);
+    this->endAngle = startAngle + range;
+    this->startAngle *= 180 / M_PI;
+    this->endAngle   *= 180 / M_PI;
 
-    if(v3.DotCross(v1,v2) > 0)
-        std::swap<double>(this->startAngle, this->endAngle);
 }

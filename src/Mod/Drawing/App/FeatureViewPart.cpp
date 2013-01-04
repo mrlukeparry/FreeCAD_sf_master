@@ -114,7 +114,7 @@ App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
         return new App::DocumentObjectExecReturn("Linked shape object is empty");
    
     try {
-        geometryObject->extractGeometry(ProjectionAlgos::invertY(shape), Direction.getValue(), Tolerance.getValue());
+        geometryObject->extractGeometry(shape, Direction.getValue(), Tolerance.getValue());
         return App::DocumentObject::StdReturn;
     }
     catch (Standard_Failure) {

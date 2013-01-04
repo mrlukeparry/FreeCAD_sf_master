@@ -20,15 +20,13 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #ifndef DRAWINGGUI_VIEWPROVIDERPAGE_H
 #define DRAWINGGUI_VIEWPROVIDERPAGE_H
 
-#include <QPointer>
 #include <Gui/ViewProviderFeature.h>
 #include <Gui/ViewProviderDocumentObjectGroup.h>
 
-#include "DrawingView.h"
+#include <QPointer>
 
 namespace Drawing{
     class FeaturePage;
@@ -36,16 +34,16 @@ namespace Drawing{
 
 namespace DrawingGui {
 
+class DrawingView;
 
 class DrawingGuiExport ViewProviderDrawingPage : public Gui::ViewProviderDocumentObjectGroup
 {
     PROPERTY_HEADER(DrawingGui::ViewProviderDrawingPage);
 
 public:
-    /// constructor
-    ViewProviderDrawingPage();
-    /// destructor
-    virtual ~ViewProviderDrawingPage();
+
+    ViewProviderDrawingPage();  /// constructor
+    ~ViewProviderDrawingPage(); /// destructor
 
     App::PropertyFloat         HintScale;
     App::PropertyFloat         HintOffsetX;
