@@ -75,7 +75,7 @@ CanvasView::CanvasView(QWidget *parent)
 {
     setScene(new QGraphicsScene(this));
     setTransformationAnchor(AnchorUnderMouse);
-    setDragMode(ScrollHandDrag);
+//     setDragMode(ScrollHandDrag);
 
     // Prepare background check-board pattern
     QPixmap tilePixmap(64, 64);
@@ -86,7 +86,7 @@ CanvasView::CanvasView(QWidget *parent)
     tilePainter.fillRect(32, 32, 32, 32, color);
     tilePainter.end();
 
-    setBackgroundBrush(tilePixmap);    
+    setBackgroundBrush(tilePixmap);
 }
 
 void CanvasView::drawBackground(QPainter *p, const QRectF &)
@@ -104,20 +104,31 @@ void CanvasView::drawViewPart(Drawing::FeatureViewPart *part)
     std::vector<DrawingGeometry::BaseGeom *>::const_iterator it = geoms.begin();
     QGraphicsScene *scene = this->scene();
     QGraphicsItemGroup *group = new QGraphicsItemGroup();
-    
+
+    QPen pen;
+    pen.setWidth(0.7f);
+    pen.setColor(QColor(0, 0,0));
+    pen.setStyle(Qt::SolidLine);
     // iterate through all the geometries
     for( ; it != geoms.end(); ++it) {
+      if((*it)->extractType == DrawingGeometry::WithHidden)
+          pen.setStyle(Qt::DashLine);
+      else
+          pen.setStyle(Qt::SolidLine);
+
       switch((*it)->geomType) {
         case DrawingGeometry::CIRCLE: {
           DrawingGeometry::Circle *geom = static_cast<DrawingGeometry::Circle *>(*it);
           QGraphicsEllipseItem *item = new  QGraphicsEllipseItem();
           item->setRect(0, 0, geom->radius * 2, geom->radius * 2);
           item->setPos(geom->x - geom->radius, geom->y - geom->radius);
+
+          item->setPen(pen);
           group->addToGroup(item);
         } break;
         case DrawingGeometry::ARCOFCIRCLE: {
           DrawingGeometry::AOC  *geom = static_cast<DrawingGeometry::AOC *>(*it);
-          QGraphicsPathItem *item = new  QGraphicsPathItem();
+          QGraphicsPathItem *item = new QGraphicsPathItem();
           QPainterPath path;
 
           double startAngle = (geom->startAngle);
@@ -125,6 +136,8 @@ void CanvasView::drawViewPart(Drawing::FeatureViewPart *part)
 
           path.arcMoveTo(0, 0, geom->radius * 2, geom->radius * 2, -startAngle);
           path.arcTo(0, 0, geom->radius * 2, geom->radius * 2, -startAngle, -spanAngle);
+
+          item->setPen(pen);
           item->setPath(path);
           item->setPos(geom->x - geom->radius, geom->y - geom->radius);
           group->addToGroup(item);
@@ -132,19 +145,29 @@ void CanvasView::drawViewPart(Drawing::FeatureViewPart *part)
         case DrawingGeometry::ELLIPSE: {
           DrawingGeometry::Ellipse *geom = static_cast<DrawingGeometry::Ellipse *>(*it);
           QGraphicsEllipseItem *item = new  QGraphicsEllipseItem();
+
           item->setRect(0, 0, geom->major * 2, geom->minor * 2);
-          item->setPos(geom->x - geom->radius, geom->y - geom->radius);
+          item->setPos(geom->x -geom->major, geom->y - geom->minor);
+          item->setTransformOriginPoint(geom->major, geom->minor);
+          item->setRotation(geom->angle);
+          item->setPen(pen);
           group->addToGroup(item);
         } break;
         case DrawingGeometry::ARCOFELLIPSE: {
           DrawingGeometry::AOE *geom = static_cast<DrawingGeometry::AOE *>(*it);
-          QGraphicsEllipseItem *item = new  QGraphicsEllipseItem();
-          item->setRect(0, 0, geom->major * 2, geom->minor * 2);
-          int startAngle = geom->startAngle * 16;
-          int spanAngle = (geom->endAngle - geom->startAngle) * 16;
-          item->setStartAngle(startAngle);
-          item->setSpanAngle(spanAngle);
-          item->setPos(geom->x, geom->y);
+          QGraphicsPathItem *item = new QGraphicsPathItem();
+          QPainterPath path;
+
+          double startAngle = (geom->startAngle);
+          double spanAngle =  (geom->endAngle - startAngle);
+
+          path.arcMoveTo(0, 0, geom->major * 2, geom->minor * 2, -startAngle);
+          path.arcTo(0, 0, geom->major * 2, geom->minor * 2, -startAngle, -spanAngle);
+          item->setTransformOriginPoint(geom->major, geom->minor);
+          item->setRotation(geom->angle);
+          item->setPath(path);
+          item->setPos(geom->x - geom->major, geom->y - geom->minor);
+          item->setPen(pen);
           group->addToGroup(item);
         } break;
         case DrawingGeometry::GENERIC: {
@@ -157,6 +180,7 @@ void CanvasView::drawViewPart(Drawing::FeatureViewPart *part)
           for(++it; it != geom->points.end(); ++it) {
               path.lineTo((*it).fX, (*it).fY);
           }
+          item->setPen(pen);
           item->setPath(path);
           group->addToGroup(item);
         } break;
@@ -164,6 +188,7 @@ void CanvasView::drawViewPart(Drawing::FeatureViewPart *part)
           break;
       }
     }
+    group->setFlag(QGraphicsItem::ItemIsMovable, true);
     this->scene()->addItem(group);
 }
 void CanvasView::setRenderer(RendererType type)
@@ -228,6 +253,6 @@ void CanvasView::wheelEvent(QWheelEvent *event)
     qreal factor = std::pow(1.2, -event->delta() / 240.0);
     scale(factor, factor);
     event->accept();
-} 
+}
 
 #include "moc_CanvasView.cpp"
