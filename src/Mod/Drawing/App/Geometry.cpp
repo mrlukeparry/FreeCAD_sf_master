@@ -76,57 +76,80 @@
 #include "Geometry.h"
 
 using namespace DrawingGeometry;
-  
+
 Ellipse::Ellipse(const BRepAdaptor_Curve& c)
 {
+    this->geomType = ELLIPSE;
+
     gp_Elips ellp = c.Ellipse();
     const gp_Pnt& p = ellp.Location();
-    
-    this->geomType = ELLIPSE;
+
     this->x = p.X();
     this->y = p.Y();
     this->major = ellp.MajorRadius();
     this->minor = ellp.MinorRadius();
+
+    gp_Dir xaxis = ellp.XAxis().Direction();
+    this->angle = xaxis.AngleWithRef(gp_Dir(1,0,0),gp_Dir(0,0,-1));
+    this->angle *= 180 / M_PI;
 }
 
 AOE::AOE(const BRepAdaptor_Curve& c) : Ellipse(c)
 {
-    double f = c.FirstParameter();
-    double l = c.LastParameter();
-    gp_Pnt s = c.Value(f);
-    gp_Pnt m = c.Value((l+f)/2.0);
-    gp_Pnt e = c.Value(l);
+    this->geomType = ARCOFELLIPSE;
 
-    gp_Vec v1(m,s);
-    gp_Vec v2(m,e);
-    gp_Vec v3(0,0,1);
+    gp_Pnt s = c.Value(c.LastParameter());
+    gp_Pnt e = c.Value(c.FirstParameter());
 
     double ax = s.X() - this->x;
     double ay = s.Y() - this->y;
     double bx = e.X() - this->x;
     double by = e.Y() - this->y;
 
-    this->geomType = ARCOFELLIPSE;
-    this->endAngle   = atan2(ay, ax) * 180 / M_PI;
-    this->startAngle = atan2(by, bx) * 180 / M_PI;
+    this->startAngle = atan2(ay,ax);
+    float range = atan2(-ay*bx+ax*by, ax*bx+ay*by);
 
-    if(v3.DotCross(v1,v2) > 0)
-        std::swap<double>(this->startAngle, this->endAngle);
+    this->endAngle = startAngle + range;
+    this->startAngle *= 180 / M_PI;
+    this->endAngle   *= 180 / M_PI;
 }
 
 Circle::Circle(const BRepAdaptor_Curve& c)
 {
+    this->geomType = CIRCLE;
+
     gp_Circ circ = c.Circle();
     const gp_Pnt& p = circ.Location();
 
-    this->geomType = CIRCLE;
     this->radius = circ.Radius();
     this->x = p.X();
     this->y = p.Y();
 }
 
+AOC::AOC(const BRepAdaptor_Curve& c) : Circle(c)
+{
+    this->geomType = ARCOFCIRCLE;
+    gp_Pnt s = c.Value(c.LastParameter());
+    gp_Pnt e = c.Value(c.FirstParameter());
+
+    double ax = s.X() - this->x;
+    double ay = s.Y() - this->y;
+    double bx = e.X() - this->x;
+    double by = e.Y() - this->y;
+
+    this->startAngle = atan2(ay,ax);
+    float range = atan2(-ay*bx+ax*by, ax*bx+ay*by);
+
+    this->endAngle = startAngle + range;
+    this->startAngle *= 180 / M_PI;
+    this->endAngle   *= 180 / M_PI;
+}
+
+
 Generic::Generic(const BRepAdaptor_Curve& c)
 {
+    this->geomType = GENERIC;
+
     TopLoc_Location location;
     Handle_Poly_Polygon3D polygon = BRep_Tool::Polygon3D(c.Edge(), location);
     if (!polygon.IsNull()) {
@@ -135,7 +158,6 @@ Generic::Generic(const BRepAdaptor_Curve& c)
              this->points.push_back(Base::Vector2D(nodes(i).X(), nodes(i).Y()));
         }
     }
-    this->geomType = GENERIC;
 }
 
 BSpline::BSpline(const BRepAdaptor_Curve& c)
@@ -194,33 +216,4 @@ BSpline::BSpline(const BRepAdaptor_Curve& c)
         this->segments.push_back(segment);
     }
     this->geomType = BSPLINE;
-}
-
-AOC::AOC(const BRepAdaptor_Curve& c) : Circle(c)
-{
-
-    double f = c.FirstParameter();
-    double l = c.LastParameter();
-    gp_Pnt s = c.Value(l);
-    gp_Pnt m = c.Value((l+f)/2.0);
-    gp_Pnt e = c.Value(f);
-
-    gp_Vec v1(m,s);
-    gp_Vec v2(m,e);
-    gp_Vec v3(0,0,1);
-    double a = v3.DotCross(v1,v2);
-    
-    double ax = s.X() - this->x;
-    double ay = s.Y() - this->y;
-    double bx = e.X() - this->x;
-    double by = e.Y() - this->y;
-
-    this->geomType = ARCOFCIRCLE;
-    this->startAngle = atan2(ay,ax);
-    float range = atan2(-ay*bx+ax*by,
-                  ax*bx+ay*by);
-    this->endAngle = startAngle + range;
-    this->startAngle *= 180 / M_PI;
-    this->endAngle   *= 180 / M_PI;
-
 }

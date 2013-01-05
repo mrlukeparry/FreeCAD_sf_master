@@ -315,11 +315,11 @@ bool DrawingView::onHasMsg(const char* pMsg) const
     if (strcmp("ViewFit",pMsg) == 0)
         return true;
     else if (strcmp("Print",pMsg) == 0)
-        return true; 
+        return true;
     else if (strcmp("PrintPreview",pMsg) == 0)
-        return true; 
+        return true;
     else if (strcmp("PrintPdf",pMsg) == 0)
-        return true; 
+        return true;
     return false;
 }
 

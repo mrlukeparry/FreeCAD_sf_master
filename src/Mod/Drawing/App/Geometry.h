@@ -27,8 +27,8 @@
 class BRepAdaptor_Curve;
 
 namespace DrawingGeometry {
-  
-enum ExtractionType { 
+
+enum ExtractionType {
       Plain = 0,
       WithHidden = 1,
       WithSmooth = 2
@@ -40,17 +40,17 @@ enum GeomType {
     ELLIPSE,
     ARCOFELLIPSE,
     BSPLINE,
-    GENERIC     
+    GENERIC
 };
-    
+
 class DrawingExport BaseGeom
 {
-public:  
+public:
    BaseGeom() {}
    ~BaseGeom() {}
-public:   
+public:
    GeomType geomType;
-   ExtractionType extractType;   
+   ExtractionType extractType;
 };
 
 class DrawingExport Circle: public BaseGeom
@@ -58,7 +58,7 @@ class DrawingExport Circle: public BaseGeom
 public:
   Circle(const BRepAdaptor_Curve &c);
   ~Circle() {}
-public: 
+public:
   double radius;
   double x;
   double y;
@@ -75,6 +75,7 @@ public:
   double y;
   double minor;
   double major;
+  double angle;
 };
 
 class DrawingExport AOE: public Ellipse
@@ -97,7 +98,7 @@ public:
   double endAngle;
 };
 
-struct BezierSegment 
+struct BezierSegment
 {
    int poles;
    Base::Vector2D pnts[4];
@@ -118,9 +119,9 @@ public:
   Generic(const BRepAdaptor_Curve& c);
   ~Generic() {}
   std::vector<Base::Vector2D> points;
-  
+
 };
 
-} 
+}
 
 #endif //DRAWING_GEOMETRY_H
