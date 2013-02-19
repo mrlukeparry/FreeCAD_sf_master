@@ -128,13 +128,13 @@ static PyObject *test(PyObject *self, PyObject *args)
 {
 //	Cam::PyTPGManager().test();
     Cam::TPGFactory().scanPlugins();
-	vector<Cam::TPGDescriptor*> *plugins = Cam::TPGFactory().getDescriptors();
+    Cam::TPGDescriptorCollection *plugins = Cam::TPGFactory().getDescriptors();
 	for (int i = 0; i < plugins->size(); i++)
-		(*plugins)[i]->print();
+		plugins->at(i)->print();
 
 	if (plugins->size() > 0)
 	{
-	    Cam::TPGDescriptor* descriptor = (*plugins)[0];
+	    Cam::TPGDescriptor* descriptor = plugins->at(0);
         Cam::TPG *tpg = descriptor->make();
         if (tpg != NULL) {
             QString desc = tpg->getDescription();
@@ -149,7 +149,7 @@ static PyObject *test(PyObject *self, PyObject *args)
                 settings->print();
                 delete settings;
             }
-            delete tpg;
+            tpg->release();
         }
         else {
             printf("Unable to make TPG with id: [%s]\n", ts(descriptor->id));

@@ -20,53 +20,81 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef TOOLPATH_H_
-#define TOOLPATH_H_
+#ifndef TPGDESCRIPTORCOLLECTION_H_
+#define TPGDESCRIPTORCOLLECTION_H_
 
-#include <qstringlist.h>
-#include <qstring.h>
-
-namespace Cam {
-class ToolPath;
-}
+#include <vector>
 
 #include "TPG.h"
+#include "TPGDescriptor.h"
 
 namespace Cam {
 
-/**
- * Stores the Tool Path output from a single TPG.
- */
-class ToolPath {
+class TPGDescriptorCollection {
+public:
+    TPGDescriptorCollection();
+
+    /**
+     * Increases reference count
+     * Note: it returns a pointer to this for convenience.
+     */
+    TPGDescriptorCollection *grab();
+
+    /**
+     * Decreases reference count and deletes self if no other references
+     */
+    void release();
+
+    /**
+     * Adds a TPGDescriptor to the collection
+     */
+    void add(TPGDescriptor* descriptor);
+
+    /**
+     * Absorbs the TPGDescriptors from the given collection.
+     *
+     * The other collection will be emptied but not released.
+     */
+    void absorb(TPGDescriptorCollection &other);
+
+    /**
+     * Removes a TPG from the collection
+     */
+//    void del(TPG* tpg);
+
+    /**
+     * Get the number of items in this collection
+     */
+    size_t size();
+
+    /**
+     * Get the TPG at the given position
+     */
+    TPGDescriptor* at(size_t pos);
+
+    /**
+     * Makes a duplicate copy of this collection.  It will create a new object
+     * and grab a new reference to each TPGDescriptor.
+     */
+    TPGDescriptorCollection* clone();
+
+    /**
+     * Calls a function for each element of in collection and assigns the element to is returned value
+     */
+    void onEach(void*func(TPGDescriptor*, void*), void *param);
+
+    void print() {
+        printf("TPGDescriptorCollection: (refs: %i)\n", refcnt);
+//        for (size_t i = 0; i < descriptors.size(); i++)
+//            printf("- %p\n", descriptors.at(i));
+    }
 
 protected:
-    TPG *source;
-    QStringList *toolpath;
+    int refcnt;
+    std::vector<TPGDescriptor*> descriptors;
 
-public:
-    ToolPath(TPG* source);
-    virtual ~ToolPath();
-
-    /**
-     * Add a single toolpath command to the ToolPath
-     */
-    void addToolPath(QString tp);
-
-    /**
-     * Clear out the toolpath.
-     */
-    void clear();
-
-    /**
-     * Get the TPG that created this toolpath
-     */
-    TPG *getSource();
-
-    /**
-     * Get the Toolpath as strings
-     */
-    QStringList *getToolPath();
+    virtual ~TPGDescriptorCollection();
 };
 
 } /* namespace Cam */
-#endif /* TOOLPATH_H_ */
+#endif /* TPGDESCRIPTORCOLLECTION_H_ */

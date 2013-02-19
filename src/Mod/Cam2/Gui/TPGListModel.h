@@ -38,10 +38,10 @@ class TPGListModel: public QAbstractListModel {
   Q_OBJECT
 
 protected:
-  std::vector<Cam::TPGDescriptor*> *tpgs;
+  Cam::TPGDescriptorCollection *tpgs;
 
 public:
-  TPGListModel(std::vector<Cam::TPGDescriptor*> *tpgs, QObject *parent=0);
+  TPGListModel(Cam::TPGDescriptorCollection *tpgs, QObject *parent=0);
   virtual ~TPGListModel();
 
   /**

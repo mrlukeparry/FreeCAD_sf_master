@@ -25,8 +25,13 @@
 
 #include <vector>
 
+namespace Cam {
+class CppTPGPlugin;
+}
+
 #include "TPGFactory.h"
 #include "CppTPG.h"
+#include "TPGDescriptorCollection.h"
 
 namespace Cam {
 
@@ -37,14 +42,18 @@ namespace Cam {
  */
 class CppTPGPlugin {
 protected:
+    int refcnt; ///< reference counter
+
     QString filename; ///< the filename of the shared object file
     void* library; ///< a pointer to the library when its open
     getDescriptors_t* getDescriptorsPtr; ///< pointer to lib function
-    delDescriptors_t* delDescriptorsPtr; ///< pointer to lib function
     getTPG_t* getTPGPtr; ///< pointer to lib function
-    delTPG_t* delTPGPtr; ///< pointer to lib function
+//    delDescriptors_t* delDescriptorsPtr; ///< pointer to lib function
+//    delTPG_t* delTPGPtr; ///< pointer to lib function
 
-    std::vector<TPGDescriptor*> *descriptors; ///< a cache for the descriptors from the library.
+//    std::vector<TPGDescriptor*> *descriptors;
+    TPGDescriptorCollection *descriptors; ///< a cache for the descriptors from the library.
+
     /**
      * Makes sure library is open, attempts to open it if it isn't.
      */
@@ -62,14 +71,14 @@ public:
     QString error; ///< if there is a library error the result of dlerror() is stored here.
 
     /**
-     * Returns a list of TPG's that this plugin provides
-     * Note: the list is owned by the caller and must be deleted when finished with it.
+     * Returns a collection of TPG's (descriptors) that this plugin provides
+     * Note: the list is owned by the caller and must be released when finished with it.
      */
-    std::vector<TPGDescriptor*>* getDescriptors();
+    Cam::TPGDescriptorCollection* getDescriptors();
 
     /**
      * Gets an instance of the TPG.
-     * Note: the TPG returned is a wrapper around the implementation.  Delete
+     * Note: the TPG returned is a wrapper around the implementation.  Release
      * it once you are finished with it and it will automatically delete the
      * implementation using the delTPG(tpg) method below
      */
@@ -78,7 +87,17 @@ public:
     /**
      * Used by the CppTPGWrapper to delete its implementation.
      */
-    void delTPG(TPG* tpg);
+//    void delTPG(TPG* tpg);
+
+    /**
+     * Increases reference count
+     */
+    CppTPGPlugin* grab();
+
+    /**
+     * Decreases reference count and deletes self if no other references
+     */
+    void release();
 };
 
 } /* namespace CamGui */

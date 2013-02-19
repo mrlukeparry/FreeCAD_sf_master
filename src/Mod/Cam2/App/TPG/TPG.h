@@ -48,7 +48,7 @@ namespace Cam
 
 class TPGFeature;
 class TPGSettings;
-class TPG;
+//class TPG;
 
 class CamExport TPG : public Base::BaseClass
 {
@@ -81,11 +81,6 @@ public:
      */
     TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription);
 
-    /**
-     * Default Destructor
-     */
-    ~TPG();
-
     virtual void initialise(TPGFeature *feat);
     virtual void initialiseSettings();
 
@@ -111,13 +106,23 @@ public:
     virtual void run(TPGSettings *settings, QString action);
 
     /**
-     * Returns the toolpath from the last
+     * Returns the toolpath from the last run
      */
     virtual ToolPath *getToolPath() = 0;
 
     virtual QString getId() { return id; }
     virtual QString getName() { return name; }
-    virtual QString getDescription() { printf("TPG.getDescription()\n"); return description; }
+    virtual QString getDescription() { return description; }
+
+    /**
+     * Increases reference count
+     */
+    void grab();
+
+    /**
+     * Decreases reference count and deletes self if no other references
+     */
+    void release();
 
     /* [arobinson] Commented all this out until it is needed, it was making
          * things more complex when making the of the Python API
@@ -174,6 +179,13 @@ protected:
     State        state;
     */
 
+    /**
+     * Default Destructor
+     *
+     * (protected to force use of reference counting)
+     */
+    virtual ~TPG();
+
     // [mrlukeparry] Prefer to use QString because it gives UTF compatible strings
     QString id; // To gerenate a new id run import uuid; str(uuid.uuid1()); on the python console
     QString name;
@@ -181,6 +193,8 @@ protected:
 
     std::vector<QString> actions; ///< e.g ['action','action2',...]
     std::map<QString, TPGSettings*> settings; ///< e.g. settings[<action>]
+
+    int refcnt; ///< reference counter
 
 private:
 //    TPGFeature  *tpgFeat; //Subclasses shouldn't need to know about this

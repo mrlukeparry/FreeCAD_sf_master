@@ -133,9 +133,10 @@ void UIManagerInst::reloadTPGs()
     Cam::TPGFactory().scanPlugins();
 
     // get the TPGs
-    std::vector<Cam::TPGDescriptor*> *plugins = Cam::TPGFactory().getDescriptors();
+    Cam::TPGDescriptorCollection *plugins = Cam::TPGFactory().getDescriptors();
 
     CamGui::TPGListModel *model = new CamGui::TPGListModel(plugins);
+    plugins->release();
     Q_EMIT updatedTPGList(model);
 }
 

@@ -28,13 +28,15 @@
 
 namespace CamGui {
 
-TPGListModel::TPGListModel(std::vector<Cam::TPGDescriptor*> *tpgs, QObject *parent)
+TPGListModel::TPGListModel(Cam::TPGDescriptorCollection *tpgs, QObject *parent)
   : QAbstractListModel(parent)
 {
-  this->tpgs = tpgs;
+    this->tpgs = tpgs->grab();
 }
 
 TPGListModel::~TPGListModel() {
+    if (tpgs != NULL)
+        tpgs->release();
 }
 
 int TPGListModel::rowCount(const QModelIndex& parent) const {
@@ -50,7 +52,7 @@ QVariant TPGListModel::data(const QModelIndex& index, int role) const {
     return QVariant();
   if (role == Qt::DisplayRole) {
     if (tpgs != NULL && tpgs->size() > index.row()) {
-      Cam::TPGDescriptor* tpg = (*tpgs)[index.row()];
+      Cam::TPGDescriptor* tpg = tpgs->at(index.row());
       return QVariant(tpg->name);
     }
   }

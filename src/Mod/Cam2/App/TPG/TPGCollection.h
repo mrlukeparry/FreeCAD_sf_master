@@ -20,53 +20,70 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef TOOLPATH_H_
-#define TOOLPATH_H_
+#ifndef TPGCOLLECTION_H_
+#define TPGCOLLECTION_H_
 
-#include <qstringlist.h>
-#include <qstring.h>
-
-namespace Cam {
-class ToolPath;
-}
+#include <vector>
 
 #include "TPG.h"
 
 namespace Cam {
 
-/**
- * Stores the Tool Path output from a single TPG.
- */
-class ToolPath {
 
+/**
+ * A reference counted collection of TPG's
+ */
+class TPGCollection {
 protected:
-    TPG *source;
-    QStringList *toolpath;
+    std::vector<TPG*> tpgs;
+
+    int refcnt;
+
+    /**
+     * Protected destructor to force use of refcount functions
+     */
+    virtual ~TPGCollection();
 
 public:
-    ToolPath(TPG* source);
-    virtual ~ToolPath();
+    TPGCollection();
 
     /**
-     * Add a single toolpath command to the ToolPath
+     * Increases reference count
      */
-    void addToolPath(QString tp);
+    void grab();
 
     /**
-     * Clear out the toolpath.
+     * Decreases reference count and deletes self if no other references
      */
-    void clear();
+    void release();
 
     /**
-     * Get the TPG that created this toolpath
+     * Adds a TPG to the collection
      */
-    TPG *getSource();
+    void add(TPG* tpg);
 
     /**
-     * Get the Toolpath as strings
+     * Absorbs the TPGs from the given collection.
+     *
+     * The other collection will be emptied but not released.
      */
-    QStringList *getToolPath();
+    void absorb(TPGCollection &other);
+
+    /**
+     * Removes a TPG from the collection
+     */
+//    void del(TPG* tpg);
+
+    /**
+     * Get the number of items in this collection
+     */
+    size_t size();
+
+    /**
+     * Get the TPG at the given position
+     */
+    TPG* at(size_t pos);
 };
 
 } /* namespace Cam */
-#endif /* TOOLPATH_H_ */
+#endif /* TPGCOLLECTION_H_ */

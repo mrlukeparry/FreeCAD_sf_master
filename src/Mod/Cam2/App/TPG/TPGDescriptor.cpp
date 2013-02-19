@@ -19,54 +19,12 @@
  *   Suite 330, Boston, MA  02111-1307, USA                                *
  *                                                                         *
  ***************************************************************************/
+#include "../PreCompiled.h"
+#ifndef _PreComp_
+#endif
 
-#ifndef TOOLPATH_H_
-#define TOOLPATH_H_
-
-#include <qstringlist.h>
-#include <qstring.h>
-
-namespace Cam {
-class ToolPath;
-}
-
-#include "TPG.h"
+#include "TPGDescriptor.h"
 
 namespace Cam {
-
-/**
- * Stores the Tool Path output from a single TPG.
- */
-class ToolPath {
-
-protected:
-    TPG *source;
-    QStringList *toolpath;
-
-public:
-    ToolPath(TPG* source);
-    virtual ~ToolPath();
-
-    /**
-     * Add a single toolpath command to the ToolPath
-     */
-    void addToolPath(QString tp);
-
-    /**
-     * Clear out the toolpath.
-     */
-    void clear();
-
-    /**
-     * Get the TPG that created this toolpath
-     */
-    TPG *getSource();
-
-    /**
-     * Get the Toolpath as strings
-     */
-    QStringList *getToolPath();
-};
 
 } /* namespace Cam */
-#endif /* TOOLPATH_H_ */

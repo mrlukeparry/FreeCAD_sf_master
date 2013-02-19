@@ -36,8 +36,9 @@ CppTPGWrapper::CppTPGWrapper(TPG *impl, CppTPGPlugin *plugin)
 
 CppTPGWrapper::~CppTPGWrapper() {
     // cleanup through the library that created this implementation
-    if (plugin != NULL && impl != NULL)
-        plugin->delTPG(impl);
+    // Now not used (as it is deleted via the release method
+//    if (plugin != NULL && impl != NULL)
+//        plugin->delTPG(impl);
 }
 
 /**

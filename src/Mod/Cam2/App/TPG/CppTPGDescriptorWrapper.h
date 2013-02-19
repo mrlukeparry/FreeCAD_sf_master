@@ -39,10 +39,10 @@ class CppTPGDescriptorWrapper: public TPGDescriptor {
 protected:
     TPGDescriptor *descriptor;
     CppTPGPlugin *plugin;
+    virtual ~CppTPGDescriptorWrapper();
 
 public:
     CppTPGDescriptorWrapper(TPGDescriptor *descriptor, CppTPGPlugin *plugin=NULL);
-    virtual ~CppTPGDescriptorWrapper();
 
     /**
      * Creates a new instance of this TPG.  Sub-classes need to implement this

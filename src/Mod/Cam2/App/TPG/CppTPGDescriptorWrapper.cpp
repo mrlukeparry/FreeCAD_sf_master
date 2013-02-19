@@ -38,6 +38,8 @@ CppTPGDescriptorWrapper::CppTPGDescriptorWrapper(TPGDescriptor *descriptor, CppT
 }
 
 CppTPGDescriptorWrapper::~CppTPGDescriptorWrapper() {
+    if (descriptor != NULL)
+        descriptor->release();
 }
 
 /**

@@ -20,53 +20,32 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef TOOLPATH_H_
-#define TOOLPATH_H_
+#include "../PreCompiled.h"
+#ifndef _PreComp_
+#endif
 
-#include <qstringlist.h>
-#include <qstring.h>
+#include "CppTPG.h"
 
 namespace Cam {
-class ToolPath;
+
+
+CppTPG::CppTPG() : TPG() {
+    plugin = NULL;
+}
+CppTPG::~CppTPG() {
+    if (plugin != NULL)
+        plugin->release();
 }
 
-#include "TPG.h"
-
-namespace Cam {
-
 /**
- * Stores the Tool Path output from a single TPG.
+ * Set the plugin that was used to create this create this instance.
+ *
+ * This is so it can obtain a reference to it and thus cause the plugin to
+ * stay open until this instance is released.
  */
-class ToolPath {
+void CppTPG::setPlugin(CppTPGPlugin* plugin) {
+    this->plugin = plugin->grab();
+}
 
-protected:
-    TPG *source;
-    QStringList *toolpath;
+}
 
-public:
-    ToolPath(TPG* source);
-    virtual ~ToolPath();
-
-    /**
-     * Add a single toolpath command to the ToolPath
-     */
-    void addToolPath(QString tp);
-
-    /**
-     * Clear out the toolpath.
-     */
-    void clear();
-
-    /**
-     * Get the TPG that created this toolpath
-     */
-    TPG *getSource();
-
-    /**
-     * Get the Toolpath as strings
-     */
-    QStringList *getToolPath();
-};
-
-} /* namespace Cam */
-#endif /* TOOLPATH_H_ */

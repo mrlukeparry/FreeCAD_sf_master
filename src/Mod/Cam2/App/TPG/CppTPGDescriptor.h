@@ -28,11 +28,23 @@
 namespace Cam {
 
 class CppTPGDescriptor: public Cam::TPGDescriptor {
+protected:
+    int refcount;
+
 public:
     CppTPGDescriptor(QString id, QString name, QString description);
     virtual ~CppTPGDescriptor();
 
     TPG* make();
+
+    void incref() {
+        refcount++;
+    }
+    void decref() {
+        refcount--;
+        if (refcount < 1)
+            delete this;
+    }
 };
 
 } /* namespace Cam */

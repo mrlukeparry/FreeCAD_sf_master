@@ -35,10 +35,12 @@ namespace Cam {
  * This is an example C++ TPG that is inside TestPlugin.so
  * Note: Not yet implemented
  */
-class CppExampleTPG : public TPG {
+class CppExampleTPG : public CppTPG {
+protected:
+    virtual ~CppExampleTPG();
+
 public:
     CppExampleTPG();
-    virtual ~CppExampleTPG();
 
     /**
      * Run the TPG to generate the ToolPath code.
