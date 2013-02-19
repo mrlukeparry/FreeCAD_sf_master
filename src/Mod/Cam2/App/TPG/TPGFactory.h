@@ -31,6 +31,8 @@
 
 #include "TPG.h"
 //#include "../Support.h"
+#include "TPGDescriptor.h"
+#include "TPGDescriptorCollection.h"
 
 #define PYTHON_TPG  1
 #define CPP_TPG     2
@@ -41,59 +43,7 @@ namespace Cam
 
 //class TPG;
 
-/**
- * A superclass for TPG Descriptors.  These describe the basic information
- * about a TPG and contain a method to create a new instance of this TPG.
- */
-class TPGDescriptor
-{
-public:
-  QString id;
-  QString name;
-  QString description;
 
-  QString type; // subclasses should set this to their classname in the constructor
-
-  TPGDescriptor(QString id, QString name, QString description, QString type) {
-    this->id          = id;
-    this->name        = name;
-    this->description = description;
-    this->type        = type;
-  }
-  /// Convenience method for using plain ascii string
-  TPGDescriptor(const char *id, const char * name, const char * description, const char * type) {
-    this->id          = QString::fromAscii(id);
-    this->name        = QString::fromAscii(name);
-    this->description = QString::fromAscii(description);
-    this->type        = QString::fromAscii(type);
-  }
-  TPGDescriptor(const TPGDescriptor &copy) {
-      this->id = copy.id;
-      this->name = copy.name;
-      this->description = copy.description;
-      this->type = copy.type;
-  }
-  TPGDescriptor(const TPGDescriptor *copy) {
-      this->id = copy->id;
-      this->name = copy->name;
-      this->description = copy->description;
-      this->type = copy->type;
-  }
-  virtual ~TPGDescriptor() {}
-
-  /**
-   * Creates a new instance of this TPG.  Sub-classes need to implement this
-   */
-  virtual Cam::TPG* make() = 0;
-  virtual void print()
-  {
-    printf("- ('%s', '%s', '%s', '%s')\n",
-        id.toAscii().constData(),
-        name.toAscii().constData(),
-        description.toAscii().constData(),
-        type.toAscii().constData());
-  }
-};
 
 /**
   * The actual static initialisation of the TPGFactory that stores the list of tpgLists
@@ -101,7 +51,7 @@ public:
 class TPGFactoryInstP
 {
 public:
-  std::vector<TPGDescriptor*> tpgList;
+    Cam::TPGDescriptorCollection* descriptors;
 };
 
 class CamExport TPGFactoryInst
@@ -120,12 +70,12 @@ public:
   /**
    * Get a vector of all Python TPG's that are known about
    */
-  std::vector<TPGDescriptor*>* getDescriptors();
+  Cam::TPGDescriptorCollection* getDescriptors();
 
-  /**
-   * @deprecated, use getDescriptors() instead
-   */
-  const std::vector<TPGDescriptor*> & getPluginList() { return d->tpgList; }
+//  /**
+//   * @deprecated, use getDescriptors() instead
+//   */
+//  const std::vector<TPGDescriptor*> & getPluginList() { return d->descriptors; }
 
 private:
   TPGFactoryInst(void);

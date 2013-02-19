@@ -22,6 +22,7 @@ set(Cam_LIBS
 )
 
 add_subdirectory(Libs)
+add_subdirectory(Plugins)
 
 # generate_from_xml(CamPy)
 
@@ -49,6 +50,10 @@ SET(TPG_SRCS
     TPG/TPG.h
     TPG/TPGCache.cpp
     TPG/TPGCache.h
+    TPG/TPGDescriptor.cpp
+    TPG/TPGDescriptor.h
+    TPG/TPGDescriptorCollection.cpp
+    TPG/TPGDescriptorCollection.h
     TPG/TPGFactory.cpp
     TPG/TPGFactory.h
     TPG/TPGLib.cpp
@@ -70,6 +75,7 @@ SET(TPG_SRCS
     TPG/PyToolPath.h
     
     TPG/CppTPG.h
+    TPG/CppTPG.cpp
     TPG/CppTPGDescriptor.cpp
     TPG/CppTPGDescriptor.h
     TPG/CppTPGDescriptorWrapper.cpp
@@ -78,8 +84,8 @@ SET(TPG_SRCS
     TPG/CppTPGFactory.h
     TPG/CppTPGPlugin.cpp
     TPG/CppTPGPlugin.h
-    TPG/CppTPGWrapper.cpp
-    TPG/CppTPGWrapper.h
+    # TPG/CppTPGWrapper.cpp
+    # TPG/CppTPGWrapper.h
 )
 SOURCE_GROUP("TPG" FILES ${TPG_SRCS})
 

@@ -22,9 +22,8 @@
 
 #include "../PreCompiled.h"
 #ifndef _PreComp_
-#endif
-
 #include <cstring>
+#endif
 
 #include "ToolPath.h"
 
@@ -32,7 +31,7 @@ namespace Cam {
 
 ToolPath::ToolPath(TPG* source) {
     this->source = source;
-    this->toolpath = new std::vector<QString>();
+    this->toolpath = new QStringList();
 }
 
 ToolPath::~ToolPath() {
@@ -45,7 +44,7 @@ ToolPath::~ToolPath() {
  */
 void ToolPath::addToolPath(QString tp) {
     if (this->toolpath == NULL)
-        this->toolpath = new std::vector<QString>();
+        this->toolpath = new QStringList();
     this->toolpath->push_back(tp);
 }
 
@@ -67,7 +66,7 @@ TPG *ToolPath::getSource() {
 /**
  * Get the Toolpath as strings
  */
-std::vector<QString> *ToolPath::getToolPath() {
+QStringList *ToolPath::getToolPath() {
     return this->toolpath;
 }
 

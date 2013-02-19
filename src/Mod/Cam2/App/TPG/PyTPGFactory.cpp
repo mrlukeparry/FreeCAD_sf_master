@@ -157,7 +157,7 @@ void PyTPGFactoryInst::scanPlugins() {
                 std::vector<Cam::TPGDescriptor*>::iterator it =
                         this->tpgs.begin();
                 for (; it != this->tpgs.end(); ++it)
-                    delete (*it);
+                    (*it)->release();
                 this->tpgs.clear();
 
                 // add the new items

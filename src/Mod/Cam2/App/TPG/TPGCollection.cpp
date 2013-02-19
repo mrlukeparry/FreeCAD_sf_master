@@ -20,53 +20,86 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef TOOLPATH_H_
-#define TOOLPATH_H_
+#include "../PreCompiled.h"
+#ifndef _PreComp_
+#endif
 
-#include <qstringlist.h>
-#include <qstring.h>
+#include "TPGCollection.h"
 
 namespace Cam {
-class ToolPath;
+
+TPGCollection::TPGCollection() {
+    this->refcnt = 1;
 }
 
-#include "TPG.h"
+TPGCollection::~TPGCollection() {
+    //TODO: make this thread-safe
+    for (size_t i = 0; i < tpgs.size(); i++)
+        tpgs.at(i)->release();
+    tpgs.empty();
+}
 
-namespace Cam {
+
 
 /**
- * Stores the Tool Path output from a single TPG.
+ * Increases reference count
  */
-class ToolPath {
+void TPGCollection::grab() {
+    this->refcnt++;
+}
 
-protected:
-    TPG *source;
-    QStringList *toolpath;
+/**
+ * Decreases reference count and deletes self if no other references
+ */
+void TPGCollection::release() {
+    this->refcnt--;
+    if (this->refcnt <= 0)
+        delete this;
+}
 
-public:
-    ToolPath(TPG* source);
-    virtual ~ToolPath();
+/**
+ * Adds a TPG to the collection
+ */
+void TPGCollection::add(TPG* tpg) {
+    tpg->grab();
+    tpgs.push_back(tpg);
+}
 
-    /**
-     * Add a single toolpath command to the ToolPath
-     */
-    void addToolPath(QString tp);
+/**
+ * Absorbs the TPGs from the given collection.
+ *
+ * The other collection will be emptied but not released.  NOTE: the reference
+ * to the TPGs in other will be 'stolen'.
+ */
+void TPGCollection::absorb(TPGCollection &other) {
+    //TODO: make this thread-safe
+    size_t cnt = other.tpgs.size();
+    for (size_t i = 0; i < cnt; i++) {
+        tpgs.push_back(other.tpgs.at(i));
+    }
+    other.tpgs.empty();
+}
 
-    /**
-     * Clear out the toolpath.
-     */
-    void clear();
+/**
+ * Removes a TPG from the collection
+ */
+//void TPGCollection::del(TPG* tpg);
 
-    /**
-     * Get the TPG that created this toolpath
-     */
-    TPG *getSource();
+/**
+ * Get the number of items in this collection
+ */
+size_t TPGCollection::size() {
+    return tpgs.size();
+}
 
-    /**
-     * Get the Toolpath as strings
-     */
-    QStringList *getToolPath();
-};
+/**
+ * Get the TPG at the given position
+ */
+TPG* TPGCollection::at(size_t pos) {
+    if (pos >= 0 && pos < tpgs.size())
+        return tpgs.at(pos);
+    return NULL;
+}
+
 
 } /* namespace Cam */
-#endif /* TOOLPATH_H_ */
