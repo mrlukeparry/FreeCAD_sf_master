@@ -55,7 +55,8 @@ public:
      *
      * The other collection will be emptied but not released.
      */
-    void absorb(TPGDescriptorCollection &other);
+
+    void absorb(TPGDescriptorCollection *other);
 
     /**
      * Removes a TPG from the collection

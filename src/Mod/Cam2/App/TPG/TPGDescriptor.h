@@ -87,8 +87,9 @@ public:
     /**
      * Increases reference count
      */
-    void grab() {
+    TPGDescriptor *grab() {
         refcnt++;
+        printf("Grab     TPGDescriptor: %p (%i)\n", this, refcnt);
     }
 
     /**
@@ -96,7 +97,8 @@ public:
      */
     void release() {
         refcnt--;
-        if (refcnt <= 0)
+        printf("Release  TPGDescriptor: %p (%i)\n", this, refcnt);
+        if (refcnt == 0)
             delete this;
     }
 

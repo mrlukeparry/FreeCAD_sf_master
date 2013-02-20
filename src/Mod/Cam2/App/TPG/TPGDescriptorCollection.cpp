@@ -64,9 +64,8 @@ void TPGDescriptorCollection::release() {
  * Adds a TPG to the collection
  */
 void TPGDescriptorCollection::add(TPGDescriptor* descriptor) {
-    descriptor->grab();
     printf("TPGDescriptorCollection (%p): Adding %p\n", this, descriptor);
-    descriptors.push_back(descriptor);
+    descriptors.push_back(descriptor->grab());
 }
 
 /**
@@ -74,13 +73,20 @@ void TPGDescriptorCollection::add(TPGDescriptor* descriptor) {
  *
  * The other collection will be emptied but not released.
  */
-void TPGDescriptorCollection::absorb(TPGDescriptorCollection &other) {
+
+void TPGDescriptorCollection::absorb(TPGDescriptorCollection *other) {
     //TODO: make this thread-safe
-    size_t cnt = other.descriptors.size();
+    size_t cnt = other->descriptors.size();
     for (size_t i = 0; i < cnt; i++) {
-        descriptors.push_back(other.descriptors.at(i));
+        descriptors.push_back(other->descriptors.at(i));
     }
-    other.descriptors.empty();
+    printf("TPGDescriptorCollection::absorb: %p contains:\n", this);
+    for (size_t i = 0; i < descriptors.size(); i++)
+        printf("- %p\n", descriptors.at(i));
+    printf("TPGDescriptorCollection::absorb: %p other contained:\n", this);
+    for (size_t i = 0; i < other->descriptors.size(); i++)
+        printf("- %p\n", other->descriptors.at(i));
+    other->descriptors.empty();
 }
 
 /**
@@ -114,9 +120,17 @@ TPGDescriptorCollection* TPGDescriptorCollection::clone() {
     TPGDescriptorCollection* copy = new TPGDescriptorCollection();
 
     for (size_t i = 0; i < descriptors.size(); i++) {
+<<<<<<< HEAD
         TPGDescriptor *desc = descriptors.at(i);
         desc->grab();
         copy->descriptors.push_back(desc);
+=======
+        printf("TPGDescriptorCollection::clone(): 1\n");
+        TPGDescriptor *desc = descriptors.at(i);
+        printf("TPGDescriptorCollection::clone(): 2\n");
+        copy->descriptors.push_back(desc->grab());
+        printf("TPGDescriptorCollection::clone(): 3\n");
+>>>>>>> Refactor new files
     }
 
     return copy;
