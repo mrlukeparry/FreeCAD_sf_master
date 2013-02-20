@@ -56,7 +56,7 @@ TPGDescriptorCollection *TPGDescriptorCollection::grab() {
  */
 void TPGDescriptorCollection::release() {
     refcnt--;
-    if (refcnt <= 0)
+    if (refcnt == 0)
         delete this;
 }
 
@@ -80,12 +80,12 @@ void TPGDescriptorCollection::absorb(TPGDescriptorCollection *other) {
     for (size_t i = 0; i < cnt; i++) {
         descriptors.push_back(other->descriptors.at(i));
     }
-    printf("TPGDescriptorCollection::absorb: %p contains:\n", this);
-    for (size_t i = 0; i < descriptors.size(); i++)
-        printf("- %p\n", descriptors.at(i));
-    printf("TPGDescriptorCollection::absorb: %p other contained:\n", this);
-    for (size_t i = 0; i < other->descriptors.size(); i++)
-        printf("- %p\n", other->descriptors.at(i));
+//    printf("TPGDescriptorCollection::absorb: %p contains:\n", this);
+//    for (size_t i = 0; i < descriptors.size(); i++)
+//        printf("- %p\n", descriptors.at(i));
+//    printf("TPGDescriptorCollection::absorb: %p other contained:\n", this);
+//    for (size_t i = 0; i < other->descriptors.size(); i++)
+//        printf("- %p\n", other->descriptors.at(i));
     other->descriptors.empty();
 }
 
