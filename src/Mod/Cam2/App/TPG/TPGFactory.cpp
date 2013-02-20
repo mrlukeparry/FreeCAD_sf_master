@@ -107,12 +107,11 @@ void TPGFactoryInst::scanPlugins(short tpgtype /*= ALL_TPG*/) {
     clearDescriptors();
 
     // update cache
-    std::vector<TPGDescriptor*>* t = Cam::PyTPGFactory().getDescriptors();
-    for (std::vector<TPGDescriptor*>::iterator it = t->begin(); it != t->end(); ++it)
-        d->descriptors->add(*it);
-    delete t;
-    Cam::TPGDescriptorCollection *descs = Cam::CppTPGFactory().getDescriptors();
-    d->descriptors->absorb(*descs);
+    Cam::TPGDescriptorCollection *descs = Cam::PyTPGFactory().getDescriptors();
+    d->descriptors->absorb(descs);
+    descs->release();
+    descs = Cam::CppTPGFactory().getDescriptors();
+    d->descriptors->absorb(descs);
     descs->release();
 }
 

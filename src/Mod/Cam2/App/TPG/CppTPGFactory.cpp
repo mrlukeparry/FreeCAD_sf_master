@@ -110,7 +110,7 @@ TPGDescriptorCollection* CppTPGFactoryInst::getDescriptors()
         for (std::vector<CppTPGPlugin*>::iterator it = plugins.begin(); it != plugins.end(); ++it) {
             Cam::TPGDescriptorCollection* tpgcollection = (*it)->getDescriptors();
             if (tpgcollection != NULL) {
-                descriptors->absorb(*tpgcollection);
+                descriptors->absorb(tpgcollection);
                 tpgcollection->release();
             }
         }

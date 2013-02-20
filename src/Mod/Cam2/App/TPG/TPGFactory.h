@@ -52,6 +52,10 @@ class TPGFactoryInstP
 {
 public:
     Cam::TPGDescriptorCollection* descriptors;
+
+    TPGFactoryInstP() {
+        descriptors = NULL;
+    }
 };
 
 class CamExport TPGFactoryInst

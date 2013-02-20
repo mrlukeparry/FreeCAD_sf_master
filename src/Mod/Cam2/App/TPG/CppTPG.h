@@ -58,7 +58,9 @@ typedef CppTPG* getTPG_t(QString);
 #define CPPTPG_API_SOURCE(_type_, _id_, _name_, _desc_)\
 extern "C" Cam::TPGDescriptorCollection* getDescriptors() {\
     Cam::TPGDescriptorCollection* descriptors = new Cam::TPGDescriptorCollection();\
-    descriptors->add(_TPGDescriptor(_type_, _id_, _name_, _desc_));\
+    Cam::TPGDescriptor *descriptor = _TPGDescriptor(_type_, _id_, _name_, _desc_);\
+    descriptors->add(descriptor);\
+    descriptor->release();\
     return descriptors;\
 }\
 extern "C" Cam::CppTPG* getTPG(QString id) {\

@@ -98,7 +98,7 @@ public:
      */
     void release() {
         refcnt--;
-        if (refcnt <= 0)
+        if (refcnt == 0)
             delete this;
     }
 

@@ -31,6 +31,7 @@
 #include <vector>
 #include <qstring.h>
 
+#include "TPGDescriptorCollection.h"
 #include "TPGPython.h"
 #include "TPGFactory.h"
 
@@ -48,7 +49,8 @@ protected:
 	PyTPGFactoryInst();
 	~PyTPGFactoryInst();
 
-	std::vector<TPGDescriptor *> tpgs;
+//	std::vector<TPGDescriptor *> tpgs;
+    TPGDescriptorCollection* descriptors;
 
 
     QString PythonUCToQString(PyObject *obj);
@@ -89,7 +91,8 @@ public:
     /**
      * Get a vector of all Python TPG's that are known about
      */
-    std::vector<TPGDescriptor*>* getDescriptors();
+//    std::vector<TPGDescriptor*>* getDescriptors();
+    TPGDescriptorCollection* getDescriptors();
 
 	/**
 	 * Gets a TPG given its id.
