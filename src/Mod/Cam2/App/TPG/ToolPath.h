@@ -23,7 +23,7 @@
 #ifndef TOOLPATH_H_
 #define TOOLPATH_H_
 
-#include <vector>
+#include <qstringlist.h>
 #include <qstring.h>
 
 namespace Cam {
@@ -41,7 +41,7 @@ class ToolPath {
 
 protected:
     TPG *source;
-    std::vector<QString> *toolpath;
+    QStringList *toolpath;
 
 public:
     ToolPath(TPG* source);
@@ -65,7 +65,7 @@ public:
     /**
      * Get the Toolpath as strings
      */
-    std::vector<QString> *getToolPath();
+    QStringList *getToolPath();
 };
 
 } /* namespace Cam */

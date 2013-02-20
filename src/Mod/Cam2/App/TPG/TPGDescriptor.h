@@ -98,8 +98,7 @@ public:
      */
     void release() {
         refcnt--;
-        printf("Release  TPGDescriptor: %p (%i)\n", this, refcnt);
-        if (refcnt == 0)
+        if (refcnt <= 0)
             delete this;
     }
 

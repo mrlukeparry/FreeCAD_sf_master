@@ -6,3 +6,5 @@ Debug
 .cproject
 .pydevproject
 *.pyc
+.conflict
+.txt~
