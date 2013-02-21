@@ -41,8 +41,9 @@ namespace Cam {
  * when it is needed.
  */
 class CppTPGPlugin {
-protected:
+public:
     int refcnt; ///< reference counter
+protected:
 
     QString filename; ///< the filename of the shared object file
     void* library; ///< a pointer to the library when its open

@@ -37,6 +37,7 @@ CppTPGPlugin::CppTPGPlugin(QString filename) {
     getDescriptorsPtr = NULL;
     getTPGPtr = NULL;
     descriptors = NULL;
+    refcnt = 1;
 }
 
 CppTPGPlugin::~CppTPGPlugin() {
@@ -62,8 +63,6 @@ Cam::TPGDescriptorCollection* CppTPGPlugin::getDescriptors() {
     if (isOpen()) {
         if (descriptors == NULL) {
             descriptors = getDescriptorsPtr();
-            printf("%p\n", descriptors);
-            descriptors->print();
         }
         if (descriptors != NULL) {
             // wrap the descriptors

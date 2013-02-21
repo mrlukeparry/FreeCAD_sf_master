@@ -55,7 +55,6 @@ public:
         this->description = description;
         this->type = type;
         refcnt = 1;
-        printf("New      TPGDescriptor: %p (%s)\n", this, type.toAscii().constData());
     }
     /// Convenience method for using plain ascii string
     TPGDescriptor(const char *id, const char * name, const char * description,
@@ -65,7 +64,6 @@ public:
         this->description = QString::fromAscii(description);
         this->type = QString::fromAscii(type);
         refcnt = 1;
-        printf("New      TPGDescriptor: %p (%s)\n", this, type);
     }
     TPGDescriptor(const TPGDescriptor &copy) {
         this->id = copy.id;
@@ -73,7 +71,6 @@ public:
         this->description = copy.description;
         this->type = copy.type;
         refcnt = 1;
-        printf("New      TPGDescriptor: %p (%s)\n", this, type.toAscii().constData());
     }
     TPGDescriptor(const TPGDescriptor *copy) {
         this->id = copy->id;
@@ -81,7 +78,6 @@ public:
         this->description = copy->description;
         this->type = copy->type;
         refcnt = 1;
-        printf("New      TPGDescriptor: %p (%s)\n", this, type.toAscii().constData());
     }
 
     /**
@@ -89,7 +85,6 @@ public:
      */
     TPGDescriptor *grab() {
         refcnt++;
-        printf("Grab     TPGDescriptor: %p (%i)\n", this, refcnt);
         return this;
     }
 

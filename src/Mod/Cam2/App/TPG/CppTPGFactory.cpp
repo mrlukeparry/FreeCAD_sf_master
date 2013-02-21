@@ -63,6 +63,16 @@ void CppTPGFactoryInst::scanPlugins() {
     unsigned int pathlen = path.size();
     char *pluginname = new char[pathlen+257];
     strcpy(pluginname, plugindir);
+
+    // cleanout old plugins
+//    printf("Releasing old Plugins:\n");
+    for (size_t i = 0; i < plugins.size(); i++) {
+        CppTPGPlugin* plugin = plugins.at(i);
+//        printf(" - %p, %i\n", plugin, plugin->refcnt);
+        plugin->release();
+    }
+    plugins.clear();
+
     printf("Scanning: %s\n", plugindir); //TODO: delete this once the workbench is more stable
 
     // open directory

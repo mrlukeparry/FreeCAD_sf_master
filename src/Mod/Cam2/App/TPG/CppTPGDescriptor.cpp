@@ -32,7 +32,6 @@ namespace Cam {
 CppTPGDescriptor::CppTPGDescriptor(QString id, QString name, QString description)
 : TPGDescriptor(id, name, description, QString::fromAscii("CppTPG")) {
     this->refcount = 1;
-    printf("New      CppTPGDescriptor: %p\n", this);
 }
 
 CppTPGDescriptor::~CppTPGDescriptor() {
