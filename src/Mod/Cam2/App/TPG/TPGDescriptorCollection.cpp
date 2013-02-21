@@ -30,16 +30,13 @@ namespace Cam {
 
 TPGDescriptorCollection::TPGDescriptorCollection() {
     refcnt = 1;
-    printf("New      TPGDescriptorCollection: %p\n", this);
 }
 
 TPGDescriptorCollection::~TPGDescriptorCollection() {
-    printf("Deleting TPGDescriptorCollection: %p\n", this);
     //TODO: make this thread-safe
     for (size_t i = 0; i < descriptors.size(); i++)
         descriptors.at(i)->release();
-    descriptors.empty();
-    printf("Deleted  TPGDescriptorCollection: %p\n", this);
+    descriptors.clear();
 }
 
 /**
@@ -64,7 +61,6 @@ void TPGDescriptorCollection::release() {
  * Adds a TPG to the collection
  */
 void TPGDescriptorCollection::add(TPGDescriptor* descriptor) {
-    printf("TPGDescriptorCollection (%p): Adding %p\n", this, descriptor);
     descriptors.push_back(descriptor->grab());
 }
 
@@ -77,22 +73,10 @@ void TPGDescriptorCollection::add(TPGDescriptor* descriptor) {
 void TPGDescriptorCollection::absorb(TPGDescriptorCollection *other) {
     //TODO: make this thread-safe
     size_t cnt = other->descriptors.size();
-    for (size_t i = 0; i < cnt; i++) {
+    for (size_t i = 0; i < cnt; i++)
         descriptors.push_back(other->descriptors.at(i));
-    }
-//    printf("TPGDescriptorCollection::absorb: %p contains:\n", this);
-//    for (size_t i = 0; i < descriptors.size(); i++)
-//        printf("- %p\n", descriptors.at(i));
-//    printf("TPGDescriptorCollection::absorb: %p other contained:\n", this);
-//    for (size_t i = 0; i < other->descriptors.size(); i++)
-//        printf("- %p\n", other->descriptors.at(i));
-    other->descriptors.empty();
+    other->descriptors.clear();
 }
-
-/**
- * Removes a TPG from the collection
- */
-//void TPGDescriptorCollection::del(TPG* tpg);
 
 /**
  * Get the number of items in this collection
@@ -119,19 +103,8 @@ TPGDescriptor* TPGDescriptorCollection::at(size_t pos) {
 TPGDescriptorCollection* TPGDescriptorCollection::clone() {
     TPGDescriptorCollection* copy = new TPGDescriptorCollection();
 
-    for (size_t i = 0; i < descriptors.size(); i++) {
-<<<<<<< HEAD
-        TPGDescriptor *desc = descriptors.at(i);
-        desc->grab();
-        copy->descriptors.push_back(desc);
-=======
-        printf("TPGDescriptorCollection::clone(): 1\n");
-        TPGDescriptor *desc = descriptors.at(i);
-        printf("TPGDescriptorCollection::clone(): 2\n");
-        copy->descriptors.push_back(desc->grab());
-        printf("TPGDescriptorCollection::clone(): 3\n");
->>>>>>> Refactor new files
-    }
+    for (size_t i = 0; i < descriptors.size(); i++)
+        copy->descriptors.push_back(descriptors.at(i)->grab());
 
     return copy;
 }

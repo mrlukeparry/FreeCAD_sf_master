@@ -113,7 +113,6 @@ void PyTPGFactoryInst::test()
 
 bool PyTPGFactoryInst::test1(PyObject* obj)
 {
-//    return this->pytest(obj);
     QString str = this->PythonUCToQString(obj);
     printf("Test1((QString)'%s')\n", str.toStdString().c_str());
     PyObject* uc = this->QStringToPythonUC(str);
@@ -155,11 +154,6 @@ void PyTPGFactoryInst::scanPlugins() {
             if (PyList_Check(result)) {
 
                 // clean the current list
-//                std::vector<Cam::TPGDescriptor*>::iterator it =
-//                        this->tpgs.begin();
-//                for (; it != this->tpgs.end(); ++it)
-//                    (*it)->release();
-//                this->tpgs.clear();
                 descriptors->release();
                 descriptors = new TPGDescriptorCollection();
 
@@ -172,7 +166,6 @@ void PyTPGFactoryInst::scanPlugins() {
                         PyObject *pname = PyTuple_GET_ITEM(tuple, 1);
                         PyObject *pdesc = PyTuple_GET_ITEM(tuple, 2);
 
-//                        this->tpgs.push_back(
                           descriptors->add(new PyTPGDescriptor(PythonUCToQString(pid),
                                         PythonUCToQString(pname),
                                         PythonUCToQString(pdesc)));
@@ -196,11 +189,6 @@ TPGDescriptorCollection* PyTPGFactoryInst::getDescriptors()
     printf("Found %i PyTPGs\n", descriptors->size());
 
     // copy the tpg list cache
-//    std::vector<TPGDescriptor*> *result = new std::vector<TPGDescriptor*>();
-//    std::vector<TPGDescriptor*>::iterator itt = tpgs.begin();
-//    for (;itt != tpgs.end(); ++itt)
-//        result->push_back(*itt);
-
     return descriptors->clone();
 }
 

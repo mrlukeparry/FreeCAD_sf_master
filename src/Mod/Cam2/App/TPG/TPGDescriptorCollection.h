@@ -86,8 +86,6 @@ public:
 
     void print() {
         printf("TPGDescriptorCollection: (refs: %i)\n", refcnt);
-//        for (size_t i = 0; i < descriptors.size(); i++)
-//            printf("- %p\n", descriptors.at(i));
     }
 
 protected:
