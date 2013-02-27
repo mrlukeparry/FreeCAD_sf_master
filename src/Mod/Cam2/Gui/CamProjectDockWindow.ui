@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>750</height>
+    <height>317</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,58 +25,6 @@
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
-     <widget class="QTreeWidget" name="ProjectTree">
-      <column>
-       <property name="text">
-        <string>Project Tree</string>
-       </property>
-      </column>
-      <item>
-       <property name="text">
-        <string>Cam Feature 01</string>
-       </property>
-       <property name="icon">
-        <iconset resource="Resources/Cam.qrc">
-         <normaloff>:/icons/cam.png</normaloff>:/icons/cam.png</iconset>
-       </property>
-       <item>
-        <property name="text">
-         <string>Rough</string>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>../../../../../../QTCreator/FreeCAD-UI/gear.png</normaloff>../../../../../../QTCreator/FreeCAD-UI/gear.png</iconset>
-        </property>
-        <item>
-         <property name="text">
-          <string>ToolPath 01</string>
-         </property>
-         <property name="icon">
-          <iconset resource="Resources/Cam.qrc">
-           <normaloff>:/icons/tp.png</normaloff>:/icons/tp.png</iconset>
-         </property>
-        </item>
-       </item>
-       <item>
-        <property name="text">
-         <string>Contour</string>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>../../../../../../QTCreator/FreeCAD-UI/gear.png</normaloff>../../../../../../QTCreator/FreeCAD-UI/gear.png</iconset>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Pocket</string>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>../../../../../../QTCreator/FreeCAD-UI/gear.png</normaloff>../../../../../../QTCreator/FreeCAD-UI/gear.png</iconset>
-        </property>
-       </item>
-      </item>
-     </widget>
      <widget class="QWidget" name="SettingsArea" native="true">
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <property name="spacing">
@@ -87,6 +35,77 @@
        </property>
        <item>
         <layout class="QHBoxLayout" name="FeatureButtons">
+         <item>
+          <widget class="QWidget" name="updownGroup" native="true">
+           <property name="minimumSize">
+            <size>
+             <width>31</width>
+             <height>31</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>31</width>
+             <height>31</height>
+            </size>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_13">
+            <property name="margin">
+             <number>0</number>
+            </property>
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <item row="0" column="0">
+             <layout class="QVBoxLayout" name="updownGroupVLayout">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QPushButton" name="upBtn">
+                <property name="toolTip">
+                 <string>Move the Selected Feature up</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset resource="Resources/Cam.qrc">
+                  <normaloff>:/icons/up.svg</normaloff>:/icons/up.svg</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>24</width>
+                  <height>12</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="downBtn">
+                <property name="toolTip">
+                 <string>Move the Selected Feature down</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset resource="Resources/Cam.qrc">
+                  <normaloff>:/icons/down.svg</normaloff>:/icons/down.svg</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>24</width>
+                  <height>12</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </item>
          <item>
           <widget class="QPushButton" name="FeatureEnableButton">
            <property name="maximumSize">
@@ -103,8 +122,10 @@
            </property>
            <property name="icon">
             <iconset resource="Resources/Cam.qrc">
-             <normaloff>:/icons/cross.png</normaloff>
-             <normalon>:/icons/tick.png</normalon>:/icons/cross.png</iconset>
+             <normaloff>:/icons/cross.svg</normaloff>
+             <normalon>:/icons/tick.svg</normalon>
+             <activeon>:/icons/tick.svg</activeon>
+             <selectedon>:/icons/tick.svg</selectedon>:/icons/cross.svg</iconset>
            </property>
            <property name="checkable">
             <bool>true</bool>
@@ -130,7 +151,7 @@
            </property>
            <property name="icon">
             <iconset resource="Resources/Cam.qrc">
-             <normaloff>:/icons/run.png</normaloff>:/icons/run.png</iconset>
+             <normaloff>:/icons/run-tpg.svg</normaloff>:/icons/run-tpg.svg</iconset>
            </property>
           </widget>
          </item>
@@ -150,7 +171,7 @@
            </property>
            <property name="icon">
             <iconset resource="Resources/Cam.qrc">
-             <normaloff>:/icons/diverge.png</normaloff>:/icons/diverge.png</iconset>
+             <normaloff>:/icons/post-process.svg</normaloff>:/icons/post-process.svg</iconset>
            </property>
           </widget>
          </item>
@@ -163,14 +184,14 @@
             </size>
            </property>
            <property name="toolTip">
-            <string>Export the selected GCode program(s) to file ...</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Export the selected Machine program to file ...&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
             <string/>
            </property>
            <property name="icon">
             <iconset resource="Resources/Cam.qrc">
-             <normaloff>:/icons/export.png</normaloff>:/icons/export.png</iconset>
+             <normaloff>:/icons/cnc-export.svg</normaloff>:/icons/cnc-export.svg</iconset>
            </property>
           </widget>
          </item>
@@ -187,7 +208,7 @@
             <x>0</x>
             <y>0</y>
             <width>398</width>
-            <height>248</height>
+            <height>280</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout"/>
