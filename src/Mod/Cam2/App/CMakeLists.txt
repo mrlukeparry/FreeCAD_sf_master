@@ -104,6 +104,12 @@ SET(CamModule_SRCS
     PreCompiled.h
     Support.cpp
     Support.h
+    ItemList.cpp
+    ItemList.h
+    MachineProgram.cpp
+    MachineProgram.h
+    PostProcessor.cpp
+    PostProcessor.h
 )
 SOURCE_GROUP("Module" FILES ${CamModule_SRCS})
 
