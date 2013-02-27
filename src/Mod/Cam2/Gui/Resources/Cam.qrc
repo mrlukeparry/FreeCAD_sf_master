@@ -8,5 +8,15 @@
         <file>icons/export.png</file>
         <file>icons/cam.png</file>
         <file>icons/tp.png</file>
+        <file>icons/cam.svg</file>
+        <file>icons/cnc.svg</file>
+        <file>icons/cnc-export.svg</file>
+        <file>icons/cross.svg</file>
+        <file>icons/down.svg</file>
+        <file>icons/gear.svg</file>
+        <file>icons/post-process.svg</file>
+        <file>icons/run-tpg.svg</file>
+        <file>icons/tick.svg</file>
+        <file>icons/up.svg</file>
     </qresource>
 </RCC>

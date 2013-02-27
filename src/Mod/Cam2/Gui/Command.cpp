@@ -50,7 +50,7 @@ CmdCamCreateCamFeature::CmdCamCreateCamFeature()
     sToolTipText  = QT_TR_NOOP("Create a new Cam Feature");
     sWhatsThis    = sToolTipText;
     sStatusTip    = sToolTipText;
-    sPixmap       = "Cam_NewCamFeature";
+    sPixmap       = "cam";
 }
 
 void CmdCamCreateCamFeature::activated(int iMsg)
