@@ -36,8 +36,10 @@
  */
 static void
 PyToolPath_dealloc(cam_PyToolPath* self) {
-    if (self->tp != NULL)
-        delete self->tp;
+    if (self->tp != NULL) {
+        self->tp->release();
+        self->tp = NULL;
+    }
     self->ob_type->tp_free((PyObject*)self);
 }
 

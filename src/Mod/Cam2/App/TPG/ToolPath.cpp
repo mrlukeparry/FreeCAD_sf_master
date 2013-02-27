@@ -32,6 +32,7 @@ namespace Cam {
 ToolPath::ToolPath(TPG* source) {
     this->source = source;
     this->toolpath = new QStringList();
+    refcnt = 1;
 }
 
 ToolPath::~ToolPath() {
@@ -54,6 +55,8 @@ void ToolPath::addToolPath(QString tp) {
 void ToolPath::clear() {
     if (this->toolpath != NULL)
         this->toolpath->clear();
+    else
+        this->toolpath = new QStringList();
 }
 
 /**

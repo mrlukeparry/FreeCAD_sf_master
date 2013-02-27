@@ -43,9 +43,11 @@ protected:
     TPG *source;
     QStringList *toolpath;
 
+    int refcnt;
+    virtual ~ToolPath();
+
 public:
     ToolPath(TPG* source);
-    virtual ~ToolPath();
 
     /**
      * Add a single toolpath command to the ToolPath
@@ -66,6 +68,24 @@ public:
      * Get the Toolpath as strings
      */
     QStringList *getToolPath();
+
+    /**
+     * Increases reference count
+     * Note: it returns a pointer to this for convenience.
+     */
+    ToolPath *grab() {
+        refcnt++;
+        return this;
+    }
+
+    /**
+     * Decreases reference count and deletes self if no other references
+     */
+    void release() {
+        refcnt--;
+        if (refcnt == 0)
+            delete this;
+    }
 };
 
 } /* namespace Cam */
