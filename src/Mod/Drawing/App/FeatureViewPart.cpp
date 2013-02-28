@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) Luke Parry             (l.parry@warwick.ac.uk) 2013     *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -88,15 +89,42 @@ FeatureViewPart::FeatureViewPart(void) : geometryObject(0)
     geometryObject = new DrawingGeometry::GeometryObject();
 }
 
+short FeatureViewPart::mustExecute() const
+{
+    // If Tolerance Property is touched
+    if(Direction.isTouched() || 
+       Source.isTouched())
+          return 1;
+    else 
+        return 0;
+//     return Drawing::FeatureView::mustExecute();
+}
+
 FeatureViewPart::~FeatureViewPart()
 {
     delete geometryObject;
 }
 
-const std::vector<DrawingGeometry::BaseGeom  *> & FeatureViewPart::getGeometry() const
+const std::vector<DrawingGeometry::BaseGeom  *> & FeatureViewPart::getFaceGeometry() const
 {
-    return geometryObject->getGeometry();
+    return geometryObject->getFaceGeometry();
 }
+
+const std::vector<int> & FeatureViewPart::getFaceReferences() const
+{
+    return geometryObject->getFaceRefs();
+}
+
+const std::vector<DrawingGeometry::BaseGeom  *> & FeatureViewPart::getEdgeGeometry() const
+{
+    return geometryObject->getEdgeGeometry();
+}
+
+const std::vector<int> & FeatureViewPart::getEdgeReferences() const
+{
+    return geometryObject->getEdgeRefs();
+}
+
 
 App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
 {
@@ -114,7 +142,8 @@ App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
         return new App::DocumentObjectExecReturn("Linked shape object is empty");
    
     try {
-        geometryObject->extractGeometry(shape, Direction.getValue(), Tolerance.getValue());
+        geometryObject->setTolerance(Tolerance.getValue());
+        geometryObject->extractGeometry(shape, Direction.getValue());
         return App::DocumentObject::StdReturn;
     }
     catch (Standard_Failure) {

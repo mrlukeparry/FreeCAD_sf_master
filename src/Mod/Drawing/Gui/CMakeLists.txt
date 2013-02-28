@@ -26,12 +26,11 @@ set(DrawingGui_LIBS
 set(DrawingGui_MOC_HDRS
     CanvasView.h
     DrawingView.h
+    QGraphicsItemView.h
+    QGraphicsItemViewPart.h
     TaskOrthoViews.h
     TaskDialog.h
 )
-
-
-
 
 fc_wrap_cpp(DrawingGui_MOC_SRCS ${DrawingGui_MOC_HDRS})
 SOURCE_GROUP("Moc" FILES ${DrawingGui_MOC_SRCS})
@@ -60,17 +59,24 @@ SET(DrawingGui_SRCS
     Workbench.cpp
     Workbench.h
 )
+
 SET(DrawingGuiView_SRCS
     CanvasView.cpp
     CanvasView.h
     DrawingView.cpp
     DrawingView.h
+    QGraphicsItemView.cpp
+    QGraphicsItemView.h
+    QGraphicsItemViewPart.cpp
+    QGraphicsItemViewPart.h
 )
 SET(DrawingGuiViewProvider_SRCS
     ViewProviderPage.cpp
     ViewProviderPage.h
     ViewProviderView.cpp
     ViewProviderView.h
+    ViewProviderViewSection.cpp
+    ViewProviderViewSection.h
 )
 
 SOURCE_GROUP("Mod" FILES ${DrawingGui_SRCS})

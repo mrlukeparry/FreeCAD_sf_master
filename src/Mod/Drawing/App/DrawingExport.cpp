@@ -127,7 +127,7 @@ void SVGOutput::printCircle(const BRepAdaptor_Curve& c, std::ostream& out)
 
     // a full circle
     if (fabs(l-f) > 1.0 && s.SquareDistance(e) < 0.001) {
-        out << "<circle cx =\"" << p.X() << "\" cy =\"" 
+        out << "<circle cx =\"" << p.X() << "\" cy =\""
             << p.Y() << "\" r =\"" << r << "\" />";
     }
     // arc of circle
@@ -159,7 +159,7 @@ void SVGOutput::printEllipse(const BRepAdaptor_Curve& c, int id, std::ostream& o
     gp_Vec v2(m,e);
     gp_Vec v3(0,0,1);
     double a = v3.DotCross(v1,v2);
-    
+
     // a full ellipse
     // See also https://developer.mozilla.org/en/SVG/Tutorial/Paths
     gp_Dir xaxis = ellp.XAxis().Direction();
@@ -167,7 +167,7 @@ void SVGOutput::printEllipse(const BRepAdaptor_Curve& c, int id, std::ostream& o
 
     if (fabs(l-f) > 1.0 && s.SquareDistance(e) < 0.001) {
         out << "<g transform = \"rotate(" << angle << "," << p.X() << "," << p.Y() << ")\">" << std::endl;
-        out << "<ellipse cx =\"" << p.X() << "\" cy =\"" 
+        out << "<ellipse cx =\"" << p.X() << "\" cy =\""
             << p.Y() << "\" rx =\"" << r1 << "\"  ry =\"" << r2 << "\"/>" << std::endl;
         out << "</g>" << std::endl;
     }
@@ -206,11 +206,11 @@ void SVGOutput::printBSpline(const BRepAdaptor_Curve& c, int id, std::ostream& o
             Handle_Geom_BezierCurve bezier = crt.Arc(i);
             Standard_Integer poles = bezier->NbPoles();
             Base::Vector2D pnts[4];
-                
+
             if (bezier->Degree() == 3) {
                 if (poles != 4)
                     Standard_Failure::Raise("do it the generic way");
-                
+
                 gp_Pnt p1 = bezier->Pole(1);
                 gp_Pnt p2 = bezier->Pole(2);
                 gp_Pnt p3 = bezier->Pole(3);
@@ -262,9 +262,9 @@ void SVGOutput::printGeneric(const BRepAdaptor_Curve& c, int id, std::ostream& o
     if (!polygon.IsNull()) {
         const TColgp_Array1OfPnt& nodes = polygon->Nodes();
         char c = 'M';
-        out << "<path id= \"" /*<< ViewName*/ << id << "\" d=\" "; 
+        out << "<path id= \"" /*<< ViewName*/ << id << "\" d=\" ";
         for (int i = nodes.Lower(); i <= nodes.Upper(); i++){
-            out << c << " " << nodes(i).X() << " " << nodes(i).Y()<< " " ; 
+            out << c << " " << nodes(i).X() << " " << nodes(i).Y()<< " " ;
             c = 'L';
         }
         out << "\" />" << endl;
@@ -330,7 +330,7 @@ void DXFOutput::printCircle(const BRepAdaptor_Curve& c, std::ostream& out)
 
     // a full circle
     if (s.SquareDistance(e) < 0.001) {
-        //out << "<circle cx =\"" << p.X() << "\" cy =\"" 
+        //out << "<circle cx =\"" << p.X() << "\" cy =\""
             //<< p.Y() << "\" r =\"" << r << "\" />";
 	    out << 0			<< endl;
 	    out << "CIRCLE"		<< endl;
@@ -412,7 +412,7 @@ void DXFOutput::printEllipse(const BRepAdaptor_Curve& c, int id, std::ostream& o
 
     // a full ellipse
    /* if (s.SquareDistance(e) < 0.001) {
-        out << "<ellipse cx =\"" << p.X() << "\" cy =\"" 
+        out << "<ellipse cx =\"" << p.X() << "\" cy =\""
             << p.Y() << "\" rx =\"" << r1 << "\"  ry =\"" << r2 << "\"/>";
     }
     // arc of ellipse
@@ -443,7 +443,7 @@ void DXFOutput::printEllipse(const BRepAdaptor_Curve& c, int id, std::ostream& o
 	double end_angle = atan2(by, bx) * 180/D_PI;
 
 	double major_x;double major_y;
-	
+
 	major_x = r1 * sin(angle*90);
 	major_y = r1 * cos(angle*90);
 
@@ -478,7 +478,7 @@ void DXFOutput::printEllipse(const BRepAdaptor_Curve& c, int id, std::ostream& o
 	out << end_angle	<< endl;	// End angle
 }
 
-void DXFOutput::printBSpline(const BRepAdaptor_Curve& c, int id, std::ostream& out) //Not even close yet- DF 
+void DXFOutput::printBSpline(const BRepAdaptor_Curve& c, int id, std::ostream& out) //Not even close yet- DF
 {
     try {
         std::stringstream str;
@@ -494,7 +494,7 @@ void DXFOutput::printBSpline(const BRepAdaptor_Curve& c, int id, std::ostream& o
                 spline = approx.Curve();
             }
         }
-		
+
         GeomConvert_BSplineCurveToBezierCurve crt(spline);
 		//GeomConvert_BSplineCurveKnotSplitting crt(spline,0);
         Standard_Integer arcs = crt.NbArcs();
@@ -525,28 +525,28 @@ void DXFOutput::printBSpline(const BRepAdaptor_Curve& c, int id, std::ostream& o
                 gp_Pnt p3 = bezier->Pole(3);
                 gp_Pnt p4 = bezier->Pole(4);
                 if (i == 1) {
-                    str 
+                    str
 						<< 10 << endl
 						<< p1.X() << endl
 						<< 20 << endl
 						<< p1.Y() << endl
 						<< 30 << endl
 						<< 0 << endl
-						
+
 						<< 10 << endl
                         << p2.X() << endl
 						<< 20 << endl
 						<< p2.Y() << endl
 						<< 30 << endl
 						<< 0 << endl
-						
+
 						<< 10 << endl
                         << p3.X() << endl
 						<< 20 << endl
 						<< p3.Y() << endl
 						<< 30 << endl
 						<< 0 << endl
-						
+
 						<< 10 << endl
                         << p4.X() << endl
 						<< 20 << endl
@@ -569,14 +569,14 @@ void DXFOutput::printBSpline(const BRepAdaptor_Curve& c, int id, std::ostream& o
 						<< 0 << endl;
                 }
                 else {
-                    str 
+                    str
 						<< 10 << endl
                         << p3.X() << endl
 						<< 20 << endl
 						<< p3.Y() << endl
 						<< 30 << endl
 						<< 0 << endl
-						
+
 						<< 10 << endl
                         << p4.X() << endl
 						<< 20 << endl
@@ -607,21 +607,21 @@ void DXFOutput::printBSpline(const BRepAdaptor_Curve& c, int id, std::ostream& o
                 gp_Pnt p2 = bezier->Pole(2);
                 gp_Pnt p3 = bezier->Pole(3);
                 if (i == 1) {
-                    str 
+                    str
 						<< 10 << endl
 						<< p1.X() << endl
 						<< 20 << endl
 						<< p1.Y() << endl
 						<< 30 << endl
 						<< 0 << endl
-						
+
 						<< 10 << endl
                         << p2.X() << endl
 						<< 20 << endl
 						<< p2.Y() << endl
 						<< 30 << endl
 						<< 0 << endl
-						
+
 						<< 10 << endl
                         << p3.X() << endl
 						<< 20 << endl
@@ -644,7 +644,7 @@ void DXFOutput::printBSpline(const BRepAdaptor_Curve& c, int id, std::ostream& o
 						<< 0 << endl;
                 }
                 else {
-                    str 
+                    str
 						<< 10 << endl
                         << p3.X() << endl
 						<< 20 << endl
@@ -681,7 +681,7 @@ void DXFOutput::printGeneric(const BRepAdaptor_Curve& c, int id, std::ostream& o
     out << "0"			<< endl;
     out << "LINE"		<< endl;
     out << "8"			<< endl;	// Group code for layer name
-    out << "sheet_layer" << endl; // Layer name 
+    out << "sheet_layer" << endl; // Layer name
     out << "10"			<< endl;	// Start point of line
     out << PS.X()		<< endl;	// X in WCS coordinates
     out << "20"			<< endl;

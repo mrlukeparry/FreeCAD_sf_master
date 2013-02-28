@@ -58,6 +58,20 @@ FeatureView::FeatureView(void)
     App::PropertyType type = (App::PropertyType)(App::Prop_Hidden);
 }
 
+/// get called by the container when a Property was changed
+void FeatureView::onChanged(const App::Property* prop)
+{
+    if (prop == &X ||
+        prop == &Y ||
+        prop == &Scale ||
+        prop == &Rotation) {
+          if (!this->isRestoring()) {
+              this->touch();
+          }
+    }
+    App::DocumentObject::onChanged(prop);
+}
+
 FeatureView::~FeatureView()
 {
 }

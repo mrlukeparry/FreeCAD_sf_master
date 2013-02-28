@@ -27,11 +27,11 @@
 # include <sstream>
 #endif
 
-
 #include <Base/Exception.h>
 #include <Base/Console.h>
 #include <Base/FileInfo.h>
 #include <App/Application.h>
+
 #include <boost/regex.hpp>
 #include <iostream>
 #include <iterator>
@@ -55,27 +55,34 @@ const char *group = "Drawing view";
 FeaturePage::FeaturePage(void) 
 {
     static const char *group = "Drawing view";
-
-    ADD_PROPERTY_TYPE(PageResult ,(0),group,App::Prop_Output,"Resulting SVG document of that page");
-    ADD_PROPERTY_TYPE(Template   ,(""),group,App::Prop_None  ,"Template for the page");
+    ADD_PROPERTY_TYPE(Template ,(""),group, (App::PropertyType) App::Prop_None,"Template for the page");
+    ADD_PROPERTY_TYPE(Views    ,(0), group, (App::PropertyType)(App::Prop_None),"Attached Views");
 }
 
 FeaturePage::~FeaturePage()
 {
 }
 
+short FeaturePage::mustExecute() const
+{
+    // If Tolerance Property is touched
+    if(Template.isTouched())
+        return 1;
+    
+    // Check if within the selection, any Document Object have been touched
+    bool ViewsTouched = false;
+    const std::vector<App::DocumentObject*> &vals = Views.getValues();
+    for(std::vector<App::DocumentObject *>::const_iterator it = vals.begin(); it < vals.end(); ++it) {
+        if((*it)->isTouched())
+            ViewsTouched = true;
+    }
+
+    return (ViewsTouched) ? 1 : App::DocumentObjectGroup::mustExecute();
+}
+
 /// get called by the container when a Property was changed
 void FeaturePage::onChanged(const App::Property* prop)
 {
-    if (prop == &PageResult) {
-        if (this->isRestoring()) {
-            // When loading a document the included file
-            // doesn't need to exist at this point.
-            Base::FileInfo fi(PageResult.getValue());
-            if (!fi.exists())
-                return;
-        }
-    }
     if (prop == &Template) {
         if (!this->isRestoring()) {
         }
@@ -83,10 +90,24 @@ void FeaturePage::onChanged(const App::Property* prop)
     App::DocumentObjectGroup::onChanged(prop);
 }
 
+int FeaturePage::addView(App::DocumentObject *docObj)
+{
+    if(!docObj->isDerivedFrom(Drawing::FeatureView::getClassTypeId()))
+        return -1; //Doc Object mst be derived from a Part Feature
+
+    const std::vector<App::DocumentObject *> vals = Views.getValues();
+
+    std::vector<App::DocumentObject *> newVals(vals);
+    newVals.push_back(docObj);
+    Views.setValues(newVals);
+
+    return Views.getSize();
+}
+
 App::DocumentObjectExecReturn *FeaturePage::execute(void)
 {
     // get through the children and collect all the views
-    const std::vector<App::DocumentObject*> &Grp = Group.getValues();
+    const std::vector<App::DocumentObject*> &Grp = Views.getValues();
     for (std::vector<App::DocumentObject*>::const_iterator it = Grp.begin();it!=Grp.end();++it) {
         if ( (*it)->getTypeId().isDerivedFrom(Drawing::FeatureView::getClassTypeId()) ) {
             Drawing::FeatureView *View = dynamic_cast<Drawing::FeatureView *>(*it);

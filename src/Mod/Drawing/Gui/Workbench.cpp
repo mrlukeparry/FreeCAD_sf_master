@@ -60,6 +60,7 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     //*part << "Drawing_NewA3Landscape";
     *part << "Drawing_NewPage";
     *part << "Drawing_NewView";
+    *part << "Drawing_NewViewSection";
     *part << "Drawing_OrthoViews";
     *part << "Drawing_OpenBrowserView";
     *part << "Drawing_Annotation";
@@ -80,6 +81,7 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     //*part << "Drawing_NewA3Landscape";
     *part << "Drawing_NewPage";
     *part << "Drawing_NewView";
+    *part << "Drawing_NewViewSection";
     *part << "Drawing_OrthoViews";
     *part << "Drawing_OpenBrowserView";
     *part << "Drawing_Annotation";

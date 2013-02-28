@@ -271,7 +271,63 @@ void CmdDrawingNewView::activated(int iMsg)
         doCommand(Doc,"App.activeDocument().%s.X = 10.0",FeatName.c_str());
         doCommand(Doc,"App.activeDocument().%s.Y = 10.0",FeatName.c_str());
         doCommand(Doc,"App.activeDocument().%s.Scale = 1.0",FeatName.c_str());
-        doCommand(Doc,"App.activeDocument().%s.addObject(App.activeDocument().%s)",PageName.c_str(),FeatName.c_str());
+//         doCommand(Doc,"App.activeDocument().%s.addObject(App.activeDocument().%s)",PageName.c_str(),);
+        Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
+        page->addView(page->getDocument()->getObject(FeatName.c_str()));       
+    }
+    updateActive();
+    commitCommand();
+}
+
+
+//===========================================================================
+// Drawing_NewViewSection
+//===========================================================================
+
+DEF_STD_CMD(CmdDrawingNewViewSection);
+
+CmdDrawingNewViewSection::CmdDrawingNewViewSection()
+  : Command("Drawing_NewViewSection")
+{
+    sAppModule      = "Drawing";
+    sGroup          = QT_TR_NOOP("Drawing");
+    sMenuText       = QT_TR_NOOP("Insert view in drawing");
+    sToolTipText    = QT_TR_NOOP("Insert a new View of a Part in the active drawing");
+    sWhatsThis      = "Drawing_NewViewSecton";
+    sStatusTip      = sToolTipText;
+    sPixmap         = "actions/drawing-view";
+}
+
+void CmdDrawingNewViewSection::activated(int iMsg)
+{
+    std::vector<App::DocumentObject*> shapes = getSelection().getObjectsOfType(Part::Feature::getClassTypeId());
+    if (shapes.empty()) {
+        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
+            QObject::tr("Select a Part object."));
+        return;
+    }
+
+    std::vector<App::DocumentObject*> pages = this->getDocument()->getObjectsOfType(Drawing::FeaturePage::getClassTypeId());
+    if (pages.empty()){
+        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("No page to insert"),
+            QObject::tr("Create a page to insert."));
+        return;
+    }
+
+    std::string PageName = pages.front()->getNameInDocument();
+
+    openCommand("Create view");
+    for (std::vector<App::DocumentObject*>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
+        std::string FeatName = getUniqueObjectName("View");
+        doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewSection','%s')",FeatName.c_str());
+        doCommand(Doc,"App.activeDocument().%s.Source = App.activeDocument().%s",FeatName.c_str(),(*it)->getNameInDocument());
+        doCommand(Doc,"App.activeDocument().%s.Direction = (0.0,0.0,1.0)",FeatName.c_str());
+        doCommand(Doc,"App.activeDocument().%s.X = 10.0",FeatName.c_str());
+        doCommand(Doc,"App.activeDocument().%s.Y = 10.0",FeatName.c_str());
+        doCommand(Doc,"App.activeDocument().%s.Scale = 1.0",FeatName.c_str());
+//         doCommand(Doc,"App.activeDocument().%s.addObject(App.activeDocument().%s)",PageName.c_str(),);
+        Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
+        page->addView(page->getDocument()->getObject(FeatName.c_str()));       
     }
     updateActive();
     commitCommand();
@@ -532,6 +588,7 @@ void CreateDrawingCommands(void)
     rcCmdMgr.addCommand(new CmdDrawingNewPage());
     rcCmdMgr.addCommand(new CmdDrawingNewA3Landscape());
     rcCmdMgr.addCommand(new CmdDrawingNewView());
+    rcCmdMgr.addCommand(new CmdDrawingNewViewSection());
     rcCmdMgr.addCommand(new CmdDrawingOrthoViews());
     rcCmdMgr.addCommand(new CmdDrawingOpenBrowserView());
     rcCmdMgr.addCommand(new CmdDrawingAnnotation());

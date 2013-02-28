@@ -1,6 +1,6 @@
 /***************************************************************************
  *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2007     *
- *                                                                         *
+ *   Copyright (c) Luke Parry             (l.parry@warwick.ac.uk) 2013     *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
  *   This library is free software; you can redistribute it and/or         *
@@ -55,7 +55,13 @@ public:
     App::PropertyFloat  LineWidth;
     App::PropertyFloatConstraint  Tolerance;
 
-    const std::vector<DrawingGeometry::BaseGeom  *> & getGeometry() const;
+    const std::vector<DrawingGeometry::BaseGeom  *> & getEdgeGeometry() const;
+    const std::vector<DrawingGeometry::BaseGeom  *> & getFaceGeometry() const;
+        
+    const std::vector<int> & getEdgeReferences() const;
+    const std::vector<int> & getFaceReferences() const;
+    
+    short mustExecute() const;
     
     /** @name methods overide Feature */
     //@{
