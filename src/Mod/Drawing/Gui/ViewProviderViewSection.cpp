@@ -21,59 +21,70 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef DRAWINGGUI_VIEWPROVIDERPAGE_H
-#define DRAWINGGUI_VIEWPROVIDERPAGE_H
 
-#include <Gui/ViewProviderFeature.h>
-#include <Gui/ViewProviderDocumentObjectGroup.h>
+#include "PreCompiled.h"
 
-#include <QPointer>
+#ifndef _PreComp_
+# ifdef FC_OS_WIN32
+#  include <windows.h>
+# endif
+#endif
 
-namespace Drawing{
-    class FeaturePage;
+/// Here the FreeCAD includes sorted by Base,App,Gui......
+#include <Base/Console.h>
+#include <Base/Parameter.h>
+#include <Base/Exception.h>
+#include <Base/Sequencer.h>
+#include <App/Application.h>
+#include <App/Document.h>
+#include <App/DocumentObject.h>
+#include <Gui/SoFCSelection.h>
+#include <Gui/Selection.h>
+
+#include <Mod/Drawing/App/FeatureView.h>
+#include "ViewProviderViewSection.h"
+
+using namespace DrawingGui;
+
+PROPERTY_SOURCE(DrawingGui::ViewProviderDrawingViewSection, Gui::ViewProviderDocumentObject)
+
+//**************************************************************************
+// Construction/Destruction
+
+ViewProviderDrawingViewSection::ViewProviderDrawingViewSection()
+{
+    sPixmap = "Page";
 }
 
-namespace DrawingGui {
-
-class DrawingView;
-
-class DrawingGuiExport ViewProviderDrawingPage : public Gui::ViewProviderDocumentObjectGroup
+ViewProviderDrawingViewSection::~ViewProviderDrawingViewSection()
 {
-    PROPERTY_HEADER(DrawingGui::ViewProviderDrawingPage);
+}
 
-public:
+void ViewProviderDrawingViewSection::attach(App::DocumentObject *pcFeat)
+{
+    // call parent attach method
+    ViewProviderDocumentObject::attach(pcFeat);
+}
 
-    ViewProviderDrawingPage();  /// constructor
-    ~ViewProviderDrawingPage(); /// destructor
+void ViewProviderDrawingViewSection::setDisplayMode(const char* ModeName)
+{
+    ViewProviderDocumentObject::setDisplayMode(ModeName);
+}
 
-    App::PropertyFloat         HintScale;
-    App::PropertyFloat         HintOffsetX;
-    App::PropertyFloat         HintOffsetY;
+std::vector<std::string> ViewProviderDrawingViewSection::getDisplayModes(void) const
+{
+    // get the modes of the father
+    std::vector<std::string> StrList = ViewProviderDocumentObject::getDisplayModes();
 
-    virtual void attach(App::DocumentObject *);
-    virtual void setDisplayMode(const char* ModeName);
-    /// returns a list of all possible modes
-    virtual std::vector<std::string> getDisplayModes(void) const;
+    return StrList;
+}
 
-    /// Claim all the views for the page
-    std::vector<App::DocumentObject*> claimChildren(void) const;
-    
-    /// Is called by the tree if the user double click on the object
-    virtual bool doubleClicked(void);
-    void setupContextMenu(QMenu*, QObject*, const char*);
-    virtual void updateData(const App::Property*);
+void ViewProviderDrawingViewSection::updateData(const App::Property*)
+{
+    Base::Console().Log("Update View");
+}
 
-    Drawing::FeaturePage* getPageObject() const;
-    void unsetEdit(int ModNum);
-
-protected:
-    bool setEdit(int ModNum);
-    DrawingView* showDrawingView();
-
-private:
-    QPointer<DrawingView> view;
-};
-
-} // namespace DrawingGui
-
-#endif // DRAWINGGUI_VIEWPROVIDERPAGE_H
+Drawing::FeatureView* ViewProviderDrawingViewSection::getViewObject() const
+{
+    return dynamic_cast<Drawing::FeatureView*>(pcObject);
+}

@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2004 Jürgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -26,13 +27,16 @@
 
 #include <Gui/ViewProviderFeature.h>
 
+namespace Drawing{
+    class FeatureView;
+}
 
 namespace DrawingGui {
 
 
 class DrawingGuiExport ViewProviderDrawingView : public Gui::ViewProviderDocumentObject
 {
-    PROPERTY_HEADER(DrawingGui::ViewProviderDrawing);
+    PROPERTY_HEADER(DrawingGui::ViewProviderDrawingView);
 
 public:
     /// constructor
@@ -47,6 +51,7 @@ public:
     virtual std::vector<std::string> getDisplayModes(void) const;
     virtual void updateData(const App::Property*);
 
+    Drawing::FeatureView* getViewObject() const;
 };
 
 } // namespace DrawingGui

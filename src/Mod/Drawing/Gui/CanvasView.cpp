@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -63,9 +63,13 @@
 #include "../App/Geometry.h"
 #include "../App/FeaturePage.h"
 #include "../App/FeatureViewPart.h"
+
+#include "QGraphicsItemViewPart.h"
 #include "CanvasView.h"
 
 using namespace DrawingGui;
+QColor CanvasView::PreselectColor   =    QColor(0.88f,0.88f,0.0f);   // #E1E100 -> (225,225,  0)
+QColor CanvasView::SelectColor      =    QColor(0.11f,0.68f,0.11f);  // #1CAD1C -> ( 28,173, 28)
 
 CanvasView::CanvasView(QWidget *parent)
     : QGraphicsView(parent)
@@ -97,100 +101,14 @@ void CanvasView::drawBackground(QPainter *p, const QRectF &)
     p->restore();
 }
 
-void CanvasView::drawViewPart(Drawing::FeatureViewPart *part)
-{
-    // Iterate
-    const std::vector<DrawingGeometry::BaseGeom *> &geoms = part->getGeometry();
-    std::vector<DrawingGeometry::BaseGeom *>::const_iterator it = geoms.begin();
-    QGraphicsScene *scene = this->scene();
-    QGraphicsItemGroup *group = new QGraphicsItemGroup();
-
-    QPen pen;
-    pen.setWidth(0.7f);
-    pen.setColor(QColor(0, 0,0));
-    pen.setStyle(Qt::SolidLine);
-    // iterate through all the geometries
-    for( ; it != geoms.end(); ++it) {
-      if((*it)->extractType == DrawingGeometry::WithHidden)
-          pen.setStyle(Qt::DashLine);
-      else
-          pen.setStyle(Qt::SolidLine);
-
-      switch((*it)->geomType) {
-        case DrawingGeometry::CIRCLE: {
-          DrawingGeometry::Circle *geom = static_cast<DrawingGeometry::Circle *>(*it);
-          QGraphicsEllipseItem *item = new  QGraphicsEllipseItem();
-          item->setRect(0, 0, geom->radius * 2, geom->radius * 2);
-          item->setPos(geom->x - geom->radius, geom->y - geom->radius);
-
-          item->setPen(pen);
-          group->addToGroup(item);
-        } break;
-        case DrawingGeometry::ARCOFCIRCLE: {
-          DrawingGeometry::AOC  *geom = static_cast<DrawingGeometry::AOC *>(*it);
-          QGraphicsPathItem *item = new QGraphicsPathItem();
-          QPainterPath path;
-
-          double startAngle = (geom->startAngle);
-          double spanAngle =  (geom->endAngle - startAngle);
-
-          path.arcMoveTo(0, 0, geom->radius * 2, geom->radius * 2, -startAngle);
-          path.arcTo(0, 0, geom->radius * 2, geom->radius * 2, -startAngle, -spanAngle);
-
-          item->setPen(pen);
-          item->setPath(path);
-          item->setPos(geom->x - geom->radius, geom->y - geom->radius);
-          group->addToGroup(item);
-        } break;
-        case DrawingGeometry::ELLIPSE: {
-          DrawingGeometry::Ellipse *geom = static_cast<DrawingGeometry::Ellipse *>(*it);
-          QGraphicsEllipseItem *item = new  QGraphicsEllipseItem();
-
-          item->setRect(0, 0, geom->major * 2, geom->minor * 2);
-          item->setPos(geom->x -geom->major, geom->y - geom->minor);
-          item->setTransformOriginPoint(geom->major, geom->minor);
-          item->setRotation(geom->angle);
-          item->setPen(pen);
-          group->addToGroup(item);
-        } break;
-        case DrawingGeometry::ARCOFELLIPSE: {
-          DrawingGeometry::AOE *geom = static_cast<DrawingGeometry::AOE *>(*it);
-          QGraphicsPathItem *item = new QGraphicsPathItem();
-          QPainterPath path;
-
-          double startAngle = (geom->startAngle);
-          double spanAngle =  (geom->endAngle - startAngle);
-
-          path.arcMoveTo(0, 0, geom->major * 2, geom->minor * 2, -startAngle);
-          path.arcTo(0, 0, geom->major * 2, geom->minor * 2, -startAngle, -spanAngle);
-          item->setTransformOriginPoint(geom->major, geom->minor);
-          item->setRotation(geom->angle);
-          item->setPath(path);
-          item->setPos(geom->x - geom->major, geom->y - geom->minor);
-          item->setPen(pen);
-          group->addToGroup(item);
-        } break;
-        case DrawingGeometry::GENERIC: {
-          DrawingGeometry::Generic  *geom = static_cast<DrawingGeometry::Generic *>(*it);
-          QGraphicsPathItem *item = new  QGraphicsPathItem();
-          QPainterPath path;
-          path.moveTo(geom->points[0].fX, geom->points[0].fY);
-          std::vector<Base::Vector2D>::const_iterator it = geom->points.begin();
-
-          for(++it; it != geom->points.end(); ++it) {
-              path.lineTo((*it).fX, (*it).fY);
-          }
-          item->setPen(pen);
-          item->setPath(path);
-          group->addToGroup(item);
-        } break;
-        default:
-          break;
-      }
-    }
-    group->setFlag(QGraphicsItem::ItemIsMovable, true);
-    this->scene()->addItem(group);
+void CanvasView::addViewPart(Drawing::FeatureViewPart *part)
+{   
+    QGraphicsItemViewPart *group = new QGraphicsItemViewPart(QPoint(0,0), this->scene());
+    group->setViewPartFeature(part);
+    
+    views.push_back(group); 
 }
+
 void CanvasView::setRenderer(RendererType type)
 {
     m_renderer = type;

@@ -63,6 +63,10 @@ public:
     virtual const char* getViewProviderName(void) const {
         return "DrawingGui::ViewProviderDrawingView";
     }
+    
+protected:
+    void onChanged(const App::Property* prop);
+    
 };
 
 typedef App::FeaturePythonT<FeatureView> FeatureViewPython;

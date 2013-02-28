@@ -41,14 +41,18 @@ public:
     FeaturePage(); /// Constructor
     ~FeaturePage();
 
-    App::PropertyFileIncluded PageResult;
     App::PropertyFile Template;
+    App::PropertyLinkList Views;
 
     /** @name methods overide Feature */
     //@{
     /// recalculate the Feature
     virtual App::DocumentObjectExecReturn *execute(void);
     //@}
+    
+    int addView(App::DocumentObject *docObj);
+    
+    short mustExecute() const;
 
     /// returns the type name of the ViewProvider
     virtual const char* getViewProviderName(void) const {

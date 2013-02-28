@@ -1,7 +1,8 @@
 /***************************************************************************
  *   Copyright (c) 2004 Jürgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2012 Luke Parry    <l.parry@warwick.ac.uk>              *
  *                                                                         *
- *   This file is Drawing of the FreeCAD CAx development system.              *
+ *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
  *   This library is free software; you can redistribute it and/or         *
  *   modify it under the terms of the GNU Library General Public           *
@@ -10,7 +11,7 @@
  *                                                                         *
  *   This library  is distributed in the hope that it will be useful,      *
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A DrawingICULAR PURPOSE.  See the         *
+ *   MERCHANTABILITY or FITNESS FOR A DrawingICULAR PURPOSE.  See the      *
  *   GNU Library General Public License for more details.                  *
  *                                                                         *
  *   You should have received a copy of the GNU Library General Public     *
@@ -36,17 +37,23 @@
 #include <Base/Parameter.h>
 #include <Base/Exception.h>
 #include <Base/Sequencer.h>
+
 #include <App/Application.h>
 #include <App/Document.h>
 #include <App/DocumentObject.h>
+
 #include <Gui/Application.h>
-#include <Gui/SoFCSelection.h>
-#include <Gui/Selection.h>
-#include <Gui/MainWindow.h>
 #include <Gui/BitmapFactory.h>
+#include <Gui/Control.h>
+#include <Gui/Document.h>
+#include <Gui/MainWindow.h>
+#include <Gui/Selection.h>
+#include <Gui/SoFCSelection.h>
 #include <Gui/ViewProviderDocumentObjectGroup.h>
 
 #include <Mod/Drawing/App/FeaturePage.h>
+#include <Mod/Drawing/App/FeatureView.h>
+
 #include "DrawingView.h"
 #include "ViewProviderPage.h"
 
@@ -73,7 +80,7 @@ ViewProviderDrawingPage::~ViewProviderDrawingPage()
 void ViewProviderDrawingPage::attach(App::DocumentObject *pcFeat)
 {
     // call parent attach method
-    ViewProviderDocumentObject::attach(pcFeat);
+    ViewProviderDocumentObjectGroup::attach(pcFeat);
 }
 
 void ViewProviderDrawingPage::setDisplayMode(const char* ModeName)
@@ -88,21 +95,17 @@ std::vector<std::string> ViewProviderDrawingPage::getDisplayModes(void) const
     StrList.push_back("Drawing");
     return StrList;
 }
-
+    
 void ViewProviderDrawingPage::updateData(const App::Property* prop)
 {
-    Gui::ViewProviderDocumentObjectGroup::updateData(prop);
-    if (prop->getTypeId() == App::PropertyFileIncluded::getClassTypeId()) {
-        if (std::string(getPageObject()->PageResult.getValue()) != "") {
-            DrawingView* view = showDrawingView();
-            view->attachPageObject(getPageObject());
-            if (view->isHidden())
-                QTimer::singleShot(300, view, SLOT(viewAll()));
-            else {
-//                 view->viewAll();
-            }
-        }
+
+    if (prop == &(getPageObject()->Views)) {
+        if(this->view) {
+            view->updateDrawing();
+            Base::Console().Log("Updating Drawing");
+        }           
     }
+    Gui::ViewProviderDocumentObjectGroup::updateData(prop);
 }
 
 void ViewProviderDrawingPage::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
@@ -114,7 +117,26 @@ void ViewProviderDrawingPage::setupContextMenu(QMenu* menu, QObject* receiver, c
 bool ViewProviderDrawingPage::setEdit(int ModNum)
 {
     doubleClicked();
-    return false;
+    return true;
+}
+
+void ViewProviderDrawingPage::unsetEdit(int ModNum)
+{
+    try {
+        // Update the Document
+        getPageObject()->getDocument()->recompute();
+    }
+    catch (...) {
+    }
+
+    // clear the selection and set the new/edited sketch(convenience)
+    Gui::Selection().clearSelection();
+    std::string ObjName = getPageObject()->getNameInDocument();
+    std::string DocName = getPageObject()->getDocument()->getName();
+    Gui::Selection().addSelection(DocName.c_str(),ObjName.c_str());
+
+    // when pressing ESC make sure to close the dialog
+    Gui::Control().closeDialog();
 }
 
 bool ViewProviderDrawingPage::doubleClicked(void)
@@ -125,7 +147,24 @@ bool ViewProviderDrawingPage::doubleClicked(void)
 //         view->viewAll();
     }
     Gui::getMainWindow()->setActiveWindow(this->view);
+    Gui::Application::Instance->activeDocument()->setEdit(this);
     return true;
+}
+
+std::vector<App::DocumentObject*> ViewProviderDrawingPage::claimChildren(void) const
+{
+    // Collect any child fields and put this in the CamFeature tree
+    std::vector<App::DocumentObject*> temp;
+    const std::vector<App::DocumentObject *> &views = getPageObject()->Views.getValues();
+    try {
+      for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
+          temp.push_back(*it);
+      }
+      return temp;
+    } catch (...) {
+        std::vector<App::DocumentObject*> tmp;
+        return tmp;
+    }
 }
 
 DrawingView* ViewProviderDrawingPage::showDrawingView()

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -39,7 +39,9 @@
 //#include <BRepAPI_MakeOutLine.hxx>
 #include <HLRAlgo_Projector.hxx>
 #include <HLRBRep_ShapeBounds.hxx>
+#include <HLRBRep_EdgeData.hxx>
 #include <HLRBRep_HLRToShape.hxx>
+#include <HLRBRep_Data.hxx>
 #include <gp_Ax2.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Dir.hxx>
@@ -53,18 +55,26 @@
 #include <TopoDS_Vertex.hxx>
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
+#include <TopTools_ListIteratorOfListOfShape.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <TColgp_Array1OfPnt2d.hxx>
+
 #include <BRep_Tool.hxx>
 #include <BRepMesh.hxx>
+#include <BRep_Builder.hxx>
+#include <BRepBuilderAPI_MakeWire.hxx>
+#include <BRepTools_WireExplorer.hxx>
 
 #include <BRepAdaptor_CompCurve.hxx>
+#include <HLRBRep.hxx>
+#include <HLRAlgo_EdgeIterator.hxx>
 #include <Handle_BRepAdaptor_HCompCurve.hxx>
 #include <Approx_Curve3d.hxx>
 #include <BRepAdaptor_HCurve.hxx>
 #include <Handle_BRepAdaptor_HCurve.hxx>
+#include <Handle_HLRBRep_Data.hxx>
 #include <Geom_BSplineCurve.hxx>
 #include <Handle_Geom_BSplineCurve.hxx>
 #include <Geom_BezierCurve.hxx>
@@ -72,6 +82,7 @@
 #include <GeomConvert_BSplineCurveKnotSplitting.hxx>
 #include <Geom2d_BSplineCurve.hxx>
 
+#include <Base/Console.h>
 #include <Base/Exception.h>
 #include <Base/FileInfo.h>
 #include <Base/Tools.h>
@@ -82,9 +93,8 @@
 
 using namespace DrawingGeometry;
 
-GeometryObject::GeometryObject() : brep_hlr(0)
-{ 
-
+GeometryObject::GeometryObject() : brep_hlr(0), Tolerance(0.05f)
+{    
 }
 
 GeometryObject::~GeometryObject()
@@ -94,16 +104,28 @@ GeometryObject::~GeometryObject()
 
 void GeometryObject::setTolerance(double value)
 {
-    this->Tolerance = value; 
+    this->Tolerance = value;
 }
 
 void GeometryObject::clear()
 {
-    for(std::vector<BaseGeom *>::iterator it = geometry.begin(); it != geometry.end(); ++it) {
+  
+    for(std::vector<BaseGeom *>::iterator it = edgeGeom.begin(); it != edgeGeom.end(); ++it) {
         delete *it;
         *it = 0;
     }
-    geometry.clear();
+    
+    edgeGeom.clear();
+    
+    for(std::vector<BaseGeom *>::iterator it = faceGeom.begin(); it != faceGeom.end(); ++it) {
+        delete *it;
+        *it = 0;
+    }
+    
+    faceGeom.clear();
+    
+    faceReferences.clear();
+    edgeReferences.clear();
     if(brep_hlr)
         brep_hlr->Delete();
 }
@@ -122,13 +144,335 @@ TopoDS_Shape GeometryObject::invertY(const TopoDS_Shape& shape)
     return mkTrf.Shape();
 }
 
-void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vector3f &direction, double tolerance)
+void GeometryObject::drawFace (const int visible, const int typ, const int iface, Handle_HLRBRep_Data & DS, TopoDS_Shape& Result) const
 {
-    // Clear previous Geometry that may have been stored
-    this->clear();
+    HLRBRep_FaceIterator Itf;
+
+    for (Itf.InitEdge(DS->FDataArray().ChangeValue(iface)); Itf.MoreEdge(); Itf.NextEdge()) {               
+      
+      int ie = Itf.Edge();
+      
+      HLRBRep_EdgeData& edf = DS->EDataArray().ChangeValue(ie);
+      
+      if (true/*!edf.Used()*/) {        
+        bool todraw;
+        if (typ == 1) 
+            todraw =  Itf.IsoLine();
+        else if (typ == 2)
+            todraw =  Itf.Internal();
+        else if (typ == 3) 
+            todraw =  edf.Rg1Line() &&
+          !edf.RgNLine() && !Itf.OutLine();
+        else if (typ == 4) 
+            todraw =  edf.RgNLine() && !Itf.OutLine();
+        else              
+            todraw = !(Itf.IsoLine()  || Itf.Internal() || (edf.Rg1Line() && !Itf.OutLine()));
+
+      if (todraw) {
+          // Draw all the edges in the face
+          drawEdge(visible,true, true,typ,edf,Result);
+          edf.Used(true);
+        } else {
+          if(typ > 4 && (edf.Rg1Line() && !Itf.OutLine())) {
+            int hc = edf.HideCount();
+            if(hc > 0) {
+              edf.Used(true);
+            } else {
+              ++hc;
+              edf.HideCount(hc); //to try with another face
+            }
+          } else {
+            edf.Used(true);
+          }
+        }
+      }
+    }
+}
+
+void GeometryObject::drawEdge(int ie, bool visible, bool inFace, int typ,HLRBRep_EdgeData& ed, TopoDS_Shape& Result) const
+{
+    bool todraw = false;
+    if(inFace)
+        todraw = true;
+    else if (typ == 3) 
+        todraw = ed.Rg1Line() && !ed.RgNLine();
+    else if (typ == 4)
+        todraw = ed.RgNLine();
+    else              
+        todraw =!ed.Rg1Line();
+
+    if (todraw) {
+      double sta,end;
+      float tolsta,tolend;
+      
+      BRep_Builder B;
+      TopoDS_Edge E;
+      HLRAlgo_EdgeIterator It;
+      
+      if (visible) {
+          for (It.InitVisible(ed.Status()); It.MoreVisible(); It.NextVisible()) {
+              It.Visible(sta,tolsta,end,tolend);
+              
+              E = HLRBRep::MakeEdge(ed.Geometry(),sta,end);
+              if (!E.IsNull()) {
+                  B.Add(Result,E);
+                  if(ie >= 0) {                  
+                      Base::Console().Log("Created visible edge for %i \n", ie);
+                  }
+              }
+          }
+      } else {
+          for (It.InitHidden(ed.Status()); It.MoreHidden(); It.NextHidden()) {
+
+              It.Hidden(sta,tolsta,end,tolend);
+              E = HLRBRep::MakeEdge(ed.Geometry(),sta,end);
+              if (!E.IsNull()) {
+                  B.Add(Result,E);
+                  if(ie >= 0) {                  
+                      Base::Console().Log("Created hidden edge for %i \n", ie);
+                  }              
+              }          
+          }
+      }
+    }
+}
+
+void GeometryObject::extractFaces(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType)
+{
+    if(!myAlgo)
+        return;
+
+    Handle_HLRBRep_Data DS = myAlgo->DataStructure();
+    if (DS.IsNull())
+        return;
+     
+    DS->Projector().Scaled(true);
     
+    int e1 = 1;
+    int e2 = DS->NbEdges();
+    int f1 = 1;
+    int f2 = DS->NbFaces();
+    
+    if (!S.IsNull()) {
+        Standard_Integer v1,v2;
+        Standard_Integer index = myAlgo->Index(S);
+        if(index == 0)
+            return;
+        myAlgo->ShapeBounds(index).Bounds(v1,v2,e1,e2,f1,f2);    
+    }
+    
+    TopTools_IndexedMapOfShape anfIndices;    
+    
+    TopTools_IndexedMapOfShape& Faces = DS->FaceMap();
+     
+    TopExp::MapShapes(S, TopAbs_FACE, anfIndices);
+
+    Base::Console().Log("Num face: %i", anfIndices.Extent());
+    Base::Console().Log("Num faces gen: %i", Faces.Extent());
+    
+    
+    BRep_Builder B;
+
+    /* ----------------- Extract Faces ------------------ */    
+    for (int iface = f1; iface <= f2; iface++) {       
+        TopoDS_Shape result;
+        B.MakeCompound(TopoDS::Compound(result));
+        std::list<TopoDS_Edge> edgeList;
+        drawFace(visible,5,iface,DS,result);
+        
+        TopoDS_Shape face;
+        createWire(result, face);
+        int facesAdded = calculateGeometry(face, extractionType, -1, faceGeom);    
+        
+        int ie;
+        for (int i = 1; i <= anfIndices.Extent(); i++) {
+            ie = Faces.FindIndex(anfIndices(iface));
+            if (ie != 0) {
+                break;
+            }
+        }
+        
+        if(ie == 0)
+            ie = -1; // If Face not found - select hidden
+        
+        // Push the edge references 
+        while(facesAdded--)
+            faceReferences.push_back(ie);
+    }
+
+    DS->Projector().Scaled(false);
+}
+
+void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType)
+{
+    if (!myAlgo)
+      return;
+
+    Handle_HLRBRep_Data DS = myAlgo->DataStructure();
+
+    if (DS.IsNull())
+        return;
+
+    DS->Projector().Scaled(true);
+    
+    int e1 = 1;
+    int e2 = DS->NbEdges();
+    int f1 = 1;
+    int f2 = DS->NbFaces();
+    
+    if (!S.IsNull()) {
+        int v1,v2;
+        int index = myAlgo->Index(S);
+        if(index == 0)
+            return;
+        myAlgo->ShapeBounds(index).Bounds(v1,v2,e1,e2,f1,f2);    
+    }
+
+    HLRBRep_EdgeData* ed = &(DS->EDataArray().ChangeValue(e1 - 1));
+
+    // Get map of edges and faces from projected geometry
+    TopTools_IndexedMapOfShape& Edges = DS->EdgeMap();    
+    TopTools_IndexedMapOfShape anIndices;
+    
+    TopExp::MapShapes(S, TopAbs_EDGE, anIndices);
+
+    Base::Console().Log("Num edges: %i",  anIndices.Extent());
+    Base::Console().Log("Num edges gen: %i",  Edges.Extent());   
+    
+    for (int j = e1; j <= e2; j++) {
+        ed++;
+        if (ed->Selected() && !ed->Vertical()) {
+            ed->Used(false);
+            ed->HideCount(0);
+        } else {
+            ed->Used(true); 
+        }
+    }
+    
+    BRep_Builder B;
+    
+    /* ----------------- Extract Edges ------------------ */    
+    for (int i = 1; i <= anIndices.Extent(); i++) {
+      int ie = Edges.FindIndex(anIndices(i));
+      if (ie != 0) {
+        
+          HLRBRep_EdgeData& ed = DS->EDataArray().ChangeValue(ie);
+          if(!ed.Used()) {            
+              TopoDS_Shape result;
+              B.MakeCompound(TopoDS::Compound(result));
+              
+              drawEdge(i, visible, type, false ,ed, result);
+
+              int edgesAdded = calculateGeometry(result, extractionType, i, edgeGeom);
+              
+              // Push the edge references 
+              while(edgesAdded--)
+                  edgeReferences.push_back(ie);
+                
+              ed.Used(true); 
+          }          
+      }
+    }
+    
+    // Add any remaining edges that couldn't be found
+  HLRBRep_EdgeData* edge = &(DS->EDataArray().ChangeValue(e1 - 1));
+    for (int ie = e1; ie <= e2; ie++) {     
+
+      HLRBRep_EdgeData& ed = DS->EDataArray().ChangeValue(ie);
+      if (!ed.Used()) {
+          int num = -1;
+          
+          TopoDS_Shape result;
+          B.MakeCompound(TopoDS::Compound(result));
+          
+          drawEdge(num, visible, type, false ,ed, result);
+          int edgesAdded = calculateGeometry(result, extractionType, num, edgeGeom);
+          
+          // Push the edge references 
+          while(edgesAdded--)
+              edgeReferences.push_back(ie);
+          ed.Used(true);
+      }
+    }
+
+    DS->Projector().Scaled(false);
+}
+
+void GeometryObject::createWire(const TopoDS_Shape &input, TopoDS_Shape &result)
+{    
+     if(input.IsNull())
+        return; // There is no OpenCascade Geometry to be calculated
+    
+    std::list<TopoDS_Wire> wires;
+    std::list<TopoDS_Edge> edgeList;
+    
+    // Explore all edges of input and calculate base geometry representation
+    TopExp_Explorer edges(input, TopAbs_EDGE);
+    for (int i = 1 ; edges.More(); edges.Next(),i++) {
+        const TopoDS_Edge& edge = TopoDS::Edge(edges.Current());
+        edgeList.push_back(edge);
+      
+    }
+
+    // sort them together to wires
+    while (edgeList.size() > 0) {
+        BRepBuilderAPI_MakeWire mkWire;
+        // add and erase first edge
+        mkWire.Add(edgeList.front());
+        edgeList.pop_front();
+
+        TopoDS_Wire new_wire = mkWire.Wire(); // current new wire
+
+        // try to connect each edge to the wire, the wire is complete if no more egdes are connectible
+        bool found = false;
+        do {
+            found = false;
+            for (std::list<TopoDS_Edge>::iterator pE = edgeList.begin(); pE != edgeList.end(); ++pE) {
+                mkWire.Add(*pE);
+                if (mkWire.Error() != BRepBuilderAPI_DisconnectedWire) {
+                    // edge added ==> remove it from list
+                    found = true;
+                    edgeList.erase(pE);
+                    new_wire = mkWire.Wire();
+                    break;
+                }
+            }
+        }
+        while (found);
+        wires.push_back(new_wire);
+    }
+    
+    if (wires.size() == 1)
+        result = *wires.begin();
+    else if (wires.size() > 1) { 
+        // FIXME: The right way here would be to determine the outer and inner wires and
+        // generate a face with holes (inner wires have to be taged REVERSE or INNER).
+        // thats the only way to transport a somwhat more complex sketch...
+        //result = *wires.begin();
+
+        BRep_Builder builder;
+        TopoDS_Compound comp;
+        builder.MakeCompound(comp);
+        for (std::list<TopoDS_Wire>::iterator wt = wires.begin(); wt != wires.end(); ++wt) {
+            BRepTools_WireExplorer wExplorer(*wt);
+            while(wExplorer.More()) {
+                builder.Add(comp, wExplorer.Current());
+                wExplorer.Next();
+            }
+            
+        }
+        result = comp;
+    }  
+}
+
+void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vector3f &direction)
+{
+    // Clear previous Geometry and References that may have been stored
+    this->clear();
+
+    const TopoDS_Shape invertShape = invertY(input);
     HLRBRep_Algo *brep_hlr = new HLRBRep_Algo();
-    brep_hlr->Add(invertY(input));
+    brep_hlr->Add(invertShape);
 
     try {
         #if defined(__GNUC__) && defined (FC_OS_LINUX)
@@ -136,16 +480,17 @@ void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vect
         #endif
         gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
         HLRAlgo_Projector projector( transform );
+
         brep_hlr->Projector(projector);
         brep_hlr->Update();
         brep_hlr->Hide();
+
     }
     catch (...) {
         Standard_Failure::Raise("Fatal error occurred while projecting shape");
     }
 
     // extracting the result sets:
-    HLRBRep_HLRToShape shapes( brep_hlr );
 
     // V  = shapes.VCompound       ();// hard edge visibly
     // V1 = shapes.Rg1LineVCompound();// Smoth edges visibly
@@ -158,30 +503,35 @@ void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vect
     // HO = shapes.OutLineHCompound();// contours apparents invisibly
     // HI = shapes.IsoLineHCompound();// isoparamtriques   invisibly
 
-    calculateGeometry(shapes.HCompound(),  WithHidden);
-    calculateGeometry(shapes.OutLineHCompound(), WithHidden);
-    calculateGeometry(shapes.Rg1LineHCompound(), (ExtractionType)(WithSmooth | WithHidden)); // Smooth
-    
+    // Extract Hidden Edges
+    //extractCompound(brep_hlr, invertShape, 5, false, WithHidden);// Hard Edge
+//     calculateGeometry(extractCompound(brep_hlr, invertShape, 2, false), WithHidden); // Outline
+//     calculateGeometry(extractCompound(brep_hlr, invertShape, 3, false), (ExtractionType)(WithSmooth | WithHidden)); // Smooth
+
     // Extract Visible Edges
-    calculateGeometry(shapes.VCompound(), Plain);
-    calculateGeometry(shapes.OutLineVCompound(), Plain);
-    calculateGeometry(shapes.Rg1LineVCompound(), WithSmooth); // Smooth Edge    
+//     extractEdges(brep_hlr, invertShape, 5, true, WithSmooth);  // Hard Edge   
+    
+    // Extract Faces
+   extractFaces(brep_hlr, invertShape, 5, true, WithSmooth);  // 
+//     calculateGeometry(extractCompound(brep_hlr, invertShape, 2, true), Plain);  // Outline
+//     calculateGeometry(extractCompound(brep_hlr, invertShape, 3, true), WithSmooth); // Smooth Edge
 }
 
-void GeometryObject::calculateGeometry(const TopoDS_Shape &input, ExtractionType extractionType)
+int GeometryObject::calculateGeometry(const TopoDS_Shape &input, const ExtractionType extractionType, const int ie, std::vector<BaseGeom *> &geom)
 {
     if(input.IsNull())
-        return; // There is no OpenCascade Geometry to be calculated
-    
-    // build a mesh to explore the shape
-    BRepMesh::Mesh(input, Tolerance); 
+        return 0; // There is no OpenCascade Geometry to be calculated
 
+    // build a mesh to explore the shape
+    BRepMesh::Mesh(input, this->Tolerance);
+
+    int geomsAdded = 0;
     // Explore all edges of input and calculate base geometry representation
-    TopExp_Explorer edges(input, TopAbs_EDGE); 
+    TopExp_Explorer edges(input, TopAbs_EDGE);
     for (int i = 1 ; edges.More(); edges.Next(),i++) {
         const TopoDS_Edge& edge = TopoDS::Edge(edges.Current());
         BRepAdaptor_Curve adapt(edge);
-        
+
         switch(adapt.GetType()) {
           case GeomAbs_Circle: {
             double f = adapt.FirstParameter();
@@ -192,11 +542,11 @@ void GeometryObject::calculateGeometry(const TopoDS_Shape &input, ExtractionType
             if (fabs(l-f) > 1.0 && s.SquareDistance(e) < 0.001) {
                   Circle *circle = new Circle(adapt);
                   circle->extractType = extractionType;
-                  geometry.push_back(circle);
+                  geom.push_back(circle);
             } else {
                   AOC *aoc = new AOC(adapt);
                   aoc->extractType = extractionType;
-                  geometry.push_back(aoc);
+                  geom.push_back(aoc);
             }
           } break;
           case GeomAbs_Ellipse: {
@@ -207,28 +557,26 @@ void GeometryObject::calculateGeometry(const TopoDS_Shape &input, ExtractionType
             if (fabs(l-f) > 1.0 && s.SquareDistance(e) < 0.001) {
                   Ellipse *ellipse = new Ellipse(adapt);
                   ellipse->extractType = extractionType;
-                  geometry.push_back(ellipse);
+                  geom.push_back(ellipse);
             } else {
                   AOE *aoe = new AOE(adapt);
                   aoe->extractType = extractionType;
-                  geometry.push_back(aoe);
+                  geom.push_back(aoe);
             }
           } break;
-          default: {            
+          case GeomAbs_BSplineCurve: {
+            BSpline *bspline = new BSpline(adapt);
+            bspline->extractType = extractionType;
+            geom.push_back(bspline);
+          } break;
+          default: {
             Generic *primitive = new Generic(adapt);
             primitive->extractType = extractionType;
-            geometry.push_back(primitive);
-          }  break;/*else if (adapt.GetType() == GeomAbs_Ellipse) {
-            (adapt, i, result);
+            geom.push_back(primitive);
+          }  break;
         }
-        else if (adapt.GetType() == GeomAbs_BSplineCurve) {
-            printBSpline(adapt, i, result);
-        }
-        // fallback
-        else {
-            printGeneric(adapt, i, result);
-        }*/
-        }  
+        geomsAdded++;
     }
+    return geomsAdded;
 }
 

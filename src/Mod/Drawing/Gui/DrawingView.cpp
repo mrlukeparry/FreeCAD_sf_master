@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2007 Jürgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -19,7 +20,6 @@
  *   Suite 330, Boston, MA  02111-1307, USA                                *
  *                                                                         *
  ***************************************************************************/
-
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
@@ -56,6 +56,7 @@
 
 #include <Gui/Document.h>
 #include <App/DocumentObject.h>
+#include <Base/Console.h>
 #include <Base/Stream.h>
 #include <Base/gzstream.h>
 #include <Base/PyObjectBase.h>
@@ -65,6 +66,10 @@
 
 #include "../App/FeaturePage.h"
 #include "../App/FeatureViewPart.h"
+
+#include "QGraphicsItemView.h"
+#include "QGraphicsItemViewPart.h"
+
 #include "CanvasView.h"
 #include "DrawingView.h"
 
@@ -254,20 +259,171 @@ DrawingView::DrawingView(Gui::Document* doc, QWidget* parent)
 
     setCentralWidget(m_view);
     //setWindowTitle(tr("SVG Viewer"));
+    
+    // Connect Signals and Slots
+    QObject::connect(
+        m_view->scene(), SIGNAL(selectionChanged()),
+        this           , SLOT  (selectionChanged())
+       );
 }
 
 void DrawingView::attachPageObject(Drawing::FeaturePage *pageFeature)
 {
-      // get through the children and collect all the views
-    const std::vector<App::DocumentObject*> &grp = pageFeature->getObjects();
+    // get through the children and collect all the views
+    const std::vector<App::DocumentObject*> &grp = pageFeature->Views.getValues();
     for (std::vector<App::DocumentObject*>::const_iterator it = grp.begin();it != grp.end(); ++it) {
         if ( (*it)->getTypeId().isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()) ) {
             Drawing::FeatureViewPart *view = dynamic_cast<Drawing::FeatureViewPart *>(*it);
-            m_view->drawViewPart(view);
+            m_view->addViewPart(view);
         }
     }
 }
 
+void DrawingView::preSelectionChanged(const QPoint &pos)
+{
+    QObject *obj = QObject::sender();
+    
+    if(!obj)
+        return;
+    
+    // Check if an edge was preselected
+    QGraphicsItemEdge *edge = qobject_cast<QGraphicsItemEdge *>(obj);
+    if(edge) {
+      
+        // Find the parent view that this edges is contained within
+        QGraphicsItem *parent = edge->parentItem();
+        if(!parent)
+            return;
+        
+        QGraphicsItemView *viewItem = dynamic_cast<QGraphicsItemView *>(parent);
+        if(!viewItem)
+          return;
+            
+        Drawing::FeatureView *viewObj = viewItem->getViewObject();
+        std::stringstream ss;
+        ss << "Edge" << edge->getReference();
+        bool accepted =
+        Gui::Selection().setPreselect(viewObj->getDocument()->getName()
+                                     ,viewObj->getNameInDocument()
+                                     ,ss.str().c_str()
+                                     ,pos.x()
+                                     ,pos.y()
+                                     ,0);
+
+    } else {
+            // Check if an edge was preselected
+        QGraphicsItemView *view = qobject_cast<QGraphicsItemView *>(obj);
+        
+        if(!view)
+            return;
+        Drawing::FeatureView *viewObj = view->getViewObject();
+        Gui::Selection().setPreselect(viewObj->getDocument()->getName()
+                                     ,viewObj->getNameInDocument()
+                                     ,""
+                                     ,pos.x()
+                                     ,pos.y()
+                                     ,0);
+    }
+}
+
+void DrawingView::selectionChanged()
+{
+    QList<QGraphicsItem *> selection = m_view->scene()->selectedItems();
+
+    bool block = this->blockConnection(true); // avoid to be notified by itself
+    Gui::Selection().clearSelection();
+    for (QList<QGraphicsItem *>::iterator it = selection.begin(); it != selection.end(); ++it) {
+        // All selectable items must be of QGraphicsItemView type
+            
+        QGraphicsItemView *itemView = dynamic_cast<QGraphicsItemView *>(*it);
+        if(itemView == 0) {
+            QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+            if(edge) {
+              
+                // Find the parent view that this edges is contained within
+                QGraphicsItem *parent = edge->parentItem();
+                if(!parent)
+                    return;
+                
+                QGraphicsItemView *viewItem = dynamic_cast<QGraphicsItemView *>(parent);
+                if(!viewItem)
+                  return;
+                    
+                Drawing::FeatureView *viewObj = viewItem->getViewObject();
+        
+                std::stringstream ss;
+                ss << "Edge" << edge->getReference();
+                bool accepted =
+                Gui::Selection().addSelection(viewObj->getDocument()->getName()
+                                            ,viewObj->getNameInDocument()
+                                            ,ss.str().c_str());
+
+                    }
+            continue;
+        }        
+        
+        Drawing::FeatureView *viewObj = itemView->getViewObject();
+        
+        std::string doc_name = viewObj->getDocument()->getName();
+        std::string obj_name = viewObj->getNameInDocument();
+
+        Gui::Selection().addSelection(doc_name.c_str(), obj_name.c_str());
+    }
+    this->blockConnection(block);
+    
+//     QList<QGraphicsItem *> addSelection;
+//     QList<QGraphicsItem *> remSelection;
+// 
+//     for(QList<QGraphicsItem *>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
+//         bool found = false;
+//         for(QList<QGraphicsItem *>::const_iterator pit = prevSelection.begin(); pit != prevSelection.end(); ++pit) {
+//             if((*it) == (*pit)) {
+//                 found = true;
+//                 prevSelection.removeOne(*pit);
+//                 break;
+//             }
+//         }
+//         if(!found)
+//             addSelection.push_back(*it);
+        
+//     }
+// 
+//     // Any remaining entries must have be removed
+//     remSelection = prevSelection;
+
+
+//     QGraphicsItemGroup *group = qgraphicsitem_cast<QGraphicsItemGroup *>(items.at(0));
+//     if(group == NULL)
+//         return;
+//     bool selected = group->isSelected();
+//
+//     QList<QGraphicsItem *> children = group->children();
+//     for(QList<QGraphicsItem *>::const_iterator it = children.begin(); it != children.end(); ++it) {
+//       QAbstractGraphicsShapeItem *item = qgraphicsitem_cast<QAbstractGraphicsShapeItem *>(*it);
+//       QPen pen = item->pen();
+//       if(selected)
+//           pen.setColor(SelectColor);
+//       else
+//           pen.setColor(QColor(0, 0,0));
+//       item->setPen(pen);
+//     }
+//
+//     // Cache the selection
+//     prevSelection.clear();
+//     prevSelection = scene()->selectedItems();
+}
+
+void DrawingView::updateDrawing()
+{
+    const std::vector<QGraphicsItemView *> &views = m_view->getViews();
+    
+    for(std::vector<QGraphicsItemView *>::const_iterator it = views.begin(); it != views.end(); ++it) {
+
+        (*it)->updateView();      
+    }
+    
+}
+    
 void DrawingView::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu menu;
@@ -301,11 +457,30 @@ void DrawingView::setRenderer(QAction *action)
     }
 }
 
+void DrawingView::onSelectionChanged(const Gui::SelectionChanges& msg)
+{
+    if (msg.Type == Gui::SelectionChanges::ClrSelection) {
+
+    }
+    else if (msg.Type == Gui::SelectionChanges::AddSelection ||
+             msg.Type == Gui::SelectionChanges::RmvSelection) {
+        bool select = (msg.Type == Gui::SelectionChanges::AddSelection);
+        // Check if it is a view object
+    }
+    else if (msg.Type == Gui::SelectionChanges::SetSelection) {
+        // do nothing here
+    }
+}
+
 bool DrawingView::onMsg(const char* pMsg, const char** ppReturn)
 {
     if (strcmp("ViewFit",pMsg) == 0) {
         viewAll();
         return true;
+    } else if (strcmp("Redo", pMsg) == 0 ) {
+        getAppDocument()->redo();
+    } else if (strcmp("Undo", pMsg) == 0 ) {
+        getAppDocument()->undo();
     }
     return false;
 }
@@ -313,6 +488,10 @@ bool DrawingView::onMsg(const char* pMsg, const char** ppReturn)
 bool DrawingView::onHasMsg(const char* pMsg) const
 {
     if (strcmp("ViewFit",pMsg) == 0)
+        return true;
+    else if(strcmp("Redo", pMsg) == 0 && getAppDocument()->getAvailableRedos() > 0)
+        return true;
+    else if(strcmp("Undo", pMsg) == 0 && getAppDocument()->getAvailableUndos() > 0)
         return true;
     else if (strcmp("Print",pMsg) == 0)
         return true;

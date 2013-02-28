@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -20,71 +20,49 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef DRAWINGGUI_CANVASVIEW_H
-#define DRAWINGGUI_CANVASVIEW_H
+#ifndef DRAWINGGUI_QGRAPHICSITEMVIEW_H
+#define DRAWINGGUI_QGRAPHICSITEMVIEW_H
 
 #include <Gui/MDIView.h>
-#include <QGraphicsView>
+#include <QGraphicsItemGroup>
+#include <QObject>
 
 QT_BEGIN_NAMESPACE
-class QSlider;
-class QAction;
-class QActionGroup;
-class QFile;
-class QGraphicsItemGroup;
-class QPopupMenu;
-class QToolBar;
-class QSvgWidget;
-class QScrollArea;
-class QPrinter;
+class QGraphicsScene;
+class QGraphicsSceneMouseEvent;
 QT_END_NAMESPACE
 
 namespace Drawing {
-class FeatureViewPart;
+class FeatureView;
 }
 
 namespace DrawingGui
 {
-class QGraphicsItemView;
 
-class DrawingGuiExport CanvasView : public QGraphicsView
+class DrawingGuiExport  QGraphicsItemView : public QObject, public QGraphicsItemGroup
 {
     Q_OBJECT
 
 public:
-    enum RendererType { Native, OpenGL, Image };
+    enum {Type = QGraphicsItem::UserType + 101};
+    QGraphicsItemView(const QPoint &position, QGraphicsScene *scene);
+    ~QGraphicsItemView();
 
-    CanvasView(QWidget *parent = 0);
-    ~CanvasView() {}
-
-    void setRenderer(RendererType type = Native);
-    void drawBackground(QPainter *p, const QRectF &rect);
-    void addViewPart(Drawing::FeatureViewPart *part);
-
-public Q_SLOTS:
-    void setHighQualityAntialiasing(bool highQualityAntialiasing);
-    void setViewBackground(bool enable);
-    void setViewOutline(bool enable);
+    void setViewFeature(Drawing::FeatureView *obj);
+    int type() const { return Type;}
     
-    const std::vector<QGraphicsItemView *> & getViews() const { return views; }
+    void updateView();
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
+    Drawing::FeatureView * getViewObject() const { return viewObject; }
+
+Q_SIGNALS:
+  void dirty();
 
 protected:
-    void wheelEvent(QWheelEvent *event);
-    void paintEvent(QPaintEvent *event);
-
-    static QColor SelectColor;
-    static QColor PreselectColor;
-
-    std::vector<QGraphicsItemView *> views;
-private:
-    RendererType m_renderer;
-
-    QGraphicsRectItem *m_backgroundItem;
-    QGraphicsRectItem *m_outlineItem;
-    
-    QImage m_image;
+  virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+  Drawing::FeatureView *viewObject;
 };
 
 } // namespace DrawingViewGui
 
-#endif // DRAWINGGUI_DRAWINGVIEW_H
+#endif // DRAWINGGUI_QGRAPHICSITEMVIEW_H

@@ -31,6 +31,8 @@
 #include "Geometry.h"
 
 class HLRBRep_Algo;
+class Handle_HLRBRep_Data;
+class HLRBRep_EdgeData;
 
 namespace DrawingGeometry
 {
@@ -44,18 +46,38 @@ public:
     /// Constructor
     GeometryObject();
     virtual ~GeometryObject();
-    
+
     void clear();
 
     void setTolerance(double value);
-    const std::vector<BaseGeom *> & getGeometry() const { return geometry; };
+    const std::vector<BaseGeom *> & getEdgeGeometry() const { return edgeGeom; };
+    const std::vector<BaseGeom *> & getFaceGeometry() const { return faceGeom; };
     
-    void extractGeometry(const TopoDS_Shape &input,const Base::Vector3f &direction, double tolerance);
+    const std::vector<int> & getEdgeRefs() const { return edgeReferences; };
+    const std::vector<int> & getFaceRefs() const { return faceReferences; };
+
+    void extractGeometry(const TopoDS_Shape &input,const Base::Vector3f &direction);
 
 protected:
-    void calculateGeometry(const TopoDS_Shape &input, ExtractionType extractionType);
+    // Reimplements HLRBRep Drawing Algorithms to satisfy Drawing Workbench requirements
+    void drawFace (const int visible, const int typ, const int iface, Handle_HLRBRep_Data & DS, TopoDS_Shape& Result) const;
+    void drawEdge(int ie, bool visible, bool inFace, int typ, HLRBRep_EdgeData& ed, TopoDS_Shape& Result) const;
+    
+    void extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType);
+    void extractFaces(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType);
+    int calculateGeometry(const TopoDS_Shape &input, ExtractionType extractionType, const int ie,  std::vector<BaseGeom *> &geoms);
+    
+    void createWire(const TopoDS_Shape &input, TopoDS_Shape &result);    
     TopoDS_Shape invertY(const TopoDS_Shape& shape);
-    std::vector<BaseGeom *> geometry;
+    
+    // Geometry
+    std::vector<BaseGeom *> edgeGeom;
+    std::vector<BaseGeom *> faceGeom;
+    
+    // Linked Edges and Faces to base object
+    std::vector<int> edgeReferences;
+    std::vector<int> faceReferences;
+
     double Tolerance;
     HLRBRep_Algo *brep_hlr;
 };

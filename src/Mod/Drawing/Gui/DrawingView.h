@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2007 Jürgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -25,6 +26,7 @@
 #define DRAWINGGUI_DRAWINGVIEW_H
 
 #include <Gui/MDIView.h>
+#include <Gui/Selection.h>
 #include <QGraphicsView>
 
 #include <App/DocumentObject.h>
@@ -42,7 +44,7 @@ class QPrinter;
 QT_END_NAMESPACE
 
 namespace Drawing {
-class FeaturePage;  
+class FeaturePage;
 }
 
 namespace DrawingGui
@@ -50,42 +52,7 @@ namespace DrawingGui
 
 class CanvasView;
 
-#if 0
-class DrawingGuiExport SvgView : public QGraphicsView
-{
-    Q_OBJECT
-
-public:
-    enum RendererType { Native, OpenGL, Image };
-
-    SvgView(QWidget *parent = 0);
-
-    void openFile(const QFile &file);
-    void setRenderer(RendererType type = Native);
-    void drawBackground(QPainter *p, const QRectF &rect);
-
-public Q_SLOTS:
-    void setHighQualityAntialiasing(bool highQualityAntialiasing);
-    void setViewBackground(bool enable);
-    void setViewOutline(bool enable);
-
-protected:
-    void wheelEvent(QWheelEvent *event);
-    void paintEvent(QPaintEvent *event);
-
-private:
-    RendererType m_renderer;
-
-    QGraphicsItem *m_svgItem;
-    QGraphicsRectItem *m_backgroundItem;
-    QGraphicsRectItem *m_outlineItem;
-
-    QImage m_image;
-};
-
-#endif
-
-class DrawingGuiExport DrawingView : public Gui::MDIView
+class DrawingGuiExport DrawingView : public Gui::MDIView, public Gui::SelectionObserver
 {
     Q_OBJECT
 
@@ -96,8 +63,14 @@ public Q_SLOTS:
     void attachPageObject(Drawing::FeaturePage *pageFeature);
     void setRenderer(QAction *action);
     void viewAll();
+    void selectionChanged();
+    void preSelectionChanged(const QPoint &pos);
+    void updateDrawing();
 
 public:
+   /// Observer message from the Selection
+    void onSelectionChanged(const Gui::SelectionChanges& msg);
+    
     bool onMsg(const char* pMsg,const char** ppReturn);
     bool onHasMsg(const char* pMsg) const;
     void print();

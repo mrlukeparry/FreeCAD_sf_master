@@ -23,14 +23,16 @@ SET(Features_SRCS
     FeaturePage.h
     FeatureProjection.cpp
     FeatureProjection.h
-    FeatureView.cpp
-    FeatureView.h
-    FeatureViewPart.cpp
-    FeatureViewPart.h
-    FeatureViewAnnotation.cpp
-    FeatureViewAnnotation.h
     FeatureClip.cpp
     FeatureClip.h
+    FeatureView.cpp
+    FeatureView.h
+    FeatureViewAnnotation.cpp
+    FeatureViewAnnotation.h
+    FeatureViewPart.cpp
+    FeatureViewPart.h
+    FeatureViewSection.cpp
+    FeatureViewSection.h
     PageGroup.cpp
     PageGroup.h
 )

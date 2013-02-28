@@ -19,7 +19,7 @@
  *   Suite 330, Boston, MA  02111-1307, USA                                *
  *                                                                         *
  ***************************************************************************/
- 
+
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
@@ -261,7 +261,7 @@ void orthoView::calcCentre()
         float temp = width;
         width = height;
         height = temp;
-    }   
+    }
 }
 
 
@@ -288,7 +288,7 @@ void orthoView::smooth(int state)
 
 
 TaskOrthoViews::TaskOrthoViews(QWidget *parent)
-  : ui(new Ui_TaskOrthoViews) 
+  : ui(new Ui_TaskOrthoViews)
 {
     ui->setupUi(this);
 
@@ -371,7 +371,7 @@ TaskOrthoViews::TaskOrthoViews(QWidget *parent)
                             {{3,2}, {4,1},  {5,3}},     //primary 1,        secondaries in y = 2 position duplicate y = -2
                             {{0,2}, {4,2},  {5,2}},     //primary 2,        secondaries in horizontal positions x = -2, -1, 1, 2
                             {{1,2}, {4,3},  {5,1}}};    //primary 3,        given by linear position from primary = (p + x) mod 4
-                            
+
     int temp2[4][3][2] =   {{{5,2}, {3,1},  {1,3}},     //primary 4, secondaries in horizontal x = -2, -1, 1    (x = 2 duplicates x = -2)
                             {{5,0}, {2,2},  {0,0}},     //primary 4, vertical positions
                             {{4,2}, {3,3},  {1,1}},     //primary 5, horizontal
@@ -386,7 +386,7 @@ TaskOrthoViews::TaskOrthoViews(QWidget *parent)
             }
 
     //initialise variables
-    
+
     for (int i=0; i < 4; i++)
         for (int j=0; j < 4; j++)
             view_status[i][j] = 0;
@@ -404,13 +404,13 @@ TaskOrthoViews::TaskOrthoViews(QWidget *parent)
     vert = horiz;
     x_pos = pagewidth/2;
     y_pos = pageheight/2;
-    
+
     data[0] = &scale;
     data[1] = &x_pos;
     data[2] = &y_pos;
     data[3] = &horiz;
     data[4] = &vert;
-    
+
 
 //    Command::doCommand(Command::Doc,"#%d", map1[2][2][1]);
 
@@ -487,7 +487,7 @@ void TaskOrthoViews::pagesize(std::string& page_template)
                 temp_line = line.substr(7+found);
                 sscanf (temp_line.c_str(), "%f", &pagewidth);
                 pagewidth -= 2*margin;
-                
+
                 if (done)
                 {
                     file.close();
@@ -504,7 +504,7 @@ void TaskOrthoViews::pagesize(std::string& page_template)
                 sscanf (temp_line.c_str(), "%f", &pageh1);
                 pageh1 -= 2*margin;
                 pageh2 = pageh1;
-                
+
                 if (done)
                 {
                     file.close();
@@ -562,7 +562,7 @@ void TaskOrthoViews::autodims()
         pageheight = pageh1;
     else
         pageheight = pageh2;
-        
+
     /*************************************** calculate scale **************************************/
 
     float working_scale = min((pagewidth - (wide + 1) * min_space) / width, (pageheight - (high + 1) * min_space) / height);
@@ -656,7 +656,7 @@ void TaskOrthoViews::validate_cbs()
                         else {
                             int di = ((i-2) < 0) - ((i-2) > 0);         //which direction is towards centre?
                             int dj = ((j-2) < 0) - ((j-2) > 0);
- 
+
                             if (c_boxes[i+di][j]->isChecked() + c_boxes[i][j+dj]->isChecked() + (di == 0) + (dj == 0) == 2)
                             {
                                 if (!((i == 2)*(j == 2)))               //don't enable the centre one!
@@ -665,7 +665,7 @@ void TaskOrthoViews::validate_cbs()
                                         c_boxes[i][j]->setEnabled(true);    //if this box's inner neighbour(s) are checked, then this one enabled
                             }
                             else
-                                c_boxes[i][j]->setEnabled(false);       
+                                c_boxes[i][j]->setEnabled(false);
                         }
                     }
                 }
@@ -706,7 +706,7 @@ void TaskOrthoViews::cb_toggled(bool toggle)
     {
         if (abs(dx) == 1 || abs(dy == 1))
             c_boxes[dx*2+2][dy*2+2]->setChecked(false);
-            
+
         for (i = 0; i < 4; i++)
         {
             if (view_status[i][2] == dx && view_status[i][3] == dy)
@@ -938,7 +938,7 @@ void TaskOrthoViews::clean_up(bool keep)
 
 TaskDlgOrthoViews::TaskDlgOrthoViews()
     : TaskDialog()
-{  
+{
     widget = new TaskOrthoViews();
     taskbox = new Gui::TaskView::TaskBox(
         Gui::BitmapFactory().pixmap("actions/drawing-orthoviews"), widget->windowTitle(), true, 0);

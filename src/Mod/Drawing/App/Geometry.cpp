@@ -98,18 +98,33 @@ AOE::AOE(const BRepAdaptor_Curve& c) : Ellipse(c)
 {
     this->geomType = ARCOFELLIPSE;
 
-    gp_Pnt s = c.Value(c.LastParameter());
-    gp_Pnt e = c.Value(c.FirstParameter());
+    gp_Elips ellp = c.Ellipse();
 
+    double f = c.FirstParameter();
+    double l = c.LastParameter();
+    gp_Pnt s = c.Value(f);
+    gp_Pnt m = c.Value((l+f)/2.0);
+    gp_Pnt e = c.Value(l);
+
+    gp_Vec v1(m,s);
+    gp_Vec v2(m,e);
+    gp_Vec v3(0,0,1);
+    double a = v3.DotCross(v1,v2);
+
+    this->startAngle = f;
+    this->endAngle = l;
+    
+    
     double ax = s.X() - this->x;
     double ay = s.Y() - this->y;
     double bx = e.X() - this->x;
     double by = e.Y() - this->y;
-
-    this->startAngle = atan2(ay,ax);
-    float range = atan2(-ay*bx+ax*by, ax*bx+ay*by);
+    
+    this->startAngle = f;
+    float range = l-f;
 
     this->endAngle = startAngle + range;
+
     this->startAngle *= 180 / M_PI;
     this->endAngle   *= 180 / M_PI;
 }

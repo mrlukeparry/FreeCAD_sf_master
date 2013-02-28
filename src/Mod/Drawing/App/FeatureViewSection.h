@@ -1,6 +1,6 @@
 /***************************************************************************
  *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2007     *
- *                                                                         *
+ *   Copyright (c) Luke Parry             (l.parry@warwick.ac.uk) 2013     *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
  *   This library is free software; you can redistribute it and/or         *
@@ -20,57 +20,48 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifndef _FeatureViewSection_h_
+#define _FeatureViewSection_h_
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
-# include <Python.h>
-#endif
+#include <App/DocumentObject.h>
+#include <App/PropertyLinks.h>
+#include <App/FeaturePython.h>
 
-#include <Base/Console.h>
-#include <Gui/Application.h>
-#include <Gui/Language/Translator.h>
-#include "Workbench.h"
-#include "ViewProviderPage.h"
-#include "ViewProviderView.h"
-#include "ViewProviderViewSection.h"
-//#include "resources/qrc_Drawing.cpp"
+#include "FeatureViewPart.h"
 
-// use a different name to CreateCommand()
-void CreateDrawingCommands(void);
-
-void loadDrawingResource()
+namespace Drawing
 {
-    // add resources and reloads the translators
-    Q_INIT_RESOURCE(Drawing);
-    Gui::Translator::instance()->refresh();
-}
-
-/* registration table  */
-extern struct PyMethodDef DrawingGui_Import_methods[];
 
 
-/* Python entry */
-extern "C" {
-void DrawingGuiExport initDrawingGui()
+/** Base class of all View Features in the drawing module
+ */
+class DrawingExport FeatureViewSection : public FeatureViewPart
 {
-    if (!Gui::Application::Instance) {
-        PyErr_SetString(PyExc_ImportError, "Cannot load Gui module in console application.");
-        return;
+    PROPERTY_HEADER(Part::FeatureViewSection);
+
+public:
+    /// Constructor
+    FeatureViewSection(void);
+    virtual ~FeatureViewSection();
+
+    short mustExecute() const;
+    
+    /** @name methods overide Feature */
+    //@{
+    /// recalculate the Feature
+    virtual App::DocumentObjectExecReturn *execute(void);
+    //@}
+
+    /// returns the type name of the ViewProvider
+    virtual const char* getViewProviderName(void) const {
+        return "DrawingGui::ViewProviderDrawingViewSection";
     }
 
-    (void) Py_InitModule("DrawingGui", DrawingGui_Import_methods);   /* mod name, table ptr */
-    Base::Console().Log("Loading GUI of Drawing module... done\n");
+};
 
-    // instantiating the commands
-    CreateDrawingCommands();
-    DrawingGui::Workbench::init();
+typedef App::FeaturePythonT<FeatureViewSection> FeatureViewSectionPython;
 
-    DrawingGui::ViewProviderDrawingPage::init();
-    DrawingGui::ViewProviderDrawingView::init();
-    DrawingGui::ViewProviderDrawingViewSection::init();
 
-    // add resources and reloads the translators
-    loadDrawingResource();
-}
+} //namespace Drawing
 
-} // extern "C" {
+#endif

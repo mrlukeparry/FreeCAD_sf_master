@@ -1,6 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2004 Jürgen Riegel <juergen.riegel@web.de>              *
- *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -21,59 +21,41 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef DRAWINGGUI_VIEWPROVIDERPAGE_H
-#define DRAWINGGUI_VIEWPROVIDERPAGE_H
+
+#ifndef DRAWINGGUI_VIEWPROVIDERVIEWSECTION_H
+#define DRAWINGGUI_VIEWPROVIDERVIEWSECTION_H
 
 #include <Gui/ViewProviderFeature.h>
-#include <Gui/ViewProviderDocumentObjectGroup.h>
-
-#include <QPointer>
 
 namespace Drawing{
-    class FeaturePage;
+    class FeatureView;
 }
 
 namespace DrawingGui {
 
-class DrawingView;
 
-class DrawingGuiExport ViewProviderDrawingPage : public Gui::ViewProviderDocumentObjectGroup
+class DrawingGuiExport ViewProviderDrawingViewSection : public Gui::ViewProviderDocumentObject
 {
-    PROPERTY_HEADER(DrawingGui::ViewProviderDrawingPage);
+    PROPERTY_HEADER(DrawingGui::ViewProviderDrawingViewSection);
 
 public:
+    /// constructor
+    ViewProviderDrawingViewSection();
+    /// destructor
+    virtual ~ViewProviderDrawingViewSection();
 
-    ViewProviderDrawingPage();  /// constructor
-    ~ViewProviderDrawingPage(); /// destructor
-
-    App::PropertyFloat         HintScale;
-    App::PropertyFloat         HintOffsetX;
-    App::PropertyFloat         HintOffsetY;
 
     virtual void attach(App::DocumentObject *);
     virtual void setDisplayMode(const char* ModeName);
     /// returns a list of all possible modes
     virtual std::vector<std::string> getDisplayModes(void) const;
-
-    /// Claim all the views for the page
-    std::vector<App::DocumentObject*> claimChildren(void) const;
-    
-    /// Is called by the tree if the user double click on the object
-    virtual bool doubleClicked(void);
-    void setupContextMenu(QMenu*, QObject*, const char*);
     virtual void updateData(const App::Property*);
 
-    Drawing::FeaturePage* getPageObject() const;
-    void unsetEdit(int ModNum);
-
-protected:
-    bool setEdit(int ModNum);
-    DrawingView* showDrawingView();
-
-private:
-    QPointer<DrawingView> view;
+    Drawing::FeatureView* getViewObject() const;
 };
 
 } // namespace DrawingGui
 
-#endif // DRAWINGGUI_VIEWPROVIDERPAGE_H
+
+#endif // DRAWINGGUI_VIEWPROVIDERVIEW_H
+
