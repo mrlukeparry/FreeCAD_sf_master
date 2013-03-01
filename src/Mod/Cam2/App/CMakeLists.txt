@@ -144,6 +144,25 @@ ADD_CUSTOM_TARGET(TPG_Scripts ALL
 )
 fc_copy_sources("Cam" "${CMAKE_BINARY_DIR}/Mod/PyCam" ${TPG_Scripts}) #TODO: sort out the C++/Python conflicting package names so this can be moved back inside the Cam directory
 
+SET(PostProc_Scripts
+    PyPostProcessor/__init__.py
+    PyPostProcessor/PostProcessorAPI.py
+    PyPostProcessor/TestPostProcessor.py
+    PyPostProcessor/PostProcessor/__init__.py
+
+	## TODO: add core postprocessor files
+
+    ### Copy PostProcessors to the distribution directory ###
+    # Add yours here #
+    # e.g. PyPostProcessor/PostProcessor/MyPostProcessor.py
+)
+
+SOURCE_GROUP("" FILES ${PostProc_Scripts})
+ADD_CUSTOM_TARGET(PostProc_Scripts ALL
+    SOURCES ${PostProc_Scripts}
+)
+fc_copy_sources("Cam" "${CMAKE_BINARY_DIR}/Mod/PyCam" ${PostProc_Scripts}) #TODO: sort out the C++/Python conflicting package names so this can be moved back inside the Cam directory
+
 install(
     FILES
         ${TPG_Scripts}

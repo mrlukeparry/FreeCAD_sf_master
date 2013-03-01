@@ -70,7 +70,7 @@ void CmdCamCreateCamFeature::activated(int iMsg)
         Cam::CamFeature *camFeat = dynamic_cast<Cam::CamFeature *>(docObj);
 
         // We Must Initialise the Cam Feature before usage
-        camFeat->initialise();        
+        camFeat->initialise();
     }
 }
 
