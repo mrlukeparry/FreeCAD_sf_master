@@ -77,6 +77,35 @@
 
 using namespace DrawingGeometry;
 
+// Collection of Geometric Features
+Wire::Wire()
+{
+  
+}
+
+Wire::~Wire()
+{
+    for(std::vector<BaseGeom *>::iterator it = this->geoms.begin(); it != this->geoms.end(); ++it) {
+        delete (*it);
+        *it = 0;
+    }
+    this->geoms.clear();
+}
+
+Face::Face()
+{
+  
+}
+
+Face::~Face()
+{
+    for(std::vector<Wire *>::iterator it = this->wires.begin(); it != this->wires.end(); ++it) {
+        delete (*it);
+        *it = 0;
+    }
+    this->wires.clear();
+}
+
 Ellipse::Ellipse(const BRepAdaptor_Curve& c)
 {
     this->geomType = ELLIPSE;
@@ -159,7 +188,6 @@ AOC::AOC(const BRepAdaptor_Curve& c) : Circle(c)
     this->startAngle *= 180 / M_PI;
     this->endAngle   *= 180 / M_PI;
 }
-
 
 Generic::Generic(const BRepAdaptor_Curve& c)
 {

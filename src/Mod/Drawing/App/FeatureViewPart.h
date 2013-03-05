@@ -56,7 +56,7 @@ public:
     App::PropertyFloatConstraint  Tolerance;
 
     const std::vector<DrawingGeometry::BaseGeom  *> & getEdgeGeometry() const;
-    const std::vector<DrawingGeometry::BaseGeom  *> & getFaceGeometry() const;
+    const std::vector<DrawingGeometry::Face *> & getFaceGeometry() const;
         
     const std::vector<int> & getEdgeReferences() const;
     const std::vector<int> & getFaceReferences() const;

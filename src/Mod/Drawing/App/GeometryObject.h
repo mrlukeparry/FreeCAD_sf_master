@@ -33,6 +33,7 @@
 class HLRBRep_Algo;
 class Handle_HLRBRep_Data;
 class HLRBRep_EdgeData;
+class TopoDS_Wire;
 
 namespace DrawingGeometry
 {
@@ -51,7 +52,7 @@ public:
 
     void setTolerance(double value);
     const std::vector<BaseGeom *> & getEdgeGeometry() const { return edgeGeom; };
-    const std::vector<BaseGeom *> & getFaceGeometry() const { return faceGeom; };
+    const std::vector<Face *>     & getFaceGeometry() const { return faceGeom; };
     
     const std::vector<int> & getEdgeRefs() const { return edgeReferences; };
     const std::vector<int> & getFaceRefs() const { return faceReferences; };
@@ -60,19 +61,19 @@ public:
 
 protected:
     // Reimplements HLRBRep Drawing Algorithms to satisfy Drawing Workbench requirements
-    void drawFace (const int visible, const int typ, const int iface, Handle_HLRBRep_Data & DS, TopoDS_Shape& Result) const;
-    void drawEdge(int ie, bool visible, bool inFace, int typ, HLRBRep_EdgeData& ed, TopoDS_Shape& Result) const;
+    void drawFace(const bool visible, const int typ, const int iface, Handle_HLRBRep_Data & DS, TopoDS_Shape& Result) const;
+    void drawEdge(const bool visible, const bool inFace, const int typ, HLRBRep_EdgeData& ed, TopoDS_Shape& Result) const;
     
     void extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType);
     void extractFaces(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType);
-    int calculateGeometry(const TopoDS_Shape &input, ExtractionType extractionType, const int ie,  std::vector<BaseGeom *> &geoms);
+    int calculateGeometry(const TopoDS_Shape &input, ExtractionType extractionType,  std::vector<BaseGeom *> &geoms);
     
-    void createWire(const TopoDS_Shape &input, TopoDS_Shape &result);    
+    void createWire(const TopoDS_Shape &input, std::list<TopoDS_Wire> &wires) const;    
     TopoDS_Shape invertY(const TopoDS_Shape& shape);
     
     // Geometry
     std::vector<BaseGeom *> edgeGeom;
-    std::vector<BaseGeom *> faceGeom;
+    std::vector<Face *> faceGeom;
     
     // Linked Edges and Faces to base object
     std::vector<int> edgeReferences;

@@ -31,6 +31,10 @@ namespace Drawing {
 class FeatureViewPart;
 }
 
+namespace DrawingGeometry {
+class BaseGeom;  
+}
+
 namespace DrawingGui
 {
   
@@ -110,6 +114,7 @@ Q_SIGNALS:
   void dirty();
   
 protected:
+  QPainterPath drawPainterPath(DrawingGeometry::BaseGeom *baseGeom) const;
   void drawViewPart();
   // Selection detection
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
