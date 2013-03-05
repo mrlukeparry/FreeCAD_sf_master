@@ -1,3 +1,10 @@
 # file types to ignore
-
+.project
+.project~
+Debug
+.settings
+.cproject
+.pydevproject
 *.pyc
+.conflict
+.txt~

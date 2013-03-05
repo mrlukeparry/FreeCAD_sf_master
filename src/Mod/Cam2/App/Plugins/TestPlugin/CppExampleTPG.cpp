@@ -30,7 +30,7 @@
 
 #define myID   "95744f1e-360f-11e2-bcd3-08002734b94f"
 #define myName "Example CPP TPG"
-#define myDesc "A simple example CPP TPG to demonstrating how to create one."
+#define myDesc "A simple example CPP TPG to demonstrating how to create one. "
 
 /**
  * Implement the Cpp shared library interface functions
@@ -41,13 +41,17 @@ CPPTPG_API_SOURCE(Cam::CppExampleTPG, myID, myName, myDesc)
 /// TPG Implementation ///
 namespace Cam {
 
-CppExampleTPG::CppExampleTPG() {
+CppExampleTPG::CppExampleTPG()
+        : CppTPG() { // important to call parent constructor
     id = QS(myID);
     name = QS(myName);
     description = QS(myDesc);
 }
 
 CppExampleTPG::~CppExampleTPG() {
+    // Allow the plugin to close (if not needed anymore)
+    if (plugin != NULL)
+        plugin->release();
 }
 
 /**
@@ -57,7 +61,7 @@ CppExampleTPG::~CppExampleTPG() {
  */
 void CppExampleTPG::run(TPGSettings *settings, QString action="")
 {
-    printf("This is where the TPG would generate the tool-path!\n");
+    printf("This is where the TPG would generate the tool-path! \n");
     return;
 }
 

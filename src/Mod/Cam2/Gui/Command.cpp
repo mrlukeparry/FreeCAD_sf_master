@@ -50,7 +50,7 @@ CmdCamCreateCamFeature::CmdCamCreateCamFeature()
     sToolTipText  = QT_TR_NOOP("Create a new Cam Feature");
     sWhatsThis    = sToolTipText;
     sStatusTip    = sToolTipText;
-    sPixmap       = "Cam_NewCamFeature";
+    sPixmap       = "cam";
 }
 
 void CmdCamCreateCamFeature::activated(int iMsg)
@@ -70,7 +70,7 @@ void CmdCamCreateCamFeature::activated(int iMsg)
         Cam::CamFeature *camFeat = dynamic_cast<Cam::CamFeature *>(docObj);
 
         // We Must Initialise the Cam Feature before usage
-        camFeat->initialise();        
+        camFeat->initialise();
     }
 }
 

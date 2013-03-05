@@ -22,6 +22,7 @@ set(Cam_LIBS
 )
 
 add_subdirectory(Libs)
+add_subdirectory(Plugins)
 
 # generate_from_xml(CamPy)
 
@@ -49,6 +50,10 @@ SET(TPG_SRCS
     TPG/TPG.h
     TPG/TPGCache.cpp
     TPG/TPGCache.h
+    TPG/TPGDescriptor.cpp
+    TPG/TPGDescriptor.h
+    TPG/TPGDescriptorCollection.cpp
+    TPG/TPGDescriptorCollection.h
     TPG/TPGFactory.cpp
     TPG/TPGFactory.h
     TPG/TPGLib.cpp
@@ -59,13 +64,18 @@ SET(TPG_SRCS
     TPG/TPGPython.h
     TPG/TPGSettings.cpp
     TPG/TPGSettings.h
+    TPG/ToolPath.cpp
+    TPG/ToolPath.h
     
     TPG/PyTPGFactory.cpp
     TPG/PyTPGFactory.h
     TPG/PyTPGDescriptor.cpp
     TPG/PyTPGDescriptor.h
+    TPG/PyToolPath.cpp
+    TPG/PyToolPath.h
     
     TPG/CppTPG.h
+    TPG/CppTPG.cpp
     TPG/CppTPGDescriptor.cpp
     TPG/CppTPGDescriptor.h
     TPG/CppTPGDescriptorWrapper.cpp
@@ -74,8 +84,8 @@ SET(TPG_SRCS
     TPG/CppTPGFactory.h
     TPG/CppTPGPlugin.cpp
     TPG/CppTPGPlugin.h
-    TPG/CppTPGWrapper.cpp
-    TPG/CppTPGWrapper.h
+    # TPG/CppTPGWrapper.cpp
+    # TPG/CppTPGWrapper.h
 )
 SOURCE_GROUP("TPG" FILES ${TPG_SRCS})
 
@@ -94,6 +104,12 @@ SET(CamModule_SRCS
     PreCompiled.h
     Support.cpp
     Support.h
+    ItemList.cpp
+    ItemList.h
+    MachineProgram.cpp
+    MachineProgram.h
+    PostProcessor.cpp
+    PostProcessor.h
 )
 SOURCE_GROUP("Module" FILES ${CamModule_SRCS})
 
@@ -127,6 +143,25 @@ ADD_CUSTOM_TARGET(TPG_Scripts ALL
     SOURCES ${TPG_Scripts}
 )
 fc_copy_sources("Cam" "${CMAKE_BINARY_DIR}/Mod/PyCam" ${TPG_Scripts}) #TODO: sort out the C++/Python conflicting package names so this can be moved back inside the Cam directory
+
+SET(PostProc_Scripts
+    PyPostProcessor/__init__.py
+    PyPostProcessor/PostProcessorAPI.py
+    PyPostProcessor/TestPostProcessor.py
+    PyPostProcessor/PostProcessor/__init__.py
+
+	## TODO: add core postprocessor files
+
+    ### Copy PostProcessors to the distribution directory ###
+    # Add yours here #
+    # e.g. PyPostProcessor/PostProcessor/MyPostProcessor.py
+)
+
+SOURCE_GROUP("" FILES ${PostProc_Scripts})
+ADD_CUSTOM_TARGET(PostProc_Scripts ALL
+    SOURCES ${PostProc_Scripts}
+)
+fc_copy_sources("Cam" "${CMAKE_BINARY_DIR}/Mod/PyCam" ${PostProc_Scripts}) #TODO: sort out the C++/Python conflicting package names so this can be moved back inside the Cam directory
 
 install(
     FILES

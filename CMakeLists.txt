@@ -1,6 +1,6 @@
 project(FreeCAD_trunk)
 set(FREECAD_VERSION "0.13")
-
+set(CMAKE_BUILD_TYPE Debug)
 # Needed for salomesmesh
 if(CMAKE_COMPILER_IS_GNUCXX)
 ENABLE_LANGUAGE(Fortran)

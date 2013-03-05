@@ -49,6 +49,7 @@ class PyTPGBase(object):
     
     def __init__(self):
         '''The constructor.  Only called when the PyTPG is added to the FreeCAD project'''
+        self._toolPath = None
     
     ## Support methods ##
     
@@ -85,6 +86,11 @@ class PyTPGBase(object):
     def run(self, action, settings=[]):
         '''Runs the selected action and returns the resulting TP'''
         raise UnimplementedTPError(action) # The run() method of this TP hasn't been implemented
+    
+    def getToolPath(self):
+        '''Gets a reference to the current ToolPath.  This can be called while 
+        the run method is being executed in another thread to see the progress'''
+        return self._toolPath
     
     ## Python to C++ API ##
     # Call these methods to obtain data from the C++ side

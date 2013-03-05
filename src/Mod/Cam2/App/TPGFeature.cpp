@@ -99,7 +99,7 @@ TPG::State TPGFeature::getTPGStatus() {
 bool TPGFeature::hasRunningTPG()
 {
     TPG::State tpgStatus = getTPGStatus();
-     return (tpgStatus == TPG::RUNNING || tpgStatus == TPG::STARTED);
+    return (tpgStatus == TPG::RUNNING || tpgStatus == TPG::STARTED);
 }
 
 TPGFeature::~TPGFeature()
@@ -108,7 +108,7 @@ TPGFeature::~TPGFeature()
     if(this->hasRunningTPG())
         stop();
     //TODO should we wait till the tpg has finished
-    delete tpg; // Will internally call destructor and safely stop this
+    tpg->release(); // Will internally call destructor and safely stop this
 }
 
 App::DocumentObjectExecReturn *TPGFeature::execute(void)
