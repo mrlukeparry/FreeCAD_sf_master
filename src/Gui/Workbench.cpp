@@ -442,7 +442,7 @@ MenuItem* StdWorkbench::setupMenuBar() const
     *edit << "Std_Undo" << "Std_Redo" << "Separator" << "Std_Cut" << "Std_Copy"
           << "Std_Paste" << "Std_DuplicateSelection" << "Separator"
           << "Std_Refresh" << "Std_BoxSelection" << "Std_SelectAll" << "Std_Delete"
-          << "Std_Placement" << "Std_Alignment"
+          << "Separator" << "Std_Placement" /*<< "Std_TransformManip"*/ << "Std_Alignment"
           << "Std_Edit" << "Separator" << "Std_DlgPreferences";
 
     // Standard views
@@ -499,7 +499,8 @@ MenuItem* StdWorkbench::setupMenuBar() const
     macro->setCommand("&Macro");
     *macro << "Std_DlgMacroRecord" << "Std_MacroStopRecord" << "Std_DlgMacroExecute"
            << "Separator" << "Std_DlgMacroExecuteDirect" << "Std_MacroStartDebug"
-           << "Std_MacroStopDebug" << "Std_MacroStepOver" << "Std_ToggleBreakpoint";
+           << "Std_MacroStopDebug" << "Std_MacroStepOver" << "Std_MacroStepInto"
+           << "Std_ToggleBreakpoint";
 
     // Windows
     MenuItem* wnd = new MenuItem( menuBar );
