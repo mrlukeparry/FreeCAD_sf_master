@@ -42,6 +42,8 @@ TPG::TPG()
     // Load the TPG Cache and initialise
 //    cache = new TPGCache();
 //    cache->initialise();
+
+    refcnt = 1;
 }
 
 TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription)
@@ -53,8 +55,6 @@ TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescrip
 
 TPG::~TPG()
 {
-//    delete settings;
-//    delete cache;
 }
 
 void TPG::initialise(TPGFeature *feat)
@@ -123,5 +123,21 @@ TPGSettings *TPG::getSettings(QString &action)
 void TPG::run(TPGSettings *settings, QString action="")
 {
 	return;
+}
+
+/**
+ * Increases reference count
+ */
+void TPG::grab() {
+    refcnt++;
+}
+
+/**
+ * Decreases reference count and deletes self if no other references
+ */
+void TPG::release() {
+    refcnt--;
+    if (refcnt <= 0)
+        delete this;
 }
 

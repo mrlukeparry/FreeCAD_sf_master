@@ -74,21 +74,17 @@ void TPGFactoryInst::destruct (void)
     _pcSingleton = 0;
 }
 
-void TPGFactoryInst::clearDescriptors()
-{
-    // Iterator through the TPGDescriptor List and delete all the entries
-    for(std::vector<TPGDescriptor *>::iterator it = d->tpgList.begin(); it != d->tpgList.end(); ++it) {
-        delete (*it);
-        (*it) = 0;
-    }     
-    d->tpgList.empty();
+void TPGFactoryInst::clearDescriptors() {
+    if (d->descriptors != NULL)
+        d->descriptors->release();
+    d->descriptors = new Cam::TPGDescriptorCollection();
 }
 
-TPG * TPGFactoryInst::getPlugin(QString id)
-{
-    for(std::vector<TPGDescriptor *>::iterator it = d->tpgList.begin(); it != d->tpgList.end(); ++it) {
-        if ((*it)->id == id)
-            return (*it)->make();
+TPG * TPGFactoryInst::getPlugin(QString id) {
+    for(size_t i = 0; i < d->descriptors->size(); ++i) {
+        TPGDescriptor *tpg = d->descriptors->at(i);
+        if (tpg->id == id)
+            return tpg->make();
     }
 
     return 0;
@@ -111,29 +107,23 @@ void TPGFactoryInst::scanPlugins(short tpgtype /*= ALL_TPG*/) {
     clearDescriptors();
 
     // update cache
-    std::vector<TPGDescriptor*>* t = Cam::PyTPGFactory().getDescriptors();
-    for (std::vector<TPGDescriptor*>::iterator it = t->begin(); it != t->end(); ++it)
-        d->tpgList.push_back(*it);
-    delete t;
-    t = Cam::CppTPGFactory().getDescriptors();
-    for (std::vector<TPGDescriptor*>::iterator it = t->begin(); it != t->end(); ++it)
-        d->tpgList.push_back(*it);
-    delete t;
+    Cam::TPGDescriptorCollection *descs = Cam::PyTPGFactory().getDescriptors();
+    d->descriptors->absorb(descs);
+    descs->release();
+    descs = Cam::CppTPGFactory().getDescriptors();
+    d->descriptors->absorb(descs);
+    descs->release();
 }
 
 /**
  * Get a vector of all C++ TPG's that are known about
  */
-std::vector<TPGDescriptor*>* TPGFactoryInst::getDescriptors()
+Cam::TPGDescriptorCollection* TPGFactoryInst::getDescriptors()
 {
     // cache a copy of the descriptors
-    if (d->tpgList.size() == 0)
+    if (d->descriptors->size() == 0)
         this->scanPlugins();
 
     // copy the tpg list cache
-    std::vector<TPGDescriptor*> *result = new std::vector<TPGDescriptor*>();
-    for (std::vector<TPGDescriptor*>::iterator it = d->tpgList.begin(); it != d->tpgList.end(); ++it)
-        result->push_back(*it);
-
-    return result;
+    return d->descriptors->clone();
 }

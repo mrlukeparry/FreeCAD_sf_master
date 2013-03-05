@@ -45,6 +45,13 @@ public:
         return new MyPlugin(descriptor);
     }
     void run();
+
+
+
+    /**
+     * Returns the toolpath from the last
+     */
+    virtual ToolPath *getToolPath() {return NULL;}
 };
 
 } //namespace Cam

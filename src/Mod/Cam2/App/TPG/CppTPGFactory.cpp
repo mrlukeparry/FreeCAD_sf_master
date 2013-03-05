@@ -45,6 +45,7 @@ CppTPGFactoryInst& CppTPGFactoryInst::instance(void)
 }
 
 CppTPGFactoryInst::CppTPGFactoryInst() {
+    descriptors = new TPGDescriptorCollection();
 }
 
 CppTPGFactoryInst::~CppTPGFactoryInst() {
@@ -62,6 +63,16 @@ void CppTPGFactoryInst::scanPlugins() {
     unsigned int pathlen = path.size();
     char *pluginname = new char[pathlen+257];
     strcpy(pluginname, plugindir);
+
+    // cleanout old plugins
+//    printf("Releasing old Plugins:\n");
+    for (size_t i = 0; i < plugins.size(); i++) {
+        CppTPGPlugin* plugin = plugins.at(i);
+//        printf(" - %p, %i\n", plugin, plugin->refcnt);
+        plugin->release();
+    }
+    plugins.clear();
+
     printf("Scanning: %s\n", plugindir); //TODO: delete this once the workbench is more stable
 
     // open directory
@@ -102,32 +113,23 @@ void CppTPGFactoryInst::scanPlugins() {
 /**
  * Get a vector of all C++ TPG's that are known about
  */
-std::vector<TPGDescriptor*>* CppTPGFactoryInst::getDescriptors()
+TPGDescriptorCollection* CppTPGFactoryInst::getDescriptors()
 {
     // cache a copy of the descriptors
-    if (tpgs.size() == 0) //TODO: allow this to be done after each reload
-    {
-        for (std::vector<CppTPGPlugin*>::iterator it = plugins.begin(); it != plugins.end(); ++it)
-        {
-
-            std::vector<TPGDescriptor*>* tpglist = (*it)->getDescriptors();
-            if (tpglist != NULL) {
-                std::vector<TPGDescriptor*>::iterator itt = tpglist->begin();
-                for (;itt != tpglist->end(); ++itt)
-                    tpgs.push_back(*itt);
-                delete tpglist;
+    if (descriptors->size() == 0) { //TODO: allow this to be done after each reload
+        for (std::vector<CppTPGPlugin*>::iterator it = plugins.begin(); it != plugins.end(); ++it) {
+            Cam::TPGDescriptorCollection* tpgcollection = (*it)->getDescriptors();
+            if (tpgcollection != NULL) {
+                descriptors->absorb(tpgcollection);
+                tpgcollection->release();
             }
         }
     }
 
-    printf("Found %i CppTPGs\n", tpgs.size()); //TODO: delete this once the workbench is more stable
+    printf("Found %i CppTPGs\n", descriptors->size()); //TODO: delete this once the workbench is more stable
 
-    // copy the tpg list cache
-    std::vector<TPGDescriptor*> *result = new std::vector<TPGDescriptor*>();
-    for (std::vector<TPGDescriptor*>::iterator itt = tpgs.begin(); itt != tpgs.end(); ++itt)
-        result->push_back(*itt);
-
-    return result;
+    // copy the tpg collection cache
+    return descriptors->clone();
 }
 
 } /* namespace CamGui */

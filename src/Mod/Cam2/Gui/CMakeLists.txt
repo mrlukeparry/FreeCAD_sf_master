@@ -36,7 +36,7 @@ qt4_add_resources(CamGui_SRCS Resources/Cam.qrc)
 
 set(CamGui_MOC_HDRS
     TaskDialog/TaskDlgEditCamFeature.h
-    TaskDialog/TaskDlgEditCamPartsList.
+    TaskDialog/TaskDlgEditCamPartsList.h
     TaskDialog/TaskDlgEditStockGeometry.h
     TaskDialog/TaskDlgEditTPGFeature.h
     CamProjectDockWindow.h

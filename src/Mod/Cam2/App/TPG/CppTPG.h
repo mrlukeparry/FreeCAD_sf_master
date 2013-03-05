@@ -23,7 +23,23 @@
 #ifndef CPPTPG_H_
 #define CPPTPG_H_
 
-#include <vector>
+#include <qstring.h>
+
+#include "TPGDescriptorCollection.h"
+
+// Forward declarations
+namespace Cam {
+
+class CppTPG;
+
+// Descriptor create function types
+typedef Cam::TPGDescriptorCollection* getDescriptors_t();
+
+// TPG create function types
+typedef CppTPG* getTPG_t(QString);
+}
+
+#include "CppTPGPlugin.h"
 
 /// Macros to make it simpler to define a new CppTPG ///
 /**
@@ -32,32 +48,24 @@
 #define QS(_cs_) QString::fromAscii(_cs_)
 #define _TPGDescriptor(_type_, _id_, _name_, _desc_) new Cam::CppTPGDescriptor(QS(_id_), QS(_name_), QS(_desc_))
 #define _MakeTPG(_type_, _id_, _name_, _desc_) if (id == QString::fromAscii(_id_))\
-        return new _type_();
+        return new _type_();\
+
 /**
  * TPG Plugins that implement a single plugin should add this macro to its
  * source file
  * TODO: see if its possible to make a nice macro that can handle multiple TPG's at once
  */
 #define CPPTPG_API_SOURCE(_type_, _id_, _name_, _desc_)\
-extern "C" std::vector<Cam::TPGDescriptor*>* getDescriptors() {\
-    std::vector<Cam::TPGDescriptor*>* descriptors = new std::vector<Cam::TPGDescriptor*>();\
-    descriptors->push_back(_TPGDescriptor(_type_, _id_, _name_, _desc_));\
+extern "C" Cam::TPGDescriptorCollection* getDescriptors() {\
+    Cam::TPGDescriptorCollection* descriptors = new Cam::TPGDescriptorCollection();\
+    Cam::TPGDescriptor *descriptor = _TPGDescriptor(_type_, _id_, _name_, _desc_);\
+    descriptors->add(descriptor);\
+    descriptor->release();\
     return descriptors;\
 }\
-extern "C" void delDescriptors(std::vector<Cam::TPGDescriptor*>* descriptors) {\
-    std::vector<Cam::TPGDescriptor*>::iterator itt = descriptors->begin();\
-    for (;itt != descriptors->end(); ++itt)\
-        delete *itt;\
-    descriptors->clear();\
-    delete descriptors;\
-}\
-extern "C" Cam::TPG* getTPG(QString id) {\
+extern "C" Cam::CppTPG* getTPG(QString id) {\
     _MakeTPG(_type_, _id_, _name_, _desc_)\
     return NULL;\
-}\
-extern "C" void delTPG(Cam::TPG* tpg) {\
-    if (tpg != NULL)\
-        delete tpg;\
 }
 
 /**
@@ -65,25 +73,30 @@ extern "C" void delTPG(Cam::TPG* tpg) {\
  * header file
  */
 #define CPPTPG_API_HEADER()\
-extern "C" std::vector<Cam::TPGDescriptor*>* getDescriptors();\
-extern "C" void delDescriptors(std::vector<Cam::TPGDescriptor*>*);\
-extern "C" Cam::TPG* getTPG(QString);\
-extern "C" void delTPG(Cam::TPG*);
+extern "C" Cam::TPGDescriptorCollection* getDescriptors();\
+extern "C" Cam::CppTPG* getTPG(QString);
 
 namespace Cam {
 
-/**
- * This file contains support types for the functions that the TPG Library
- * files export.
- */
 
-// Descriptor create/delete function types
-typedef std::vector<TPGDescriptor*>* getDescriptors_t();
-typedef void delDescriptors_t(std::vector<TPGDescriptor*>*);
+class CamExport CppTPG : public TPG {
 
-// TPG create/delete function types
-typedef TPG* getTPG_t(QString);
-typedef void delTPG_t(TPG*);
+protected:
+    CppTPGPlugin* plugin;
+
+
+    CppTPG();
+    virtual ~CppTPG();
+
+public:
+    /**
+     * Set the plugin that was used to create this create this instance.
+     *
+     * This is so it can obtain a reference to it and thus cause the plugin to
+     * stay open until this instance is released.
+     */
+    void setPlugin(CppTPGPlugin* plugin);
+};
 
 
 }

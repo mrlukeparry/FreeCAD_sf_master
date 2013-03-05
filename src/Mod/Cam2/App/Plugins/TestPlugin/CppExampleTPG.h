@@ -35,10 +35,12 @@ namespace Cam {
  * This is an example C++ TPG that is inside TestPlugin.so
  * Note: Not yet implemented
  */
-class CppExampleTPG : public TPG {
+class CppExampleTPG : public CppTPG {
+protected:
+    virtual ~CppExampleTPG();
+
 public:
     CppExampleTPG();
-    virtual ~CppExampleTPG();
 
     /**
      * Run the TPG to generate the ToolPath code.
@@ -46,6 +48,11 @@ public:
      * Note: the return will change once the TP Language has been set in stone
      */
     virtual void run(TPGSettings *settings, QString action);
+
+    /**
+     * Returns the toolpath from the last
+     */
+    virtual ToolPath *getToolPath() {return NULL;}
 };
 
 } /* namespace Cam */

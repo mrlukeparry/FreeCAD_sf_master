@@ -27,6 +27,7 @@
 
 #include "TPGFactory.h"
 #include "CppTPGPlugin.h"
+#include "TPGDescriptorCollection.h"
 
 namespace Cam {
 
@@ -40,7 +41,7 @@ protected:
     static CppTPGFactoryInst* _pcSingleton;
 
     std::vector<CppTPGPlugin*> plugins;
-    std::vector<TPGDescriptor*> tpgs;
+    TPGDescriptorCollection* descriptors;
 
     CppTPGFactoryInst();
     virtual ~CppTPGFactoryInst();
@@ -52,9 +53,9 @@ public:
     static void destruct (void);
 
     /**
-     * Get a vector of all C++ TPG's that are known about
+     * Get a 'collection' of all C++ TPG's that are known about
      */
-    std::vector<TPGDescriptor*>* getDescriptors();
+    TPGDescriptorCollection* getDescriptors();
 
     /**
      * Searches the C++ TPG Plugin directory for Shared objects that implement the required API.

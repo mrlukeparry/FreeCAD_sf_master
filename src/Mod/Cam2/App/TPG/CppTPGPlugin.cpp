@@ -35,34 +35,39 @@ CppTPGPlugin::CppTPGPlugin(QString filename) {
     this->filename = filename;
     library = NULL;
     getDescriptorsPtr = NULL;
-    delDescriptorsPtr = NULL;
     getTPGPtr = NULL;
-    delTPGPtr = NULL;
     descriptors = NULL;
+    refcnt = 1;
 }
 
 CppTPGPlugin::~CppTPGPlugin() {
+    if (descriptors != NULL)
+        descriptors->release();
     if (library != NULL)
         close();
 }
 
 /**
+ * A callback function to wrap each element in a wrapper.
+ */
+void* wrapfunc(TPGDescriptor* tpg, void* plugin) {
+    return new CppTPGDescriptorWrapper(tpg, (CppTPGPlugin*)plugin);
+}
+
+/**
  * Returns a list of TPG's that this plugin provides
- * Note: the list is owned by the caller and must be deleted when finished
+ * Note: the list is owned by the caller and must be released when finished
  * with it (including the referenced TPGDescriptors).
  */
-std::vector<TPGDescriptor*>* CppTPGPlugin::getDescriptors() {
+Cam::TPGDescriptorCollection* CppTPGPlugin::getDescriptors() {
     if (isOpen()) {
-        if (descriptors == NULL)
+        if (descriptors == NULL) {
             descriptors = getDescriptorsPtr();
+        }
         if (descriptors != NULL) {
             // wrap the descriptors
-            std::vector<TPGDescriptor*>* result = new std::vector<TPGDescriptor*>();
-            for (std::vector<TPGDescriptor*>::iterator it = descriptors->begin(); it != descriptors->end(); ++it)
-            {
-                if (*it != NULL)
-                    result->push_back(new CppTPGDescriptorWrapper(*it, this));
-            }
+            Cam::TPGDescriptorCollection* result = descriptors->clone();
+            result->onEach(wrapfunc, (void*)this);
             return result;
         }
     }
@@ -72,9 +77,9 @@ std::vector<TPGDescriptor*>* CppTPGPlugin::getDescriptors() {
 
 /**
  * Gets an instance of the TPG.
- * Note: the TPG returned is a wrapper around the implementation.  Delete
+ * Note: the TPG returned is a wrapper around the implementation.  Release
  * it once you are finished with it and it will automatically delete the
- * implementation using the delTPG(tpg) method below
+ * implementation once all references are released
  */
 TPG* CppTPGPlugin::getTPG(QString id) {
     if (isOpen()) {
@@ -85,14 +90,20 @@ TPG* CppTPGPlugin::getTPG(QString id) {
 }
 
 /**
- * Used by the CppTPGWrapper to delete its implementation.
+ * Increases reference count
  */
-void CppTPGPlugin::delTPG(TPG* tpg) {
-    if (isOpen()) {
-        if (tpg)
-            delTPGPtr(tpg);
-    }
-    printf("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
+CppTPGPlugin* CppTPGPlugin::grab() {
+    refcnt++;
+    return this;
+}
+
+/**
+ * Decreases reference count and deletes self if no other references
+ */
+void CppTPGPlugin::release() {
+    refcnt--;
+    if (refcnt <= 0)
+        delete this;
 }
 
 /**
@@ -111,13 +122,7 @@ bool CppTPGPlugin::isOpen() {
         getDescriptorsPtr = (getDescriptors_t*) dlsym(library, "getDescriptors");
         const char* dlsym_error = dlerror();
         if (dlsym_error != NULL) {error = QString::fromAscii(dlsym_error); close(); return false;}
-        delDescriptorsPtr = (delDescriptors_t*) dlsym(library, "delDescriptors");
-        dlsym_error = dlerror();
-        if (dlsym_error != NULL) {error = QString::fromAscii(dlsym_error); close(); return false;}
         getTPGPtr = (getTPG_t*) dlsym(library, "getTPG");
-        dlsym_error = dlerror();
-        if (dlsym_error != NULL) {error = QString::fromAscii(dlsym_error); close(); return false;}
-        delTPGPtr = (delTPG_t*) dlsym(library, "delTPG");
         dlsym_error = dlerror();
         if (dlsym_error != NULL) {error = QString::fromAscii(dlsym_error); close(); return false;}
     }
@@ -129,18 +134,18 @@ bool CppTPGPlugin::isOpen() {
  */
 void CppTPGPlugin::close() {
     if (library != NULL) {
-        // clear caches
-        if (descriptors != NULL)
-            delDescriptorsPtr(descriptors);
+//        // clear caches
+//        if (descriptors != NULL)
+//            delDescriptorsPtr(descriptors);
 
         dlclose(library);
 
         // cleanup
         library = NULL;
         getDescriptorsPtr = NULL;
-        delDescriptorsPtr = NULL;
+//        delDescriptorsPtr = NULL;
         getTPGPtr = NULL;
-        delTPGPtr = NULL;
+//        delTPGPtr = NULL;
     }
 }
 
