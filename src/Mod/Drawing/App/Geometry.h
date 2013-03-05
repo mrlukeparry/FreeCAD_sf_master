@@ -122,6 +122,22 @@ public:
 
 };
 
+/// Simple Collection of geometric features based on BaseGeom inherited classes in order
+struct DrawingExport Wire
+{
+  Wire();
+  ~Wire();
+  std::vector<BaseGeom *> geoms;
+};
+
+/// Simple Collection of geometric features based on BaseGeom inherited classes in order
+struct DrawingExport Face
+{
+  Face();
+  ~Face();
+  std::vector<Wire *> wires;
+};
+
 }
 
 #endif //DRAWING_GEOMETRY_H

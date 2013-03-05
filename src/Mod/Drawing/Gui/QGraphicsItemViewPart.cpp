@@ -155,6 +155,94 @@ QGraphicsItemViewPart::~QGraphicsItemViewPart()
   
 }
 
+QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *baseGeom) const
+{
+    QPainterPath path;
+    switch(baseGeom->geomType) {
+        case DrawingGeometry::CIRCLE: {
+          DrawingGeometry::Circle *geom = static_cast<DrawingGeometry::Circle *>(baseGeom);
+          path.addEllipse(0 ,0, geom->radius * 2, geom->radius * 2);
+
+        } break;
+        case DrawingGeometry::ARCOFCIRCLE: {
+          DrawingGeometry::AOC  *geom = static_cast<DrawingGeometry::AOC *>(baseGeom);
+
+          double startAngle = (geom->startAngle);
+          double spanAngle =  (geom->endAngle - startAngle);
+
+          double x = geom->x - geom->radius;
+          double y = geom->y - geom->radius;
+          
+          path.arcMoveTo(x, y, geom->radius * 2, geom->radius * 2, -startAngle);
+          path.arcTo(x, y, geom->radius * 2, geom->radius * 2, -startAngle, -spanAngle);
+        } break;
+        case DrawingGeometry::ELLIPSE: {
+          DrawingGeometry::Ellipse *geom = static_cast<DrawingGeometry::Ellipse *>(baseGeom);
+
+          double x = geom->x - geom->radius;
+          double y = geom->y - geom->radius;
+          
+          path.addEllipse(x,y, geom->major * 2, geom->minor * 2);
+        } break;
+        case DrawingGeometry::ARCOFELLIPSE: {
+          DrawingGeometry::AOE *geom = static_cast<DrawingGeometry::AOE *>(baseGeom);
+          
+          double startAngle = (geom->startAngle);
+          double spanAngle =  (startAngle - geom->endAngle);
+          double endAngle = geom->endAngle;
+          
+          double x = geom->x - geom->major;
+          double y = geom->y - geom->minor;
+          
+          double maj = geom->major * 2 * cos(geom->angle * M_PI / 180);
+          double min = geom->minor * 2 * sin(geom->angle * M_PI / 180);
+
+          path.arcMoveTo(x, y, maj, min, -startAngle);
+          path.arcTo(x, y, maj, min, -startAngle, spanAngle);
+
+        } break;
+        case DrawingGeometry::BSPLINE: {
+          DrawingGeometry::BSpline *geom = static_cast<DrawingGeometry::BSpline *>(baseGeom);
+         
+          std::vector<DrawingGeometry::BezierSegment>::const_iterator it = geom->segments.begin();
+          
+          DrawingGeometry::BezierSegment startSeg = geom->segments.at(0);
+          path.moveTo(startSeg.pnts[0].fX, startSeg.pnts[0].fY);
+          Base::Vector2D prevContPnt = startSeg.pnts[1];
+          
+          for(int i = 0; it != geom->segments.end(); ++it, ++i) {
+              DrawingGeometry::BezierSegment seg = *it;
+              if(seg.poles == 4) {
+//                   path.cubicTo(seg.pnts[1].fX,seg.pnts[1].fY, seg.pnts[2].fX, seg.pnts[2].fY, seg.pnts[3].fX, seg.pnts[3].fY);
+              } else {
+                  Base::Vector2D cPnt;
+                  if(i == 0) {
+                    prevContPnt.Set(startSeg.pnts[1].fX, startSeg.pnts[1].fX);
+                  } else {
+                    prevContPnt.Set(2 * startSeg.pnts[1].fX - prevContPnt.fX, 2 * startSeg.pnts[1].fY - prevContPnt.fY);
+                  }
+
+                  path.quadTo(prevContPnt.fX, prevContPnt.fY, seg.pnts[2].fX, seg.pnts[2].fY);
+
+              }
+            }          
+        } break;
+        case DrawingGeometry::GENERIC: {
+          DrawingGeometry::Generic *geom = static_cast<DrawingGeometry::Generic *>(baseGeom);          
+
+          path.moveTo(geom->points[0].fX, geom->points[0].fY);
+          std::vector<Base::Vector2D>::const_iterator it = geom->points.begin();
+
+          for(++it; it != geom->points.end(); ++it) {
+              path.lineTo((*it).fX, (*it).fY);
+          }
+        } break;
+        default:
+          break;
+      }
+      return path;
+}
+
 void QGraphicsItemViewPart::drawViewPart()
 {    
     
@@ -177,32 +265,38 @@ void QGraphicsItemViewPart::drawViewPart()
     
     QGraphicsItem *graphicsItem = 0;
     
-    // Draw Faces 
-    
-    const std::vector<DrawingGeometry::BaseGeom *> &faceGeoms = part->getFaceGeometry();
+#if 0
+    // Draw Faces     
+    const std::vector<DrawingGeometry::Face *> &faceGeoms = part->getFaceGeometry();
     const std::vector<int> &faceRefs = part->getFaceReferences();
     
-    std::vector<DrawingGeometry::BaseGeom *>::const_iterator fit = faceGeoms.begin();
+    std::vector<DrawingGeometry::Face *>::const_iterator fit = faceGeoms.begin();
     
     QPen facePen;
     for(int i = 0 ; fit != faceGeoms.end(); ++fit, i++) {
-        DrawingGeometry::Generic *geom = static_cast<DrawingGeometry::Generic *>(*fit);
-        QGraphicsItemFace *item = new  QGraphicsItemFace(-1);
-        
-//         item->setStrokeWidth(lineWidth);
-        facePen.setBrush(QBrush(Qt::BDiagPattern));
-        graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-
-        QPainterPath path;
-        path.moveTo(geom->points[0].fX, geom->points[0].fY);
-        std::vector<Base::Vector2D>::const_iterator it = geom->points.begin();
-
-        for(++it; it != geom->points.end(); ++it) {
-            path.lineTo((*it).fX, (*it).fY);
+        std::vector<DrawingGeometry::Wire *> faceWires = (*fit)->wires;
+        QPainterPath facePath;
+        for(std::vector<DrawingGeometry::Wire *>::iterator wire = faceWires.begin(); wire != faceWires.end(); ++wire) {
+            QPainterPath wirePath;            
+            for(std::vector<DrawingGeometry::BaseGeom *>::iterator baseGeom = (*wire)->geoms.begin(); baseGeom != (*wire)->geoms.end(); ++baseGeom) {
+                wirePath.connectPath(drawPainterPath(*baseGeom));
+            }
+            wirePath.closeSubpath();
+            facePath.addPath(wirePath);
         }
-        item->setPen(facePen);
-        item->setPath(path);
         
+        QGraphicsItemFace *item = new QGraphicsItemFace(-1);
+ 
+        item->setPath(facePath);        
+//         item->setStrokeWidth(lineWidth);
+        
+        QBrush faceBrush(QBrush(QColor(0,0,255,40)));
+        
+        item->setBrush(faceBrush);
+        facePen.setColor(Qt::black);
+        item->setPen(facePen);
+        graphicsItem = dynamic_cast<QGraphicsItem *>(item);
+               
         if(graphicsItem) {          
             // Hide any edges that are hidden if option is set.
 //             if((*fit)->extractType == DrawingGeometry::WithHidden && !part->ShowHiddenLines.getValue())
@@ -212,9 +306,10 @@ void QGraphicsItemViewPart::drawViewPart()
             graphicsItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
         }      
     }
-    
+#endif
+
     graphicsItem = 0;
-    return;
+    
     // Draw Edges      
     // iterate through all the geometries
     for(int i = 0 ; it != geoms.end(); ++it, i++) {
@@ -328,7 +423,7 @@ void QGraphicsItemViewPart::drawViewPart()
           for(int i = 0; it != geom->segments.end(); ++it, ++i) {
               DrawingGeometry::BezierSegment seg = *it;
               if(seg.poles == 4) {
-//                   path.cubicTo(seg.pnts[1].fX,seg.pnts[1].fY, seg.pnts[2].fX, seg.pnts[2].fY, seg.pnts[3].fX, seg.pnts[3].fY);
+                   path.cubicTo(seg.pnts[1].fX,seg.pnts[1].fY, seg.pnts[2].fX, seg.pnts[2].fY, seg.pnts[3].fX, seg.pnts[3].fY);
               } else {
                   Base::Vector2D cPnt;
                   if(i == 0) {

@@ -105,7 +105,7 @@ FeatureViewPart::~FeatureViewPart()
     delete geometryObject;
 }
 
-const std::vector<DrawingGeometry::BaseGeom  *> & FeatureViewPart::getFaceGeometry() const
+const std::vector<DrawingGeometry::Face *> & FeatureViewPart::getFaceGeometry() const
 {
     return geometryObject->getFaceGeometry();
 }
