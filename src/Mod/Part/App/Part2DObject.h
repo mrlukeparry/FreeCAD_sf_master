@@ -68,6 +68,10 @@ public:
       * postion of the 2D shape on the supporting Face
       */
     void positionBySupport(void);
+    /** applies a transform on the Placement of the Sketch or its
+     *  support if it has one
+      */
+    virtual void transformPlacement(const Base::Placement &transform);
 
     /// returns the number of construction lines (to be used as axes)
     virtual int getAxisCount(void) const;
@@ -88,6 +92,7 @@ public:
 
     static const int H_Axis;
     static const int V_Axis;
+    static const int N_Axis;
 
     /** @name methods overide Feature */
     //@{

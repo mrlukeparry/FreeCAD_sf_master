@@ -1,3 +1,33 @@
+#***************************************************************************
+#*                                                                         *
+#*   Copyright (c) 2012 Sebastian Hoogen <github@sebastianhoogen.de>       *
+#*                                                                         *
+#*   This program is free software; you can redistribute it and/or modify  *
+#*   it under the terms of the GNU Lesser General Public License (LGPL)    *
+#*   as published by the Free Software Foundation; either version 2 of     *
+#*   the License, or (at your option) any later version.                   *
+#*   for detail see the LICENCE text file.                                 *
+#*                                                                         *
+#*   This program is distributed in the hope that it will be useful,       *
+#*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+#*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+#*   GNU Library General Public License for more details.                  *
+#*                                                                         *
+#*   You should have received a copy of the GNU Library General Public     *
+#*   License along with this program; if not, write to the Free Software   *
+#*   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
+#*   USA                                                                   *
+#*                                                                         *
+#***************************************************************************
+
+__title__="FreeCAD OpenSCAD Workbench - GUI Commands"
+__author__ = "Sebastian Hoogen"
+__url__ = ["http://free-cad.sourceforge.net"]
+
+'''
+This Script includes the GUI Commands of the OpenSCAD module
+'''
+
 import FreeCAD,FreeCADGui
 from PyQt4 import QtGui, QtCore
 
@@ -143,9 +173,9 @@ class AddSCADWidget(QtGui.QWidget):
     def __init__(self,*args):
         QtGui.QWidget.__init__(self,*args)
         self.textEdit=QtGui.QTextEdit()
-        self.buttonadd = QtGui.QPushButton(translate('OpenSCAD',u'Add'))
-        self.buttonclear = QtGui.QPushButton(translate('OpenSCAD',u'Clear'))
-        self.checkboxmesh = QtGui.QCheckBox(translate('OpenSCAD',u'as Mesh'))
+        self.buttonadd = QtGui.QPushButton(translate('OpenSCAD','Add'))
+        self.buttonclear = QtGui.QPushButton(translate('OpenSCAD','Clear'))
+        self.checkboxmesh = QtGui.QCheckBox(translate('OpenSCAD','as Mesh'))
         layouth=QtGui.QHBoxLayout()
         layouth.addWidget(self.buttonadd)
         layouth.addWidget(self.buttonclear)
@@ -154,15 +184,15 @@ class AddSCADWidget(QtGui.QWidget):
         layout.addWidget(self.checkboxmesh)
         layout.addWidget(self.textEdit)
         self.setLayout(layout)
-        self.setWindowTitle(translate('OpenSCAD',u'Add OpenSCAD Element'))
+        self.setWindowTitle(translate('OpenSCAD','Add OpenSCAD Element'))
         self.textEdit.setText(u'cube();')
         self.buttonclear.clicked.connect(self.textEdit.clear)
 
     def retranslateUi(self, widget=None):
-        self.buttonadd.setText(translate('OpenSCAD',u'Add'))
-        self.buttonclear.setText(translate('OpenSCAD',u'Clear'))
-        self.checkboxmesh.setText(translate('OpenSCAD',u'as Mesh'))
-        self.setWindowTitle(translate('OpenSCAD',u'Add OpenSCAD Element'))
+        self.buttonadd.setText(translate('OpenSCAD','Add'))
+        self.buttonclear.setText(translate('OpenSCAD','Clear'))
+        self.checkboxmesh.setText(translate('OpenSCAD','as Mesh'))
+        self.setWindowTitle(translate('OpenSCAD','Add OpenSCAD Element'))
 
 class AddSCADTask:
     def __init__(self):
@@ -199,6 +229,8 @@ class AddSCADTask:
             FreeCAD.Console.PrintError(unicode(translate('OpenSCAD','Running OpenSCAD failed'))+u'\n')
 
 class AddOpenSCADElement:
+    def IsActive(self):
+        return not FreeCADGui.Control.activeDialog()
     def Activated(self):
         panel = AddSCADTask()
         FreeCADGui.Control.showDialog(panel)
@@ -210,10 +242,10 @@ class AddOpenSCADElement:
                 'Add an OpenSCAD element by entering OpenSCAD code and executing the OpenSCAD binary')}
 
 
-FreeCADGui.addCommand('ColorCodeShape',ColorCodeShape())
-FreeCADGui.addCommand('Edgestofaces',Edgestofaces())
-FreeCADGui.addCommand('RefineShapeFeature',RefineShapeFeature())
-FreeCADGui.addCommand('ExpandPlacements',ExpandPlacements())
-FreeCADGui.addCommand('ReplaceObject',ReplaceObject())
-FreeCADGui.addCommand('RemoveSubtree',RemoveSubtree())
-FreeCADGui.addCommand('AddOpenSCADElement',AddOpenSCADElement())
+FreeCADGui.addCommand('OpenSCAD_ColorCodeShape',ColorCodeShape())
+FreeCADGui.addCommand('OpenSCAD_Edgestofaces',Edgestofaces())
+FreeCADGui.addCommand('OpenSCAD_RefineShapeFeature',RefineShapeFeature())
+FreeCADGui.addCommand('OpenSCAD_ExpandPlacements',ExpandPlacements())
+FreeCADGui.addCommand('OpenSCAD_ReplaceObject',ReplaceObject())
+FreeCADGui.addCommand('OpenSCAD_RemoveSubtree',RemoveSubtree())
+FreeCADGui.addCommand('OpenSCAD_AddOpenSCADElement',AddOpenSCADElement())

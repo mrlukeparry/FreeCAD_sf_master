@@ -40,12 +40,13 @@ class AppExport GeoFeature : public App::DocumentObject
     PROPERTY_HEADER(App::GeoFeature);
 
 public:
-    PropertyPlacementLink Pos;
     PropertyPlacement Placement;
 
     /// Constructor
     GeoFeature(void);
     virtual ~GeoFeature();
+
+    virtual void transformPlacement(const Base::Placement &transform);
 };
 
 } //namespace App

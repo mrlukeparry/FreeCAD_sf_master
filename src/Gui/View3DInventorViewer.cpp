@@ -104,6 +104,7 @@
 #include "SoFCVectorizeU3DAction.h"
 #include "SoFCVectorizeSVGAction.h"
 #include "SoFCDB.h"
+#include "Application.h"
 #include "MainWindow.h"
 #include "NavigationStyle.h"
 #include "ViewProvider.h"
@@ -214,7 +215,7 @@ View3DInventorViewer::View3DInventorViewer (QWidget *parent, const char *name,
     // NOTE: For every mouse click event the SoFCUnifiedSelection searches for the picked
     // point which causes a certain slow-down because for all objects the primitives
     // must be created. Using an SoSeparator avoids this drawback.
-    Gui::SoFCUnifiedSelection* selectionRoot = new Gui::SoFCUnifiedSelection();
+    selectionRoot = new Gui::SoFCUnifiedSelection();
     selectionRoot->applySettings();
     selectionRoot->viewer = this;
 #endif
@@ -291,6 +292,12 @@ View3DInventorViewer::~View3DInventorViewer()
     Gui::Selection().Detach(this);
 }
 
+void View3DInventorViewer::setDocument(Gui::Document *pcDocument)
+{
+    // write the document the viewer belongs to to the selection node
+    selectionRoot->pcDocument = pcDocument;
+}
+
 void View3DInventorViewer::initialize()
 {
     navigation = new CADNavigationStyle();
@@ -354,10 +361,9 @@ void View3DInventorViewer::removeViewProvider(ViewProvider* pcProvider)
   
 }
 
+
 SbBool View3DInventorViewer::setEditingViewProvider(Gui::ViewProvider* p, int ModNum)
 {
-    if (_ViewProviderSet.find(p) == _ViewProviderSet.end())
-        return false;
     if (this->editViewProvider)
         return false; // only one view provider is editable at a time
     bool ok = p->startEditing(ModNum);
@@ -524,9 +530,14 @@ void View3DInventorViewer::savePicture(const char* filename, int w, int h,
     // if we use transparency then we must not set a background color
     switch(eBackgroundType){
         case Current:
-            useBackground = true;
-            cb = new SoCallback;
-            cb->setCallback(clearBuffer);
+            if (backgroundroot->findChild(pcBackGround) == -1) {
+                renderer.setBackgroundColor(this->getBackgroundColor());
+            }
+            else {
+                useBackground = true;
+                cb = new SoCallback;
+                cb->setCallback(clearBuffer);
+            }
             break;
         case White:
             renderer.setBackgroundColor( SbColor(1.0, 1.0, 1.0) );
@@ -594,9 +605,14 @@ void View3DInventorViewer::savePicture(int w, int h, int eBackgroundType, QImage
     // if we use transparency then we must not set a background color
     switch(eBackgroundType){
         case Current:
-            useBackground = true;
-            cb = new SoCallback;
-            cb->setCallback(clearBuffer);
+            if (backgroundroot->findChild(pcBackGround) == -1) {
+                renderer.setBackgroundColor(this->getBackgroundColor());
+            }
+            else {
+                useBackground = true;
+                cb = new SoCallback;
+                cb->setCallback(clearBuffer);
+            }
             break;
         case White:
             renderer.setBackgroundColor( SbColor(1.0, 1.0, 1.0) );
@@ -1447,6 +1463,7 @@ void View3DInventorViewer::viewAll(float factor)
 
 void View3DInventorViewer::viewSelection()
 {
+#if 0
     // Search for all SoFCSelection nodes
     SoSearchAction searchAction;
     searchAction.setType(SoFCSelection::getClassTypeId());
@@ -1472,6 +1489,18 @@ void View3DInventorViewer::viewSelection()
             root->addChild(select);
         }
     }
+#else
+    SoGroup* root = new SoGroup();
+    root->ref();
+
+    std::vector<App::DocumentObject*> selection = Selection().getObjectsOfType(App::DocumentObject::getClassTypeId());
+    for (std::vector<App::DocumentObject*>::iterator it = selection.begin(); it != selection.end(); ++it) {
+        ViewProvider* vp = Application::Instance->getViewProvider(*it);
+        if (vp) {
+            root->addChild(vp->getRoot());
+        }
+    }
+#endif
 
     SoCamera* cam = this->getCamera();
     if (cam) cam->viewAll(root, this->getViewportRegion());

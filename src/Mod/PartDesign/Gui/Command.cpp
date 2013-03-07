@@ -48,8 +48,8 @@
 #include <Gui/FileDialog.h>
 
 #include <Mod/Part/App/Part2DObject.h>
-#include <Mod/PartDesign/App/FeatureAdditive.h>
-#include <Mod/PartDesign/App/FeatureSubtractive.h>
+#include <Mod/PartDesign/App/FeatureGroove.h>
+#include <Mod/PartDesign/App/FeatureRevolution.h>
 
 using namespace std;
 
@@ -343,6 +343,9 @@ void CmdPartDesignRevolution::activated(int iMsg)
     doCommand(Doc,"App.activeDocument().%s.ReferenceAxis = (App.activeDocument().%s,['V_Axis'])",
                                                                              FeatName.c_str(), sketch->getNameInDocument());
     doCommand(Doc,"App.activeDocument().%s.Angle = 360.0",FeatName.c_str());
+    PartDesign::Revolution* pcRevolution = static_cast<PartDesign::Revolution*>(getDocument()->getObject(FeatName.c_str()));
+    if (pcRevolution && pcRevolution->suggestReversed())
+        doCommand(Doc,"App.activeDocument().%s.Reversed = 1",FeatName.c_str());
     updateActive();
     if (isActiveObjectValid()) {
         doCommand(Gui,"Gui.activeDocument().hide(\"%s\")",sketch->getNameInDocument());
@@ -413,6 +416,9 @@ void CmdPartDesignGroove::activated(int iMsg)
     doCommand(Doc,"App.activeDocument().%s.ReferenceAxis = (App.activeDocument().%s,['V_Axis'])",
                                                                              FeatName.c_str(), sketch->getNameInDocument());
     doCommand(Doc,"App.activeDocument().%s.Angle = 360.0",FeatName.c_str());
+    PartDesign::Groove* pcGroove = static_cast<PartDesign::Groove*>(getDocument()->getObject(FeatName.c_str()));
+    if (pcGroove && pcGroove->suggestReversed())
+        doCommand(Doc,"App.activeDocument().%s.Reversed = 1",FeatName.c_str());
     updateActive();
     if (isActiveObjectValid()) {
         doCommand(Gui,"Gui.activeDocument().hide(\"%s\")",sketch->getNameInDocument());
@@ -482,7 +488,7 @@ void CmdPartDesignFillet::activated(int iMsg)
 
     std::vector<std::string> SubNames = std::vector<std::string>(selection[0].getSubNames());
 
-    int i = 0;
+    unsigned int i = 0;
 
     while(i < SubNames.size())
     {
@@ -629,7 +635,7 @@ void CmdPartDesignChamfer::activated(int iMsg)
 
     std::vector<std::string> SubNames = std::vector<std::string>(selection[0].getSubNames());
 
-    int i = 0;
+    unsigned int i = 0;
 
     while(i < SubNames.size())
     {
@@ -769,7 +775,7 @@ void CmdPartDesignDraft::activated(int iMsg)
     }
 
     std::vector<std::string> SubNames = std::vector<std::string>(selection[0].getSubNames());
-    int i = 0;
+    unsigned int i = 0;
 
     while(i < SubNames.size())
     {
@@ -895,11 +901,13 @@ void CmdPartDesignMirrored::activated(int iMsg)
     // Exception (Thu Sep  6 11:52:01 2012): 'App.Document' object has no attribute 'Mirrored'
     updateActive(); // Helps to ensure that the object already exists when the next command comes up
     doCommand(Doc,str.str().c_str());
-    doCommand(Doc,"App.activeDocument().%s.StdMirrorPlane = \"XY\"", FeatName.c_str());
+    Part::Part2DObject *sketch = (static_cast<PartDesign::SketchBased*>(features.front()))->getVerifiedSketch();
+    if (sketch)
+        doCommand(Doc,"App.activeDocument().%s.MirrorPlane = (App.activeDocument().%s, [\"V_Axis\"])",
+                  FeatName.c_str(), sketch->getNameInDocument());
     for (std::vector<std::string>::iterator it = tempSelNames.begin(); it != tempSelNames.end(); ++it)
         doCommand(Gui,"Gui.activeDocument().%s.Visibility=False",it->c_str());
 
-    updateActive();
     doCommand(Gui,"Gui.activeDocument().setEdit('%s')",FeatName.c_str());
 
     copyVisual(FeatName.c_str(), "ShapeColor", tempSelNames.front().c_str());
@@ -967,13 +975,15 @@ void CmdPartDesignLinearPattern::activated(int iMsg)
     doCommand(Doc,"App.activeDocument().addObject(\"PartDesign::LinearPattern\",\"%s\")",FeatName.c_str());
     updateActive();
     doCommand(Doc,str.str().c_str());
-    doCommand(Doc,"App.activeDocument().%s.StdDirection = \"X\"", FeatName.c_str());
+    Part::Part2DObject *sketch = (static_cast<PartDesign::SketchBased*>(features.front()))->getVerifiedSketch();
+    if (sketch)
+        doCommand(Doc,"App.activeDocument().%s.Direction = (App.activeDocument().%s, [\"H_Axis\"])",
+                  FeatName.c_str(), sketch->getNameInDocument());
     doCommand(Doc,"App.activeDocument().%s.Length = 100", FeatName.c_str());
     doCommand(Doc,"App.activeDocument().%s.Occurrences = 2", FeatName.c_str());
     for (std::vector<std::string>::iterator it = tempSelNames.begin(); it != tempSelNames.end(); ++it)
         doCommand(Gui,"Gui.activeDocument().%s.Visibility=False",it->c_str());
 
-    updateActive();
     doCommand(Gui,"Gui.activeDocument().setEdit('%s')",FeatName.c_str());
 
     copyVisual(FeatName.c_str(), "ShapeColor", tempSelNames.front().c_str());
@@ -1041,13 +1051,15 @@ void CmdPartDesignPolarPattern::activated(int iMsg)
     doCommand(Doc,"App.activeDocument().addObject(\"PartDesign::PolarPattern\",\"%s\")",FeatName.c_str());
     updateActive();
     doCommand(Doc,str.str().c_str());
-    doCommand(Doc,"App.activeDocument().%s.StdAxis = \"X\"", FeatName.c_str());
+    Part::Part2DObject *sketch = (static_cast<PartDesign::SketchBased*>(features.front()))->getVerifiedSketch();
+    if (sketch)
+        doCommand(Doc,"App.activeDocument().%s.Axis = (App.activeDocument().%s, [\"N_Axis\"])",
+                  FeatName.c_str(), sketch->getNameInDocument());
     doCommand(Doc,"App.activeDocument().%s.Angle = 360", FeatName.c_str());
     doCommand(Doc,"App.activeDocument().%s.Occurrences = 2", FeatName.c_str());
     for (std::vector<std::string>::iterator it = tempSelNames.begin(); it != tempSelNames.end(); ++it)
         doCommand(Gui,"Gui.activeDocument().%s.Visibility=False",it->c_str());
 
-    updateActive();
     doCommand(Gui,"Gui.activeDocument().setEdit('%s')",FeatName.c_str());
 
     copyVisual(FeatName.c_str(), "ShapeColor", tempSelNames.front().c_str());
@@ -1120,7 +1132,6 @@ void CmdPartDesignScaled::activated(int iMsg)
     for (std::vector<std::string>::iterator it = tempSelNames.begin(); it != tempSelNames.end(); ++it)
         doCommand(Gui,"Gui.activeDocument().%s.Visibility=False",it->c_str());
 
-    updateActive();
     doCommand(Gui,"Gui.activeDocument().setEdit('%s')",FeatName.c_str());
 
     copyVisual(FeatName.c_str(), "ShapeColor", tempSelNames.front().c_str());
@@ -1189,7 +1200,6 @@ void CmdPartDesignMultiTransform::activated(int iMsg)
     updateActive();
     doCommand(Doc,str.str().c_str());
 
-    updateActive();
     doCommand(Gui,"Gui.activeDocument().setEdit('%s')",FeatName.c_str());
 
     copyVisual(FeatName.c_str(), "ShapeColor", tempSelNames.front().c_str());

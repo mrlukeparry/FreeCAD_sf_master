@@ -56,13 +56,15 @@ public:
     TaskTransformedParameters(ViewProviderTransformed *TransformedView, QWidget *parent = 0);
     /// Constructor for task with parent task (MultiTransform mode)
     TaskTransformedParameters(TaskMultiTransformParameters *parentTask);
-    virtual ~TaskTransformedParameters()
-        {}
+    virtual ~TaskTransformedParameters();
 
     const std::vector<App::DocumentObject*> getOriginals(void) const;
     /// Get the support object either of the object associated with this feature or with the parent feature (MultiTransform mode)
     App::DocumentObject* getSupportObject() const;
+    /// Get the sketch object of the first original either of the object associated with this feature or with the parent feature (MultiTransform mode)
+    App::DocumentObject* getSketchObject() const;
 
+    void exitSelectionMode();
 
 protected Q_SLOTS:
     /// Connect the subTask OK button to the MultiTransform task
@@ -81,7 +83,6 @@ protected:
     void showObject();
     void hideOriginals();
     void showOriginals();
-    void exitSelectionMode();
 
     void addReferenceSelectionGate(bool edge, bool face);
 protected:

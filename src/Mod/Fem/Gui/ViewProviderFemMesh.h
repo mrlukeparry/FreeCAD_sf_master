@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2008 Jürgen Riegel (juergen.riegel@web.de)              *
+ *   Copyright (c) 2013 Jürgen Riegel (FreeCAD@juergen-riegel.net)         *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -30,6 +30,7 @@
 class SoCoordinate3;
 class SoDrawStyle;  
 class SoIndexedFaceSet; 
+class SoIndexedLineSet; 
 class SoShapeHints;
 class SoMaterialBinding;
 
@@ -42,7 +43,7 @@ public:
     ViewProviderFEMMeshBuilder(){}
     ~ViewProviderFEMMeshBuilder(){}
     virtual void buildNodes(const App::Property*, std::vector<SoNode*>&) const;
-    void createMesh(const App::Property*, SoCoordinate3*, SoIndexedFaceSet*) const;
+    void createMesh(const App::Property*, SoCoordinate3*, SoIndexedFaceSet*,SoIndexedLineSet*,bool ShowInner=false) const;
 };
 
 class FemGuiExport ViewProviderFemMesh : public Gui::ViewProviderGeometryObject
@@ -61,11 +62,17 @@ public:
     App::PropertyFloatConstraint PointSize;
     App::PropertyFloatConstraint LineWidth;
     App::PropertyMaterial PointMaterial;
+    App::PropertyBool     BackfaceCulling;
+    App::PropertyBool     ShowInner;
 
     void attach(App::DocumentObject *pcObject);
     void setDisplayMode(const char* ModeName);
     std::vector<std::string> getDisplayModes() const;
     void updateData(const App::Property*);
+
+    // interface methodes 
+    void setHighlightNodes(const std::set<long>&);
+    void resetHighlightNodes(void);
 
 private:
     static App::PropertyFloatConstraint::Constraints floatRange;
@@ -81,7 +88,9 @@ protected:
     SoShapeHints          * pShapeHints;
     SoMaterialBinding     * pcMatBinding;
     SoCoordinate3         * pcCoords;
+    SoCoordinate3         * pcAnoCoords;
     SoIndexedFaceSet      * pcFaces;
+    SoIndexedLineSet      * pcLines;
 };
 
 } //namespace FemGui

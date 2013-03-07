@@ -113,6 +113,7 @@ View3DInventor::View3DInventor(Gui::Document* pcDocument, QWidget* parent, Qt::W
     // create the inventor widget and set the defaults
 #if !defined (NO_USE_QT_MDI_AREA)
     _viewer = new View3DInventorViewer(0);
+    _viewer->setDocument(this->_pcDocument);
     stack->addWidget(_viewer->getWidget());
     setCentralWidget(stack);
 #else
@@ -292,12 +293,12 @@ void View3DInventor::OnChange(ParameterGrp::SubjectType &rCaller,ParameterGrp::M
         bool on = rGrp.GetBool("ZoomAtCursor", false);
         _viewer->navigationStyle()->setZoomAtCursor(on);
     }
-    else if (strcmp(Reason,"ZoomSetp") == 0) {
-        float val = rGrp.GetFloat("ZoomSetp", 0.0f);
+    else if (strcmp(Reason,"ZoomStep") == 0) {
+        float val = rGrp.GetFloat("ZoomStep", 0.0f);
         _viewer->navigationStyle()->setZoomStep(val);
     }
     else if (strcmp(Reason,"EyeDistance") == 0) {
-        _viewer->setStereoOffset(rGrp.GetFloat("EyeDistance",65.0));
+        _viewer->setStereoOffset(rGrp.GetFloat("EyeDistance",5.0));
     }
     else if (strcmp(Reason,"CornerCoordSystem") == 0) {
         _viewer->setFeedbackVisibility(rGrp.GetBool("CornerCoordSystem",true));

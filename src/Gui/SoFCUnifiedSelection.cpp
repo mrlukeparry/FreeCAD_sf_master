@@ -66,6 +66,7 @@
 #include <Base/Console.h>
 #include <App/Application.h>
 #include <App/Document.h>
+#include <Gui/Document.h>
 #include <App/DocumentObject.h>
 
 #include "SoFCUnifiedSelection.h"
@@ -105,8 +106,6 @@ SoFCUnifiedSelection::SoFCUnifiedSelection() : viewer(0)
     SO_NODE_SET_SF_ENUM_TYPE (highlightMode, HighlightModes);
 
     highlighted = FALSE;
-    bShift      = FALSE;
-    bCtrl       = FALSE;
 }
 
 /*!
@@ -290,7 +289,7 @@ void SoFCUnifiedSelection::doAction(SoAction *action)
         }
         else if (selaction->SelChange.Type == SelectionChanges::ClrSelection ||
                  selaction->SelChange.Type == SelectionChanges::SetSelection) {
-            std::vector<ViewProvider*> vps = this->viewer->getViewProvidersOfType
+            std::vector<ViewProvider*> vps = this->pcDocument->getViewProvidersOfType
                 (ViewProviderDocumentObject::getClassTypeId());
             for (std::vector<ViewProvider*>::iterator it = vps.begin(); it != vps.end(); ++it) {
                 ViewProviderDocumentObject* vpd = static_cast<ViewProviderDocumentObject*>(*it);
@@ -352,7 +351,7 @@ SoFCUnifiedSelection::handleEvent(SoHandleEventAction * action)
             ViewProvider *vp = 0;
             ViewProviderDocumentObject* vpd = 0;
             if (pPath && pPath->containsPath(action->getCurPath()))
-                vp = viewer->getViewProviderByPathFromTail(pPath);
+                vp = pcDocument->getViewProviderByPathFromTail(pPath);
             if (vp && vp->isDerivedFrom(ViewProviderDocumentObject::getClassTypeId()))
                 vpd = static_cast<ViewProviderDocumentObject*>(vp);
 
@@ -414,22 +413,6 @@ SoFCUnifiedSelection::handleEvent(SoHandleEventAction * action)
             }
         }
     }
-    // key press events
-    else if (event->isOfType(SoKeyboardEvent ::getClassTypeId())) {
-        SoKeyboardEvent  * const e = (SoKeyboardEvent  *) event;
-        if (SoKeyboardEvent::isKeyPressEvent(e,SoKeyboardEvent::LEFT_SHIFT)     ||
-            SoKeyboardEvent::isKeyPressEvent(e,SoKeyboardEvent::RIGHT_SHIFT)     )
-            bShift = true;
-        if (SoKeyboardEvent::isKeyReleaseEvent(e,SoKeyboardEvent::LEFT_SHIFT)   ||
-            SoKeyboardEvent::isKeyReleaseEvent(e,SoKeyboardEvent::RIGHT_SHIFT)   )
-            bShift = false;
-        if (SoKeyboardEvent::isKeyPressEvent(e,SoKeyboardEvent::LEFT_CONTROL)   ||
-            SoKeyboardEvent::isKeyPressEvent(e,SoKeyboardEvent::RIGHT_CONTROL)   )
-            bCtrl = true;
-        if (SoKeyboardEvent::isKeyReleaseEvent(e,SoKeyboardEvent::LEFT_CONTROL) ||
-            SoKeyboardEvent::isKeyReleaseEvent(e,SoKeyboardEvent::RIGHT_CONTROL) )
-            bCtrl = false;
-    }
     // mouse press events for (de)selection
     else if (event->isOfType(SoMouseButtonEvent::getClassTypeId()) && 
              selectionMode.getValue() == SoFCUnifiedSelection::ON) {
@@ -441,7 +424,7 @@ SoFCUnifiedSelection::handleEvent(SoHandleEventAction * action)
             ViewProvider *vp = 0;
             ViewProviderDocumentObject* vpd = 0;
             if (pPath && pPath->containsPath(action->getCurPath()))
-                vp = viewer->getViewProviderByPathFromTail(pPath);
+                vp = pcDocument->getViewProviderByPathFromTail(pPath);
             if (vp && vp->isDerivedFrom(ViewProviderDocumentObject::getClassTypeId()))
                 vpd = static_cast<ViewProviderDocumentObject*>(vp);
             if (vpd && vpd->useNewSelectionModel() && vpd->isSelectable()) {
@@ -449,7 +432,7 @@ SoFCUnifiedSelection::handleEvent(SoHandleEventAction * action)
                 std::string documentName = vpd->getObject()->getDocument()->getName();
                 std::string objectName = vpd->getObject()->getNameInDocument();
                 std::string subElementName = vpd->getElement(pp ? pp->getDetail() : 0);
-                if (bCtrl) {
+                if (event->wasCtrlDown()) {
                     if (Gui::Selection().isSelected(documentName.c_str()
                                          ,objectName.c_str()
                                          ,subElementName.c_str())) {

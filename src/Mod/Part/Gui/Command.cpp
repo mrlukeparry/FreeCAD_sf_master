@@ -911,7 +911,9 @@ bool CmdPartCrossSections::isActive(void)
             !Gui::Control().activeDialog());
 }
 
-//--------------------------------------------------------------------------------------
+//===========================================================================
+// Part_Builder
+//===========================================================================
 
 DEF_STD_CMD_A(CmdPartBuilder);
 
@@ -937,7 +939,9 @@ bool CmdPartBuilder::isActive(void)
     return (hasActiveDocument() && !Gui::Control().activeDialog());
 }
 
-//--------------------------------------------------------------------------------------
+//===========================================================================
+// Part_Loft
+//===========================================================================
 
 DEF_STD_CMD_A(CmdPartLoft);
 
@@ -963,7 +967,9 @@ bool CmdPartLoft::isActive(void)
     return (hasActiveDocument() && !Gui::Control().activeDialog());
 }
 
-//--------------------------------------------------------------------------------------
+//===========================================================================
+// Part_Sweep
+//===========================================================================
 
 DEF_STD_CMD_A(CmdPartSweep);
 
@@ -989,7 +995,9 @@ bool CmdPartSweep::isActive(void)
     return (hasActiveDocument() && !Gui::Control().activeDialog());
 }
 
-//--------------------------------------------------------------------------------------
+//===========================================================================
+// Part_Offset
+//===========================================================================
 
 DEF_STD_CMD_A(CmdPartOffset);
 
@@ -1034,7 +1042,9 @@ bool CmdPartOffset::isActive(void)
     return (objectsSelected && !Gui::Control().activeDialog());
 }
 
-//--------------------------------------------------------------------------------------
+//===========================================================================
+// Part_Thickness
+//===========================================================================
 
 DEF_STD_CMD_A(CmdPartThickness);
 
@@ -1106,7 +1116,9 @@ bool CmdPartThickness::isActive(void)
     return (objectsSelected && !Gui::Control().activeDialog());
 }
 
-//--------------------------------------------------------------------------------------
+//===========================================================================
+// Part_ShapeInfo
+//===========================================================================
 
 DEF_STD_CMD_A(CmdShapeInfo);
 
@@ -1202,6 +1214,10 @@ bool CmdShapeInfo::isActive(void)
 
     return false;
 }
+
+//===========================================================================
+// Part_RuledSurface
+//===========================================================================
 
 DEF_STD_CMD_A(CmdPartRuledSurface);
 
@@ -1347,6 +1363,42 @@ bool CmdCheckGeometry::isActive(void)
     return (hasActiveDocument() && !Gui::Control().activeDialog() && objectsSelected);
 }
 
+//===========================================================================
+// Part_ColorPerFace
+//===========================================================================
+
+DEF_STD_CMD_A(CmdColorPerFace);
+
+CmdColorPerFace::CmdColorPerFace()
+  : Command("Part_ColorPerFace")
+{
+    sAppModule    = "Part";
+    sGroup        = QT_TR_NOOP("Part");
+    sMenuText     = QT_TR_NOOP("Color per face");
+    sToolTipText  = QT_TR_NOOP("Set color per face");
+    sStatusTip    = sToolTipText;
+    sWhatsThis    = "Part_ColorPerFace";
+}
+
+void CmdColorPerFace::activated(int iMsg)
+{
+    if (getActiveGuiDocument()->getInEdit())
+        getActiveGuiDocument()->resetEdit();
+    std::vector<App::DocumentObject*> sel = Gui::Selection().getObjectsOfType(Part::Feature::getClassTypeId());
+    Gui::ViewProvider* vp = Gui::Application::Instance->getViewProvider(sel.front());
+    // FIXME: Need a way to force 'Color' edit mode
+    // #0000477: Proper interface for edit modes of view provider
+    if (vp)
+        getActiveGuiDocument()->setEdit(vp, Gui::ViewProvider::Color);
+}
+
+bool CmdColorPerFace::isActive(void)
+{
+    Base::Type partid = Base::Type::fromName("Part::Feature");
+    bool objectSelected = Gui::Selection().countObjectsOfType(partid) == 1;
+    return (hasActiveDocument() && !Gui::Control().activeDialog() && objectSelected);
+}
+
 
 void CreatePartCommands(void)
 {
@@ -1381,4 +1433,5 @@ void CreatePartCommands(void)
     rcCmdMgr.addCommand(new CmdPartOffset());
     rcCmdMgr.addCommand(new CmdPartThickness());
     rcCmdMgr.addCommand(new CmdCheckGeometry());
+    rcCmdMgr.addCommand(new CmdColorPerFace());
 } 

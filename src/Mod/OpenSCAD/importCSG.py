@@ -61,6 +61,7 @@ from tokrules import tokens
 dxfcache = {}
 def translate(context,text):
     "convenience function for Qt translator"
+    from PyQt4 import QtGui
     return QtGui.QApplication.translate(context, text, None, \
         QtGui.QApplication.UnicodeUTF8)
 
@@ -415,12 +416,12 @@ def p_difference_action(p):
     print "difference"
     print len(p[5])
     print p[5]
-    mycut = doc.addObject('Part::Cut',p[1])
-    mycut.Base = p[5][0]
     if (len(p[5]) == 1 ): #single object
         p[0] = p[5]
     else:
 # Cut using Fuse    
+        mycut = doc.addObject('Part::Cut',p[1])
+        mycut.Base = p[5][0]
 #       Can only Cut two objects do we need to fuse extras
         if (len(p[5]) > 2 ):
            print "Need to Fuse Extra First"
@@ -539,7 +540,10 @@ def p_linear_extrude_with_twist(p):
     print "Linear Extrude With Twist"
     h = float(p[3]['height'])
     print "Twist : ",p[3]
-    t = float(p[3]['twist'])
+    if 'twist' in p[3]:
+        t = float(p[3]['twist'])
+    else:
+        t = 0
     if (len(p[6]) > 1) :
         obj = fuse(p[6],"Linear Extrude Union")
     else :
@@ -799,7 +803,7 @@ def p_cylinder_action(p):
         mycyl.Height = h
         mycyl.Radius1 = r1
         mycyl.Radius2 = r2
-    print "Center = ",center
+    print "Center = ",tocenter
     if tocenter=='true' :
        center(mycyl,0,0,h)
     if False :  
@@ -862,7 +866,7 @@ def p_square_action(p) :
     mysquare = doc.addObject('Part::Plane',p[1])
     mysquare.Length=x
     mysquare.Width=y
-    if p[9]=='true' :
+    if p[3]['center']=='true' :
        center(mysquare,x,y,0)
     p[0] = [mysquare]
 
@@ -935,7 +939,10 @@ def p_polyhedron_action(p) :
         f = make_face(v[int(i[0])],v[int(i[1])],v[int(i[2])])
         faces_list.append(f)
     shell=Part.makeShell(faces_list)
-    mypolyhed.Shape=Part.Solid(shell) 
+    solid=Part.Solid(shell).removeSplitter()
+    if solid.Volume < 0:
+        solid.reverse()
+    mypolyhed.Shape=solid
     p[0] = [mypolyhed]
 
 def p_projection_action(p) :

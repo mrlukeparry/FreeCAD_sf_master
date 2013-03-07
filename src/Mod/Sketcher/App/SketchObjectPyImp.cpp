@@ -107,7 +107,9 @@ PyObject* SketchObjectPy::addConstraint(PyObject *args)
 
     if (PyObject_TypeCheck(pcObj, &(Sketcher::ConstraintPy::Type))) {
         Sketcher::Constraint *constr = static_cast<Sketcher::ConstraintPy*>(pcObj)->getConstraintPtr();
-        return Py::new_reference_to(Py::Int(this->getSketchObjectPtr()->addConstraint(constr)));
+        int ret = this->getSketchObjectPtr()->addConstraint(constr);
+        this->getSketchObjectPtr()->solve();
+        return Py::new_reference_to(Py::Int(ret));
     }
     Py_Return;
 }
@@ -282,10 +284,11 @@ PyObject* SketchObjectPy::fillet(PyObject *args)
             PyErr_SetString(PyExc_ValueError, str.str().c_str());
             return 0;
         }
-    // Point, radius
+        Py_Return;
     }
-    PyErr_Clear();
 
+    PyErr_Clear();
+    // Point, radius
     if (PyArg_ParseTuple(args, "iid|i", &geoId1, &posId1, &radius, &trim)) {
         if (this->getSketchObjectPtr()->fillet(geoId1, (Sketcher::PointPos) posId1, radius, trim?true:false)) {
             std::stringstream str;
@@ -293,8 +296,13 @@ PyObject* SketchObjectPy::fillet(PyObject *args)
             PyErr_SetString(PyExc_ValueError, str.str().c_str());
             return 0;
         }
+        Py_Return;
     }
-    Py_Return;
+
+    PyErr_SetString(PyExc_TypeError, "fillet() method accepts:\n"
+    "-- int,int,Vector,Vector,float,[int]\n"
+    "-- int,int,float,[int]\n");
+    return 0;
 }
 
 PyObject* SketchObjectPy::trim(PyObject *args)
