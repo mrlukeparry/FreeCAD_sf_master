@@ -26,6 +26,12 @@
 
 #include "ViewProvider.h"
 
+class SoCoordinate3;
+class SoIndexedFaceSet;
+class SoMultipleCopy;
+class SoNormal;
+class SoSeparator;
+
 namespace PartDesignGui {
 
 class TaskDlgTransformedParameters;
@@ -42,8 +48,6 @@ public:
     virtual ~ViewProviderTransformed()
         {}
 
-    /// grouping handling
-    std::vector<App::DocumentObject*> claimChildren(void) const;
     void setupContextMenu(QMenu*, QObject*, const char*);
 
     virtual bool onDelete(const std::vector<std::string> &);
@@ -55,10 +59,18 @@ public:
     std::string featureName;
 
 protected:
-    virtual bool setEdit(int ModNum) { return false; }
+    virtual bool setEdit(int ModNum);
     virtual void unsetEdit(int ModNum);
 
     const bool checkDlgOpen(TaskDlgTransformedParameters* transformedDlg);
+
+    // nodes for the representation of rejected repetitions
+    SoGroup           * pcRejectedRoot;
+    SoMultipleCopy    * rejectedTrfms;
+    SoCoordinate3     * rejectedCoords;
+    SoNormal          * rejectedNorms;
+    SoIndexedFaceSet  * rejectedFaceSet;
+
 public:
     void recomputeFeature();
 };
