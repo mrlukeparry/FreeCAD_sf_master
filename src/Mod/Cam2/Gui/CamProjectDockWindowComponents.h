@@ -54,6 +54,7 @@ public:
     virtual bool save();
 };
 
+// ----- CamTextBoxComponent ---------------------------------------------------------
 /**
  * Object that manages a Cam::TextBox setting
  */
@@ -77,12 +78,14 @@ public:
 
 };
 
+// ----- CamRadioComponent ---------------------------------------------------------
 /**
  * Object that manages a Cam::Radio setting
  */
 class CamGuiExport CamRadioComponent: public CamComponent {
 protected:
-    QList<QRadioButton *> radios;
+//    QList<QRadioButton *> radios;
+    QMap<QString, QRadioButton*> radios;
 
 public:
 
