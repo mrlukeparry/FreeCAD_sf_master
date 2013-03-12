@@ -176,6 +176,7 @@ bool CamRadioComponent::makeUI(Cam::TPGSetting *tpgsetting, QFormLayout* form) {
                     btn->setChecked(true);
                 btn->setText((*it)->value);
                 layout->addWidget(btn);
+                radios.insert((*it)->id, btn);
             }
 
             // keep reference to widgets for later cleanup
@@ -195,10 +196,15 @@ bool CamRadioComponent::makeUI(Cam::TPGSetting *tpgsetting, QFormLayout* form) {
  * Saves the values on the UI to the TPGSetting instance
  */
 bool CamRadioComponent::save() {
-//    if (widget != NULL && tpgsetting != NULL) {
-//        tpgsetting->value = widget->text();
-//        return true;
-//    }
+
+	QMap<QString, QRadioButton*>::const_iterator it = radios.constBegin();
+	for (; it != radios.constEnd(); ++it) {
+		if (it.value()->isChecked()) {
+			tpgsetting->value = it.key();
+			return true;
+		}
+	}
+
     return false;
 }
 
