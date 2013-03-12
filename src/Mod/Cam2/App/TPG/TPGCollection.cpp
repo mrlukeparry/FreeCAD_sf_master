@@ -36,7 +36,7 @@ TPGCollection::~TPGCollection() {
     //TODO: make this thread-safe
     for (size_t i = 0; i < tpgs.size(); i++)
         tpgs.at(i)->release();
-    tpgs.empty();
+    tpgs.clear();
 }
 
 
@@ -77,7 +77,7 @@ void TPGCollection::absorb(TPGCollection &other) {
     for (size_t i = 0; i < cnt; i++) {
         tpgs.push_back(other.tpgs.at(i));
     }
-    other.tpgs.empty();
+    other.tpgs.clear();
 }
 
 /**

@@ -85,6 +85,8 @@ SET(CamGui_SRCS
     ViewProviderTPGList.h
     CamProjectDockWindow.cpp
     CamProjectDockWindow.h
+    CamProjectDockWindowComponents.cpp
+    CamProjectDockWindowComponents.h
 
     ToolPathDockWindow.cpp
     ToolPathDockWindow.h

@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2012-3 Andrew Robinson <andrewjrobinson@gmail.com>      *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -27,6 +28,7 @@
 #include "TPGSettings.h"
 
 #include <cstdio>
+#include <qlist.h>
 
 namespace Cam {
 
@@ -52,6 +54,7 @@ TPGSetting::TPGSetting(const char *name, const char *label, const char *type, co
 	this->defaultvalue = QString::fromAscii(defaultvalue);
 	this->units = QString::fromAscii(units);
 	this->helptext = QString::fromAscii(helptext);
+	this->value = QString::fromAscii("test");
 }
 TPGSetting::TPGSetting(QString &name, QString &label, QString &type, QString &defaultvalue, QString &units, QString &helptext)
 {
@@ -61,6 +64,17 @@ TPGSetting::TPGSetting(QString &name, QString &label, QString &type, QString &de
 	this->defaultvalue = defaultvalue;
 	this->units = units;
 	this->helptext = helptext;
+    this->value = QString::fromAscii("test");
+}
+TPGSetting::TPGSetting() {
+
+}
+
+TPGSetting::~TPGSetting() {
+    QList<TPGSettingOption*>::iterator it = this->options.begin();
+    for (; it != this->options.end(); ++it)
+        delete *it;
+    options.clear();
 }
 
 /**
@@ -68,7 +82,23 @@ TPGSetting::TPGSetting(QString &name, QString &label, QString &type, QString &de
  */
 TPGSetting* TPGSetting::clone()
 {
-	return new TPGSetting(name, label, type, defaultvalue, units, helptext);
+    TPGSetting* clone = new TPGSetting(name, label, type, defaultvalue, units, helptext);
+    clone->value = value;
+    QList<TPGSettingOption*>::iterator it = this->options.begin();
+
+    for (; it != this->options.end(); ++it)
+        clone->addOption((*it)->id, (*it)->value);
+
+    return clone;
+}
+
+
+void TPGSetting::addOption(QString id, QString value) {
+    this->options.append(new TPGSettingOption(id, value));
+}
+
+void TPGSetting::addOption(const char *id, const char *value) {
+    this->options.append(new TPGSettingOption(id, value));
 }
 
 
@@ -82,8 +112,12 @@ void TPGSetting::print()
 			units.toAscii().constData(),
 			helptext.toAscii().constData());
 }
-
-////////// TPGSettings /////////
+void TPGSetting::setDefault()
+{
+    value = defaultvalue;
+//    printf("Setting: '%s' to default value (%s) '%s'\n", name.toAscii().constData(), defaultvalue.toAscii().constData(), value.toAscii().constData());
+}
+// ----- TPGSettings ----------------------------------------------------------
 
 TPGSettings::TPGSettings()
 {
@@ -113,10 +147,28 @@ TPGSettings* TPGSettings::clone()
 /**
  * Adds the setting to this setting group
  */
-void TPGSettings::addSetting(TPGSetting* setting)
+TPGSetting* TPGSettings::addSetting(TPGSetting* setting)
 {
-	this->settings.push_back(setting);
+	this->settings.push_back(setting->grab());
+	return setting;
 }
+
+/**
+ * Get the value of a given setting (by name)
+ */
+QString *TPGSettings::getSetting(const char *name) {
+
+    QString qname = QString::fromAscii(name);
+
+    std::vector<TPGSetting*>::iterator it = this->settings.begin();
+    while (it != this->settings.end()) {
+        if ((*it)->name == qname)
+            return &((*it)->value);
+        ++it;
+    }
+    return NULL;
+}
+
 void TPGSettings::print()
 {
 	std::vector<TPGSetting*>::iterator it = this->settings.begin();
@@ -127,4 +179,19 @@ void TPGSettings::print()
 	}
 }
 
+
+
+/**
+ * Sets the default value for every setting in Settings collection
+ */
+void TPGSettings::setDefaults()
+{
+    std::vector<TPGSetting*>::iterator it = this->settings.begin();
+    while (it != this->settings.end())
+    {
+        (*it)->setDefault();
+        ++it;
+    }
 }
+
+} // end namespace Cam
