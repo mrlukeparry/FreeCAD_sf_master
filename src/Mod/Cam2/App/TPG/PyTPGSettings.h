@@ -20,59 +20,33 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CAMSETTINGSDOCKWINDOW_H_
-#define CAMSETTINGSDOCKWINDOW_H_
+#ifndef PYTPGSETTINGS_H_
+#define PYTPGSETTINGS_H_
 
-#include <Gui/DockWindow.h>
-#include <qobject.h>
-#include <qlist.h>
+#include <Python.h>
+#include <qstring.h>
 
-#include "ui_CamProjectDockWindow.h"
+#include "TPGSettings.h"
 
-#include "../App/TPG/TPG.h"
-#include "../App/TPG/TPGSettings.h"
-
-#include "CamProjectDockWindowComponents.h"
-
-namespace CamGui {
-
-class CamProjectDockWindow : public Gui::DockWindow {
-
-  Q_OBJECT
-
-public:
-  CamProjectDockWindow(Gui::Document*  pcDocument, QWidget *parent=0);
-  virtual ~CamProjectDockWindow();
-
-  /**
-   * Causes the setting area to display a form for editing the selected
-   * setting.  The form is populated with the current values from the setting;
-   * Caller needs to set the value to defaultvalue if that is desired.
-   *
-   * Provide a NULL newSettings to stop edit any settings.
-   */
-  bool editSettings(Cam::TPGSettings* newSettings, bool saveOld=true);
-
-  /**
-   * Saves the current values from the UI into the settings objects.
-   *
-   * Note: this is called by default on when changing settings (if saveOld is
-   * true).
-   */
-  bool saveSettings();
-
-protected:
-
-  Cam::TPGSettings *currentSettings;
-  QList<CamComponent*> components;
+#define QString_toPyString(__str__) PyString_FromString(((const char*)(__str__)).toStdString().c_str());
+#define QStringPtr_toPyString(__str__) PyString_FromString(((const char*)(__str__))->toStdString().c_str());
 
 
-public Q_SLOTS:
-    void updatedTPGSelection(Cam::TPG* tpg);
+/**
+ * A wrapper for the TPGSetting class to allow access from PyTPGs
+ */
+//typedef struct  {
+//    PyObject_HEAD
+//    Cam::TPGSetting *ts;
+//} cam_PyTPGSetting;
 
-private:
-  Ui_CamProjectDockWindow* ui;
-};
 
-} /* namespace CamGui */
-#endif /* CAMSETTINGSDOCKWINDOW_H_ */
+/**
+ * A wrapper for the TPGSetting class to allow access from PyTPGs
+ */
+typedef struct  {
+    PyObject_HEAD
+    Cam::TPGSettings *settings;
+} cam_PyTPGSettings;
+
+#endif /* PYTPGSETTINGS_H_ */

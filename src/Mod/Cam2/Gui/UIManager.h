@@ -57,6 +57,8 @@ public Q_SLOTS:
 
 Q_SIGNALS:
   void updatedTPGList(TPGListModel *model);
+
+  void updatedTPGSelection(Cam::TPG* tpg);
 };
 
 /// Get the global instance
