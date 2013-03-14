@@ -40,6 +40,7 @@ void DrawingExport initDrawing()
     // load dependent module
     try {
         Base::Interpreter().loadModule("Part");
+        Base::Interpreter().loadModule("Measure");
         //Base::Interpreter().loadModule("Mesh");
     }
     catch(const Base::Exception& e) {
