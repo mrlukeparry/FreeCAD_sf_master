@@ -20,77 +20,78 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+# include "PreCompiled.h"
 #ifndef _PreComp_
 # include <sstream>
 # include <BRepAdaptor_Curve.hxx>
 # include <Geom_Circle.hxx>
 # include <gp_Circ.hxx>
 # include <gp_Elips.hxx>
+
+# include <Bnd_Box.hxx>
+# include <BRepBndLib.hxx>
+# include <BRepBuilderAPI_Transform.hxx>
+# include <HLRBRep_Algo.hxx>
+
+# include <TopoDS_Shape.hxx>
+# include <HLRTopoBRep_OutLiner.hxx>
+//# include <BRepAPI_MakeOutLine.hxx>
+# include <HLRAlgo_Projector.hxx>
+# include <HLRBRep_ShapeBounds.hxx>
+# include <HLRBRep_EdgeData.hxx>
+# include <HLRBRep_HLRToShape.hxx>
+# include <HLRBRep_Data.hxx>
+# include <gp_Ax2.hxx>
+# include <gp_Pnt.hxx>
+# include <gp_Dir.hxx>
+# include <gp_Vec.hxx>
+# include <Poly_Polygon3D.hxx>
+# include <Poly_Triangulation.hxx>
+# include <Poly_PolygonOnTriangulation.hxx>
+# include <TopoDS.hxx>
+# include <TopoDS_Face.hxx>
+# include <TopoDS_Edge.hxx>
+# include <TopoDS_Vertex.hxx>
+# include <TopExp.hxx>
+# include <TopExp_Explorer.hxx>
+# include <TopTools_ListIteratorOfListOfShape.hxx>
+# include <TopTools_IndexedMapOfShape.hxx>
+# include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+# include <TopTools_ListOfShape.hxx>
+# include <TColgp_Array1OfPnt2d.hxx>
+
+# include <BRep_Tool.hxx>
+# include <BRepMesh.hxx>
+# include <BRep_Builder.hxx>
+# include <BRepBuilderAPI_MakeWire.hxx>
+# include <BRepTools_WireExplorer.hxx>
+# include <ShapeFix_Wire.hxx>
+
+# include <BRepAdaptor_CompCurve.hxx>
+# include <HLRBRep.hxx>
+# include <HLRAlgo_EdgeIterator.hxx>
+# include <Handle_BRepAdaptor_HCompCurve.hxx>
+# include <Approx_Curve3d.hxx>
+# include <BRepAdaptor_HCurve.hxx>
+# include <Handle_BRepAdaptor_HCurve.hxx>
+# include <Handle_HLRBRep_Data.hxx>
+# include <Geom_BSplineCurve.hxx>
+# include <Handle_Geom_BSplineCurve.hxx>
+# include <Geom_BezierCurve.hxx>
+# include <GeomConvert_BSplineCurveToBezierCurve.hxx>
+# include <GeomConvert_BSplineCurveKnotSplitting.hxx>
+# include <Geom2d_BSplineCurve.hxx>
 #endif
 
-#include <Bnd_Box.hxx>
-#include <BRepBndLib.hxx>
-#include <BRepBuilderAPI_Transform.hxx>
-#include <HLRBRep_Algo.hxx>
+# include <Base/Console.h>
+# include <Base/Exception.h>
+# include <Base/FileInfo.h>
+# include <Base/Tools.h>
 
-#include <TopoDS_Shape.hxx>
-#include <HLRTopoBRep_OutLiner.hxx>
-//#include <BRepAPI_MakeOutLine.hxx>
-#include <HLRAlgo_Projector.hxx>
-#include <HLRBRep_ShapeBounds.hxx>
-#include <HLRBRep_EdgeData.hxx>
-#include <HLRBRep_HLRToShape.hxx>
-#include <HLRBRep_Data.hxx>
-#include <gp_Ax2.hxx>
-#include <gp_Pnt.hxx>
-#include <gp_Dir.hxx>
-#include <gp_Vec.hxx>
-#include <Poly_Polygon3D.hxx>
-#include <Poly_Triangulation.hxx>
-#include <Poly_PolygonOnTriangulation.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Face.hxx>
-#include <TopoDS_Edge.hxx>
-#include <TopoDS_Vertex.hxx>
-#include <TopExp.hxx>
-#include <TopExp_Explorer.hxx>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
-#include <TopTools_IndexedMapOfShape.hxx>
-#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
-#include <TopTools_ListOfShape.hxx>
-#include <TColgp_Array1OfPnt2d.hxx>
+# include <Mod/Part/App/PartFeature.h>
 
-#include <BRep_Tool.hxx>
-#include <BRepMesh.hxx>
-#include <BRep_Builder.hxx>
-#include <BRepBuilderAPI_MakeWire.hxx>
-#include <BRepTools_WireExplorer.hxx>
-#include <ShapeFix_Wire.hxx>
-
-#include <BRepAdaptor_CompCurve.hxx>
-#include <HLRBRep.hxx>
-#include <HLRAlgo_EdgeIterator.hxx>
-#include <Handle_BRepAdaptor_HCompCurve.hxx>
-#include <Approx_Curve3d.hxx>
-#include <BRepAdaptor_HCurve.hxx>
-#include <Handle_BRepAdaptor_HCurve.hxx>
-#include <Handle_HLRBRep_Data.hxx>
-#include <Geom_BSplineCurve.hxx>
-#include <Handle_Geom_BSplineCurve.hxx>
-#include <Geom_BezierCurve.hxx>
-#include <GeomConvert_BSplineCurveToBezierCurve.hxx>
-#include <GeomConvert_BSplineCurveKnotSplitting.hxx>
-#include <Geom2d_BSplineCurve.hxx>
-
-#include <Base/Console.h>
-#include <Base/Exception.h>
-#include <Base/FileInfo.h>
-#include <Base/Tools.h>
-#include <Mod/Part/App/PartFeature.h>
-
-#include "GeometryObject.h"
-#include "ProjectionAlgos.h"
+# include "GeometryObject.h"
+# include "ProjectionAlgos.h"
 
 using namespace DrawingGeometry;
 
@@ -98,7 +99,6 @@ struct EdgePoints {
     gp_Pnt v1, v2;
     TopoDS_Edge edge;
 };
-
 
 GeometryObject::GeometryObject() : brep_hlr(0), Tolerance(0.05f)
 {    
@@ -126,6 +126,9 @@ void GeometryObject::clear()
         delete *it;
         *it = 0;
     }
+    
+    vertexGeom.clear();
+    vertexReferences.clear();
     
     faceGeom.clear();    
     faceReferences.clear();
@@ -366,6 +369,68 @@ void GeometryObject::extractFaces(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
     DS->Projector().Scaled(false);
 }
 
+void GeometryObject::extractVerts(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int ie)
+{
+    if(!myAlgo)
+        return;
+
+    Handle_HLRBRep_Data DS = myAlgo->DataStructure();
+
+    if (DS.IsNull())
+      return;
+
+    DS->Projector().Scaled(true);
+ 
+    TopTools_IndexedMapOfShape anIndices;
+    TopTools_IndexedMapOfShape anvIndices;
+
+    TopExp::MapShapes(S, TopAbs_EDGE, anIndices);
+    TopExp::MapShapes(S, TopAbs_VERTEX, anvIndices);
+
+    Base::Console().Log("Num Vertices: %i",  anvIndices.Extent());
+    Base::Console().Log("Num edges: %i",  anIndices.Extent());
+    
+    // Load the edge
+    if(ie < 0) {
+      
+    } else {
+        TopoDS_Shape shape = anIndices.FindKey(ie);
+        TopoDS_Edge edge = TopoDS::Edge(shape);
+        
+        // Gather a list of points associated with this curve
+        std::list<TopoDS_Shape> edgePoints;
+        
+        TopExp_Explorer xp;       
+        xp.Init(edge,TopAbs_VERTEX);
+        while(xp.More()) {
+            edgePoints.push_back(xp.Current());
+            xp.Next();
+        }
+        for(std::list<TopoDS_Shape>::const_iterator it = edgePoints.begin(); it != edgePoints.end(); ++it) {
+          
+            // Should share topological data structure so can reference
+            int iv = anvIndices.FindIndex(*it); // Index of the found vertex
+            
+            if(iv < 0)
+                continue;
+            
+            // Check if vertex has alrady been addded
+            std::vector<int>::iterator vert;
+            vert = std::find(vertexReferences.begin(), vertexReferences.end(), iv);
+            
+            if(vert == vertexReferences.end()) {
+              
+                // If the index was found and is unique, the point is projected using the HLR Projector Algorithm
+                gp_Pnt2d prjPnt;
+                DS->Projector().Project(BRep_Tool::Pnt(TopoDS::Vertex(*it)), prjPnt);
+                
+                vertexGeom.push_back(Base::Vector2D(prjPnt.X(), prjPnt.Y()));
+                vertexReferences.push_back(iv);                
+            }
+        }        
+    }         
+}
+
 void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType)
 {
     if (!myAlgo)
@@ -425,6 +490,7 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
               B.MakeCompound(TopoDS::Compound(result));
               
               drawEdge(visible, type, false ,ed, result);
+              extractVerts(myAlgo, S, ie);
 
               int edgesAdded = calculateGeometry(result, extractionType, edgeGeom);
               
@@ -480,8 +546,8 @@ void GeometryObject::createWire(const TopoDS_Shape &input, std::list<TopoDS_Wire
         BRepBuilderAPI_MakeWire mkWire;
         // add and erase first edge
         TopoDS_Edge e = TopoDS_Edge(edgeList.front());
-               TopExp_Explorer xp;
-         EdgePoints ep;
+        TopExp_Explorer xp;
+        EdgePoints ep;
         xp.Init(edgeList.front(),TopAbs_VERTEX);
         ep.v1 = BRep_Tool::Pnt(TopoDS::Vertex(xp.Current()));
         xp.Next();

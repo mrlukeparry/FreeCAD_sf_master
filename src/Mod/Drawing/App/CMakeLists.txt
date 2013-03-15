@@ -5,6 +5,9 @@ else(MSVC)
 endif(MSVC)
 
 include_directories(
+    ${CMAKE_BINARY_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR}
     ${Boost_INCLUDE_DIRS}
     ${OCC_INCLUDE_DIR}
     ${ZLIB_INCLUDE_DIR}
@@ -14,6 +17,7 @@ include_directories(
 link_directories(${OCC_LIBRARY_DIR})
 
 set(Drawing_LIBS
+    Measure
     Part
     FreeCADApp
 )
@@ -29,6 +33,8 @@ SET(Features_SRCS
     FeatureView.h
     FeatureViewAnnotation.cpp
     FeatureViewAnnotation.h
+    FeatureViewDimension.cpp
+    FeatureViewDimension.h
     FeatureViewPart.cpp
     FeatureViewPart.h
     FeatureViewSection.cpp

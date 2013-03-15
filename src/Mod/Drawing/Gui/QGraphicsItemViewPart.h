@@ -68,7 +68,6 @@ int strokeWidth;
 QPen m_pen;
 };
 
-  
 class QGraphicsItemFace : public QObject, public QGraphicsPathItem
 {
 Q_OBJECT
@@ -94,6 +93,37 @@ protected:
 int reference;
 
 private:
+QPen m_pen;
+};
+
+
+class QGraphicsItemVertex : public QObject, public QGraphicsPathItem
+{
+Q_OBJECT
+public:
+    explicit QGraphicsItemVertex(int ref = -1, QGraphicsScene *scene = 0 );
+
+    ~QGraphicsItemVertex() {}
+     QPainterPath shape() const;
+    
+    enum {Type = QGraphicsItem::UserType + 105};
+
+    int type() const { return Type;}  
+    int getReference() const { return reference; } 
+    void setStrokeWidth(int width) { this->strokeWidth = width; }
+    
+protected:
+    // Preselection events:
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
+    // Selection detection
+     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+  
+protected:
+int reference;
+
+private:
+int strokeWidth;
 QPen m_pen;
 };
 
