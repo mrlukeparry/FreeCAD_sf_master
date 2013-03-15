@@ -21,7 +21,6 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
@@ -53,7 +52,6 @@
 #include <TColgp_Array1OfPnt2d.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepMesh.hxx>
-
 
 #include <Base/Exception.h>
 #include <Base/FileInfo.h>
@@ -103,6 +101,17 @@ short FeatureViewPart::mustExecute() const
 FeatureViewPart::~FeatureViewPart()
 {
     delete geometryObject;
+}
+
+
+const std::vector<Base::Vector2D> & FeatureViewPart::getVertexGeometry() const
+{
+    return geometryObject->getVertexGeometry();
+}
+
+const std::vector<int> & FeatureViewPart::getVertexReferences() const
+{
+    return geometryObject->getVertexRefs();
 }
 
 const std::vector<DrawingGeometry::Face *> & FeatureViewPart::getFaceGeometry() const

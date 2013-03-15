@@ -14,18 +14,19 @@
 # include <Python.h>
 #endif
 
-#include <Base/Console.h>
-#include <Base/Interpreter.h>
+# include <Base/Console.h>
+# include <Base/Interpreter.h>
  
-#include "FeaturePage.h"
-#include "FeatureView.h"
-#include "FeatureViewPart.h"
-#include "FeatureViewSection.h"
+# include "FeaturePage.h"
+# include "FeatureView.h"
+# include "FeatureViewPart.h"
+# include "FeatureViewSection.h"
 
-#include "FeatureViewAnnotation.h"
-#include "FeatureProjection.h"
-#include "FeatureClip.h"
-#include "PageGroup.h"
+# include "FeatureViewAnnotation.h"
+# include "FeatureViewDimension.h"
+# include "FeatureProjection.h"
+# include "FeatureClip.h"
+# include "PageGroup.h"
 
 extern struct PyMethodDef Drawing_methods[];
 
@@ -59,12 +60,14 @@ void DrawingExport initDrawing()
     Drawing::FeatureView            ::init();
     Drawing::FeatureViewPart        ::init();
     Drawing::FeatureViewSection     ::init();
+    Drawing::FeatureViewAnnotation  ::init();
+    Drawing::FeatureViewDimension   ::init();
     
     Drawing::PageGroup              ::init();
     Drawing::FeatureProjection      ::init();
     Drawing::FeatureViewPartPython  ::init();
     Drawing::FeatureViewPython      ::init();
-    Drawing::FeatureViewAnnotation  ::init();
+    
     Drawing::FeatureClip            ::init();
 }
 

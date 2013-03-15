@@ -51,9 +51,11 @@ public:
     void clear();
 
     void setTolerance(double value);
+    const std::vector<Base::Vector2D> & getVertexGeometry() const { return vertexGeom; };
     const std::vector<BaseGeom *> & getEdgeGeometry() const { return edgeGeom; };
     const std::vector<Face *>     & getFaceGeometry() const { return faceGeom; };
     
+    const std::vector<int> & getVertexRefs() const { return vertexReferences; };
     const std::vector<int> & getEdgeRefs() const { return edgeReferences; };
     const std::vector<int> & getFaceRefs() const { return faceReferences; };
 
@@ -64,6 +66,7 @@ protected:
     void drawFace(const bool visible, const int typ, const int iface, Handle_HLRBRep_Data & DS, TopoDS_Shape& Result) const;
     void drawEdge(const bool visible, const bool inFace, const int typ, HLRBRep_EdgeData& ed, TopoDS_Shape& Result) const;
     
+    void extractVerts(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int ie);
     void extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType);
     void extractFaces(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType);
     int calculateGeometry(const TopoDS_Shape &input, ExtractionType extractionType,  std::vector<BaseGeom *> &geoms);
@@ -73,9 +76,11 @@ protected:
     
     // Geometry
     std::vector<BaseGeom *> edgeGeom;
+    std::vector<Base::Vector2D> vertexGeom;
     std::vector<Face *> faceGeom;
     
     // Linked Edges and Faces to base object
+    std::vector<int> vertexReferences;
     std::vector<int> edgeReferences;
     std::vector<int> faceReferences;
 

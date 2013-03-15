@@ -1,7 +1,8 @@
 /***************************************************************************
- *   Copyright (c) Yorik van Havre          (yorik@uncreated.net) 2012     *
+ *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2012 Yorik van Havre <yorik@uncreated.net>              *
  *                                                                         *
- *   This file is part of the FreeCAD CAx development system.              *
+ *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
  *   This library is free software; you can redistribute it and/or         *
  *   modify it under the terms of the GNU Library General Public           *
@@ -10,7 +11,7 @@
  *                                                                         *
  *   This library  is distributed in the hope that it will be useful,      *
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   MERCHANTABILITY or FITNESS FOR A DrawingICULAR PURPOSE.  See the      *
  *   GNU Library General Public License for more details.                  *
  *                                                                         *
  *   You should have received a copy of the GNU Library General Public     *
@@ -20,38 +21,24 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
 # include <sstream>
 #endif
 
-#include <iomanip>
-
-#include <Base/Exception.h>
-#include <Base/FileInfo.h>
-
 #include "FeatureViewAnnotation.h"
 
 using namespace Drawing;
-using namespace std;
 
-
-//===========================================================================
-// FeatureViewAnnotation
-//===========================================================================
-
-PROPERTY_SOURCE(Drawing::FeatureViewAnnotation, Drawing::FeatureView)
-
+PROPERTY_SOURCE(Drawing::FeatureViewAnnotation, App::DocumentObject)
 
 FeatureViewAnnotation::FeatureViewAnnotation(void) 
 {
-    static const char *vgroup = "Drawing view";
+    static const char *vgroup = "Drawing annotation";
 
-    ADD_PROPERTY_TYPE(Text ,(""),vgroup,App::Prop_None,"The text to be displayed");
-    ADD_PROPERTY_TYPE(Font ,("Sans"),vgroup,App::Prop_None,"The name of the font to use");
-    ADD_PROPERTY_TYPE(TextColor,(0.0f,0.0f,0.0f),vgroup,App::Prop_None,"The color of the text");
+    ADD_PROPERTY_TYPE(Font ,("Sans")            ,vgroup,App::Prop_None, "The name of the font to use");
+    ADD_PROPERTY_TYPE(TextColor,(0.0f,0.0f,0.0f),vgroup,App::Prop_None, "The color of the text");
 }
 
 FeatureViewAnnotation::~FeatureViewAnnotation()
@@ -60,41 +47,6 @@ FeatureViewAnnotation::~FeatureViewAnnotation()
 
 App::DocumentObjectExecReturn *FeatureViewAnnotation::execute(void)
 {
-  std::stringstream result,hr,hg,hb;
-    const App::Color& c = TextColor.getValue();
-    hr << hex << setfill('0') << setw(2) << (int)(255.0*c.r);
-    hg << hex << setfill('0') << setw(2) << (int)(255.0*c.g);
-    hb << hex << setfill('0') << setw(2) << (int)(255.0*c.b);
-
-    result  << "<g transform=\"translate(" << X.getValue() << "," << Y.getValue() << ")"
-            << " rotate(" << Rotation.getValue() << ")\">" << endl
-            << "<text id=\"" << Label.getValue() << "\"" << endl
-            << " font-family=\"" << Font.getValue() << "\"" << endl
-            << " font-size=\"" << Scale.getValue() << "\"" << endl
-            << " fill=\"#" << hr.str() << hg.str() << hb.str() << "\">" << endl;
-
-    int index=0;
-    for (std::vector<std::string>::const_iterator it = Text.getValues().begin(); it != Text.getValues().end(); ++it) {
-        result << "<tspan x=\"0\" dy=\"1em\">" << it->c_str() << "</tspan>" << endl;
-        index++;
-    }
-
-    result << "</text>" << endl << "</g>" << endl;
-
-    // Apply the resulting fragment
     return App::DocumentObject::StdReturn;
 }
 
-// Python Drawing feature ---------------------------------------------------------
-
-namespace App {
-/// @cond DOXERR
-PROPERTY_SOURCE_TEMPLATE(Drawing::FeatureViewAnnotationPython, Drawing::FeatureViewAnnotation)
-template<> const char* Drawing::FeatureViewAnnotationPython::getViewProviderName(void) const {
-    return "DrawingGui::ViewProviderDrawingView";
-}
-/// @endcond
-
-// explicit template instantiation
-template class DrawingExport FeaturePythonT<Drawing::FeatureViewAnnotation>;
-}

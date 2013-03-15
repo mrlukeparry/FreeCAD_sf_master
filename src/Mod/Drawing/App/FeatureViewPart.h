@@ -1,6 +1,7 @@
 /***************************************************************************
  *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2007     *
  *   Copyright (c) Luke Parry             (l.parry@warwick.ac.uk) 2013     *
+ *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
  *   This library is free software; you can redistribute it and/or         *
@@ -20,28 +21,24 @@
  *                                                                         *
  ***************************************************************************/
 
- 
-
-
 #ifndef _FeatureViewPart_h_
 #define _FeatureViewPart_h_
 
-
 #include <App/DocumentObject.h>
 #include <App/PropertyLinks.h>
-#include "FeatureView.h"
 #include <App/FeaturePython.h>
 
+#include "FeatureView.h"
 #include "GeometryObject.h"
+
 namespace Drawing
 {
-
 
 /** Base class of all View Features in the drawing module
  */
 class DrawingExport FeatureViewPart : public FeatureView
 {
-    PROPERTY_HEADER(Part::FeatureViewPart);
+    PROPERTY_HEADER(Drawing::FeatureViewPart);
 
 public:
     /// Constructor
@@ -55,9 +52,12 @@ public:
     App::PropertyFloat  LineWidth;
     App::PropertyFloatConstraint  Tolerance;
 
+    const std::vector<Base::Vector2D> & getVertexGeometry() const;
     const std::vector<DrawingGeometry::BaseGeom  *> & getEdgeGeometry() const;
     const std::vector<DrawingGeometry::Face *> & getFaceGeometry() const;
-        
+    
+    /// Get References for geometric features
+    const std::vector<int> & getVertexReferences() const;
     const std::vector<int> & getEdgeReferences() const;
     const std::vector<int> & getFaceReferences() const;
     
@@ -84,6 +84,5 @@ typedef App::FeaturePythonT<FeatureViewPart> FeatureViewPartPython;
 
 
 } //namespace Drawing
-
 
 #endif

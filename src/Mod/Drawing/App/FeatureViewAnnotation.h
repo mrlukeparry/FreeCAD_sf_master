@@ -1,7 +1,8 @@
 /***************************************************************************
- *   Copyright (c) Yorik van Havre          (yorik@uncreated.net 2012)     *
+ *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2012 Yorik van Havre <yorik@uncreated.net>              *
  *                                                                         *
- *   This file is part of the FreeCAD CAx development system.              *
+ *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
  *   This library is free software; you can redistribute it and/or         *
  *   modify it under the terms of the GNU Library General Public           *
@@ -10,7 +11,7 @@
  *                                                                         *
  *   This library  is distributed in the hope that it will be useful,      *
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   MERCHANTABILITY or FITNESS FOR A DrawingICULAR PURPOSE.  See the      *
  *   GNU Library General Public License for more details.                  *
  *                                                                         *
  *   You should have received a copy of the GNU Library General Public     *
@@ -20,35 +21,26 @@
  *                                                                         *
  ***************************************************************************/
 
- 
-
-
-#ifndef _FeatureViewAnnotation_h_
-#define _FeatureViewAnnotation_h_
-
+#ifndef _Drawing_FeatureViewAnnotation_h_
+#define _Drawing_FeatureViewAnnotation_h_
 
 #include <App/DocumentObject.h>
 #include <App/PropertyLinks.h>
-#include "FeatureView.h"
-#include <App/FeaturePython.h>
-
 
 namespace Drawing
 {
 
-
 /** Base class of all View Features in the drawing module
  */
-class DrawingExport FeatureViewAnnotation : public FeatureView
+class DrawingExport FeatureViewAnnotation : public App::DocumentObject
 {
-    PROPERTY_HEADER(Drawing::FeatureView);
+    PROPERTY_HEADER(Drawing::FeatureViewAnnotation);
 
 public:
     /// Constructor
-    FeatureViewAnnotation(void);
+    FeatureViewAnnotation();
     virtual ~FeatureViewAnnotation();
 
-    App::PropertyStringList   Text;
     App::PropertyString       Font;
     App::PropertyColor        TextColor;
 
@@ -64,10 +56,5 @@ public:
     }
 };
 
-typedef App::FeaturePythonT<FeatureViewAnnotation> FeatureViewAnnotationPython;
-
-
 } //namespace Drawing
-
-
 #endif
