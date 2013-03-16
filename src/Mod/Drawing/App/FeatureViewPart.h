@@ -52,7 +52,7 @@ public:
     App::PropertyFloat  LineWidth;
     App::PropertyFloatConstraint  Tolerance;
 
-    const std::vector<Base::Vector2D> & getVertexGeometry() const;
+    const std::vector<DrawingGeometry::Vertex *> & getVertexGeometry() const;
     const std::vector<DrawingGeometry::BaseGeom  *> & getEdgeGeometry() const;
     const std::vector<DrawingGeometry::Face *> & getFaceGeometry() const;
     

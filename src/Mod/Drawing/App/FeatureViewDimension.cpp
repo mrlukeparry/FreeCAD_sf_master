@@ -26,7 +26,7 @@
 # include <sstream>
 #endif
 
-// # include <Mod/Measure/App/Measurement.h>
+# include <Mod/Measure/App/Measurement.h>
 
 # include "FeatureViewDimension.h"
 
@@ -38,10 +38,13 @@ using namespace Drawing;
 
 PROPERTY_SOURCE(Drawing::FeatureViewDimension, Drawing::FeatureViewAnnotation)
 
+const char* FeatureViewDimension::TypeEnums[]= {"Distance", "DistanceX", "DistanceY",NULL};
 
 FeatureViewDimension::FeatureViewDimension(void) 
 {
     ADD_PROPERTY_TYPE(References,(0,0),"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Supporting References");
+    Type.setEnums(TypeEnums);
+    ADD_PROPERTY(Type,((long)0), "Dimension", (App::PropertyType)(App::Prop_None),"Dimension Type");
 }
 
 FeatureViewDimension::~FeatureViewDimension()
@@ -60,17 +63,17 @@ short FeatureViewDimension::mustExecute() const
 
 App::DocumentObjectExecReturn *FeatureViewDimension::execute(void)
 {
-    // Relcalculate the measurement based on references stored. 
-//     Measure::Measurement measure;
-//     const std::vector<App::DocumentObject*> &objects = References.getValues();
-//     const std::vector<std::string> &subElements = References.getSubValues();
-//     
-//     std::vector<App::DocumentObject*>::const_iterator obj = objects.begin();
-//     std::vector<std::string>::const_iterator subEl = subElements.begin();
-//     
-//     for(; obj != objects.end(); ++obj, ++subEl) {
-//         measure.addReference(*obj, *subEl);        
-//     }
+    //Relcalculate the measurement based on references stored. 
+    Measure::Measurement measure;
+    const std::vector<App::DocumentObject*> &objects = References.getValues();
+    const std::vector<std::string> &subElements = References.getSubValues();
+    
+    std::vector<App::DocumentObject*>::const_iterator obj = objects.begin();
+    std::vector<std::string>::const_iterator subEl = subElements.begin();
+    
+    for(; obj != objects.end(); ++obj, ++subEl) {
+        measure.addReference(*obj, (*subEl).c_str());        
+    }
 
     return App::DocumentObject::StdReturn;
 }

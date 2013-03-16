@@ -104,7 +104,7 @@ FeatureViewPart::~FeatureViewPart()
 }
 
 
-const std::vector<Base::Vector2D> & FeatureViewPart::getVertexGeometry() const
+const std::vector<DrawingGeometry::Vertex *> & FeatureViewPart::getVertexGeometry() const
 {
     return geometryObject->getVertexGeometry();
 }

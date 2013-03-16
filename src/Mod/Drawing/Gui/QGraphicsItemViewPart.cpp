@@ -360,14 +360,14 @@ void QGraphicsItemViewPart::drawViewPart()
 
     graphicsItem = 0;
     // Draw Vertexs:
-    const std::vector<Base::Vector2D> &verts = part->getVertexGeometry();
+    const std::vector<DrawingGeometry::Vertex *> &verts = part->getVertexGeometry();
     const std::vector<int> &vertRefs = part->getVertexReferences();
     
-    std::vector<Base::Vector2D>::const_iterator vert = verts.begin();
+    std::vector<DrawingGeometry::Vertex *>::const_iterator vert = verts.begin();
     
      // iterate through all the geometries
     for(int i = 0 ; vert != verts.end(); ++vert, i++) {
-          Base::Vector2D pnt = *vert;
+          DrawingGeometry::Vertex *myVertex = *vert;
           QGraphicsItemVertex *item = new QGraphicsItemVertex(vertRefs.at(i));
           QPainterPath path;
           QBrush faceBrush(QBrush(QColor(0,0,255,255)));
@@ -375,7 +375,7 @@ void QGraphicsItemViewPart::drawViewPart()
           item->setBrush(faceBrush);
           path.addEllipse(0 ,0, 4, 4);
           item->setPath(path);
-          item->setPos(pnt.fX - 2, pnt.fY - 2);
+          item->setPos(myVertex->pnt.fX - 2, myVertex->pnt.fY - 2);
           
           graphicsItem = dynamic_cast<QGraphicsItem *>(item);
           this->addToGroup(graphicsItem);

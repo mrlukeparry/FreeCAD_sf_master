@@ -30,9 +30,11 @@
 #ifdef FC_OS_WIN32
 # define DrawingExport  __declspec(dllexport)
 # define PartExport     __declspec(dllimport)
+# define MeasureExport  __declspec(dllimport)
 # define MeshExport     __declspec(dllimport)
 #else // for Linux
 # define DrawingExport
+# define MeasureExport
 # define PartExport 
 # define MeshExport   
 #endif
@@ -117,7 +119,6 @@
 #include <Standard_UUID.hxx>
 #include <Standard_WayOfLife.hxx>
 
- 
 #include <TCollection_ExtendedString.hxx>
 #include <TCollection_AsciiString.hxx>
 #include <TColStd_SequenceOfExtendedString.hxx>

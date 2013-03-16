@@ -81,6 +81,7 @@
 # include <GeomConvert_BSplineCurveToBezierCurve.hxx>
 # include <GeomConvert_BSplineCurveKnotSplitting.hxx>
 # include <Geom2d_BSplineCurve.hxx>
+#include <boost/graph/graph_concepts.hpp>
 #endif
 
 # include <Base/Console.h>
@@ -116,13 +117,18 @@ void GeometryObject::setTolerance(double value)
 
 void GeometryObject::clear()
 {
-  
+           
     for(std::vector<BaseGeom *>::iterator it = edgeGeom.begin(); it != edgeGeom.end(); ++it) {
         delete *it;
         *it = 0;
     }
         
     for(std::vector<Face *>::iterator it = faceGeom.begin(); it != faceGeom.end(); ++it) {
+        delete *it;
+        *it = 0;
+    }
+    
+    for(std::vector<Vertex *>::iterator it = vertexGeom.begin(); it != vertexGeom.end(); ++it) {
         delete *it;
         *it = 0;
     }
@@ -153,6 +159,7 @@ TopoDS_Shape GeometryObject::invertY(const TopoDS_Shape& shape)
     BRepBuilderAPI_Transform mkTrf(shape, mat);
     return mkTrf.Shape();
 }
+
 
 void GeometryObject::drawFace (const bool visible, const int typ, const int iface, Handle_HLRBRep_Data & DS, TopoDS_Shape& Result) const
 {
@@ -224,44 +231,31 @@ void GeometryObject::drawFace (const bool visible, const int typ, const int ifac
     }
 }
 
-void GeometryObject::drawEdge(const bool visible, const bool inFace, const int typ, HLRBRep_EdgeData& ed, TopoDS_Shape& Result) const
+void GeometryObject::drawEdge(HLRBRep_EdgeData& ed, TopoDS_Shape& Result, const bool visible) const
 {
-    bool todraw = false;
-    if(inFace)
-        todraw = true;
-    else if (typ == 3) 
-        todraw = ed.Rg1Line() && !ed.RgNLine();
-    else if (typ == 4)
-        todraw = ed.RgNLine();
-    else              
-        todraw =!ed.Rg1Line();
-
-    if (todraw) {
-        double sta,end;
-        float tolsta,tolend;
-        
-        BRep_Builder B;
-        TopoDS_Edge E;
-        HLRAlgo_EdgeIterator It;
-        
-        if (visible) {
-            for (It.InitVisible(ed.Status()); It.MoreVisible(); It.NextVisible()) {
-                It.Visible(sta,tolsta,end,tolend);
-                
-                E = HLRBRep::MakeEdge(ed.Geometry(),sta,end);
-                if (!E.IsNull()) {
-                    B.Add(Result,E);
-                }
+    double sta,end;
+    float tolsta,tolend;
+    
+    BRep_Builder B;
+    TopoDS_Edge E;
+    HLRAlgo_EdgeIterator It;
+    
+    if (visible) {
+        for(It.InitVisible(ed.Status()); It.MoreVisible(); It.NextVisible()) {
+            It.Visible(sta,tolsta,end,tolend);
+            
+            E = HLRBRep::MakeEdge(ed.Geometry(),sta,end);
+            if (!E.IsNull()) {
+                B.Add(Result,E);
             }
-        } else {
-            for (It.InitHidden(ed.Status()); It.MoreHidden(); It.NextHidden()) {
-
-                It.Hidden(sta,tolsta,end,tolend);
-                E = HLRBRep::MakeEdge(ed.Geometry(),sta,end);
-                if (!E.IsNull()) {
-                    B.Add(Result,E);
-                }          
-            }
+        }
+    } else {
+        for(It.InitHidden(ed.Status()); It.MoreHidden(); It.NextHidden()) {
+            It.Hidden(sta,tolsta,end,tolend);
+            E = HLRBRep::MakeEdge(ed.Geometry(),sta,end);
+            if (!E.IsNull()) {
+                B.Add(Result,E);
+            }          
         }
     }
 }
@@ -334,8 +328,8 @@ void GeometryObject::extractFaces(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
               
               for (int i = 1 ; edges.More(); edges.Next(),i++) {
                   BRep_Builder builder;
-                TopoDS_Compound comp;
-                builder.MakeCompound(comp);
+                  TopoDS_Compound comp;
+                  builder.MakeCompound(comp);
                   builder.Add(comp, edges.Current());     
                   int edgesAdded = calculateGeometry(comp, extractionType, wire->geoms);    
               }
@@ -369,7 +363,22 @@ void GeometryObject::extractFaces(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
     DS->Projector().Scaled(false);
 }
 
-void GeometryObject::extractVerts(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int ie)
+bool GeometryObject::shouldDraw(const bool inFace, const int typ, HLRBRep_EdgeData& ed)
+{
+    bool todraw = false;
+    if(inFace)
+        todraw = true;
+    else if (typ == 3) 
+        todraw = ed.Rg1Line() && !ed.RgNLine();
+    else if (typ == 4)
+        todraw = ed.RgNLine();
+    else              
+        todraw =!ed.Rg1Line();
+
+    return todraw;
+}
+
+void GeometryObject::extractVerts(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, HLRBRep_EdgeData& ed, int ie, ExtractionType extractionType)
 {
     if(!myAlgo)
         return;
@@ -380,6 +389,7 @@ void GeometryObject::extractVerts(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
       return;
 
     DS->Projector().Scaled(true);
+
  
     TopTools_IndexedMapOfShape anIndices;
     TopTools_IndexedMapOfShape anvIndices;
@@ -424,8 +434,46 @@ void GeometryObject::extractVerts(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
                 gp_Pnt2d prjPnt;
                 DS->Projector().Project(BRep_Tool::Pnt(TopoDS::Vertex(*it)), prjPnt);
                 
-                vertexGeom.push_back(Base::Vector2D(prjPnt.X(), prjPnt.Y()));
-                vertexReferences.push_back(iv);                
+                // Check if this point lies on a visible section of the projected curve  
+                double sta,end;
+                float tolsta,tolend;
+                
+                // There will be multiple edges that form the total edge so collect these
+                BRep_Builder B;
+                TopoDS_Compound comp;
+                B.MakeCompound(comp);
+
+                TopoDS_Edge E;
+                HLRAlgo_EdgeIterator It;
+                
+                for(It.InitVisible(ed.Status()); It.MoreVisible(); It.NextVisible()) {
+                    It.Visible(sta,tolsta,end,tolend);
+                    
+                    E = HLRBRep::MakeEdge(ed.Geometry(),sta,end);
+                    if (!E.IsNull()) {
+                        B.Add(comp,E);
+                    }
+                }
+                
+                bool vertexVisible = false;
+                TopExp_Explorer exp;       
+                exp.Init(comp,TopAbs_VERTEX);
+                while(exp.More()) {
+                    
+                    gp_Pnt pnt = BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()));
+                    gp_Pnt2d edgePnt(pnt.X(), pnt.Y());
+                    if(edgePnt.SquareDistance(prjPnt) < Precision::Confusion()) {
+                        vertexVisible = true;
+                        break;
+                    }
+                    exp.Next();
+                }
+    
+                if(vertexVisible) {
+                    Vertex *myVert = new Vertex(prjPnt.X(), prjPnt.Y());
+                    vertexGeom.push_back(myVert);
+                    vertexReferences.push_back(iv);
+                }
             }
         }        
     }         
@@ -472,6 +520,7 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
         if (ed->Selected() && !ed->Vertical()) {
             ed->Used(false);
             ed->HideCount(0);
+            
         } else {
             ed->Used(true); 
         }
@@ -482,21 +531,28 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
     /* ----------------- Extract Edges ------------------ */    
     for (int i = 1; i <= anIndices.Extent(); i++) {
       int ie = Edges.FindIndex(anIndices(i));
+      
       if (ie != 0) {
         
           HLRBRep_EdgeData& ed = DS->EDataArray().ChangeValue(ie);
-          if(!ed.Used()) {            
-              TopoDS_Shape result;
-              B.MakeCompound(TopoDS::Compound(result));
-              
-              drawEdge(visible, type, false ,ed, result);
-              extractVerts(myAlgo, S, ie);
+          if(!ed.Used()) {           
+              if(shouldDraw(false, type, ed)) {
+                
+                  TopoDS_Shape result;
+                  B.MakeCompound(TopoDS::Compound(result));
+                  
+                  drawEdge(ed, result, visible);
+                  
+                  // Extract and Project Vertices
+                  extractVerts(myAlgo, S, ed, ie, extractionType);
 
-              int edgesAdded = calculateGeometry(result, extractionType, edgeGeom);
-              
-              // Push the edge references 
-              while(edgesAdded--)
-                  edgeReferences.push_back(ie);
+                  int edgesAdded = calculateGeometry(result, extractionType, edgeGeom);
+                  
+                  // Push the edge references 
+                  while(edgesAdded--)
+                      edgeReferences.push_back(ie);
+                  
+              }
                 
               ed.Used(true); 
           }          
@@ -510,16 +566,17 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
 
       HLRBRep_EdgeData& ed = DS->EDataArray().ChangeValue(ie);
       if (!ed.Used()) {          
-          
-          TopoDS_Shape result;
-          B.MakeCompound(TopoDS::Compound(result));
-          
-          drawEdge(visible, type, false ,ed, result);
-          int edgesAdded = calculateGeometry(result, extractionType, edgeGeom);
-          
-          // Push the edge references 
-          while(edgesAdded--)
-              edgeReferences.push_back(edgeIdx);
+          if(shouldDraw(false, type, ed)) {
+              TopoDS_Shape result;
+              B.MakeCompound(TopoDS::Compound(result));
+              
+              drawEdge(ed, result, visible);
+              int edgesAdded = calculateGeometry(result, extractionType, edgeGeom);
+              
+              // Push the edge references 
+              while(edgesAdded--)
+                  edgeReferences.push_back(edgeIdx);
+          }
           ed.Used(true);
       }
     }
