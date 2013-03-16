@@ -27,7 +27,6 @@
 #include <Base/Vector3D.h>
 
 #include <App/DocumentObject.h>
-
 #include <App/PropertyLinks.h>
 
 class TopoDS_Shape;

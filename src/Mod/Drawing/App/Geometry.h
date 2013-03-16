@@ -138,6 +138,15 @@ struct DrawingExport Face
   std::vector<Wire *> wires;
 };
 
+/// Simple vertex
+struct DrawingExport Vertex
+{
+  Vertex(double x, double y) { this->pnt = Base::Vector2D(x, y); }
+  ~Vertex() {}
+  Base::Vector2D pnt;
+  ExtractionType extractType;  
+};
+
 }
 
 #endif //DRAWING_GEOMETRY_H
