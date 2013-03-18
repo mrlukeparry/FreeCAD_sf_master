@@ -28,6 +28,7 @@ set(DrawingGui_MOC_HDRS
     DrawingView.h
     QGraphicsItemView.h
     QGraphicsItemViewPart.h
+    QGraphicsItemViewDimension.h
     TaskOrthoViews.h
     TaskDialog.h
 )
@@ -67,6 +68,8 @@ SET(DrawingGuiView_SRCS
     DrawingView.h
     QGraphicsItemView.cpp
     QGraphicsItemView.h
+    QGraphicsItemViewDimension.cpp
+    QGraphicsItemViewDimension.h
     QGraphicsItemViewPart.cpp
     QGraphicsItemViewPart.h
 )

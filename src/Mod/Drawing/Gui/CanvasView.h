@@ -41,6 +41,7 @@ QT_END_NAMESPACE
 
 namespace Drawing {
 class FeatureViewPart;
+class FeatureViewDimension;
 }
 
 namespace DrawingGui
@@ -60,6 +61,7 @@ public:
     void setRenderer(RendererType type = Native);
     void drawBackground(QPainter *p, const QRectF &rect);
     void addViewPart(Drawing::FeatureViewPart *part);
+    void addViewDimension(Drawing::FeatureViewDimension *dim);
 
 public Q_SLOTS:
     void setHighQualityAntialiasing(bool highQualityAntialiasing);

@@ -368,7 +368,7 @@ void QGraphicsItemViewPart::drawViewPart()
      // iterate through all the geometries
     for(int i = 0 ; vert != verts.end(); ++vert, i++) {
           DrawingGeometry::Vertex *myVertex = *vert;
-          QGraphicsItemVertex *item = new QGraphicsItemVertex(vertRefs.at(i));
+          QGraphicsItemVertex *item = new QGraphicsItemVertex(i);
           QPainterPath path;
           QBrush faceBrush(QBrush(QColor(0,0,255,255)));
         
@@ -399,7 +399,7 @@ void QGraphicsItemViewPart::drawViewPart()
       switch((*it)->geomType) {
         case DrawingGeometry::CIRCLE: {
           DrawingGeometry::Circle *geom = static_cast<DrawingGeometry::Circle *>(*it);
-          QGraphicsItemEdge *item = new QGraphicsItemEdge(refs.at(i));
+          QGraphicsItemEdge *item = new QGraphicsItemEdge(i);
           
           item->setStrokeWidth(lineWidth);
           
@@ -440,7 +440,7 @@ void QGraphicsItemViewPart::drawViewPart()
         case DrawingGeometry::ELLIPSE: {
           DrawingGeometry::Ellipse *geom = static_cast<DrawingGeometry::Ellipse *>(*it);
           
-          QGraphicsItemEdge *item = new QGraphicsItemEdge(refs.at(i));
+          QGraphicsItemEdge *item = new QGraphicsItemEdge(i);
           
           item->setStrokeWidth(lineWidth);
           
@@ -458,7 +458,7 @@ void QGraphicsItemViewPart::drawViewPart()
         } break;
         case DrawingGeometry::ARCOFELLIPSE: {
           DrawingGeometry::AOE *geom = static_cast<DrawingGeometry::AOE *>(*it);
-          QGraphicsItemEdge *item = new QGraphicsItemEdge(refs.at(i));
+          QGraphicsItemEdge *item = new QGraphicsItemEdge(i);
           
           item->setStrokeWidth(lineWidth);
           
@@ -484,7 +484,7 @@ void QGraphicsItemViewPart::drawViewPart()
         } break;
         case DrawingGeometry::BSPLINE: {
           DrawingGeometry::BSpline *geom = static_cast<DrawingGeometry::BSpline *>(*it);
-          QGraphicsItemEdge *item = new  QGraphicsItemEdge(refs.at(i));
+          QGraphicsItemEdge *item = new  QGraphicsItemEdge(i);
           
           item->setStrokeWidth(lineWidth);
           
@@ -520,7 +520,7 @@ void QGraphicsItemViewPart::drawViewPart()
         } break;
         case DrawingGeometry::GENERIC: {
           DrawingGeometry::Generic *geom = static_cast<DrawingGeometry::Generic *>(*it);
-          QGraphicsItemEdge *item = new  QGraphicsItemEdge(refs.at(i));
+          QGraphicsItemEdge *item = new  QGraphicsItemEdge(i);
           
           item->setStrokeWidth(lineWidth);
           
@@ -557,7 +557,7 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
 {
     if (change == ItemSelectedHasChanged && scene()) {
         // value is the new position.
-          QColor color;
+        QColor color;
         if(isSelected()) { 
           color.setRgb(0,0,255);
 
@@ -567,10 +567,15 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
         
         QList<QGraphicsItem *> items = this->childItems();
           for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
+
               QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
-              QPen pen = edge->pen();
-              pen.setColor(color);
-              edge->setPen(pen);              
+              if(edge) {
+                  QPen pen = edge->pen();
+                  pen.setColor(color);
+                  edge->setPen(pen);
+              } else {
+                  QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
+              }
           }
           
         update();

@@ -63,8 +63,10 @@
 #include "../App/Geometry.h"
 #include "../App/FeaturePage.h"
 #include "../App/FeatureViewPart.h"
+#include "../App/FeatureViewDimension.h"
 
 #include "QGraphicsItemViewPart.h"
+#include "QGraphicsItemViewDimension.h"
 #include "CanvasView.h"
 
 using namespace DrawingGui;
@@ -108,6 +110,15 @@ void CanvasView::addViewPart(Drawing::FeatureViewPart *part)
     
     views.push_back(group); 
 }
+
+void CanvasView::addViewDimension(Drawing::FeatureViewDimension *dim)
+{   
+    QGraphicsItemViewDimension *group = new QGraphicsItemViewDimension(QPoint(0,0), this->scene());
+    group->setViewPartFeature(dim);
+    
+    views.push_back(group); 
+}
+
 
 void CanvasView::setRenderer(RendererType type)
 {

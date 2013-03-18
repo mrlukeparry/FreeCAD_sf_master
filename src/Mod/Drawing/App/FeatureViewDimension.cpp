@@ -24,10 +24,12 @@
 
 #ifndef _PreComp_
 # include <sstream>
+# include <cstring>
 #endif
 
 # include <Mod/Measure/App/Measurement.h>
 
+# include "FeatureViewPart.h"
 # include "FeatureViewDimension.h"
 
 using namespace Drawing;
@@ -38,17 +40,20 @@ using namespace Drawing;
 
 PROPERTY_SOURCE(Drawing::FeatureViewDimension, Drawing::FeatureViewAnnotation)
 
-const char* FeatureViewDimension::TypeEnums[]= {"Distance", "DistanceX", "DistanceY",NULL};
+const char* FeatureViewDimension::TypeEnums[]= {"Distance", "DistanceX", "DistanceY", "DistanceZ",NULL};
 
 FeatureViewDimension::FeatureViewDimension(void) 
 {
     ADD_PROPERTY_TYPE(References,(0,0),"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Supporting References");
+    ADD_PROPERTY_TYPE(Precision,(2)   ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Precision");
     Type.setEnums(TypeEnums);
-    ADD_PROPERTY(Type,((long)0), "Dimension", (App::PropertyType)(App::Prop_None),"Dimension Type");
+    ADD_PROPERTY(Type,((long)0));
+    this->measurement = new Measure::Measurement();
 }
 
 FeatureViewDimension::~FeatureViewDimension()
 {
+    delete measurement;
 }
 
 short FeatureViewDimension::mustExecute() const
@@ -63,8 +68,10 @@ short FeatureViewDimension::mustExecute() const
 
 App::DocumentObjectExecReturn *FeatureViewDimension::execute(void)
 {
-    //Relcalculate the measurement based on references stored. 
-    Measure::Measurement measure;
+    //Clear the previous measurement made
+    measurement->clear();
+    
+    //Relcalculate the measurement based on references stored.  
     const std::vector<App::DocumentObject*> &objects = References.getValues();
     const std::vector<std::string> &subElements = References.getSubValues();
     
@@ -72,9 +79,42 @@ App::DocumentObjectExecReturn *FeatureViewDimension::execute(void)
     std::vector<std::string>::const_iterator subEl = subElements.begin();
     
     for(; obj != objects.end(); ++obj, ++subEl) {
-        measure.addReference(*obj, (*subEl).c_str());        
+        Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(*obj);
+        App::DocumentObject *docObj = viewPart->Source.getValue();
+        
+        if((*subEl).substr(0,4) == "Edge") {
+            int idx = std::atoi((*subEl).substr(4,4000).c_str());            
+            int refIdx = viewPart->getEdgeReferences().at(idx);
+            char buff[100];
+            sprintf(buff, "Edge%i", refIdx);
+            measurement->addReference(docObj, buff); 
+        } else if((*subEl).substr(0,6) == "Vertex") {
+            int idx = std::atoi((*subEl).substr(6,4000).c_str());            
+            int refIdx = viewPart->getVertexReferences().at(idx);
+            char buff[100];
+            sprintf(buff, "Vertex%i", refIdx);
+            measurement->addReference(docObj, buff); 
+        }   
     }
 
     return App::DocumentObject::StdReturn;
+}
+
+double FeatureViewDimension::getValue() const
+{
+    if(strcmp(Type.getValueAsString(), "Distance") == 0) {
+        return measurement->length();
+    } else if(strcmp(Type.getValueAsString(), "DistanceX") == 0){
+        Base::Vector3d delta = measurement->delta();
+        return delta.x;        
+    } else if(strcmp(Type.getValueAsString(), "DistanceY") == 0){
+        Base::Vector3d delta = measurement->delta();
+        return delta.y;        
+    } else if(strcmp(Type.getValueAsString(), "DistanceZ") == 0){
+        Base::Vector3d delta = measurement->delta();
+        return delta.z;        
+    } 
+    
+    throw Base::Exception("Dimension Value couldn't be calculated");
 }
 

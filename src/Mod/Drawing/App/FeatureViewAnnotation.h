@@ -27,12 +27,14 @@
 #include <App/DocumentObject.h>
 #include <App/PropertyLinks.h>
 
+#include "FeatureView.h"
+
 namespace Drawing
 {
 
 /** Base class of all View Features in the drawing module
  */
-class DrawingExport FeatureViewAnnotation : public App::DocumentObject
+class DrawingExport FeatureViewAnnotation : public Drawing::FeatureView
 {
     PROPERTY_HEADER(Drawing::FeatureViewAnnotation);
 
