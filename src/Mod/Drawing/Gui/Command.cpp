@@ -22,18 +22,22 @@
 
 #include <vector>
 
+#include <App/DocumentObject.h>
 #include <Gui/Action.h>
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
 #include <Gui/Control.h>
+#include <Gui/Document.h>
 #include <Gui/Selection.h>
 #include <Gui/MainWindow.h>
 #include <Gui/FileDialog.h>
 
 #include <Mod/Part/App/PartFeature.h>
-#include <Mod/Drawing/App/FeaturePage.h>
 
+#include <Mod/Drawing/App/FeatureViewPart.h>
+#include <Mod/Drawing/App/FeatureViewDimension.h>
+#include <Mod/Drawing/App/FeaturePage.h>
 
 #include "DrawingView.h"
 #include "TaskDialog.h"
@@ -279,6 +283,82 @@ void CmdDrawingNewView::activated(int iMsg)
     commitCommand();
 }
 
+
+//===========================================================================
+// Drawing_NewDimension
+//===========================================================================
+
+DEF_STD_CMD(CmdDrawingNewDimension);
+
+CmdDrawingNewDimension::CmdDrawingNewDimension()
+  : Command("Drawing_NewDimension")
+{
+    sAppModule      = "Drawing";
+    sGroup          = QT_TR_NOOP("Drawing");
+    sMenuText       = QT_TR_NOOP("Insert a dimension into the drawing");
+    sToolTipText    = QT_TR_NOOP("Insert a new dimension feature into the drawing object");
+    sWhatsThis      = "Drawing_NewDimension";
+    sStatusTip      = sToolTipText;
+    sPixmap         = "actions/drawing-view";
+}
+
+void CmdDrawingNewDimension::activated(int iMsg)
+{
+  
+      // get the selection
+    std::vector<Gui::SelectionObject> selection = getSelection().getSelectionEx();
+    if(!selection[0].getObject()){
+        return;
+    }
+    
+    Drawing::FeatureViewPart * Obj = dynamic_cast<Drawing::FeatureViewPart *>(selection[0].getObject());
+
+    App::DocumentObject *docObj = Obj->Source.getValue();
+    
+    // only one sketch with its subelements are allowed to be selected
+    if (selection.size() != 1) {
+        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
+            QObject::tr("Select two points and a symmetry line, two points and a symmetry point "
+                        "or a line and a symmetry point from the sketch."));
+        return;
+    }
+
+    // get the needed lists and objects
+    const std::vector<std::string> &SubNames = selection[0].getSubNames();
+
+    if (SubNames.size() != 1) {
+        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
+            QObject::tr("Select one edge"));
+        return;
+    }
+    
+    if (SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge") {
+        int GeoId = std::atoi(SubNames[0].substr(4,4000).c_str());
+    } else {
+        return;
+    }    
+
+    std::vector<App::DocumentObject*> pages = this->getDocument()->getObjectsOfType(Drawing::FeaturePage::getClassTypeId());
+    if (pages.empty()){
+        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("No page to insert"),
+            QObject::tr("Create a page to insert."));
+        return;
+    }
+    
+    App::DocumentObject *dimObj = this->getDocument()->addObject("Drawing::FeatureViewDimension", getUniqueObjectName("Dimension").c_str());
+    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(dimObj);
+    
+    dim->References.setValue(Obj, SubNames[0].c_str());
+    
+    dim->Type.setValue("Distance");
+    dim->touch();
+    
+    Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
+    page->addView(dimObj);
+    
+    std::string PageName = pages.front()->getNameInDocument();
+    
+}
 
 //===========================================================================
 // Drawing_NewViewSection
@@ -588,6 +668,7 @@ void CreateDrawingCommands(void)
     rcCmdMgr.addCommand(new CmdDrawingNewPage());
     rcCmdMgr.addCommand(new CmdDrawingNewA3Landscape());
     rcCmdMgr.addCommand(new CmdDrawingNewView());
+    rcCmdMgr.addCommand(new CmdDrawingNewDimension());
     rcCmdMgr.addCommand(new CmdDrawingNewViewSection());
     rcCmdMgr.addCommand(new CmdDrawingOrthoViews());
     rcCmdMgr.addCommand(new CmdDrawingOpenBrowserView());

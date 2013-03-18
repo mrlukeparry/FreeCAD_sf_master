@@ -31,7 +31,7 @@
 
 using namespace Drawing;
 
-PROPERTY_SOURCE(Drawing::FeatureViewAnnotation, App::DocumentObject)
+PROPERTY_SOURCE(Drawing::FeatureViewAnnotation, Drawing::FeatureView)
 
 FeatureViewAnnotation::FeatureViewAnnotation(void) 
 {

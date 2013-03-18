@@ -66,9 +66,11 @@
 
 #include "../App/FeaturePage.h"
 #include "../App/FeatureViewPart.h"
+#include "../App/FeatureViewDimension.h"
 
 #include "QGraphicsItemView.h"
 #include "QGraphicsItemViewPart.h"
+#include "QGraphicsItemViewDimension.h"
 
 #include "CanvasView.h"
 #include "DrawingView.h"
@@ -273,8 +275,11 @@ void DrawingView::attachPageObject(Drawing::FeaturePage *pageFeature)
     const std::vector<App::DocumentObject*> &grp = pageFeature->Views.getValues();
     for (std::vector<App::DocumentObject*>::const_iterator it = grp.begin();it != grp.end(); ++it) {
         if ( (*it)->getTypeId().isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()) ) {
-            Drawing::FeatureViewPart *view = dynamic_cast<Drawing::FeatureViewPart *>(*it);
-            m_view->addViewPart(view);
+            Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(*it);
+            m_view->addViewPart(viewPart);
+        } else if((*it)->getTypeId().isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()) ) {
+            Drawing::FeatureViewDimension *viewDim = dynamic_cast<Drawing::FeatureViewDimension *>(*it);
+            m_view->addViewDimension(viewDim);
         }
     }
 }
@@ -358,7 +363,7 @@ void DrawingView::selectionChanged()
                                             ,viewObj->getNameInDocument()
                                             ,ss.str().c_str());
 
-                    }
+            }
             continue;
         }        
         

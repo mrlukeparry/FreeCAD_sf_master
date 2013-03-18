@@ -60,6 +60,7 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     //*part << "Drawing_NewA3Landscape";
     *part << "Drawing_NewPage";
     *part << "Drawing_NewView";
+    *part << "Drawing_NewDimension";
     *part << "Drawing_NewViewSection";
     *part << "Drawing_OrthoViews";
     *part << "Drawing_OpenBrowserView";
@@ -81,6 +82,7 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     //*part << "Drawing_NewA3Landscape";
     *part << "Drawing_NewPage";
     *part << "Drawing_NewView";
+    *part << "Drawing_NewDimension";
     *part << "Drawing_NewViewSection";
     *part << "Drawing_OrthoViews";
     *part << "Drawing_OpenBrowserView";
@@ -101,6 +103,7 @@ Gui::ToolBarItem* Workbench::setupCommandBars() const
     img->setCommand("Drawing types");
   //*img << "Drawing_NewA3Landscape";
     *img << "Drawing_NewPage";
+    *img << "Drawing_NewDimension";
     *img << "Drawing_OrthoViews";
     *img << "Drawing_OpenBrowserView";
     *img << "Drawing_Annotation";

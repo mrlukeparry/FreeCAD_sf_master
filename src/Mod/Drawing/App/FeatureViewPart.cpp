@@ -101,8 +101,7 @@ short FeatureViewPart::mustExecute() const
 FeatureViewPart::~FeatureViewPart()
 {
     delete geometryObject;
-}
-
+}  
 
 const std::vector<DrawingGeometry::Vertex *> & FeatureViewPart::getVertexGeometry() const
 {

@@ -86,8 +86,7 @@ void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
         Gui::Command::commitCommand();
         Gui::Command::updateActive();
     }
-    QGraphicsItem::mouseReleaseEvent(event); 
-  
+    QGraphicsItem::mouseReleaseEvent(event);   
 }
 
 void QGraphicsItemView::updateView()

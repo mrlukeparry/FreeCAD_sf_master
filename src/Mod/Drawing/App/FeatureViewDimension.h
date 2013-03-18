@@ -29,6 +29,9 @@
 
 #include "FeatureViewAnnotation.h"
 
+namespace Measure {
+class Measurement; 
+}
 namespace Drawing
 {
 
@@ -43,8 +46,9 @@ public:
     FeatureViewDimension();
     virtual ~FeatureViewDimension();
     
-    App::PropertyLinkSubList View;
+//     App::PropertyLinkSubList View;
     App::PropertyLinkSubList References;
+    App::PropertyInteger Precision;
     App::PropertyEnumeration Type;
 
     short mustExecute() const;
@@ -59,6 +63,13 @@ public:
     virtual const char* getViewProviderName(void) const {
         return "DrawingGui::ViewProviderDrawingView";
     }
+    
+    double virtual getValue() const;
+    
+protected:
+    Measure::Measurement *measurement;
+private:
+    static const char* TypeEnums[];
 };
 
 } //namespace Drawing
