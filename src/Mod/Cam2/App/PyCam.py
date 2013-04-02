@@ -20,9 +20,9 @@
 # *                                                                         *
 # ***************************************************************************/
 
-import types, inspect
+import types, inspect, uuid, os, tempfile
 
-import Cam
+import Cam, FreeCADGui
 
 PyTPGFactoryInst = None
 
@@ -93,9 +93,66 @@ class PyTPGBase(object):
         return self._toolPath
     
     ## Python to C++ API ##
-    # Call these methods to obtain data from the C++ side
+    # Call these methods to obtain/send data from/to the C++ side
     
-    #TODO: define Python to C++ API
+    def updateProgress(self, state, progress):
+        '''Updates the UI to show the progress of the PyTPG's processing.
+        States:
+        - 'UNDEFINED': The default state before anything is done.
+        - 'LOADED': Un-used at the moment.
+        - 'INITIALISED':  UIManager sets this state just before calling the PyTPG's run method.
+        - 'STARTED': PyTPG should set this state as soon as it enters the run method.
+        - 'RUNNING': PyTPG should set this state after things are setup and about to start main loop.
+        - 'ERROR': If processing fails then set this state to indicate this.  Run method should stop execution soon after this.
+        - 'FINISHED': When processing is finished successfully set state to this.  Run method should stop execution soon after this.
+        
+        @param state: string, one of the states above.
+        @param progress: int, the overall progress (percentage) of running this TPG.  Should be >= 1 and <= 99 as 0 and 100 are used by UIanager 
+        '''
+        # call the same method on the C++ side.
+        Cam.updateProgressPyTPG(self.id, state, progress)
+    
+    ## Python TPG API ##
+    def getModelSTL(self, name):
+        ''' Gets the Geometry (a single part) in ASCII STL format.
+        @param name: The name of the part to obtain in stl format
+        @return: string, the entire ASCII STL formatted file or None
+        @note: Not thread-safe but unlikely to fail.
+        '''
+        
+        # create a new temp filename that doesn't already exist
+        tmpfilename = None
+        while tmpfilename == None:
+            tmpfilename = "%s/cam%s.stl" % (tempfile.gettempdir(), str(uuid.uuid1()))
+            if os.path.exists(tmpfilename):
+                tmpfilename = None # try again
+        
+        # Make the STL formated temp file
+        part = self.getModelFreeCAD(name)
+        if part:
+            try:
+                part.exportStl(tmpfilename)
+            except:
+                print ("Failed to convert part to STL format!")
+        
+            # read/delete STL temp file
+            stlfile = open(tmpfilename)
+            stlstr = stlfile.read()
+            os.remove(tmpfilename)
+            
+            return stlstr
+        return None
+    
+    def getModelFreeCAD(self, name):
+        ''' Gets the named geometry (single part) as a FreeCAD TopoShape object.
+        @param name: The name of the part to obtain in freecad toposhape format
+        @return: TopoShape, the part or None
+        '''
+        try:
+            return FreeCADGui.ActiveDocument.getObject(name).Object.Shape
+        except:
+            print ("Failed to get part!")
+        return None
     
 # End PyTPGBase
 

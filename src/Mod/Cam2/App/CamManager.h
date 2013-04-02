@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Andrew Robinson <andrewjrobinson@gmail.com>        *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,56 +20,63 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CAM_UIMANAGER_H_
-#define CAM_UIMANAGER_H_
+#ifndef CAMMANAGER_H_
+#define CAMMANAGER_H_
 
-#include <QObject>
-#include <QListView>
+#include <qobject.h>
+#include "TPG/TPG.h"
 
-#include "../App/TPG/TPGFactory.h"
-#include "../App/TPG/TPG.h"
-#include "TPGListModel.h"
-
-namespace CamGui {
-
+namespace Cam {
 
 /**
- * A class to manage the interactions between the various UI components of the
- * CAM workbench.
+ * The CamManager is the master of all knowledge in the Cam Workbench.
+ *
+ * It provides a single point of communication with all aspects of the
+ * workbench.  It provides signals and slots so that the UI (though the
+ * UIManager) can interact with the data.
  */
-class CamGuiExport UIManagerInst : public QObject {
+class CamExport CamManagerInst : public QObject {
 
-  Q_OBJECT
+	Q_OBJECT
 
 protected:
-  static UIManagerInst* _pcSingleton;
+	static CamManagerInst* _pcSingleton;
 
 public:
-  UIManagerInst();
-  virtual ~UIManagerInst();
 
-  // singleton manipators
-  static UIManagerInst& instance(void);
-  static void destruct (void);
+	CamManagerInst();
+	virtual ~CamManagerInst();
+
+	// singleton manipators
+	static CamManagerInst& instance(void);
+	static void destruct (void);
+
+	// CLI Internal API (i.e. Non-GUI)
+	/**
+	 * Updates the progress of TPG processing
+	 */
+	void updateProgress(QString tpgid, TPG::State state, int progress);
 
 public Q_SLOTS:
-  void addTPG(Cam::TPGDescriptor *tpg);
-  void reloadTPGs();
-  void updatedTPGState(QString tpgid, Cam::TPG::State state, int progress);
+//  void addTPG(Cam::TPGDescriptor *tpg);
+//  void reloadTPGs();
 
 Q_SIGNALS:
-  void updatedTPGList(TPGListModel *model);
-
-  void updatedTPGSelection(Cam::TPG* tpg);
-
-  void updatedTPGStateSig(QString tpgid, Cam::TPG::State state, int progress);
+	/**
+	 * Signalled when a TPG state changes (or progess changes).
+	 *
+	 * @param tpgid, QString, the id of the TPG that has changed
+	 * @param state, TPG::State (enum), the new status
+	 * @param progress, int, the total percentage progressed (0 <= progress <= 100)
+	 */
+	void updatedTPGState(QString tpgid, Cam::TPG::State state, int progress);
 };
 
 /// Get the global instance
-inline UIManagerInst& UIManager(void)
+inline CamManagerInst& CamManager(void)
 {
-    return UIManagerInst::instance();
+    return CamManagerInst::instance();
 }
 
-} /* namespace CamGui */
-#endif /* CAMGUI_UIMANAGER_H_ */
+} /* namespace Cam */
+#endif /* CAMMANAGER_H_ */

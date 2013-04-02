@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Andrew Robinson <andrewjrobinson@gmail.com>        *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,56 +20,45 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CAM_UIMANAGER_H_
-#define CAM_UIMANAGER_H_
+#include "PreCompiled.h"
+#ifndef _PreComp_
+#include <Python.h>
+#endif
 
-#include <QObject>
-#include <QListView>
+#include "CamManager.h"
 
-#include "../App/TPG/TPGFactory.h"
-#include "../App/TPG/TPG.h"
-#include "TPGListModel.h"
+namespace Cam {
+CamManagerInst* CamManagerInst::_pcSingleton = NULL;
 
-namespace CamGui {
-
-
-/**
- * A class to manage the interactions between the various UI components of the
- * CAM workbench.
- */
-class CamGuiExport UIManagerInst : public QObject {
-
-  Q_OBJECT
-
-protected:
-  static UIManagerInst* _pcSingleton;
-
-public:
-  UIManagerInst();
-  virtual ~UIManagerInst();
-
-  // singleton manipators
-  static UIManagerInst& instance(void);
-  static void destruct (void);
-
-public Q_SLOTS:
-  void addTPG(Cam::TPGDescriptor *tpg);
-  void reloadTPGs();
-  void updatedTPGState(QString tpgid, Cam::TPG::State state, int progress);
-
-Q_SIGNALS:
-  void updatedTPGList(TPGListModel *model);
-
-  void updatedTPGSelection(Cam::TPG* tpg);
-
-  void updatedTPGStateSig(QString tpgid, Cam::TPG::State state, int progress);
-};
-
-/// Get the global instance
-inline UIManagerInst& UIManager(void)
+CamManagerInst& CamManagerInst::instance()
 {
-    return UIManagerInst::instance();
+    if (_pcSingleton == NULL)
+        _pcSingleton = new CamManagerInst();
+
+    return *_pcSingleton;
+}
+void CamManagerInst::destruct (void)
+{
+    if (_pcSingleton != NULL)
+        delete _pcSingleton;
+    _pcSingleton = NULL;
 }
 
-} /* namespace CamGui */
-#endif /* CAMGUI_UIMANAGER_H_ */
+CamManagerInst::CamManagerInst() {
+
+}
+
+CamManagerInst::~CamManagerInst() {
+}
+
+/**
+ * Updates the progress of TPG processing
+ */
+void CamManagerInst::updateProgress(QString tpgid, TPG::State state, int progress) {
+
+	Q_EMIT updatedTPGState(tpgid, state, progress);
+}
+
+} /* namespace Cam */
+
+#include "moc_CamManager.cpp"
