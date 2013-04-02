@@ -74,11 +74,6 @@
 #include "SMESH_subMesh.hxx"
 
 #include "utilities.h"
-#include <cmath>
-
-#ifndef PI
-#define PI M_PI
-#endif
 
 using namespace std;
 
@@ -443,10 +438,10 @@ static gp_XY project (const SMDS_MeshNode* theNode,
   double u, v, minVal = DBL_MAX;
   for ( int i = theProjectorPS.NbExt(); i > 0; i-- )
 #if OCC_VERSION_HEX >= 0x060500
-    if ( theProjectorPS.SquareDistance( i ) < minVal ) {
+      if ( theProjectorPS.SquareDistance( i ) < minVal ) {
       minVal = theProjectorPS.SquareDistance( i );
 #else
-    if ( theProjectorPS.Value( i ) < minVal ) {
+      if ( theProjectorPS.Value( i ) < minVal ) {
       minVal = theProjectorPS.Value( i );
 #endif
       theProjectorPS.Point( i ).Parameter( u, v );

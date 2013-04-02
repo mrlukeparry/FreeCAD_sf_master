@@ -15,20 +15,19 @@ include_directories(
     ${PYTHON_INCLUDE_PATH}
     ${ZLIB_INCLUDE_DIR}
     ${XERCESC_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/src/3rdParty/salomesmesh/inc 
 )
 
 link_directories(${OCC_LIBRARY_DIR})
 
 set(Fem_LIBS
     Part
-	Mesh
+    Mesh
     FreeCADApp
+    StdMeshers
+    NETGENPlugin
+    SMESH
 )
-
-if(SMESH_FOUND)
-    include_directories( ${SMESH_INCLUDE_DIR} )
-    list( APPEND Fem_LIBS ${SMESH_LIBRARIES} )
-endif(SMESH_FOUND)
 
 generate_from_xml(FemMeshPy)
 
@@ -39,6 +38,7 @@ SET(Python_SRCS
     HypothesisPy.cpp
     HypothesisPy.h
 )
+SOURCE_GROUP("Python" FILES ${Python_SRCS})
 
 SET(Mod_SRCS
     AppFem.cpp
@@ -46,10 +46,25 @@ SET(Mod_SRCS
     PreCompiled.cpp
     PreCompiled.h
 )
+SOURCE_GROUP("Module" FILES ${Mod_SRCS})
 
-SET(Fem_SRCS
+
+SET(FemBase_SRCS
     FemMeshObject.cpp
     FemMeshObject.h
+    FemMeshShapeObject.cpp
+    FemMeshShapeObject.h
+    FemAnalysis.cpp
+    FemAnalysis.h
+    FemMesh.cpp
+    FemMesh.h
+    FemMeshProperty.cpp
+    FemMeshProperty.h
+	)
+SOURCE_GROUP("Base types" FILES ${FemBase_SRCS})
+	
+	
+SET(FemSet_SRCS
     FemSetObject.cpp
     FemSetObject.h
     FemSetNodesObject.cpp
@@ -60,17 +75,34 @@ SET(Fem_SRCS
     FemSetFacesObject.h
     FemSetGeometryObject.cpp
     FemSetGeometryObject.h
-    FemMesh.cpp
-    FemMesh.h
-    FemMeshProperty.cpp
-    FemMeshProperty.h
+	)
+SOURCE_GROUP("Set objects" FILES ${FemSet_SRCS})
+	
+SET(FemConstraints_SRCS
+    FemConstraint.cpp
+    FemConstraint.h
+    FemConstraintBearing.h
+    FemConstraintBearing.cpp
+    FemConstraintFixed.cpp
+    FemConstraintFixed.h
+    FemConstraintForce.cpp
+    FemConstraintForce.h
+    FemConstraintGear.cpp
+    FemConstraintGear.h
+    FemConstraintPulley.cpp
+    FemConstraintPulley.h
+	)
+SOURCE_GROUP("Constraints" FILES ${FemConstraints_SRCS})
+
+SET(Fem_SRCS
+	${FemBase_SRCS}
+	${FemSet_SRCS}
+	${FemConstraints_SRCS}
     ${Mod_SRCS}
     ${Python_SRCS}
 )
 
 
-SOURCE_GROUP("Python" FILES ${Python_SRCS})
-SOURCE_GROUP("Module" FILES ${Mod_SRCS})
 
 add_library(Fem SHARED ${Fem_SRCS})
 target_link_libraries(Fem ${Fem_LIBS})

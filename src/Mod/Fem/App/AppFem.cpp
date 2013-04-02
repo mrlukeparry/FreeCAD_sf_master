@@ -34,6 +34,7 @@
 #include "FemMesh.h"
 #include "FemMeshProperty.h"
 #include "FemMeshObject.h"
+#include "FemMeshShapeObject.h"
 
 #include "FemSetElementsObject.h"
 #include "FemSetFacesObject.h"
@@ -41,6 +42,11 @@
 #include "FemSetNodesObject.h"
 
 #include "HypothesisPy.h"
+#include "FemConstraintBearing.h"
+#include "FemConstraintFixed.h"
+#include "FemConstraintForce.h"
+#include "FemConstraintGear.h"
+#include "FemConstraintPulley.h"
 
 extern struct PyMethodDef Fem_methods[];
 
@@ -107,6 +113,7 @@ void AppFemExport initFem()
  
     Fem::FemMesh                ::init();
     Fem::FemMeshObject          ::init();
+    Fem::FemMeshShapeObject     ::init();
     Fem::PropertyFemMesh        ::init();
 
     Fem::FemSetObject           ::init();
@@ -115,6 +122,12 @@ void AppFemExport initFem()
     Fem::FemSetGeometryObject   ::init();
     Fem::FemSetNodesObject      ::init();
 
+    Fem::Constraint         ::init();
+    Fem::ConstraintBearing  ::init();
+    Fem::ConstraintFixed    ::init();
+    Fem::ConstraintForce    ::init();
+    Fem::ConstraintGear     ::init();
+    Fem::ConstraintPulley   ::init();
 }
 
 } // extern "C"
