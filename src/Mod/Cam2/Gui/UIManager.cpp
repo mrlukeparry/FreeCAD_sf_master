@@ -39,9 +39,11 @@
 #include <Gui/MainWindow.h>
 
 #include "../App/CamFeature.h"
+#include "../App/CamManager.h"
 #include "../App/TPGList.h"
 #include "../App/TPGFeature.h"
 #include "../App/TPG/PyTPGFactory.h"
+#include "../App/TPG/TPG.h"
 
 #include "UIManager.h"
 #include "TPGListModel.h"
@@ -66,6 +68,10 @@ void UIManagerInst::destruct (void)
 }
 
 UIManagerInst::UIManagerInst() {
+
+	// receive tpg running state changes from Cam layer.
+	QObject::connect(&Cam::CamManager(), SIGNAL(updatedTPGState(QString, Cam::TPG::State, int)),
+			this, SLOT(updatedTPGState(QString, Cam::TPG::State, int)));
 }
 
 UIManagerInst::~UIManagerInst() {
@@ -82,46 +88,58 @@ void UIManagerInst::addTPG(Cam::TPGDescriptor *tpgDescriptor)
         return;
     }
 
+    // Test settings editor
+    Cam::TPG* tpg = tpgDescriptor->make();
+    Q_EMIT updatedTPGSelection(tpg);
+
     Base::Console().Log("This is where I would add a '%s' TPG to the document", tpgDescriptor->name.toStdString().c_str());
   
-    // TPG was successfully created
-    // Find currently active CamFeature and add create a new TPGFeature and assign the TPG
-    Cam::CamFeature *camFeat = NULL;
-
-    Gui::Document * doc = Gui::Application::Instance->activeDocument();
-    if (doc->getInEdit() && doc->getInEdit()->isDerivedFrom(ViewProviderCamFeature::getClassTypeId())) {
-        ViewProviderCamFeature *vp = dynamic_cast<ViewProviderCamFeature*>(doc->getInEdit());
-        if(!vp) {
-            Base::Console().Log("An invalid view provider is currently being used");
-            return;
-        }
-        camFeat = vp->getObject();
-    }
-    
-    // Create a new TPG Feature
-    std::string tpgFeatName = doc->getDocument()->getUniqueObjectName("TPGFeature");
-    App::DocumentObject *tpgDocObj =  doc->getDocument()->addObject("Cam::TPGFeature", tpgFeatName.c_str());
-    
-    if(!tpgDocObj || !tpgDocObj->isDerivedFrom(Cam::TPGFeature::getClassTypeId()))
-        return;
-    
-    Cam::TPGFeature *tpgFeat = dynamic_cast<Cam::TPGFeature *>(tpgDocObj);
-
-    // Set a friendly label
-    tpgFeat->Label.setValue(tpgDescriptor->name.toAscii());
-    Cam::TPG *temp = tpgDescriptor->make();
-    QMessageBox(QMessageBox::Warning, QString::fromAscii("Info"), temp->getName());
-    // Attempt to create and load the TPG Plugin
-    bool loadPlugin = tpgFeat->loadTPG(tpgDescriptor);
-    
-    if(loadPlugin) {
-        // Add the Plugin to the TPG Feature's container
-        camFeat->getTPGContainer()->addTPG(tpgFeat);
-    } else {
-        QMessageBox(QMessageBox::Warning, QString::fromAscii("Info"), QString::fromAscii("Plugin couldn't be loaded"));
-        // remove TPGFeature
-        doc->getDocument()->remObject(tpgFeatName.c_str());
-    }
+//    // TPG was successfully created
+//    // Find currently active CamFeature and add create a new TPGFeature and assign the TPG
+//    Cam::CamFeature *camFeat = NULL;
+//
+//    Gui::Document * doc = Gui::Application::Instance->activeDocument();
+//    if (doc->getInEdit() && doc->getInEdit()->isDerivedFrom(ViewProviderCamFeature::getClassTypeId())) {
+//        ViewProviderCamFeature *vp = dynamic_cast<ViewProviderCamFeature*>(doc->getInEdit());
+//        if(!vp) {
+//            Base::Console().Log("An invalid view provider is currently being used");
+//            return;
+//        }
+//        camFeat = vp->getObject();
+//    }
+//
+//    // Create a new TPG Feature
+//    if (camFeat != NULL) {
+//        std::string tpgFeatName = doc->getDocument()->getUniqueObjectName("TPGFeature");
+//        App::DocumentObject *tpgDocObj =  doc->getDocument()->addObject("Cam::TPGFeature", tpgFeatName.c_str());
+//
+//        if(!tpgDocObj || !tpgDocObj->isDerivedFrom(Cam::TPGFeature::getClassTypeId()))
+//            return;
+//
+//        Cam::TPGFeature *tpgFeat = dynamic_cast<Cam::TPGFeature *>(tpgDocObj);
+//
+//        // Set a friendly label
+//        if (tpgFeat != NULL) {
+//            tpgFeat->Label.setValue(tpgDescriptor->name.toAscii());
+//            Cam::TPG *temp = tpgDescriptor->make();
+//            QMessageBox(QMessageBox::Warning, QString::fromAscii("Info"), temp->getName());
+//            // Attempt to create and load the TPG Plugin
+//            bool loadPlugin = tpgFeat->loadTPG(tpgDescriptor);
+//
+//            if(loadPlugin) {
+//                // Add the Plugin to the TPG Feature's container
+//                camFeat->getTPGContainer()->addTPG(tpgFeat);
+//            } else {
+//                QMessageBox(QMessageBox::Warning, QString::fromAscii("Info"), QString::fromAscii("Plugin couldn't be loaded"));
+//                // remove TPGFeature
+//                doc->getDocument()->remObject(tpgFeatName.c_str());
+//            }
+//        }
+//        else
+//            Base::Console().Log("Unable to find TPG Feature");
+//    }
+//    else
+//        Base::Console().Log("Unable to find Cam Feature");
 }
 /**
  * A Slot to request a Library reload.
@@ -137,6 +155,14 @@ void UIManagerInst::reloadTPGs()
     CamGui::TPGListModel *model = new CamGui::TPGListModel(plugins);
     plugins->release();
     Q_EMIT updatedTPGList(model);
+}
+
+/**
+ * A Slot to relay TPG state updates to UI Components
+ */
+void UIManagerInst::updatedTPGState(QString tpgid, Cam::TPG::State state, int progress) {
+
+	Q_EMIT updatedTPGStateSig(tpgid, state, progress);
 }
 
 #include "moc_UIManager.cpp"

@@ -36,7 +36,21 @@
  * Implement the Cpp shared library interface functions
  * Note: this must be outside the namespace declaration
  */
-CPPTPG_API_SOURCE(Cam::CppExampleTPG, myID, myName, myDesc)
+//CPPTPG_API_SOURCE(Cam::CppExampleTPG, myID, myName, myDesc)
+
+//TODO: put this back once the memory corruption in getTPG() is located.
+extern "C" Cam::TPGDescriptorCollection* getDescriptors() {
+    Cam::TPGDescriptorCollection* descriptors = new Cam::TPGDescriptorCollection();
+    Cam::TPGDescriptor *descriptor = new Cam::CppTPGDescriptor(QString::fromAscii("95744f1e-360f-11e2-bcd3-08002734b94f"), QString::fromAscii("Example CPP TPG"), QString::fromAscii("A simple example CPP TPG to demonstrating how to create one. "));
+    descriptors->add(descriptor);
+    descriptor->release();
+    return descriptors;
+}
+extern "C" Cam::CppTPG* getTPG(QString id) {
+    if (id.compare(QString::fromAscii("95744f1e-360f-11e2-bcd3-08002734b94f")) == 0)
+        return new Cam::CppExampleTPG();
+    return 0;
+}
 
 /// TPG Implementation ///
 namespace Cam {
@@ -46,6 +60,17 @@ CppExampleTPG::CppExampleTPG()
     id = QS(myID);
     name = QS(myName);
     description = QS(myDesc);
+
+    actions.push_back(QS("default"));
+    TPGSettings *defaultSettings = new TPGSettings();
+    defaultSettings->addSetting(new TPGSetting("geometry", "Geometry", "Cam::TextBox", "Box01", "", "The input geometry that should be cut"));
+    defaultSettings->addSetting(new TPGSetting("tool", "Tool", "Cam::TextBox", "Tool01", "", "The tool to use for cutting"));
+    TPGSetting* speed = defaultSettings->addSetting(new TPGSetting("speed", "Speed", "Cam::Radio", "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
+    speed->addOption("fast", "Fast");
+    speed->addOption("normal", "Normal");
+    speed->addOption("slow", "Slow");
+    defaultSettings->setDefaults();
+    settings.insert(std::pair<QString, TPGSettings*>(QS("default"), defaultSettings));
 }
 
 CppExampleTPG::~CppExampleTPG() {
