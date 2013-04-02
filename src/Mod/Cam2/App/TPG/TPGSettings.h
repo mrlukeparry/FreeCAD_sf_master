@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2012-3 Andrew Robinson <andrewjrobinson@gmail.com>      *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -24,19 +25,44 @@
 #define CAM_TPGSETTINGS_H
 
 #include <vector>
-#include <QString>
+#include <qstring.h>
+#include <qlist.h>
 
 #include <App/PropertyStandard.h>
 
 
 namespace Cam
 {
+class TPGSettingOption;
+
+class CamExport TPGSettingOption
+{
+public:
+    QString id;
+    QString value;
+
+    TPGSettingOption(QString id, QString value)
+    {
+        this->id = id;
+        this->value = value;
+    }
+
+    TPGSettingOption(const char *id, const char *value)
+    {
+        this->id = QString::fromUtf8(id);
+        this->value = QString::fromUtf8(value);
+    }
+};
 
 /**
  * A Class object to store the details of a single setting
  */
 class CamExport TPGSetting
 {
+protected:
+
+    int refcnt;
+
 public:
 	//(<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>)
 	QString name;
@@ -45,11 +71,15 @@ public:
 	QString defaultvalue;
 	QString units;
 	QString helptext;
+	QList<TPGSettingOption*> options;
 
 	QString value;
 
 	TPGSetting(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext);
 	TPGSetting(QString &name, QString &label, QString &type, QString &defaultvalue, QString &units, QString &helptext);
+	TPGSetting();
+
+	~TPGSetting();
 
 	/**
 	 * Perform a deep copy of this class
@@ -57,6 +87,29 @@ public:
     TPGSetting* clone();
 
     void print();
+
+    void setDefault();
+
+    /**
+     * Increases reference count
+     * Note: it returns a pointer to this for convenience.
+     */
+    TPGSetting *grab() {
+        refcnt++;
+        return this;
+    }
+
+    /**
+     * Decreases reference count and deletes self if no other references
+     */
+    void release() {
+        refcnt--;
+        if (refcnt == 0)
+            delete this;
+    }
+
+    void addOption(QString id, QString value);
+    void addOption(const char *id, const char *value);
 };
 
   // Class stores hash of settings for managing each independant TPG
@@ -75,15 +128,51 @@ public:
 	 */
     TPGSettings* clone();
 
-    void addSetting(TPGSetting* setting);
+    /**
+     * Add a setting to this Settings collection
+     */
+    TPGSetting* addSetting(TPGSetting* setting);
+
+    /**
+     * Get the value of a given setting (by name)
+     */
+    QString *getSetting(const char *name);
 
     /**
      * Print the settings to stdout
      */
     void print();
+
+    std::vector<TPGSetting*> getSettings() {
+        return this->settings;
+    }
+
+    /**
+     * Sets the default value for every setting in Settings collection
+     */
+    void setDefaults();
+
+    /**
+     * Increases reference count
+     * Note: it returns a pointer to this for convenience.
+     */
+    TPGSettings *grab() {
+        refcnt++;
+        return this;
+    }
+
+    /**
+     * Decreases reference count and deletes self if no other references
+     */
+    void release() {
+        refcnt--;
+        if (refcnt == 0)
+            delete this;
+    }
 protected:
 
     std::vector<TPGSetting*> settings;
+    int refcnt;
 };
 
 } //namespace Cam

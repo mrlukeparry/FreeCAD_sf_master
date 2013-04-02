@@ -20,56 +20,33 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CAM_UIMANAGER_H_
-#define CAM_UIMANAGER_H_
+#ifndef PYTPGSETTINGS_H_
+#define PYTPGSETTINGS_H_
 
-#include <QObject>
-#include <QListView>
+#include <Python.h>
+#include <qstring.h>
 
-#include "../App/TPG/TPGFactory.h"
-#include "../App/TPG/TPG.h"
-#include "TPGListModel.h"
+#include "TPGSettings.h"
 
-namespace CamGui {
+#define QString_toPyString(__str__) PyString_FromString(((const char*)(__str__)).toStdString().c_str());
+#define QStringPtr_toPyString(__str__) PyString_FromString(((const char*)(__str__))->toStdString().c_str());
 
 
 /**
- * A class to manage the interactions between the various UI components of the
- * CAM workbench.
+ * A wrapper for the TPGSetting class to allow access from PyTPGs
  */
-class CamGuiExport UIManagerInst : public QObject {
+//typedef struct  {
+//    PyObject_HEAD
+//    Cam::TPGSetting *ts;
+//} cam_PyTPGSetting;
 
-  Q_OBJECT
 
-protected:
-  static UIManagerInst* _pcSingleton;
+/**
+ * A wrapper for the TPGSetting class to allow access from PyTPGs
+ */
+typedef struct  {
+    PyObject_HEAD
+    Cam::TPGSettings *settings;
+} cam_PyTPGSettings;
 
-public:
-  UIManagerInst();
-  virtual ~UIManagerInst();
-
-  // singleton manipators
-  static UIManagerInst& instance(void);
-  static void destruct (void);
-
-public Q_SLOTS:
-  void addTPG(Cam::TPGDescriptor *tpg);
-  void reloadTPGs();
-  void updatedTPGState(QString tpgid, Cam::TPG::State state, int progress);
-
-Q_SIGNALS:
-  void updatedTPGList(TPGListModel *model);
-
-  void updatedTPGSelection(Cam::TPG* tpg);
-
-  void updatedTPGStateSig(QString tpgid, Cam::TPG::State state, int progress);
-};
-
-/// Get the global instance
-inline UIManagerInst& UIManager(void)
-{
-    return UIManagerInst::instance();
-}
-
-} /* namespace CamGui */
-#endif /* CAMGUI_UIMANAGER_H_ */
+#endif /* PYTPGSETTINGS_H_ */
