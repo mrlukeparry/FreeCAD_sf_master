@@ -29,6 +29,7 @@
 #include <qlist.h>
 #include <qmap.h>
 #include <qobject.h>
+#include <qprogressbar.h>
 
 #include "ui_CamProjectDockWindow.h"
 
