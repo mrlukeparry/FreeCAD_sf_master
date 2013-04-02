@@ -46,6 +46,7 @@
 #include "TPG/PyTPGFactory.h"
 #include "TPG/TPG.h"
 #include "Support.h"
+#include "CamManager.h"
 
 using Base::Console;
 using namespace Part;
@@ -124,6 +125,59 @@ static PyObject * _registerPyTPGFactory_(PyObject *self, PyObject *args)
 //    Cam::PyTPGAPI().test();
     Py_Return;
 }
+
+/**
+ *  Updates the UI to show the progress of the PyTPG's processing.
+	States:
+	- 'UNDEFINED': The default state before anything is done.
+	- 'LOADED': Un-used at the moment.
+	- 'INITIALISED':  UIManager sets this state just before calling the PyTPG's run method.
+	- 'STARTED': PyTPG should set this state as soon as it enters the run method.
+	- 'RUNNING': PyTPG should set this state after things are setup and about to start main loop.
+	- 'ERROR': If processing fails then set this state to indicate this.  Run method should stop execution soon after this.
+	- 'FINISHED': When processing is finished successfully set state to this.  Run method should stop execution soon after this.
+
+	@param state: string, one of the states above.
+	@param progress: int, the overall progress (percentage) of running this TPG.  Should be >= 1 and <= 99 as 0 and 100 are used by UIManager
+
+	TODO: move this method to the Python Export of the CamManager
+ */
+static PyObject *updateProgressPyTPG(PyObject *self, PyObject *args)
+{
+	char *tpgid;
+	char *status;
+	int   progress = -1;
+//	PyObject *method;
+	if (!PyArg_ParseTuple(args, "ss|i", &tpgid, &status, &progress)) {
+		char *error = new char[120];
+		error[0] = 0;
+		sprintf(error, "Cam.updateProgressPyTPG() expects 2 or 3 parameters (str, str, int), but given %i", PyTuple_Size(args));
+		PyErr_SetString(PyExc_TypeError, error);
+		return NULL;
+	}
+	Cam::TPG::State state;
+
+	// convert status to enum type
+	if (strcmp(status, "RUNNING") == 0)
+		state = Cam::TPG::RUNNING;
+	else if (strcmp(status, "INITIALISED") == 0)
+		state = Cam::TPG::INITIALISED;
+	else if (strcmp(status, "STARTED") == 0)
+		state = Cam::TPG::STARTED;
+	else if (strcmp(status, "FINISHED") == 0)
+		state = Cam::TPG::FINISHED;
+	else if (strcmp(status, "UNDEFINED") == 0)
+		state = Cam::TPG::UNDEFINED;
+	else if (strcmp(status, "ERROR") == 0)
+		state = Cam::TPG::ERROR;
+	else if (strcmp(status, "LOADED") == 0)
+		state = Cam::TPG::LOADED;
+
+	Cam::CamManager().updateProgress(QString::fromAscii(tpgid), state, progress);
+
+	Py_Return;
+}
+
 static PyObject *test(PyObject *self, PyObject *args)
 {
 //	Cam::PyTPGManager().test();
@@ -179,10 +233,12 @@ static PyObject *test1(PyObject *self, PyObject *args)
 
 /* registration table  */
 struct PyMethodDef Cam_methods[] = {
-    {"open"   , open,    METH_VARARGS, "A Copy/Paste remnant :P"},
+    {"open",                   open,                   METH_VARARGS, "A Copy/Paste remnant :P"},
     {"_registerPyTPGFactory_", _registerPyTPGFactory_, METH_VARARGS, "Do not use; this is an internal method used by the Cam::PyTPGFactory"},
-    {"test"   , test,    METH_VARARGS, "Perform some testing."},
-    {"test1"   , test1,    METH_VARARGS, "Perform some testing with 1 arg."},
-//    {"read"   , read,  METH_VARARGS, "A Copy/Paste remnant :P"},
+    {"updateProgressPyTPG",    updateProgressPyTPG,    METH_VARARGS, "Do not use; this is an internal method.  Update the processing status of a running PyTPG."},
+
+    {"test",                   test,                   METH_VARARGS, "Perform some testing."},
+    {"test1",                  test1,                  METH_VARARGS, "Perform some testing with 1 arg."},
+
     {NULL, NULL}        /* end of table marker */
 };

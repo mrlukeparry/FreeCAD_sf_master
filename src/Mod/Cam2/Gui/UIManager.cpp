@@ -39,6 +39,7 @@
 #include <Gui/MainWindow.h>
 
 #include "../App/CamFeature.h"
+#include "../App/CamManager.h"
 #include "../App/TPGList.h"
 #include "../App/TPGFeature.h"
 #include "../App/TPG/PyTPGFactory.h"
@@ -67,6 +68,10 @@ void UIManagerInst::destruct (void)
 }
 
 UIManagerInst::UIManagerInst() {
+
+	// receive tpg running state changes from Cam layer.
+	QObject::connect(&Cam::CamManager(), SIGNAL(updatedTPGState(QString, Cam::TPG::State, int)),
+			this, SLOT(updatedTPGState(QString, Cam::TPG::State, int)));
 }
 
 UIManagerInst::~UIManagerInst() {
@@ -151,6 +156,14 @@ void UIManagerInst::reloadTPGs()
     CamGui::TPGListModel *model = new CamGui::TPGListModel(plugins);
     plugins->release();
     Q_EMIT updatedTPGList(model);
+}
+
+/**
+ * A Slot to relay TPG state updates to UI Components
+ */
+void UIManagerInst::updatedTPGState(QString tpgid, Cam::TPG::State state, int progress) {
+
+	Q_EMIT updatedTPGStateSig(tpgid, state, progress);
 }
 
 #include "moc_UIManager.cpp"

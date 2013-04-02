@@ -21,6 +21,11 @@ set(Cam_LIBS
     FreeCADApp
 )
 
+set(Cam_MOC_HDRS
+    CamManager.h
+)
+fc_wrap_cpp(Cam_MOC_SRCS ${Cam_MOC_HDRS})
+
 add_subdirectory(Libs)
 add_subdirectory(Plugins)
 
@@ -110,6 +115,8 @@ SET(CamModule_SRCS
     MachineProgram.h
     PostProcessor.cpp
     PostProcessor.h
+    CamManager.cpp
+    CamManager.h
 )
 SOURCE_GROUP("Module" FILES ${CamModule_SRCS})
 

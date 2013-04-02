@@ -33,18 +33,21 @@
 
 namespace CamGui {
 
-CamProjectDockWindow::CamProjectDockWindow(Gui::Document*  pcDocument, QWidget *parent)
-: DockWindow(pcDocument,parent)
-, ui(new Ui_CamProjectDockWindow)
-{
-  setWindowTitle(tr("Cam Project"));
+CamProjectDockWindow::CamProjectDockWindow(Gui::Document* pcDocument,
+		QWidget *parent) :
+		DockWindow(pcDocument, parent), ui(new Ui_CamProjectDockWindow) {
+	setWindowTitle(tr("Cam Project"));
 
-  ui->setupUi(this);
+	ui->setupUi(this);
 
-  currentSettings = NULL;
+	currentSettings = NULL;
 
-  QObject::connect(&UIManager(), SIGNAL(updatedTPGSelection(Cam::TPG*)),
-        this, SLOT(updatedTPGSelection(Cam::TPG*)));
+	QObject::connect(&UIManager(), SIGNAL(updatedTPGSelection(Cam::TPG*)), this,
+			SLOT(updatedTPGSelection(Cam::TPG*)));
+
+	// receive tpg running state changes from Cam layer.
+	QObject::connect(&CamGui::UIManager(), SIGNAL(updatedTPGStateSig(QString, Cam::TPG::State, int)),
+			this, SLOT(updatedTPGState(QString, Cam::TPG::State, int)));
 }
 
 CamProjectDockWindow::~CamProjectDockWindow()
@@ -131,6 +134,28 @@ void CamProjectDockWindow::updatedTPGSelection(Cam::TPG* tpg)
     Cam::TPGSettings *settings = tpg->getSettings(action);
     if (!this->editSettings(settings))
         Base::Console().Error("Failed to edit settings for '%s'\n", tpg->getName().toAscii().constData());
+}
+
+
+/**
+ * Receive messages to update a progress bar
+ */
+void CamProjectDockWindow::updatedTPGState(QString tpgid, Cam::TPG::State state, int progress) {
+
+	ProgressBar *pb = NULL;
+	if (!progressBars.contains(tpgid)) {
+		pb = new ProgressBar(this->ui->scrollAreaWidgetContents, tpgid);
+		progressBars.insert(tpgid, pb);
+	} else {
+		pb = progressBars[tpgid];
+	}
+	pb->updateState(state, progress);
+
+	if (state == Cam::TPG::FINISHED) {
+		progressBars.remove(tpgid);
+
+		delete pb; //TODO: delay this by a timer (maybe 10 seconds)
+	}
 }
 
 #include "moc_CamProjectDockWindow.cpp"
