@@ -43,8 +43,6 @@ namespace Cam
 
 //class TPG;
 
-
-
 /**
   * The actual static initialisation of the TPGFactory that stores the list of tpgLists
   */
