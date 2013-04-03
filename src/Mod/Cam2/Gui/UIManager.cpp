@@ -49,11 +49,7 @@
 #include "TPGListModel.h"
 #include "ViewProviderCamFeature.h"
 
-<<<<<<< HEAD
-namespace CamGui {
-=======
 using namespace CamGui;
->>>>>>> cbd59ac90f98f7983ef67832a2bc2597b4978a53
 
 UIManagerInst* UIManagerInst::_pcSingleton = NULL;
 
