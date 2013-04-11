@@ -22,30 +22,40 @@
 
 #include <vector>
 
-#include <App/DocumentObject.h>
-#include <Gui/Action.h>
-#include <Gui/Application.h>
-#include <Gui/BitmapFactory.h>
-#include <Gui/Command.h>
-#include <Gui/Control.h>
-#include <Gui/Document.h>
-#include <Gui/Selection.h>
-#include <Gui/MainWindow.h>
-#include <Gui/FileDialog.h>
+# include <App/DocumentObject.h>
+# include <Gui/Action.h>
+# include <Gui/Application.h>
+# include <Gui/BitmapFactory.h>
+# include <Gui/Command.h>
+# include <Gui/Control.h>
+# include <Gui/Document.h>
+# include <Gui/Selection.h>
+# include <Gui/MainWindow.h>
+# include <Gui/FileDialog.h>
+# include <Gui/ViewProvider.h>
 
-#include <Mod/Part/App/PartFeature.h>
+# include <Mod/Part/App/PartFeature.h>
 
-#include <Mod/Drawing/App/FeatureViewPart.h>
-#include <Mod/Drawing/App/FeatureViewDimension.h>
-#include <Mod/Drawing/App/FeaturePage.h>
+# include <Mod/Drawing/App/FeatureViewPart.h>
+# include <Mod/Drawing/App/FeatureViewDimension.h>
+# include <Mod/Drawing/App/FeaturePage.h>
 
-#include "DrawingView.h"
-#include "TaskDialog.h"
-#include "TaskOrthoViews.h"
+# include "DrawingView.h"
+# include "TaskDialog.h"
+# include "TaskOrthoViews.h"
+# include "ViewProviderPage.h"
 
 using namespace DrawingGui;
 using namespace std;
 
+bool isDrawingPageActive(Gui::Document *doc)
+{
+    if (doc)
+        // checks if a Sketch Viewprovider is in Edit and is in no special mode
+        if (doc->getInEdit() && doc->getInEdit()->isDerivedFrom(DrawingGui::ViewProviderDrawingPage::getClassTypeId()))
+            return true;
+    return false;
+}
 
 //===========================================================================
 // CmdDrawingOpen
@@ -272,8 +282,8 @@ void CmdDrawingNewView::activated(int iMsg)
         doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewPart','%s')",FeatName.c_str());
         doCommand(Doc,"App.activeDocument().%s.Source = App.activeDocument().%s",FeatName.c_str(),(*it)->getNameInDocument());
         doCommand(Doc,"App.activeDocument().%s.Direction = (0.0,0.0,1.0)",FeatName.c_str());
-        doCommand(Doc,"App.activeDocument().%s.X = 10.0",FeatName.c_str());
-        doCommand(Doc,"App.activeDocument().%s.Y = 10.0",FeatName.c_str());
+        doCommand(Doc,"App.activeDocument().%s.X = 0.0",FeatName.c_str());
+        doCommand(Doc,"App.activeDocument().%s.Y = 0.0",FeatName.c_str());
         doCommand(Doc,"App.activeDocument().%s.Scale = 1.0",FeatName.c_str());
 //         doCommand(Doc,"App.activeDocument().%s.addObject(App.activeDocument().%s)",PageName.c_str(),);
         Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
@@ -299,7 +309,7 @@ CmdDrawingNewDimension::CmdDrawingNewDimension()
     sToolTipText    = QT_TR_NOOP("Insert a new dimension feature into the drawing object");
     sWhatsThis      = "Drawing_NewDimension";
     sStatusTip      = sToolTipText;
-    sPixmap         = "actions/drawing-view";
+    sPixmap         = "actions/drawing-annotation";
 }
 
 void CmdDrawingNewDimension::activated(int iMsg)
@@ -318,8 +328,7 @@ void CmdDrawingNewDimension::activated(int iMsg)
     // only one sketch with its subelements are allowed to be selected
     if (selection.size() != 1) {
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("Select two points and a symmetry line, two points and a symmetry point "
-                        "or a line and a symmetry point from the sketch."));
+            QObject::tr("Select one edge"));
         return;
     }
 
@@ -345,19 +354,26 @@ void CmdDrawingNewDimension::activated(int iMsg)
         return;
     }
     
-    App::DocumentObject *dimObj = this->getDocument()->addObject("Drawing::FeatureViewDimension", getUniqueObjectName("Dimension").c_str());
-    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(dimObj);
+//     App::DocumentObject *dimObj = this->getDocument()->addObject("Drawing::FeatureViewDimension", getUniqueObjectName("Dimension").c_str());
+//     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(dimObj);
     
+    openCommand("Create Dimension");
+    
+    std::string support = selection[0].getAsPropertyLinkSubString();
+
+    std::string FeatName = getUniqueObjectName("Dimension");
+    doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewDimension','%s')",FeatName.c_str());
+//     doCommand(Doc,"App.activeDocument().%s.References = %s",FeatName.c_str(), support.c_str());
+    doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str(), "Distance");
+
+    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
     dim->References.setValue(Obj, SubNames[0].c_str());
     
-    dim->Type.setValue("Distance");
-    dim->touch();
-    
     Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
-    page->addView(dimObj);
-    
-    std::string PageName = pages.front()->getNameInDocument();
-    
+    page->addView(page->getDocument()->getObject(FeatName.c_str()));       
+        
+    updateActive();
+    commitCommand();   
 }
 
 //===========================================================================

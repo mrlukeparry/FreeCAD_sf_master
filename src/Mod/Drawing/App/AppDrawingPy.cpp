@@ -165,10 +165,17 @@ struct PyMethodDef Drawing_methods[] = {
    {"project"       ,project      ,METH_VARARGS,
      "[visiblyG0,visiblyG1,hiddenG0,hiddenG1] = project(TopoShape[,App.Vector Direction, string type]) -- Project a shape and return the visible/invisible parts of it."},
    {"projectEx"       ,projectEx      ,METH_VARARGS,
-     "[V,V1,VN,VO,VI,H,H1,HN,HO,HI] = projectEx(TopoShape[,App.Vector Direction, string type]) -- Project a shape and return the all parts of it."}/*,
+     "[V,V1,VN,VO,VI,H,H1,HN,HO,HI] = projectEx(TopoShape[,App.Vector Direction, string type]) -- Project a shape and return the all parts of it."}, /*,
    {"projectToSVG"       ,projectToSVG      ,METH_VARARGS,
      "string = projectToSVG(TopoShape[,App.Vector Direction, string type]) -- Project a shape and return the SVG representation as string."},
    {"projectToDXF"       ,projectToDXF      ,METH_VARARGS,
-     "string = projectToDXF(TopoShape[,App.Vector Direction, string type]) -- Project a shape and return the DXF representation as string."},
+     "string = projectToDXF(TopoShape[,App.Vector Direction, string type]) -- Project a shape and return the DXF representation as string."},*/
     {NULL, NULL}        /* end of table marker */
 };
+
+// struct PyMethodDef Drawing_methods[] = {
+//     {"open"   , project,    1},
+//     {"insert" , projectEx,  1},
+// //    {"read"   , read,  1},
+//     {NULL, NULL}        /* end of table marker */
+// };

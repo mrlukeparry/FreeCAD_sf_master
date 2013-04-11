@@ -550,8 +550,7 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
                   
                   // Push the edge references 
                   while(edgesAdded--)
-                      edgeReferences.push_back(ie);
-                  
+                      edgeReferences.push_back(ie);                  
               }
                 
               ed.Used(true); 

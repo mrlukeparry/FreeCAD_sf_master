@@ -38,8 +38,8 @@ class DrawingExport FeatureDrawingPage: public App::DocumentObjectGroup
 
 public:
     /// Constructor
-    FeatureDrawingPage(void);
-     ~FeatureDrawingPage();
+    FeatureDrawingPage();
+    ~FeatureDrawingPage();
 
     App::PropertyFileIncluded PageResult;
     App::PropertyFile Template;

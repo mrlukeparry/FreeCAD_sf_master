@@ -140,7 +140,6 @@ void QGraphicsItemViewDimension::datumLabelDragged()
 {
     int x = this->datumLabel->x();
     int y = this->datumLabel->y();
-    Base::Console().Log("Dragging Datum Label %i, %i", this->datumLabel->x(), this->datumLabel->y());
     draw();
 }
 
@@ -154,16 +153,25 @@ void QGraphicsItemViewDimension::draw()
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->viewObject);
     QGraphicsTextItem *datumLbl = dynamic_cast<QGraphicsTextItem *>(this->datumLabel);
     
-    
     QPen pen;
     pen.setWidthF((int) 1);
     pen.setStyle(Qt::SolidLine);
 
     int precision = dim->Precision.getValue();
     QString str;
-    str.setNum(dim->getValue(), 'g', precision);
+
+    // For now assume only show absolute dimension values
+    bool absolute = true;
+
+    // Should ideally cache
+    str.setNum((absolute) ? abs(dim->getValue()): dim->getValue(), 'g', precision);
     
+    QFont font = datumLbl->font();
+    font.setPointSizeF(dim->Fontsize.getValue());
+    font.setFamily(QString::fromAscii(dim->Font.getValue()));
     datumLbl->setPlainText(str);
+    datumLbl->setFont(font);
+
 
     //Relcalculate the measurement based on references stored.  
     const std::vector<App::DocumentObject*> &objects = dim->References.getValues();
@@ -191,10 +199,6 @@ void QGraphicsItemViewDimension::draw()
             }
         }
         
-//         float length = this->param1.getValue();
-//         float length2 = this->param2.getValue();
-//         const SbVec3f *pnts = this->pnts.getValues(0);
-
         Base::Vector3d dir, norm;
 
         if (strcmp(dim->Type.getValueAsString(), "Distance") == 0 ) {
@@ -208,27 +212,6 @@ void QGraphicsItemViewDimension::draw()
         dir.Normalize();
         norm = Base::Vector3d (-dir[1],dir[0], 0);
 
-        // when the datum line is not parallel to p1-p2 the projection of
-        // p1-p2 on norm is not zero, p2 is considered as reference and p1
-        // is replaced by its projection p1_
-        float normproj12 = (p2-p1)[0] * norm[0] + (p2-p1)[1] * norm[1];
-        Base::Vector3d p1_ = p1 + norm * normproj12;
-
-        Base::Vector3d midpos = (p1_ + p2) / 2;
-
-        Base::Vector3d labelPos(this->datumLabel->x(), this->datumLabel->y(), 0);
-        
-        QFontMetrics fm(datumLbl->font());
-        float labelWidth  = datumLbl->boundingRect().width();
-        float labelHeight = datumLbl->boundingRect().height();
-        
-        Base::Vector3d vec = labelPos - p2;
-        
-        float length = vec.x * norm.x + vec.y * norm.y;
-
-        float offset1 = (length + normproj12 < 0) ? -0.02  : 0.02;
-        float offset2 = (length < 0) ? -0.02  : 0.02;
-
         // Get magnitude of angle between horizontal
         float angle = atan2f(dir[1],dir[0]);
         bool flip=false;
@@ -239,11 +222,43 @@ void QGraphicsItemViewDimension::draw()
             angle += (float)M_PI;
             flip = true;
         }
+        
+        // when the datum line is not parallel to p1-p2 the projection of
+        // p1-p2 on norm is not zero, p2 is considered as reference and p1
+        // is replaced by its projection p1_
+        float normproj12 = (p2-p1)[0] * norm[0] + (p2-p1)[1] * norm[1];
+        Base::Vector3d p1_ = p1 + norm * normproj12;
+
+        Base::Vector3d midpos = (p1_ + p2) / 2;       
+        Base::Vector3d labelPos(this->datumLabel->x(), this->datumLabel->y(), 0);
+        
+        QFontMetrics fm(datumLbl->font());
+        
+        // Note Bounding Box size is not the same width or height as text (only used for finding center)
+        float bbX  = datumLbl->boundingRect().width();
+        float bbY = datumLbl->boundingRect().height();
+            
+        int w = fm.width(str);
+        int h = fm.height();
+        
+        float s = sin(angle);
+        float c = cos(angle);
+        
+        // Note QGraphicsTextItem takes coordinate system from TOP LEFT - transfer to center
+        // Create new coordinate system based around x,y
+        labelPos += 0.5 * Base::Vector3d(bbX * c - bbY * s, bbX * s + bbY * c, 0.f);
+        
+        
+        Base::Vector3d vec = labelPos - p2;        
+        float length = vec.x * norm.x + vec.y * norm.y;
 
 //         textOffset = midpos + norm * length + dir * length2;
 
-        float margin = 0.01f;
+        float margin = 3.f;
         float scaler = 1.;
+        
+        float offset1 = (length + normproj12 < 0) ? -margin : margin;
+        float offset2 = (length < 0) ? -margin : margin;
         
         Base::Vector3d perp1 = p1_ + norm * (length + offset1 * scaler);
         Base::Vector3d perp2 = p2  + norm * (length + offset2 * scaler);
@@ -251,8 +266,8 @@ void QGraphicsItemViewDimension::draw()
         // Calculate the coordinates for the parallel datum lines
         Base::Vector3d  par1 = p1_ + norm * length;
                 
-        Base::Vector3d  par2 = labelPos - norm * labelHeight / 2 - dir * (labelWidth -margin);
-        Base::Vector3d  par3 = labelPos - norm * labelHeight / 2 - dir * (margin);
+        Base::Vector3d  par2 = labelPos - dir * (w / 2 + margin);
+        Base::Vector3d  par3 = labelPos + dir * (w / 2 + margin);
         Base::Vector3d  par4 = p2  + norm * length;
 
 //         bool flipTriang = false;

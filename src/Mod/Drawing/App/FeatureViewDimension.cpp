@@ -27,6 +27,7 @@
 # include <cstring>
 #endif
 
+# include <Base/Exception.h>
 # include <Mod/Measure/App/Measurement.h>
 
 # include "FeatureViewPart.h"
@@ -46,6 +47,7 @@ FeatureViewDimension::FeatureViewDimension(void)
 {
     ADD_PROPERTY_TYPE(References,(0,0),"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Supporting References");
     ADD_PROPERTY_TYPE(Precision,(2)   ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Precision");
+    ADD_PROPERTY_TYPE(Fontsize,(12)   ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Font Size");
     Type.setEnums(TypeEnums);
     ADD_PROPERTY(Type,((long)0));
     this->measurement = new Measure::Measurement();

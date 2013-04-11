@@ -342,6 +342,20 @@ Base::Vector3d Measurement::delta()
                 return Base::Vector3d(diff.X(), diff.Y(), diff.Z());    
             }         
         }        
+    } else if(measureType == Edges) {
+        // Only case that is supported is straight line edge
+        if(numRefs == 1) {
+            TopoDS_Shape shape = getShape(objects.at(0), subElements.at(0).c_str());
+            const TopoDS_Edge& edge = TopoDS::Edge(shape);
+            BRepAdaptor_Curve curve(edge);
+
+            if(curve.GetType() == GeomAbs_Line) {              
+                  gp_Pnt P1 = curve.Value(curve.FirstParameter());
+                  gp_Pnt P2 = curve.Value(curve.LastParameter());
+                  gp_XYZ diff = P2.XYZ() - P1.XYZ();                
+                  return Base::Vector3d(diff.X(), diff.Y(), diff.Z());          
+            }
+        }
     }
     throw Base::Exception("An invalid selection was made");
 }

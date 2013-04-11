@@ -49,6 +49,7 @@ public:
 //     App::PropertyLinkSubList View;
     App::PropertyLinkSubList References;
     App::PropertyInteger Precision;
+    App::PropertyFloat Fontsize;
     App::PropertyEnumeration Type;
 
     short mustExecute() const;

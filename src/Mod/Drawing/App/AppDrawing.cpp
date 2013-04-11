@@ -63,7 +63,6 @@ void DrawingExport initDrawing()
     Drawing::FeatureViewAnnotation  ::init();
     Drawing::FeatureViewDimension   ::init();
     
-    Drawing::PageGroup              ::init();
     Drawing::FeatureProjection      ::init();
     Drawing::FeatureViewPartPython  ::init();
     Drawing::FeatureViewPython      ::init();

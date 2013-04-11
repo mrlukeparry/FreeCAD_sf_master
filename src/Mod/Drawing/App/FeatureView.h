@@ -20,22 +20,16 @@
  *                                                                         *
  ***************************************************************************/
 
- 
-
-
 #ifndef _FeatureView_h_
 #define _FeatureView_h_
-
 
 #include <App/DocumentObject.h>
 #include <App/PropertyStandard.h>
 #include <App/PropertyGeo.h>
 #include <App/FeaturePython.h>
 
-
 namespace Drawing
 {
-
 
 /** Base class of all View Features in the drawing module
  */
@@ -72,7 +66,5 @@ protected:
 typedef App::FeaturePythonT<FeatureView> FeatureViewPython;
 
 } //namespace Drawing
-
-
 
 #endif

@@ -20,9 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-
-#ifndef _FeaturePage_h_
-#define _FeaturePage_h_
+#ifndef _DRAWING_FeaturePage_h_
+#define _DRAWING_FeaturePage_h_
 
 #include <App/DocumentObjectGroup.h>
 #include <App/PropertyStandard.h>
@@ -66,5 +65,4 @@ protected:
 
 } //namespace Drawing
 
-
-#endif
+#endif //_DRAWING_FeaturePage_h_

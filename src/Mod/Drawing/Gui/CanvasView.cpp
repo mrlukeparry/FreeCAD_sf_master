@@ -113,10 +113,29 @@ void CanvasView::addViewPart(Drawing::FeatureViewPart *part)
 
 void CanvasView::addViewDimension(Drawing::FeatureViewDimension *dim)
 {   
-    QGraphicsItemViewDimension *group = new QGraphicsItemViewDimension(QPoint(0,0), this->scene());
-    group->setViewPartFeature(dim);
+    QGraphicsItemViewDimension *dimGroup = new QGraphicsItemViewDimension(QPoint(0,0), this->scene());
+    dimGroup->setViewPartFeature(dim);
+    std::vector<App::DocumentObject *> objs = dim->References.getValues();
     
-    views.push_back(group); 
+    if(objs.size() > 0)
+    {
+        // Attach the dimension to the first object's group
+        for(std::vector<QGraphicsItemView *>::iterator it = views.begin(); it != views.end(); ++it) {
+            Drawing::FeatureView *viewObj = (*it)->getViewObject();
+            if(viewObj == objs.at(0)) {
+                // Found dimensions parent view reference
+                QGraphicsItemView *view = (*it);
+                dimGroup->setPos(view->pos()); 
+                view->addToGroup(dimGroup);
+                //Must transfer to new coordinate system of parent view
+                
+                return;
+            }
+        }
+    }
+    
+    // The dimensions parent couldn't be found. Add for now.
+    views.push_back(dimGroup); 
 }
 
 
