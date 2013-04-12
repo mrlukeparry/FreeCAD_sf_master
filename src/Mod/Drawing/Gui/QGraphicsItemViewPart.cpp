@@ -395,17 +395,24 @@ void QGraphicsItemViewPart::drawViewPart()
           pen.setStyle(Qt::DashLine);
       else
           pen.setStyle(Qt::SolidLine);
+       // Attempt to find if a previous edge exists
+      QGraphicsItemEdge *item = this->findRefEdge(refs.at(i));
+          
+      QPainterPath path;
+      
+      if(!item) {
+          item = new QGraphicsItemEdge(refs.at(i));
+          item->setStrokeWidth(lineWidth);
+      } else {
+          path = item->path();
+      }
 
       switch((*it)->geomType) {
         case DrawingGeometry::CIRCLE: {
           DrawingGeometry::Circle *geom = static_cast<DrawingGeometry::Circle *>(*it);
-          QGraphicsItemEdge *item = new QGraphicsItemEdge(i);
-          
-          item->setStrokeWidth(lineWidth);
-          
+
           graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-          
-          QPainterPath path;
+
           path.addEllipse(0 ,0, geom->radius * 2, geom->radius * 2);
           item->setPen(pen);
           item->setPath(path);
@@ -418,12 +425,8 @@ void QGraphicsItemViewPart::drawViewPart()
         } break;
         case DrawingGeometry::ARCOFCIRCLE: {
           DrawingGeometry::AOC  *geom = static_cast<DrawingGeometry::AOC *>(*it);
-          QGraphicsItemEdge *item = new QGraphicsItemEdge(refs.at(i));
-          
-          item->setStrokeWidth(lineWidth);
           
           graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-          QPainterPath path;
 
           double startAngle = (geom->startAngle);
           double spanAngle =  (geom->endAngle - startAngle);
@@ -439,14 +442,8 @@ void QGraphicsItemViewPart::drawViewPart()
         } break;
         case DrawingGeometry::ELLIPSE: {
           DrawingGeometry::Ellipse *geom = static_cast<DrawingGeometry::Ellipse *>(*it);
-          
-          QGraphicsItemEdge *item = new QGraphicsItemEdge(i);
-          
-          item->setStrokeWidth(lineWidth);
-          
+        
           graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-
-          QPainterPath path;
 
           path.addEllipse(0,0, geom->major * 2, geom->minor * 2);
 
@@ -458,13 +455,8 @@ void QGraphicsItemViewPart::drawViewPart()
         } break;
         case DrawingGeometry::ARCOFELLIPSE: {
           DrawingGeometry::AOE *geom = static_cast<DrawingGeometry::AOE *>(*it);
-          QGraphicsItemEdge *item = new QGraphicsItemEdge(i);
-          
-          item->setStrokeWidth(lineWidth);
-          
+                    
           graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-          
-          QPainterPath path;
 
           double startAngle = (geom->startAngle);
           double spanAngle =  (startAngle - geom->endAngle);
@@ -484,10 +476,7 @@ void QGraphicsItemViewPart::drawViewPart()
         } break;
         case DrawingGeometry::BSPLINE: {
           DrawingGeometry::BSpline *geom = static_cast<DrawingGeometry::BSpline *>(*it);
-          QGraphicsItemEdge *item = new  QGraphicsItemEdge(i);
-          
-          item->setStrokeWidth(lineWidth);
-          
+                   
           graphicsItem = dynamic_cast<QGraphicsItem *>(item);
 
           QPainterPath path;
@@ -519,14 +508,11 @@ void QGraphicsItemViewPart::drawViewPart()
           
         } break;
         case DrawingGeometry::GENERIC: {
-          DrawingGeometry::Generic *geom = static_cast<DrawingGeometry::Generic *>(*it);
-          QGraphicsItemEdge *item = new  QGraphicsItemEdge(i);
-          
-          item->setStrokeWidth(lineWidth);
-          
-          graphicsItem = dynamic_cast<QGraphicsItem *>(item);
 
-          QPainterPath path;
+          DrawingGeometry::Generic *geom = static_cast<DrawingGeometry::Generic *>(*it);
+                    
+          graphicsItem = dynamic_cast<QGraphicsItem *>(item);
+          
           path.moveTo(geom->points[0].fX, geom->points[0].fY);
           std::vector<Base::Vector2D>::const_iterator it = geom->points.begin();
 
@@ -538,6 +524,7 @@ void QGraphicsItemViewPart::drawViewPart()
 
         } break;
         default:
+          delete item;
           break;
       }
       
@@ -553,6 +540,17 @@ void QGraphicsItemViewPart::drawViewPart()
     }
 }
 
+QGraphicsItemEdge * QGraphicsItemViewPart::findRefEdge(int idx)
+{
+    QList<QGraphicsItem *> items = this->childItems();
+    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); it++) {
+        QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+        if(edge && edge->getReference() == idx) {
+            return edge;
+        }
+    }
+    return 0;
+}
 QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     if (change == ItemSelectedHasChanged && scene()) {

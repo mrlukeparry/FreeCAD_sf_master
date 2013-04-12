@@ -188,14 +188,15 @@ void QGraphicsItemViewDimension::draw()
             const Drawing::FeatureViewPart *refObj = static_cast<const Drawing::FeatureViewPart*>(objects[0]);
             int idx = std::atoi(SubNames[0].substr(4,4000).c_str());
             
-            DrawingGeometry::BaseGeom *geom = refObj->getEdgeGeometry().at(idx);
+            DrawingGeometry::BaseGeom *geom = refObj->getCompleteEdge(idx);
 
-            if(geom->geomType == DrawingGeometry::GENERIC ) {
+            if(geom && geom->geomType == DrawingGeometry::GENERIC ) {
                   DrawingGeometry::Generic *gen = static_cast<DrawingGeometry::Generic *>(geom);
                   Base::Vector2D pnt1 = gen->points.at(0);
                   Base::Vector2D pnt2 = gen->points.at(1);
                   p1 = Base::Vector3d (pnt1.fX, pnt1.fY, 0);
                   p2 = Base::Vector3d (pnt2.fX, pnt2.fY, 0);
+                  Base::Console().Log("< %f, %f> <%f, %f>", pnt1.fX, pnt1.fY, pnt2.fX, pnt2.fY);
             }
         }
         

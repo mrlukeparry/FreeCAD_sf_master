@@ -117,6 +117,7 @@ class Generic: public BaseGeom
 {
 public:
   Generic(const BRepAdaptor_Curve& c);
+  Generic();
   ~Generic() {}
   std::vector<Base::Vector2D> points;
 

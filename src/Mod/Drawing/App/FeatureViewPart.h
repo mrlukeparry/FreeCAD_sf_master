@@ -56,6 +56,8 @@ public:
     const std::vector<DrawingGeometry::BaseGeom  *> & getEdgeGeometry() const;
     const std::vector<DrawingGeometry::Face *> & getFaceGeometry() const;
     
+    DrawingGeometry::BaseGeom * getCompleteEdge(int idx) const;
+    
     /// Get References for geometric features
     const std::vector<int> & getVertexReferences() const;
     const std::vector<int> & getEdgeReferences() const;

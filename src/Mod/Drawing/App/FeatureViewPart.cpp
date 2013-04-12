@@ -55,8 +55,10 @@
 
 #include <Base/Exception.h>
 #include <Base/FileInfo.h>
+
 #include <Mod/Part/App/PartFeature.h>
 
+#include "Geometry.h"
 #include "FeatureViewPart.h"
 #include "ProjectionAlgos.h"
 
@@ -133,6 +135,30 @@ const std::vector<int> & FeatureViewPart::getEdgeReferences() const
     return geometryObject->getEdgeRefs();
 }
 
+DrawingGeometry::BaseGeom *FeatureViewPart::getCompleteEdge(int idx) const
+{
+   //## Get the Part Link ##/
+    App::DocumentObject* link = Source.getValue();
+    
+    if (!link)
+        return 0;
+    
+    if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
+        return 0;
+    
+    // Collect all edges associated with edge reference idx
+    const std::vector<int> refs = geometryObject->getEdgeRefs();
+    const std::vector<DrawingGeometry::BaseGeom  *> geoms = geometryObject->getEdgeGeometry();
+    
+    const Part::TopoShape &topoShape = static_cast<Part::Feature*>(link)->Shape.getShape();
+    std::stringstream str;
+    str << "Edge" << idx;
+    TopoDS_Shape shape = topoShape.getSubShape(str.str().c_str());
+
+    DrawingGeometry::BaseGeom *prjShape = geometryObject->projectEdge(shape, static_cast<Part::Feature*>(link)->Shape.getValue(), Direction.getValue());
+    int i;
+    return prjShape;
+}
 
 App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
 {

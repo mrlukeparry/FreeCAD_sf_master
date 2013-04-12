@@ -86,15 +86,13 @@ App::DocumentObjectExecReturn *FeatureViewDimension::execute(void)
         
         if((*subEl).substr(0,4) == "Edge") {
             int idx = std::atoi((*subEl).substr(4,4000).c_str());            
-            int refIdx = viewPart->getEdgeReferences().at(idx);
             char buff[100];
-            sprintf(buff, "Edge%i", refIdx);
+            sprintf(buff, "Edge%i", idx);
             measurement->addReference(docObj, buff); 
         } else if((*subEl).substr(0,6) == "Vertex") {
             int idx = std::atoi((*subEl).substr(6,4000).c_str());            
-            int refIdx = viewPart->getVertexReferences().at(idx);
             char buff[100];
-            sprintf(buff, "Vertex%i", refIdx);
+            sprintf(buff, "Vertex%i", idx);
             measurement->addReference(docObj, buff); 
         }   
     }

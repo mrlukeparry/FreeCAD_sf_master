@@ -189,6 +189,11 @@ AOC::AOC(const BRepAdaptor_Curve& c) : Circle(c)
     this->endAngle   *= 180 / M_PI;
 }
 
+Generic::Generic()
+{
+    this->geomType = GENERIC;
+}
+
 Generic::Generic(const BRepAdaptor_Curve& c)
 {
     this->geomType = GENERIC;

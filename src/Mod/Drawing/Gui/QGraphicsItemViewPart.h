@@ -50,7 +50,7 @@ public:
     enum {Type = QGraphicsItem::UserType + 103};
 
     int type() const { return Type;}  
-    int getReference() const { return reference; } 
+    int getReference() const { return reference; }
     void setStrokeWidth(int width) { this->strokeWidth = width; }
     
 protected:
@@ -58,7 +58,7 @@ protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
     // Selection detection
-     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
   
 protected:
 int reference;
@@ -144,6 +144,7 @@ Q_SIGNALS:
   void dirty();
   
 protected:
+  QGraphicsItemEdge * findRefEdge(int i);
   QPainterPath drawPainterPath(DrawingGeometry::BaseGeom *baseGeom) const;
   void drawViewPart();
   // Selection detection

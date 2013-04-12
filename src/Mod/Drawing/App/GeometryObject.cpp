@@ -66,6 +66,7 @@
 # include <BRepBuilderAPI_MakeWire.hxx>
 # include <BRepTools_WireExplorer.hxx>
 # include <ShapeFix_Wire.hxx>
+# include <BRepProj_Projection.hxx>
 
 # include <BRepAdaptor_CompCurve.hxx>
 # include <HLRBRep.hxx>
@@ -81,7 +82,10 @@
 # include <GeomConvert_BSplineCurveToBezierCurve.hxx>
 # include <GeomConvert_BSplineCurveKnotSplitting.hxx>
 # include <Geom2d_BSplineCurve.hxx>
+# include <gp_Pln.hxx>
+#include <ProjLib_Plane.hxx>
 #include <boost/graph/graph_concepts.hpp>
+#include <Geom_Line.hxx>
 #endif
 
 # include <Base/Console.h>
@@ -159,7 +163,6 @@ TopoDS_Shape GeometryObject::invertY(const TopoDS_Shape& shape)
     BRepBuilderAPI_Transform mkTrf(shape, mat);
     return mkTrf.Shape();
 }
-
 
 void GeometryObject::drawFace (const bool visible, const int typ, const int iface, Handle_HLRBRep_Data & DS, TopoDS_Shape& Result) const
 {
@@ -258,6 +261,46 @@ void GeometryObject::drawEdge(HLRBRep_EdgeData& ed, TopoDS_Shape& Result, const 
             }          
         }
     }
+}
+
+DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge, const TopoDS_Shape &support, const Base::Vector3f &direction)
+{
+    if(edge.IsNull())
+        throw Base::Exception("Projected edge is null");
+    // Inverty y function using support to calculate bounding box
+    gp_Trsf mat;
+    Bnd_Box bounds;
+    BRepBndLib::Add(support, bounds);
+    bounds.SetGap(0.0);
+    Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
+    bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+    mat.SetMirror(gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2), gp_Dir(0,1,0)));
+    BRepBuilderAPI_Transform mkTrf(edge, mat);
+
+    const TopoDS_Edge &refEdge = TopoDS::Edge(mkTrf.Shape());
+    
+    HLRBRep_Curve curve;
+    gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
+    HLRAlgo_Projector *projector = new HLRAlgo_Projector( transform );
+    curve.Projector(projector);
+    curve.Curve(refEdge);
+
+    switch(HLRBRep_BCurveTool::GetType(curve.Curve()))
+    {
+        case GeomAbs_Line: {
+          DrawingGeometry::Generic *line = new DrawingGeometry::Generic();
+
+          gp_Pnt2d pnt1 = curve.Value(curve.FirstParameter());
+          gp_Pnt2d pnt2 = curve.Value(curve.LastParameter());
+          
+          line->points.push_back(Base::Vector2D(pnt1.X(), pnt1.Y()));
+          line->points.push_back(Base::Vector2D(pnt2.X(), pnt2.Y()));
+          return line;
+        }break;
+      default: 
+        break;
+    }
+    return 0;
 }
 
 void GeometryObject::extractFaces(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType)
