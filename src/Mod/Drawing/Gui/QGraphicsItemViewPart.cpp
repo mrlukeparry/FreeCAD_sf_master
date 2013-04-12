@@ -216,7 +216,11 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
     switch(baseGeom->geomType) {
         case DrawingGeometry::CIRCLE: {
           DrawingGeometry::Circle *geom = static_cast<DrawingGeometry::Circle *>(baseGeom);
-          path.addEllipse(0 ,0, geom->radius * 2, geom->radius * 2);
+          
+          double x = geom->center.fX - geom->radius;
+          double y = geom->center.fY - geom->radius;
+          
+          path.addEllipse(x, y, geom->radius * 2, geom->radius * 2);
 
         } break;
         case DrawingGeometry::ARCOFCIRCLE: {
@@ -225,8 +229,8 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
           double startAngle = (geom->startAngle);
           double spanAngle =  (geom->endAngle - startAngle);
 
-          double x = geom->x - geom->radius;
-          double y = geom->y - geom->radius;
+          double x = geom->center.fX - geom->radius;
+          double y = geom->center.fY - geom->radius;
           
           path.arcMoveTo(x, y, geom->radius * 2, geom->radius * 2, -startAngle);
           path.arcTo(x, y, geom->radius * 2, geom->radius * 2, -startAngle, -spanAngle);
@@ -234,8 +238,8 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
         case DrawingGeometry::ELLIPSE: {
           DrawingGeometry::Ellipse *geom = static_cast<DrawingGeometry::Ellipse *>(baseGeom);
 
-          double x = geom->x - geom->radius;
-          double y = geom->y - geom->radius;
+          double x = geom->center.fX - geom->radius;
+          double y = geom->center.fY - geom->radius;
           
           path.addEllipse(x,y, geom->major * 2, geom->minor * 2);
         } break;
@@ -246,8 +250,8 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
           double spanAngle =  (startAngle - geom->endAngle);
           double endAngle = geom->endAngle;
           
-          double x = geom->x - geom->major;
-          double y = geom->y - geom->minor;
+          double x = geom->center.fX - geom->major;
+          double y = geom->center.fY - geom->minor;
           
           double maj = geom->major * 2 * cos(geom->angle * M_PI / 180);
           double min = geom->minor * 2 * sin(geom->angle * M_PI / 180);
@@ -416,7 +420,7 @@ void QGraphicsItemViewPart::drawViewPart()
           path.addEllipse(0 ,0, geom->radius * 2, geom->radius * 2);
           item->setPen(pen);
           item->setPath(path);
-          item->setPos(geom->x - geom->radius, geom->y - geom->radius);
+          item->setPos(geom->center.fX - geom->radius, geom->center.fY - geom->radius);
           
           graphicsItem = dynamic_cast<QGraphicsItem *>(item);
 
@@ -437,7 +441,7 @@ void QGraphicsItemViewPart::drawViewPart()
           item->setPen(pen);
           item->setPath(path);
 
-          item->setPos(geom->x - geom->radius, geom->y - geom->radius);
+          item->setPos(geom->center.fX - geom->radius, geom->center.fY - geom->radius);
 
         } break;
         case DrawingGeometry::ELLIPSE: {
@@ -450,7 +454,7 @@ void QGraphicsItemViewPart::drawViewPart()
           item->setPen(pen);
           item->setPath(path);
 
-          item->setPos(geom->x - geom->radius, geom->y - geom->radius);
+          item->setPos(geom->center.fX - geom->radius, geom->center.fY - geom->radius);
 
         } break;
         case DrawingGeometry::ARCOFELLIPSE: {
@@ -469,7 +473,7 @@ void QGraphicsItemViewPart::drawViewPart()
           
           item->setTransformOriginPoint(geom->major, geom->minor);
           item->setRotation(geom->angle);          
-          item->setPos(geom->x - geom->major, geom->y - geom->minor);
+          item->setPos(geom->center.fX - geom->major, geom-> center.fY - geom->minor);
           
           item->setPen(pen);
 

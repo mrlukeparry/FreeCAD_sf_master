@@ -57,22 +57,22 @@ class DrawingExport Circle: public BaseGeom
 {
 public:
   Circle(const BRepAdaptor_Curve &c);
+  Circle();
   ~Circle() {}
 public:
+  Base::Vector2D center;
   double radius;
-  double x;
-  double y;
 };
 
 class DrawingExport Ellipse: public BaseGeom
 {
 public:
   Ellipse(const BRepAdaptor_Curve &c);
+  Ellipse();
   ~Ellipse() {}
 public:
+  Base::Vector2D center;
   double radius;
-  double x;
-  double y;
   double minor;
   double major;
   double angle;
@@ -82,6 +82,7 @@ class DrawingExport AOE: public Ellipse
 {
 public:
   AOE(const BRepAdaptor_Curve &c);
+  AOE();
   ~AOE() {}
 public:
   double startAngle;
@@ -92,6 +93,7 @@ class DrawingExport AOC: public Circle
 {
 public:
   AOC(const BRepAdaptor_Curve &c);
+  AOC();
   ~AOC() {}
 public:
   double startAngle;
@@ -108,6 +110,7 @@ class DrawingExport BSpline: public BaseGeom
 {
 public:
   BSpline(const BRepAdaptor_Curve &c);
+  BSpline();
   ~BSpline(){}
 public:
   std::vector<BezierSegment> segments;

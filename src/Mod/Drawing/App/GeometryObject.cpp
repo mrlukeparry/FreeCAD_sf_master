@@ -285,6 +285,7 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
     curve.Projector(projector);
     curve.Curve(refEdge);
 
+    DrawingGeometry::BaseGeom *result = 0;
     switch(HLRBRep_BCurveTool::GetType(curve.Curve()))
     {
         case GeomAbs_Line: {
@@ -295,12 +296,74 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
           
           line->points.push_back(Base::Vector2D(pnt1.X(), pnt1.Y()));
           line->points.push_back(Base::Vector2D(pnt2.X(), pnt2.Y()));
-          return line;
+          result = line;
         }break;
-      default: 
-        break;
+     case GeomAbs_Circle: {
+          DrawingGeometry::Circle *circle = new DrawingGeometry::Circle();
+            gp_Circ2d prjCirc = curve.Circle();
+            
+            double f = curve.FirstParameter();
+            double l = curve.LastParameter();
+            gp_Pnt2d s = curve.Value(f);
+            gp_Pnt2d e = curve.Value(l);
+
+            if (fabs(l-f) > 1.0 && s.SquareDistance(e) < 0.001) {
+                  Circle *geom = new Circle();
+                  circle->radius = prjCirc.Radius();
+                  circle->center = Base::Vector2D(prjCirc.Location().X(), prjCirc.Location().Y());
+                  result = circle;
+            } else {
+                  AOC *aoc = new AOC();
+                  aoc->radius = prjCirc.Radius();
+                  aoc->center = Base::Vector2D(prjCirc.Location().X(), prjCirc.Location().Y());
+                  double ax = s.X() - aoc->center.fX;
+                  double ay = s.Y() - aoc->center.fY;
+                  double bx = e.X() - aoc->center.fX;
+                  double by = e.Y() - aoc->center.fY;
+
+                  aoc->startAngle = atan2(ay,ax);
+                  float range = atan2(-ay*bx+ax*by, ax*bx+ay*by);
+
+                  aoc->endAngle = aoc->startAngle + range;
+                  aoc->startAngle *= 180 / M_PI;
+                  aoc->endAngle   *= 180 / M_PI;
+                  result = aoc;
+            }
+          } break;
+          case GeomAbs_Ellipse: {
+            gp_Elips2d prjEllipse = curve.Ellipse();
+            
+            double f = curve.FirstParameter();
+            double l = curve.LastParameter();
+            gp_Pnt2d s = curve.Value(f);
+            gp_Pnt2d e = curve.Value(l);
+            if (fabs(l-f) > 1.0 && s.SquareDistance(e) < 0.001) {
+                  Ellipse *ellipse = new Ellipse();
+                  ellipse->major = prjEllipse.MajorRadius();
+                  ellipse->minor = prjEllipse.MinorRadius();
+                  ellipse->center = Base::Vector2D(prjEllipse.Location().X(),prjEllipse.Location().Y());
+                  result = ellipse;
+            } else {
+                  // TODO implement this correctly
+                  AOE *aoe = new AOE();
+                  aoe->major = prjEllipse.MajorRadius();
+                  aoe->minor = prjEllipse.MinorRadius();
+                  aoe->center = Base::Vector2D(prjEllipse.Location().X(),prjEllipse.Location().Y());
+                  result =  aoe;
+            }
+          } break;
+          case GeomAbs_BSplineCurve: {
+          } break;
+                
+        default: 
+          break;
     }
-    return 0;
+    
+    // Housekeeping
+    delete projector;
+    projector = 0;
+
+    return result;
 }
 
 void GeometryObject::extractFaces(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType)

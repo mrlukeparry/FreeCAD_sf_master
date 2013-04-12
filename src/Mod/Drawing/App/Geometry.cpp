@@ -106,6 +106,11 @@ Face::~Face()
     this->wires.clear();
 }
 
+Ellipse::Ellipse()
+{
+    this->geomType = ELLIPSE;
+}
+
 Ellipse::Ellipse(const BRepAdaptor_Curve& c)
 {
     this->geomType = ELLIPSE;
@@ -113,14 +118,19 @@ Ellipse::Ellipse(const BRepAdaptor_Curve& c)
     gp_Elips ellp = c.Ellipse();
     const gp_Pnt& p = ellp.Location();
 
-    this->x = p.X();
-    this->y = p.Y();
+    this->center = Base::Vector2D(p.X(),p.Y());
+
     this->major = ellp.MajorRadius();
     this->minor = ellp.MinorRadius();
 
     gp_Dir xaxis = ellp.XAxis().Direction();
     this->angle = xaxis.AngleWithRef(gp_Dir(1,0,0),gp_Dir(0,0,-1));
     this->angle *= 180 / M_PI;
+}
+
+AOE::AOE()
+{
+    this->geomType = ARCOFELLIPSE;
 }
 
 AOE::AOE(const BRepAdaptor_Curve& c) : Ellipse(c)
@@ -143,11 +153,10 @@ AOE::AOE(const BRepAdaptor_Curve& c) : Ellipse(c)
     this->startAngle = f;
     this->endAngle = l;
     
-    
-    double ax = s.X() - this->x;
-    double ay = s.Y() - this->y;
-    double bx = e.X() - this->x;
-    double by = e.Y() - this->y;
+    double ax = s.X() - this->center.fX;
+    double ay = s.Y() - this->center.fY;
+    double bx = e.X() - this->center.fX;
+    double by = e.Y() - this->center.fY;
     
     this->startAngle = f;
     float range = l-f;
@@ -158,6 +167,11 @@ AOE::AOE(const BRepAdaptor_Curve& c) : Ellipse(c)
     this->endAngle   *= 180 / M_PI;
 }
 
+Circle::Circle()
+{
+      this->geomType = CIRCLE;
+}
+
 Circle::Circle(const BRepAdaptor_Curve& c)
 {
     this->geomType = CIRCLE;
@@ -166,25 +180,30 @@ Circle::Circle(const BRepAdaptor_Curve& c)
     const gp_Pnt& p = circ.Location();
 
     this->radius = circ.Radius();
-    this->x = p.X();
-    this->y = p.Y();
+    this->center = Base::Vector2D(p.X(), p.Y());
+}
+
+AOC::AOC()
+{
+    this->geomType = ARCOFCIRCLE;
 }
 
 AOC::AOC(const BRepAdaptor_Curve& c) : Circle(c)
 {
     this->geomType = ARCOFCIRCLE;
+    
     gp_Pnt s = c.Value(c.LastParameter());
     gp_Pnt e = c.Value(c.FirstParameter());
 
-    double ax = s.X() - this->x;
-    double ay = s.Y() - this->y;
-    double bx = e.X() - this->x;
-    double by = e.Y() - this->y;
+    double ax = s.X() - this->center.fX;
+    double ay = s.Y() - this->center.fY;
+    double bx = e.X() - this->center.fX;
+    double by = e.Y() - this->center.fY;
 
     this->startAngle = atan2(ay,ax);
     float range = atan2(-ay*bx+ax*by, ax*bx+ay*by);
 
-    this->endAngle = startAngle + range;
+    this->endAngle = this->startAngle + range;
     this->startAngle *= 180 / M_PI;
     this->endAngle   *= 180 / M_PI;
 }
@@ -208,8 +227,14 @@ Generic::Generic(const BRepAdaptor_Curve& c)
     }
 }
 
+BSpline::BSpline()
+{
+    this->geomType = BSPLINE;
+}
+
 BSpline::BSpline(const BRepAdaptor_Curve& c)
 {
+    this->geomType = BSPLINE;
     Handle_Geom_BSplineCurve spline = c.BSpline();
     if (spline->Degree() > 3) {
         Standard_Real tol3D = 0.001;
@@ -262,6 +287,5 @@ BSpline::BSpline(const BRepAdaptor_Curve& c)
             }
         }
         this->segments.push_back(segment);
-    }
-    this->geomType = BSPLINE;
+    }    
 }

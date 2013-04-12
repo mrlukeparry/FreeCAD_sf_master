@@ -196,7 +196,6 @@ void QGraphicsItemViewDimension::draw()
                   Base::Vector2D pnt2 = gen->points.at(1);
                   p1 = Base::Vector3d (pnt1.fX, pnt1.fY, 0);
                   p2 = Base::Vector3d (pnt2.fX, pnt2.fY, 0);
-                  Base::Console().Log("< %f, %f> <%f, %f>", pnt1.fX, pnt1.fY, pnt2.fX, pnt2.fY);
             }
         }
         
@@ -271,26 +270,31 @@ void QGraphicsItemViewDimension::draw()
         Base::Vector3d  par3 = labelPos + dir * (w / 2 + margin);
         Base::Vector3d  par4 = p2  + norm * length;
 
-//         bool flipTriang = false;
-// 
-//         if ((par3-par1).dot(dir) > (par4 - par1).length()) {
-//             // Increase Margin to improve visability
-//             float tmpMargin = 0.08f * scaler;
-//             par3 = par4;
-//             if((par2-par1).dot(dir) > (par4 - par1).length()) {
-//                 par3 = par2;
-//                 par2 = par1 - dir * tmpMargin;
-//                 flipTriang = true;
-//             }
-//         } else if ((par2-par1).dot(dir) < 0.f) {
-//             float tmpMargin = 0.08f * scaler;
-//             par2 = par1;
-//             if((par3-par1).dot(dir) < 0.f) {
-//                 par2 = par3;
-//                 par3 = par4 + dir * tmpMargin;
-//                 flipTriang = true;
-//             }
-//         }
+        bool flipTriang = false;
+
+        Base::Vector3d del1 = (par3-par1);
+        Base::Vector3d del2 = (par2-par1);
+        float dot1 = del1.x * dir.x + del1.y * dir.y;
+        float dot2 = del2.x * dir.x + del2.y * dir.y;
+        //Compare to see if datum label is larger than dimension
+        if (dot1 > (par4 - par1).Length()) {
+            // Increase Margin to improve visability
+            float tmpMargin = 5.f * scaler;
+            par3 = par4;
+            if(dot2 > (par4 - par1).Length()) {
+                par3 = par2;
+                par2 = par1 - dir * tmpMargin;
+                flipTriang = true;
+            }
+        } else if (dot2 < 0.f) {
+            float tmpMargin = 5.f * scaler;
+            par2 = par1;
+            if(dot1 < 0.f) {
+                par2 = par3;
+                par3 = par4 + dir * tmpMargin;
+                flipTriang = true;
+            }
+        }
         
         // Perp Lines
         QPainterPath path;
