@@ -41,13 +41,19 @@ using namespace Drawing;
 
 PROPERTY_SOURCE(Drawing::FeatureViewDimension, Drawing::FeatureViewAnnotation)
 
-const char* FeatureViewDimension::TypeEnums[]= {"Distance", "DistanceX", "DistanceY", "DistanceZ",NULL};
+const char* FeatureViewDimension::TypeEnums[]= {"Distance", 
+                                                "DistanceX",
+                                                "DistanceY",
+                                                "DistanceZ",
+                                                "Radius",
+                                                "Diameter",
+                                                NULL};
 
 FeatureViewDimension::FeatureViewDimension(void) 
 {
     ADD_PROPERTY_TYPE(References,(0,0),"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Supporting References");
     ADD_PROPERTY_TYPE(Precision,(2)   ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Precision");
-    ADD_PROPERTY_TYPE(Fontsize,(12)   ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Font Size");
+    ADD_PROPERTY_TYPE(Fontsize,(6)   ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Font Size");
     Type.setEnums(TypeEnums);
     ADD_PROPERTY(Type,((long)0));
     this->measurement = new Measure::Measurement();
@@ -113,6 +119,10 @@ double FeatureViewDimension::getValue() const
     } else if(strcmp(Type.getValueAsString(), "DistanceZ") == 0){
         Base::Vector3d delta = measurement->delta();
         return delta.z;        
+    } else if(strcmp(Type.getValueAsString(), "Radius") == 0){
+        return measurement->radius();      
+    } else if(strcmp(Type.getValueAsString(), "Diameter") == 0){
+        return measurement->radius() * 2;      
     } 
     
     throw Base::Exception("Dimension Value couldn't be calculated");

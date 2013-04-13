@@ -46,9 +46,11 @@ public:
 
     ~QGraphicsItemDatumLabel() {}
     
+    void updatePos();
     enum {Type = QGraphicsItem::UserType + 107};
     int type() const { return Type;}  
-
+    double X() const { return posX; }
+    double Y() const { return posY; }
     
 Q_SIGNALS:
   void dragging();
@@ -64,6 +66,8 @@ protected:
   
 protected:
 int reference;
+double posX;
+double posY;
 
 private:
 int strokeWidth;
@@ -81,12 +85,15 @@ public:
 
     void setViewPartFeature(Drawing::FeatureViewDimension *obj);
     int type() const { return Type;}
+    
 
 Q_SIGNALS:
   void dirty();
   
 public Q_SLOTS:
-  void datumLabelDragged(void); 
+  void updateDim(void);
+  void datumLabelDragged(void);
+  void datumLabelDragFinished(void);
   
 protected:
   void draw();
