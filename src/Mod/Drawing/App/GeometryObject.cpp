@@ -902,10 +902,19 @@ int GeometryObject::calculateGeometry(const TopoDS_Shape &input, const Extractio
             }
           } break;
           case GeomAbs_BSplineCurve: {
-            BSpline *bspline = new BSpline(adapt);
-            bspline->extractType = extractionType;
-            geom.push_back(bspline);
-          } break;
+            BSpline *bspline = 0;
+            try {
+                 bspline = new BSpline(adapt);
+                  bspline->extractType = extractionType;
+                  geom.push_back(bspline);
+                  break;
+            }
+            catch (Standard_Failure) {
+                delete bspline;
+                bspline = 0; 
+                // Move onto generating a primitive
+            }          
+          } 
           default: {
             Generic *primitive = new Generic(adapt);
             primitive->extractType = extractionType;

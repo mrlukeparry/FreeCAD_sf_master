@@ -291,6 +291,8 @@ BSpline::BSpline(const BRepAdaptor_Curve& c)
             } else {
                 segment.pnts[2] = Base::Vector2D(p3.X(), p3.Y());
             }
+        } else {
+            Standard_Failure::Raise("do it the generic way");
         }
         this->segments.push_back(segment);
     }    
