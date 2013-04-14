@@ -82,7 +82,7 @@ FeatureViewPart::FeatureViewPart(void) : geometryObject(0)
     ADD_PROPERTY_TYPE(Source    ,(0),group,App::Prop_None,"Shape to view");
     ADD_PROPERTY_TYPE(ShowHiddenLines ,(false),group,App::Prop_None,"Control the appearance of the dashed hidden lines");
     ADD_PROPERTY_TYPE(ShowSmoothLines ,(false),group,App::Prop_None,"Control the appearance of the smooth lines");
-    ADD_PROPERTY_TYPE(LineWidth,(0.35f),vgroup,App::Prop_None,"The thickness of the resulting lines");
+    ADD_PROPERTY_TYPE(LineWidth,(0.5f),vgroup,App::Prop_None,"The thickness of the resulting lines");
     ADD_PROPERTY_TYPE(Tolerance,(0.05f),vgroup,App::Prop_None,"The tessellation tolerance");
     Tolerance.setConstraints(&floatRange);
     

@@ -152,7 +152,8 @@ AOE::AOE(const BRepAdaptor_Curve& c) : Ellipse(c)
 
     this->startAngle = f;
     this->endAngle = l;
-    if(a < 0) {
+    
+    if (this->startAngle > this->endAngle) {// if arc is reversed
         std::swap(this->startAngle, this->endAngle);
     }
     
@@ -195,18 +196,20 @@ AOC::AOC(const BRepAdaptor_Curve& c) : Circle(c)
 {
     this->geomType = ARCOFCIRCLE;
     
-    gp_Pnt s = c.Value(c.LastParameter());
-    gp_Pnt e = c.Value(c.FirstParameter());
+//     gp_Pnt s = c.Value(c.LastParameter());
+//     gp_Pnt e = c.Value(c.FirstParameter());
+// 
+//     double ax = s.X() - this->center.fX;
+//     double ay = s.Y() - this->center.fY;
+//     double bx = e.X() - this->center.fX;
+//     double by = e.Y() - this->center.fY;
 
-    double ax = s.X() - this->center.fX;
-    double ay = s.Y() - this->center.fY;
-    double bx = e.X() - this->center.fX;
-    double by = e.Y() - this->center.fY;
-
-    this->startAngle = atan2(ay,ax);
-    float range = atan2(-ay*bx+ax*by, ax*bx+ay*by);
-
-    this->endAngle = this->startAngle + range;
+    this->startAngle= c.FirstParameter();
+    this->endAngle = c.LastParameter();
+   
+    if (this->startAngle > this->endAngle) // if arc is reversed
+        std::swap(this->startAngle, this->endAngle);
+              
     this->startAngle *= 180 / M_PI;
     this->endAngle   *= 180 / M_PI;
 }

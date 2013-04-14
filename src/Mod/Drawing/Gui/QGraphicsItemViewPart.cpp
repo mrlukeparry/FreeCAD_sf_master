@@ -314,7 +314,7 @@ void QGraphicsItemViewPart::drawViewPart()
     float lineWidth = part->LineWidth.getValue();
 
     QPen pen;
-    pen.setWidthF((int) lineWidth);
+    pen.setWidthF(lineWidth);
     pen.setStyle(Qt::SolidLine);
           
     QGraphicsItem *graphicsItem = 0;
@@ -399,6 +399,7 @@ void QGraphicsItemViewPart::drawViewPart()
           pen.setStyle(Qt::DashLine);
       else
           pen.setStyle(Qt::SolidLine);
+      
        // Attempt to find if a previous edge exists
       QGraphicsItemEdge *item = this->findRefEdge(refs.at(i));
           
@@ -406,7 +407,6 @@ void QGraphicsItemViewPart::drawViewPart()
       
       if(!item) {
           item = new QGraphicsItemEdge(refs.at(i));
-          item->setStrokeWidth(lineWidth);
       } else {
           path = item->path();
       }
@@ -417,10 +417,9 @@ void QGraphicsItemViewPart::drawViewPart()
 
           graphicsItem = dynamic_cast<QGraphicsItem *>(item);
 
-          path.addEllipse(0 ,0, geom->radius * 2, geom->radius * 2);
+          path.addEllipse(geom->center.fX - geom->radius ,geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2);
           item->setPen(pen);
           item->setPath(path);
-          item->setPos(geom->center.fX - geom->radius, geom->center.fY - geom->radius);
           
           graphicsItem = dynamic_cast<QGraphicsItem *>(item);
 
@@ -435,13 +434,12 @@ void QGraphicsItemViewPart::drawViewPart()
           double startAngle = (geom->startAngle);
           double spanAngle =  (geom->endAngle - startAngle);
 
-          path.arcMoveTo(0, 0, geom->radius * 2, geom->radius * 2, -startAngle);
-          path.arcTo(0, 0, geom->radius * 2, geom->radius * 2, -startAngle, -spanAngle);
+          path.arcMoveTo(geom->center.fX - geom->radius, geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2, startAngle);
+          path.arcTo(geom->center.fX - geom->radius, geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2, startAngle, abs(spanAngle));
 
           item->setPen(pen);
           item->setPath(path);
 
-          item->setPos(geom->center.fX - geom->radius, geom->center.fY - geom->radius);
 
         } break;
         case DrawingGeometry::ELLIPSE: {
@@ -466,18 +464,24 @@ void QGraphicsItemViewPart::drawViewPart()
           double spanAngle =  (geom->endAngle - geom->startAngle);
           double endAngle = geom->endAngle;
 
+          
           Base::Console().Log("(C <%f, %f> rot %f, SA %f, EA %f, SA %f \n",
-          geom->center.fX - geom->major, 
-          geom-> center.fY - geom->minor,
+          geom->center.fX, 
+          geom-> center.fY,
           geom->angle, startAngle, endAngle, spanAngle);
-          path.arcMoveTo(0, 0, geom->major * 2, geom->minor * 2, startAngle);
-          path.arcTo(0, 0, geom->major * 2, geom->minor * 2, startAngle, spanAngle);
+          
+          // Create a temporary painterpath since we are applying matrix transformation
+          QPainterPath tmp;
+          tmp.arcMoveTo(-geom->major, -geom->minor, geom->major * 2, geom->minor * 2, startAngle);
+          tmp.arcTo(-geom->major,     -geom->minor, geom->major * 2, geom->minor * 2, startAngle, spanAngle);
+          
+          QMatrix mat;
+          mat.translate(+geom->center.fX, +geom->center.fY).rotate(geom->angle);
+
+          // Add path to existing
+          path.addPath(mat.map(tmp));   
+          
           item->setPath(path);
-          
-          item->setTransformOriginPoint(geom->major, geom->minor);
-          item->setRotation(geom->angle);          
-          item->setPos(geom->center.fX - geom->major, geom-> center.fY - geom->minor);
-          
           item->setPen(pen);
 
         } break;

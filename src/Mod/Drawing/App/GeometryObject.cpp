@@ -440,11 +440,6 @@ void GeometryObject::extractFaces(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
                   builder.Add(comp, edges.Current());     
                   int edgesAdded = calculateGeometry(comp, extractionType, wire->geoms);    
               }
-                     
-
-              
-              
-//               if(edgesAdded > 0)
                  myFace->wires.push_back(wire);
             }
 
@@ -636,45 +631,90 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
     
     BRep_Builder B;
     
+    std::list<int> notFound;
     /* ----------------- Extract Edges ------------------ */    
     for (int i = 1; i <= anIndices.Extent(); i++) {
-      int ie = Edges.FindIndex(anIndices(i));
-      int numGen = Edges.Extent();
-      int numOrg = anIndices.Extent();
-      if (ie != 0) {
-        
-          HLRBRep_EdgeData& ed = DS->EDataArray().ChangeValue(ie);
-          if(!ed.Used()) {           
-              if(shouldDraw(false, type, ed)) {
-                
-                  TopoDS_Shape result;
-                  B.MakeCompound(TopoDS::Compound(result));
+        int ie = Edges.FindIndex(anIndices(i));
+        if (ie != 0) {
+          
+            HLRBRep_EdgeData& ed = DS->EDataArray().ChangeValue(ie);
+            if(!ed.Used()) {           
+                if(shouldDraw(false, type, ed)) {
                   
-                  drawEdge(ed, result, visible);
-                  
-                  // Extract and Project Vertices
-                  extractVerts(myAlgo, S, ed, i, extractionType);
+                    TopoDS_Shape result;
+                    B.MakeCompound(TopoDS::Compound(result));
+                    
+                    drawEdge(ed, result, visible);
+                    
+                    // Extract and Project Vertices
+                    extractVerts(myAlgo, S, ed, i, extractionType);
 
-                  int edgesAdded = calculateGeometry(result, extractionType, edgeGeom);
+                    int edgesAdded = calculateGeometry(result, extractionType, edgeGeom);
+                    
+                    // Push the edge references 
+                    while(edgesAdded--)
+                        edgeReferences.push_back(i);                  
+                }
                   
-                  // Push the edge references 
-                  while(edgesAdded--)
-                      edgeReferences.push_back(i);                  
-              }
-                
-              ed.Used(true); 
-          }          
-      }
+                ed.Used(Standard_True); 
+            }          
+        } else {
+            notFound.push_back(i);
+        }
     }
     
+
+   
     // Add any remaining edges that couldn't be found
     HLRBRep_EdgeData* edge = &(DS->EDataArray().ChangeValue(e1 - 1));
-    int edgeIdx = -1; // Negative index for edge referencesz
-    for (int ie = e1; ie <= e2; ie++) {     
-
+    int edgeIdx = -1; // Negative index for edge references
+    for (int ie = e1; ie <= e2; ie++) {
+      // Co    
       HLRBRep_EdgeData& ed = DS->EDataArray().ChangeValue(ie);
       if (!ed.Used()) {          
           if(shouldDraw(false, type, ed)) {
+              const TopoDS_Shape &shp = Edges.FindKey(ie);
+              
+              // Compares original shape to see if match
+//               if(!shp.IsNull()) {
+//                   const TopoDS_Edge& edge = TopoDS::Edge(shp);
+//                   BRepAdaptor_Curve adapt1(edge);
+//                   for (std::list<int>::iterator it= notFound.begin(); it!= notFound.end(); ++it){
+//                       BRepAdaptor_Curve adapt2(TopoDS::Edge(anIndices(*it)));
+//                       if(adapt1.GetType() == adapt2.GetType()) {
+// 
+//                           if(adapt1.GetType() == GeomAbs_Circle) {
+//                               
+//                                   gp_Circ circ1 = adapt1.Circle();
+//                                   gp_Circ circ2 = adapt2.Circle();
+//                                   
+//                                   const gp_Pnt& p = circ1.Location();
+//                                   const gp_Pnt& p2 = circ2.Location();
+// 
+//                                   double radius1 = circ1.Radius();
+//                                   double radius2 = circ2.Radius();
+//                                   double f1 = adapt1.FirstParameter();
+//                                   double f2 = adapt2.FirstParameter();
+//                                   double l1 = adapt1.LastParameter();
+//                                   double l2 = adapt1.LastParameter();
+//                                   if(
+//                                   p.IsEqual(p2,Precision::Confusion()) &&
+//                                   f2-f1 < Precision::Confusion() &&
+//                                   radius2 - radius1 < Precision::Confusion()) {
+//                                       edgeIdx = *it;
+//                                       notFound.erase(it);
+//                                       break;
+//                                   }
+// //                                   Base::Console().Log("ie %i Circle1 (%f, %f, %f, %f), Circle2: (%f, %f, %f, %f)\n", *it,
+// //                                     p.X(), p.Y(), p.Z(), radius1,
+// //                                     p2.X(), p2.Y(), p2.Z(), radius2
+// //                                   );
+//          
+//                           }
+//                       }
+//                   }
+//               }
+              
               TopoDS_Shape result;
               B.MakeCompound(TopoDS::Compound(result));
               
