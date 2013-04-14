@@ -256,8 +256,8 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
           double maj = geom->major * 2 * cos(geom->angle * M_PI / 180);
           double min = geom->minor * 2 * sin(geom->angle * M_PI / 180);
 
-          path.arcMoveTo(x, y, maj, min, -startAngle);
-          path.arcTo(x, y, maj, min, -startAngle, spanAngle);
+          path.arcMoveTo(x, y, maj, min, startAngle);
+          path.arcTo(x, y, maj, min, startAngle, spanAngle);
 
         } break;
         case DrawingGeometry::BSPLINE: {
@@ -463,12 +463,15 @@ void QGraphicsItemViewPart::drawViewPart()
           graphicsItem = dynamic_cast<QGraphicsItem *>(item);
 
           double startAngle = (geom->startAngle);
-          double spanAngle =  (startAngle - geom->endAngle);
+          double spanAngle =  (geom->endAngle - geom->startAngle);
           double endAngle = geom->endAngle;
 
-          Base::Console().Log("SA %f, EA %f, SA %f \n", -startAngle, endAngle, spanAngle);
-          path.arcMoveTo(0, 0, geom->major * 2, geom->minor * 2, -startAngle);
-          path.arcTo(0, 0, geom->major * 2, geom->minor * 2, -startAngle, spanAngle);
+          Base::Console().Log("(C <%f, %f> rot %f, SA %f, EA %f, SA %f \n",
+          geom->center.fX - geom->major, 
+          geom-> center.fY - geom->minor,
+          geom->angle, startAngle, endAngle, spanAngle);
+          path.arcMoveTo(0, 0, geom->major * 2, geom->minor * 2, startAngle);
+          path.arcTo(0, 0, geom->major * 2, geom->minor * 2, startAngle, spanAngle);
           item->setPath(path);
           
           item->setTransformOriginPoint(geom->major, geom->minor);

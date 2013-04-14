@@ -152,16 +152,19 @@ AOE::AOE(const BRepAdaptor_Curve& c) : Ellipse(c)
 
     this->startAngle = f;
     this->endAngle = l;
+    if(a < 0) {
+        std::swap(this->startAngle, this->endAngle);
+    }
     
-    double ax = s.X() - this->center.fX;
-    double ay = s.Y() - this->center.fY;
-    double bx = e.X() - this->center.fX;
-    double by = e.Y() - this->center.fY;
+//     double ax = s.X() - this->center.fX;
+//     double ay = s.Y() - this->center.fY;
+//     double bx = e.X() - this->center.fX;
+//     double by = e.Y() - this->center.fY;
     
-    this->startAngle = f;
-    float range = l-f;
-
-    this->endAngle = startAngle + range;
+//     this->startAngle = f;
+//     float range = l-f;
+// 
+//     this->endAngle = startAngle + range;
 
     this->startAngle *= 180 / M_PI;
     this->endAngle   *= 180 / M_PI;

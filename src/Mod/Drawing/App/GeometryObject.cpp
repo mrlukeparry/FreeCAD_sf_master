@@ -337,6 +337,7 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
             double l = curve.LastParameter();
             gp_Pnt2d s = curve.Value(f);
             gp_Pnt2d e = curve.Value(l);
+
             if (fabs(l-f) > 1.0 && s.SquareDistance(e) < 0.001) {
                   Ellipse *ellipse = new Ellipse();
                   ellipse->major = prjEllipse.MajorRadius();
@@ -506,6 +507,7 @@ void GeometryObject::extractVerts(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, H
     Base::Console().Log("Num Vertices: %i",  anvIndices.Extent());
     Base::Console().Log("Num edges: %i",  anIndices.Extent());
     
+    int edgeNum = anIndices.Extent();
     // Load the edge
     if(ie < 0) {
       
@@ -637,7 +639,8 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
     /* ----------------- Extract Edges ------------------ */    
     for (int i = 1; i <= anIndices.Extent(); i++) {
       int ie = Edges.FindIndex(anIndices(i));
-      
+      int numGen = Edges.Extent();
+      int numOrg = anIndices.Extent();
       if (ie != 0) {
         
           HLRBRep_EdgeData& ed = DS->EDataArray().ChangeValue(ie);
@@ -650,13 +653,13 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
                   drawEdge(ed, result, visible);
                   
                   // Extract and Project Vertices
-                  extractVerts(myAlgo, S, ed, ie, extractionType);
+                  extractVerts(myAlgo, S, ed, i, extractionType);
 
                   int edgesAdded = calculateGeometry(result, extractionType, edgeGeom);
                   
                   // Push the edge references 
                   while(edgesAdded--)
-                      edgeReferences.push_back(ie);                  
+                      edgeReferences.push_back(i);                  
               }
                 
               ed.Used(true); 
