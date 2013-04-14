@@ -263,6 +263,33 @@ void GeometryObject::drawEdge(HLRBRep_EdgeData& ed, TopoDS_Shape& Result, const 
     }
 }
 
+DrawingGeometry::Vertex * GeometryObject::projectVertex(const TopoDS_Shape &vert, const TopoDS_Shape &support, const Base::Vector3f &direction)
+{
+    if(vert.IsNull())
+        throw Base::Exception("Projected edge is null");
+    // Inverty y function using support to calculate bounding box
+    gp_Trsf mat;
+    Bnd_Box bounds;
+    BRepBndLib::Add(support, bounds);
+    bounds.SetGap(0.0);
+    Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
+    bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+    mat.SetMirror(gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2), gp_Dir(0,1,0)));
+    BRepBuilderAPI_Transform mkTrf(vert, mat);
+
+    const TopoDS_Vertex &refVert = TopoDS::Vertex(mkTrf.Shape());
+    
+    gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
+    HLRAlgo_Projector projector = HLRAlgo_Projector( transform );
+    projector.Scaled(true);
+    
+    // If the index was found and is unique, the point is projected using the HLR Projector Algorithm
+    gp_Pnt2d prjPnt;
+    projector.Project(BRep_Tool::Pnt(refVert), prjPnt);
+    DrawingGeometry::Vertex *myVert = new Vertex(prjPnt.X(), prjPnt.Y());
+    return myVert;
+}
+
 DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge, const TopoDS_Shape &support, const Base::Vector3f &direction)
 {
     if(edge.IsNull())

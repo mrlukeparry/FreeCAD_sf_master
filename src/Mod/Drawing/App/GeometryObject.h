@@ -60,6 +60,8 @@ public:
     const std::vector<int> & getFaceRefs() const { return faceReferences; };
     
     DrawingGeometry::BaseGeom * projectEdge(const TopoDS_Shape &edge, const TopoDS_Shape &support, const Base::Vector3f &direction);
+    DrawingGeometry::Vertex   * projectVertex(const TopoDS_Shape &vert, const TopoDS_Shape &support, const Base::Vector3f &direction);
+    
     void extractGeometry(const TopoDS_Shape &input,const Base::Vector3f &direction);
 
 protected:

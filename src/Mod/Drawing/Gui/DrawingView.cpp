@@ -293,6 +293,7 @@ void DrawingView::preSelectionChanged(const QPoint &pos)
     
     // Check if an edge was preselected
     QGraphicsItemEdge *edge = qobject_cast<QGraphicsItemEdge *>(obj);
+    QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(obj);
     if(edge) {
       
         // Find the parent view that this edges is contained within
@@ -315,6 +316,26 @@ void DrawingView::preSelectionChanged(const QPoint &pos)
                                      ,pos.y()
                                      ,0);
 
+    } else if(vert) {
+              // Find the parent view that this edges is contained within
+        QGraphicsItem *parent = vert->parentItem();
+        if(!parent)
+            return;
+        
+        QGraphicsItemView *viewItem = dynamic_cast<QGraphicsItemView *>(parent);
+        if(!viewItem)
+          return;
+            
+        Drawing::FeatureView *viewObj = viewItem->getViewObject();
+        std::stringstream ss;
+        ss << "Edge" << vert->getReference();
+        bool accepted =
+        Gui::Selection().setPreselect(viewObj->getDocument()->getName()
+                                     ,viewObj->getNameInDocument()
+                                     ,ss.str().c_str()
+                                     ,pos.x()
+                                     ,pos.y()
+                                     ,0);
     } else {
             // Check if an edge was preselected
         QGraphicsItemView *view = qobject_cast<QGraphicsItemView *>(obj);
@@ -362,9 +383,52 @@ void DrawingView::selectionChanged()
                 Gui::Selection().addSelection(viewObj->getDocument()->getName()
                                             ,viewObj->getNameInDocument()
                                             ,ss.str().c_str());
+            }
+            
+            QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
+            if(vert) {
+              // Find the parent view that this edges is contained within
+                QGraphicsItem *parent = vert->parentItem();
+                if(!parent)
+                    return;
+                
+                QGraphicsItemView *viewItem = dynamic_cast<QGraphicsItemView *>(parent);
+                if(!viewItem)
+                  return;
+                    
+                Drawing::FeatureView *viewObj = viewItem->getViewObject();
+        
+                std::stringstream ss;
+                ss << "Vertex" << vert->getReference();
+                bool accepted =
+                Gui::Selection().addSelection(viewObj->getDocument()->getName()
+                                            ,viewObj->getNameInDocument()
+                                            ,ss.str().c_str());
+                
+            }
+            
+            QGraphicsItemDatumLabel *dimLabel = dynamic_cast<QGraphicsItemDatumLabel*>(*it);
+            if(dimLabel) {
+                // Find the parent view (dimLabel->dim->view)
 
+                QGraphicsItem *dimParent = dimLabel->parentItem();
+                
+                if(!dimParent)
+                    return;
+                
+                QGraphicsItemView *dimItem = dynamic_cast<QGraphicsItemView *>(dimParent); 
+                
+                if(!dimItem)
+                  return;
+
+                Drawing::FeatureView *dimObj = dimItem->getViewObject();
+        
+                bool accepted =
+                Gui::Selection().addSelection(dimObj->getDocument()->getName(),dimObj->getNameInDocument());
+                
             }
             continue;
+            
         }        
         
         Drawing::FeatureView *viewObj = itemView->getViewObject();

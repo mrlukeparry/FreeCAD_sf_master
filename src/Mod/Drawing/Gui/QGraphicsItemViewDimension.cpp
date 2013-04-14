@@ -239,9 +239,33 @@ void QGraphicsItemViewDimension::draw()
                   Base::Vector2D pnt2 = gen->points.at(1);
                   p1 = Base::Vector3d (pnt1.fX, pnt1.fY, 0);
                   p2 = Base::Vector3d (pnt2.fX, pnt2.fY, 0);
+                  
             } else {
+                delete geom;
                 throw Base::Exception("Original edge not found or is invalid type");
             }
+            
+            // Finished with geomtry so do housekeeping
+            delete geom;
+            geom = 0;
+            
+        } else if(dim->References.getValues().size() == 2 && 
+                  SubNames[0].substr(0,6) == "Vertex" &&
+                  SubNames[1].substr(0,6) == "Vertex") { 
+            // Point to Point Dimension
+            const Drawing::FeatureViewPart *refObj = static_cast<const Drawing::FeatureViewPart*>(objects[0]);
+            int idx = std::atoi(SubNames[0].substr(6,4000).c_str());
+            int idx2 = std::atoi(SubNames[1].substr(6,4000).c_str());
+        
+            DrawingGeometry::Vertex *v1 = refObj->getVertex(idx);
+            DrawingGeometry::Vertex *v2 = refObj->getVertex(idx2);
+            p1 = Base::Vector3d (v1->pnt.fX, v1->pnt.fY, 0);
+            p2 = Base::Vector3d (v2->pnt.fX, v2->pnt.fY, 0);
+            
+            // Do some house keeping
+            delete v1; v1 = 0;
+            delete v2; v2 = 0;
+            
         } else {
             throw Base::Exception("Invalid reference for dimension type");
         }

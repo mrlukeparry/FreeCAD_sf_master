@@ -140,15 +140,8 @@ DrawingGeometry::BaseGeom *FeatureViewPart::getCompleteEdge(int idx) const
    //## Get the Part Link ##/
     App::DocumentObject* link = Source.getValue();
     
-    if (!link)
+    if (!link || !link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
         return 0;
-    
-    if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
-        return 0;
-    
-    // Collect all edges associated with edge reference idx
-    const std::vector<int> refs = geometryObject->getEdgeRefs();
-    const std::vector<DrawingGeometry::BaseGeom  *> geoms = geometryObject->getEdgeGeometry();
     
     const Part::TopoShape &topoShape = static_cast<Part::Feature*>(link)->Shape.getShape();
     std::stringstream str;
@@ -156,7 +149,25 @@ DrawingGeometry::BaseGeom *FeatureViewPart::getCompleteEdge(int idx) const
     TopoDS_Shape shape = topoShape.getSubShape(str.str().c_str());
 
     DrawingGeometry::BaseGeom *prjShape = geometryObject->projectEdge(shape, static_cast<Part::Feature*>(link)->Shape.getValue(), Direction.getValue());
-    int i;
+
+    return prjShape;
+}
+
+DrawingGeometry::Vertex * FeatureViewPart::getVertex(int idx) const
+{
+   //## Get the Part Link ##/
+    App::DocumentObject* link = Source.getValue();
+    
+    if (!link || !link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
+        return 0;
+    
+    const Part::TopoShape &topoShape = static_cast<Part::Feature*>(link)->Shape.getShape();
+    std::stringstream str;
+    str << "Vertex" << idx;
+    TopoDS_Shape shape = topoShape.getSubShape(str.str().c_str());
+
+    DrawingGeometry::Vertex *prjShape = geometryObject->projectVertex(shape, static_cast<Part::Feature*>(link)->Shape.getValue(), Direction.getValue());
+
     return prjShape;
 }
 

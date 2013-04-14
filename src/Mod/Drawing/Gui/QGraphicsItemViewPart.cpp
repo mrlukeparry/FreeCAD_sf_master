@@ -166,13 +166,13 @@ QVariant QGraphicsItemVertex::itemChange(GraphicsItemChange change, const QVaria
     if (change == ItemSelectedHasChanged && scene()) {
         // value is the new position.
         if(isSelected()) {
-          QPen pen = this->pen();
-          pen.setColor(Qt::blue);
-          this->setPen(pen);
+          QBrush brush = this->brush();
+          brush.setColor(Qt::blue);
+          this->setBrush(brush);
         } else {
-          QPen pen = this->pen();
-          pen.setColor(Qt::black);
-          this->setPen(pen);
+          QBrush brush = this->brush();
+          brush.setColor(Qt::black);
+          this->setBrush(brush);
         }
         update();
     }
@@ -181,9 +181,9 @@ QVariant QGraphicsItemVertex::itemChange(GraphicsItemChange change, const QVaria
  
 void QGraphicsItemVertex::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
-    QPen pen = this->pen();
-    pen.setColor(Qt::blue);
-    this->setPen(pen);
+    QBrush brush = this->brush();
+    brush.setColor(Qt::blue);
+    this->setBrush(brush);
     update();
 }
 
@@ -193,9 +193,9 @@ void QGraphicsItemVertex::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
     assert(view != 0);
     
     if(!isSelected() && !view->isSelected()) {
-        QPen pen = this->pen();
-        pen.setColor(Qt::black);
-        this->setPen(pen);
+          QBrush brush = this->brush();
+          brush.setColor(Qt::black);
+          this->setBrush(brush);
         update();
     }
 }
@@ -363,30 +363,7 @@ void QGraphicsItemViewPart::drawViewPart()
 #endif
 
     graphicsItem = 0;
-    // Draw Vertexs:
-    const std::vector<DrawingGeometry::Vertex *> &verts = part->getVertexGeometry();
-    const std::vector<int> &vertRefs = part->getVertexReferences();
-    
-    std::vector<DrawingGeometry::Vertex *>::const_iterator vert = verts.begin();
-    
-     // iterate through all the geometries
-    for(int i = 0 ; vert != verts.end(); ++vert, i++) {
-          DrawingGeometry::Vertex *myVertex = *vert;
-          QGraphicsItemVertex *item = new QGraphicsItemVertex(i);
-          QPainterPath path;
-          QBrush faceBrush(QBrush(QColor(0,0,255,255)));
-        
-          item->setBrush(faceBrush);
-          path.addEllipse(0 ,0, 4, 4);
-          item->setPath(path);
-          item->setPos(myVertex->pnt.fX - 2, myVertex->pnt.fY - 2);
-          
-          graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-          this->addToGroup(graphicsItem);
-    }
-    
-    graphicsItem = 0;
-        
+
     // Draw Edges
     const std::vector<DrawingGeometry::BaseGeom *> &geoms = part->getEdgeGeometry();
     const std::vector<int> &refs = part->getEdgeReferences();
@@ -548,6 +525,28 @@ void QGraphicsItemViewPart::drawViewPart()
           this->addToGroup(graphicsItem);
           graphicsItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
       }
+    }
+    
+    graphicsItem = 0;
+    // Draw Vertexs:
+    const std::vector<DrawingGeometry::Vertex *> &verts = part->getVertexGeometry();
+    const std::vector<int> &vertRefs = part->getVertexReferences();
+    
+    std::vector<DrawingGeometry::Vertex *>::const_iterator vert = verts.begin();
+    
+    QBrush vertBrush(QBrush(QColor(0,0,0,255)));        
+          
+     // iterate through all the geometries
+    for(int i = 0 ; vert != verts.end(); ++vert, i++) {
+          DrawingGeometry::Vertex *myVertex = *vert;
+          QGraphicsItemVertex *item = new QGraphicsItemVertex(vertRefs.at(i));
+          QPainterPath path;
+          item->setBrush(vertBrush);
+          path.addEllipse(0 ,0, 1, 1);
+          item->setPath(path);
+          item->setPos(myVertex->pnt.fX - 0.5, myVertex->pnt.fY - 0.5);
+          item->setFlag(QGraphicsItem::ItemIsSelectable, true);
+          this->addToGroup(item);
     }
 }
 
