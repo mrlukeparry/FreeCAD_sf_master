@@ -83,6 +83,7 @@ CanvasView::CanvasView(QWidget *parent)
     setTransformationAnchor(AnchorUnderMouse);
 //     setDragMode(ScrollHandDrag);
 
+    setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
     // Prepare background check-board pattern
     QPixmap tilePixmap(64, 64);
     tilePixmap.fill(Qt::white);

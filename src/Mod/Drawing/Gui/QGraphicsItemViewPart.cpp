@@ -62,13 +62,13 @@ QVariant QGraphicsItemEdge::itemChange(GraphicsItemChange change, const QVariant
     if (change == ItemSelectedHasChanged && scene()) {
         // value is the new position.
         if(isSelected()) {
-          QPen pen = this->pen();
-          pen.setColor(Qt::blue);
-          this->setPen(pen);
+            QPen pen = this->pen();
+            pen.setColor(Qt::blue);
+            this->setPen(pen);
         } else {
-          QPen pen = this->pen();
-          pen.setColor(Qt::black);
-          this->setPen(pen);
+            QPen pen = this->pen();
+            pen.setColor(Qt::black);
+            this->setPen(pen);
         }
         update();
     }
@@ -96,6 +96,13 @@ void QGraphicsItemEdge::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
     }
 }
 
+void QGraphicsItemEdge::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    QStyleOptionGraphicsItem myOption(*option);
+    myOption.state &= ~QStyle::State_Selected;
+    QGraphicsPathItem::paint(painter, &myOption, widget);
+}
+
 // QGraphicsView - Face Features
 
 QGraphicsItemFace::QGraphicsItemFace(int ref, QGraphicsScene *scene  ) : reference(ref) 
@@ -111,13 +118,13 @@ QVariant QGraphicsItemFace::itemChange(GraphicsItemChange change, const QVariant
     if (change == ItemSelectedHasChanged && scene()) {
         // value is the new position.
         if(isSelected()) {
-          QPen pen = this->pen();
-          pen.setColor(Qt::blue);
-          this->setPen(pen);
+            QPen pen = this->pen();
+            pen.setColor(Qt::blue);
+            this->setPen(pen);
         } else {
-          QPen pen = this->pen();
-          pen.setColor(Qt::gray);
-          this->setPen(pen);
+            QPen pen = this->pen();
+            pen.setColor(Qt::gray);
+            this->setPen(pen);
         }
         update();
     }
@@ -166,13 +173,13 @@ QVariant QGraphicsItemVertex::itemChange(GraphicsItemChange change, const QVaria
     if (change == ItemSelectedHasChanged && scene()) {
         // value is the new position.
         if(isSelected()) {
-          QBrush brush = this->brush();
-          brush.setColor(Qt::blue);
-          this->setBrush(brush);
+            QBrush brush = this->brush();
+            brush.setColor(Qt::blue);
+            this->setBrush(brush);
         } else {
-          QBrush brush = this->brush();
-          brush.setColor(Qt::black);
-          this->setBrush(brush);
+            QBrush brush = this->brush();
+            brush.setColor(Qt::black);
+            this->setBrush(brush);
         }
         update();
     }
@@ -199,6 +206,15 @@ void QGraphicsItemVertex::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
         update();
     }
 }
+
+void QGraphicsItemVertex::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    QStyleOptionGraphicsItem myOption(*option);
+    myOption.state &= ~QStyle::State_Selected;
+    QGraphicsPathItem::paint(painter, &myOption, widget);
+}
+
+// ########## QGraphic Item Part #############
 
 QGraphicsItemViewPart::QGraphicsItemViewPart(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemView(pos, scene)                 
 {
@@ -577,12 +593,15 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
           for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
 
               QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+              QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
               if(edge) {
                   QPen pen = edge->pen();
                   pen.setColor(color);
                   edge->setPen(pen);
-              } else {
-                  QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
+              } else if(vert){
+                  QBrush brush = vert->brush();
+                  brush.setColor(color);
+                  vert->setBrush(brush);
               }
           }
           
@@ -605,6 +624,13 @@ void QGraphicsItemViewPart::setViewPartFeature(Drawing::FeatureViewPart *obj)
     this->setPos(x, y);
     this->setScale(scale);
     Q_EMIT dirty();
+}
+
+void QGraphicsItemViewPart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    QStyleOptionGraphicsItem myOption(*option);
+    myOption.state &= ~QStyle::State_Selected;
+    QGraphicsItemView::paint(painter, &myOption, widget);
 }
 
 #include "moc_QGraphicsItemViewPart.cpp"

@@ -23,9 +23,11 @@
 #ifndef DRAWINGGUI_QGRAPHICSITEMVIEWPART_H
 #define DRAWINGGUI_QGRAPHICSITEMVIEWPART_H
 
-#include <QObject>
-#include <QGraphicsView>
-#include "QGraphicsItemView.h"
+# include <QObject>
+# include <QGraphicsView>
+# include <QPainter>
+# include <QStyleOptionGraphicsItem>
+# include "QGraphicsItemView.h"
 
 namespace Drawing {
 class FeatureViewPart;
@@ -52,6 +54,8 @@ public:
     int type() const { return Type;}  
     int getReference() const { return reference; }
     void setStrokeWidth(int width) { this->strokeWidth = width; }
+    
+    virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
     
 protected:
     // Preselection events:
@@ -111,7 +115,7 @@ public:
     int type() const { return Type;}  
     int getReference() const { return reference; } 
     void setStrokeWidth(int width) { this->strokeWidth = width; }
-    
+    virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
 protected:
     // Preselection events:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
@@ -139,6 +143,7 @@ public:
 
     void setViewPartFeature(Drawing::FeatureViewPart *obj);
     int type() const { return Type;}
+    virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
 
 Q_SIGNALS:
   void dirty();

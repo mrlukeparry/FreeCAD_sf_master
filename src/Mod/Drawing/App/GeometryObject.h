@@ -66,6 +66,7 @@ public:
 
 protected:
     bool shouldDraw(const bool inFace, const int typ,HLRBRep_EdgeData& ed);
+    bool isSameCurve(const BRepAdaptor_Curve &c1, const BRepAdaptor_Curve &c2) const;
   
     // Reimplements HLRBRep Drawing Algorithms to satisfy Drawing Workbench requirements
     void drawFace(const bool visible, const int typ, const int iface, Handle_HLRBRep_Data & DS, TopoDS_Shape& Result) const;

@@ -702,45 +702,19 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
           if(shouldDraw(false, type, ed)) {
               const TopoDS_Shape &shp = Edges.FindKey(ie);
               
-              // Compares original shape to see if match
-//               if(!shp.IsNull()) {
-//                   const TopoDS_Edge& edge = TopoDS::Edge(shp);
-//                   BRepAdaptor_Curve adapt1(edge);
-//                   for (std::list<int>::iterator it= notFound.begin(); it!= notFound.end(); ++it){
-//                       BRepAdaptor_Curve adapt2(TopoDS::Edge(anIndices(*it)));
-//                       if(adapt1.GetType() == adapt2.GetType()) {
-// 
-//                           if(adapt1.GetType() == GeomAbs_Circle) {
-//                               
-//                                   gp_Circ circ1 = adapt1.Circle();
-//                                   gp_Circ circ2 = adapt2.Circle();
-//                                   
-//                                   const gp_Pnt& p = circ1.Location();
-//                                   const gp_Pnt& p2 = circ2.Location();
-// 
-//                                   double radius1 = circ1.Radius();
-//                                   double radius2 = circ2.Radius();
-//                                   double f1 = adapt1.FirstParameter();
-//                                   double f2 = adapt2.FirstParameter();
-//                                   double l1 = adapt1.LastParameter();
-//                                   double l2 = adapt1.LastParameter();
-//                                   if(
-//                                   p.IsEqual(p2,Precision::Confusion()) &&
-//                                   f2-f1 < Precision::Confusion() &&
-//                                   radius2 - radius1 < Precision::Confusion()) {
-//                                       edgeIdx = *it;
-//                                       notFound.erase(it);
-//                                       break;
-//                                   }
-// //                                   Base::Console().Log("ie %i Circle1 (%f, %f, %f, %f), Circle2: (%f, %f, %f, %f)\n", *it,
-// //                                     p.X(), p.Y(), p.Z(), radius1,
-// //                                     p2.X(), p2.Y(), p2.Z(), radius2
-// //                                   );
-//          
-//                           }
-//                       }
-//                   }
-//               }
+              //Compares original shape to see if match
+              if(!shp.IsNull()) {
+                  const TopoDS_Edge& edge = TopoDS::Edge(shp);
+                  BRepAdaptor_Curve adapt1(edge);
+                  for (std::list<int>::iterator it= notFound.begin(); it!= notFound.end(); ++it){
+                      BRepAdaptor_Curve adapt2(TopoDS::Edge(anIndices(*it)));
+                      if(isSameCurve(adapt1, adapt2)) {
+                          edgeIdx = *it;
+                          notFound.erase(it);
+                          break;
+                      }
+                  }
+              }
               
               TopoDS_Shape result;
               B.MakeCompound(TopoDS::Compound(result));
@@ -757,6 +731,38 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
     }
 
     DS->Projector().Scaled(false);
+}
+
+bool GeometryObject::isSameCurve(const BRepAdaptor_Curve &c1, const BRepAdaptor_Curve &c2) const 
+{
+    if(c1.GetType() != c2.GetType())
+        return false;
+    
+    switch(c1.GetType()) {
+      case GeomAbs_Circle: {
+          
+              gp_Circ circ1 = c1.Circle();
+              gp_Circ circ2 = c2.Circle();
+              
+              const gp_Pnt& p = circ1.Location();
+              const gp_Pnt& p2 = circ2.Location();
+
+              double radius1 = circ1.Radius();
+              double radius2 = circ2.Radius();
+              double f1 = c1.FirstParameter();
+              double f2 = c2.FirstParameter();
+              double l1 = c1.LastParameter();
+              double l2 = c1.LastParameter();
+              if( p.IsEqual(p2,Precision::Confusion()) &&
+              f2-f1 < Precision::Confusion() &&
+              radius2 - radius1 < Precision::Confusion()) {
+                  return true;
+              }
+      } break;
+      default: break;
+    }
+      
+    return false;
 }
 
 void GeometryObject::createWire(const TopoDS_Shape &input, std::list<TopoDS_Wire> &wires) const

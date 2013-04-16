@@ -25,6 +25,7 @@
 
 #include <QObject>
 #include <QGraphicsView>
+#include <QStyleOptionGraphicsItem>
 #include "QGraphicsItemView.h"
 
 namespace Drawing {
@@ -52,8 +53,12 @@ public:
     double X() const { return posX; }
     double Y() const { return posY; }
     
+    virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
+    
 Q_SIGNALS:
   void dragging();
+  void hover(bool state);
+  void selected(bool state);
   void dragFinished();
 
 protected:
@@ -86,21 +91,26 @@ public:
     void setViewPartFeature(Drawing::FeatureViewDimension *obj);
     int type() const { return Type;}
     
-
 Q_SIGNALS:
   void dirty();
   
 public Q_SLOTS:
-  void updateDim(void);
   void datumLabelDragged(void);
   void datumLabelDragFinished(void);
+  void select(bool state);
+  void hover(bool state);
+  void updateDim(void);
   
 protected:
   void draw();
+  
+    // Selection detection
+  virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+  
+  bool hasHover;
   QGraphicsItem *datumLabel;
   QGraphicsItem *arrows;
-  // Selection detection
-  virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+  QPen pen;
 };
 
 } // namespace DrawingViewGui

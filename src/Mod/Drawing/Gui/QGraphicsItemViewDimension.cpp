@@ -77,9 +77,11 @@ QVariant QGraphicsItemDatumLabel::itemChange(GraphicsItemChange change, const QV
     if (change == ItemSelectedHasChanged && scene()) {
         // value is the new position.
         if(isSelected()) {
-          this->setDefaultTextColor(Qt::blue); 
+            Q_EMIT selected(true);
+            this->setDefaultTextColor(Qt::blue); 
         } else {
-          this->setDefaultTextColor(Qt::black);
+            Q_EMIT selected(false);
+            this->setDefaultTextColor(Qt::black);
         }
         update();
     } else if(change == ItemPositionHasChanged && scene()) {
@@ -97,6 +99,7 @@ void QGraphicsItemDatumLabel::updatePos()
 
 void QGraphicsItemDatumLabel::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
+    Q_EMIT hover(true);
     this->setDefaultTextColor(Qt::blue);
     update();
 }
@@ -106,6 +109,7 @@ void QGraphicsItemDatumLabel::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
     QGraphicsItemView *view = dynamic_cast<QGraphicsItemView *> (this->parentItem());
     assert(view != 0);
     
+    Q_EMIT hover(false);
     if(!isSelected() && !view->isSelected()) {
         this->setDefaultTextColor(Qt::black);
         update();
@@ -118,6 +122,13 @@ void QGraphicsItemDatumLabel::mouseReleaseEvent( QGraphicsSceneMouseEvent * even
         Q_EMIT dragFinished();
     }
     QGraphicsItem::mouseReleaseEvent(event);   
+}
+
+void QGraphicsItemDatumLabel::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    QStyleOptionGraphicsItem myOption(*option);
+    myOption.state &= ~QStyle::State_Selected;
+    QGraphicsTextItem::paint(painter, &myOption, widget);
 }
 
 QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemView(pos, scene)                 
@@ -137,6 +148,14 @@ QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraph
         dLabel  , SIGNAL(dragFinished()),
         this    , SLOT  (datumLabelDragFinished()));
     
+    QObject::connect(
+        dLabel  , SIGNAL(selected(bool)),
+        this    , SLOT  (select(bool)));
+    
+    QObject::connect(
+        dLabel  , SIGNAL(hover(bool)),
+        this    , SLOT  (hover(bool)));
+    
     this->arrows  = arrws;    
     this->datumLabel = dLabel;
     
@@ -147,6 +166,18 @@ QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraph
 QGraphicsItemViewDimension::~QGraphicsItemViewDimension()
 {
     
+}
+
+void QGraphicsItemViewDimension::select(bool state)
+{
+   this->setSelected(state);
+   draw();
+}
+
+void QGraphicsItemViewDimension::hover(bool state)
+{
+    this->hasHover = state;
+    draw();
 }
 
 void QGraphicsItemViewDimension::updateDim()
@@ -211,9 +242,15 @@ void QGraphicsItemViewDimension::draw()
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->viewObject);
     QGraphicsItemDatumLabel *lbl = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
     
-    QPen pen;
-    pen.setWidthF((int) 1);
+    this->pen.setWidthF((int) 1);
     pen.setStyle(Qt::SolidLine);
+    
+    // Crude method of determining state [TODO] improve
+    if(this->isSelected() || this->hasHover) {
+        pen.setColor(QColor(Qt::blue));
+    } else {
+        pen.setColor(QColor(Qt::black));
+    }
     
     QString str = lbl->toPlainText();
     //Relcalculate the measurement based on references stored.  
