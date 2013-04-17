@@ -152,8 +152,14 @@ protected:
   QGraphicsItemEdge * findRefEdge(int i);
   QPainterPath drawPainterPath(DrawingGeometry::BaseGeom *baseGeom) const;
   void drawViewPart();
+  void drawBorder(QPainter *painter);
+  virtual QPainterPath  shape () const;
+  virtual QRectF boundingRect() const; 
   // Selection detection
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+  void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
+  void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
+  QPen pen;
 };
 
 } // namespace DrawingViewGui

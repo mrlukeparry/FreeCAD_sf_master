@@ -46,11 +46,11 @@ using namespace DrawingGui;
 
 QGraphicsItemView::QGraphicsItemView(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemGroup(),viewObject(0)                 
 {
-    this->setFlags(QGraphicsItem::ItemIsSelectable |
+    this->setFlags(QGraphicsItem::ItemIsSelectable/* |
               QGraphicsItem::ItemSendsGeometryChanges |
               QGraphicsItem::ItemIsMovable |
               QGraphicsItem::ItemIsFocusable |
-              QGraphicsItem::ItemSendsGeometryChanges);
+              QGraphicsItem::ItemSendsGeometryChanges*/);
     this->setPos(pos);
     
     //Add object to scene

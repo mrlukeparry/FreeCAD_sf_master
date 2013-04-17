@@ -30,8 +30,10 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QMouseEvent>
+#include <QGraphicsSceneHoverEvent>
 #include <QPainterPathStroker>
 #include <QPainter>
+#include <QTextOption>
 #include <strstream>
 #include <cmath>
 #endif
@@ -47,7 +49,9 @@ QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : referen
     if(scene) {
         scene->addItem(this);
     }
-    this->setAcceptHoverEvents(true);    
+    if(ref > 0) {
+        this->setAcceptHoverEvents(true);
+    }
 }
 
 QPainterPath QGraphicsItemEdge::shape() const
@@ -218,7 +222,12 @@ void QGraphicsItemVertex::paint(QPainter *painter, const QStyleOptionGraphicsIte
 
 QGraphicsItemViewPart::QGraphicsItemViewPart(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemView(pos, scene)                 
 {
-  setHandlesChildEvents(false);
+    setHandlesChildEvents(false);
+    
+    pen.setColor(QColor(150,150,150));
+    
+    this->setAcceptHoverEvents(true);
+    this->setFlag(QGraphicsItem::ItemIsMovable, true);
 }
 
 QGraphicsItemViewPart::~QGraphicsItemViewPart()
@@ -458,10 +467,10 @@ void QGraphicsItemViewPart::drawViewPart()
           double endAngle = geom->endAngle;
 
           
-          Base::Console().Log("(C <%f, %f> rot %f, SA %f, EA %f, SA %f \n",
+          Base::Console().Log("(C <%f, %f> rot %f, SA %f, EA %f, SA %f Maj %f Min %f\n",
           geom->center.fX, 
           geom-> center.fY,
-          geom->angle, startAngle, endAngle, spanAngle);
+          geom->angle, startAngle, endAngle, spanAngle, geom->major, geom->minor);
           
           // Create a temporary painterpath since we are applying matrix transformation
           QPainterPath tmp;
@@ -539,7 +548,11 @@ void QGraphicsItemViewPart::drawViewPart()
               graphicsItem->hide();
             
           this->addToGroup(graphicsItem);
-          graphicsItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+          
+          // Don't allow selection for any edges with no references
+          if(refs.at(i) > 0) {
+              graphicsItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+          }
       }
     }
     
@@ -584,9 +597,11 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
         QColor color;
         if(isSelected()) { 
           color.setRgb(0,0,255);
+          pen.setColor(color);
 
         } else {
           color.setRgb(0,0,0);
+          pen.setColor(QColor(150,150,150)); // Drawing Border
         }
         
         QList<QGraphicsItem *> items = this->childItems();
@@ -604,7 +619,6 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
                   vert->setBrush(brush);
               }
           }
-          
         update();
     }
     return QGraphicsItemView::itemChange(change, value);
@@ -620,16 +634,71 @@ void QGraphicsItemViewPart::setViewPartFeature(Drawing::FeatureViewPart *obj)
       // Set the QGraphicsItemGroup Properties based on the FeatureView
     float x = obj->X.getValue();
     float y = obj->Y.getValue();
-    float scale = obj->Scale.getValue();
     this->setPos(x, y);
-    this->setScale(scale);
     Q_EMIT dirty();
+}
+
+void QGraphicsItemViewPart::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
+{
+    // TODO don't like this but only solution at the minute
+    if(this->shape().contains(event->pos())) {
+        pen.setColor(Qt::blue);        
+    }
+    update();
+}
+
+void QGraphicsItemViewPart::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
+{
+    if(!isSelected()) {
+        pen.setColor(QColor(150,150,150));
+        update();
+    }
+}
+
+QPainterPath QGraphicsItemViewPart::shape() const {
+    QPainterPath path;
+    QRectF box = this->boundingRect().adjusted(2,2,-2,-2);
+    path.addRect(box);
+    QPainterPathStroker stroker;
+    stroker.setWidth(5.f);
+    return stroker.createStroke(path);
+}
+
+QRectF QGraphicsItemViewPart::boundingRect() const
+{
+    return QGraphicsItemView::boundingRect().adjusted(-5,-5,5,5);
+}
+void QGraphicsItemViewPart::drawBorder(QPainter *painter){
+  QRectF box = this->boundingRect().adjusted(2,2,-2,-2);
+  // Save the current painter state and restore at end
+  painter->save(); 
+  QPen myPen = pen;
+  myPen.setStyle(Qt::DashLine);
+  myPen.setWidth(0.3);
+  painter->setPen(myPen);
+  QString name = QString::fromAscii(this->viewObject->Label.getValue());
+  
+  QFont font;
+  font.setPointSize(3.f);
+  painter->setFont(font);
+  QFontMetrics fm(font);
+  
+  QPointF pos = box.center();
+  pos.setY(pos.y() + box.height() / 2. - 3.);
+  
+  pos.setX(pos.x() - fm.width(name) / 2.);
+  painter->drawText(pos, name);
+  painter->drawRect(box);
+  
+  painter->restore();
 }
 
 void QGraphicsItemViewPart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     QStyleOptionGraphicsItem myOption(*option);
     myOption.state &= ~QStyle::State_Selected;
+    
+    this->drawBorder(painter);
     QGraphicsItemView::paint(painter, &myOption, widget);
 }
 

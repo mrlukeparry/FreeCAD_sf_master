@@ -188,6 +188,7 @@ App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
    
     try {
         geometryObject->setTolerance(Tolerance.getValue());
+        geometryObject->setScale(Scale.getValue());
         geometryObject->extractGeometry(shape, Direction.getValue());
         return App::DocumentObject::StdReturn;
     }

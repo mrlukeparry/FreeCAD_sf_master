@@ -105,7 +105,7 @@ struct EdgePoints {
     TopoDS_Edge edge;
 };
 
-GeometryObject::GeometryObject() : brep_hlr(0), Tolerance(0.05f)
+GeometryObject::GeometryObject() : brep_hlr(0), Tolerance(0.05f), Scale(1.f)
 {    
 }
 
@@ -117,6 +117,11 @@ GeometryObject::~GeometryObject()
 void GeometryObject::setTolerance(double value)
 {
     this->Tolerance = value;
+}
+
+void GeometryObject::setScale(double value)
+{
+    this->Scale = value;
 }
 
 void GeometryObject::clear()
@@ -280,9 +285,10 @@ DrawingGeometry::Vertex * GeometryObject::projectVertex(const TopoDS_Shape &vert
     const TopoDS_Vertex &refVert = TopoDS::Vertex(mkTrf.Shape());
     
     gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
+    transform.Scale(gp_Pnt(0,0,0), this->Scale);
+    
     HLRAlgo_Projector projector = HLRAlgo_Projector( transform );
     projector.Scaled(true);
-    
     // If the index was found and is unique, the point is projected using the HLR Projector Algorithm
     gp_Pnt2d prjPnt;
     projector.Project(BRep_Tool::Pnt(refVert), prjPnt);
@@ -307,8 +313,11 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
     const TopoDS_Edge &refEdge = TopoDS::Edge(mkTrf.Shape());
     
     HLRBRep_Curve curve;
+    
     gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
+    transform.Scale(gp_Pnt(0,0,0), this->Scale);
     HLRAlgo_Projector *projector = new HLRAlgo_Projector( transform );
+    
     curve.Projector(projector);
     curve.Curve(refEdge);
 
@@ -710,7 +719,7 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
                       BRepAdaptor_Curve adapt2(TopoDS::Edge(anIndices(*it)));
                       if(isSameCurve(adapt1, adapt2)) {
                           edgeIdx = *it;
-                          notFound.erase(it);
+//                           notFound.erase(it);
                           break;
                       }
                   }
@@ -733,35 +742,51 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
     DS->Projector().Scaled(false);
 }
 
+/**
+ * Note projected edges are broken up so start and end parameters differ.
+ */
 bool GeometryObject::isSameCurve(const BRepAdaptor_Curve &c1, const BRepAdaptor_Curve &c2) const 
 {
+
+    
     if(c1.GetType() != c2.GetType())
         return false;
-    
-    switch(c1.GetType()) {
-      case GeomAbs_Circle: {
-          
-              gp_Circ circ1 = c1.Circle();
-              gp_Circ circ2 = c2.Circle();
-              
-              const gp_Pnt& p = circ1.Location();
-              const gp_Pnt& p2 = circ2.Location();
-
-              double radius1 = circ1.Radius();
-              double radius2 = circ2.Radius();
-              double f1 = c1.FirstParameter();
-              double f2 = c2.FirstParameter();
-              double l1 = c1.LastParameter();
-              double l2 = c1.LastParameter();
-              if( p.IsEqual(p2,Precision::Confusion()) &&
-              f2-f1 < Precision::Confusion() &&
-              radius2 - radius1 < Precision::Confusion()) {
-                  return true;
-              }
-      } break;
-      default: break;
-    }
-      
+//     
+//     const gp_Pnt& p1S = c1.Value(c1.FirstParameter());
+//     const gp_Pnt& p1E = c1.Value(c1.LastParameter());
+//     
+//     const gp_Pnt& p2S = c2.Value(c2.FirstParameter());
+//     const gp_Pnt& p2E = c2.Value(c2.LastParameter());
+//     
+//     bool state =  (p1S.IsEqual(p2S, Precision::Confusion()) && p1E.IsEqual(p2E, Precision::Confusion()));
+//     
+//     if( s ||
+//         (p1S.IsEqual(p2E, Precision::Confusion()) && p1E.IsEqual(p2S, Precision::Confusion())) ){ 
+//         switch(c1.GetType()) {
+//           case GeomAbs_Circle: {
+//               
+//                   gp_Circ circ1 = c1.Circle();
+//                   gp_Circ circ2 = c2.Circle();
+//                   
+//                   const gp_Pnt& p = circ1.Location();
+//                   const gp_Pnt& p2 = circ2.Location();
+//                   
+//                   double radius1 = circ1.Radius();
+//                   double radius2 = circ2.Radius();
+//                   double f1 = c1.FirstParameter();
+//                   double f2 = c2.FirstParameter();
+//                   double l1 = c1.LastParameter();
+//                   double l2 = c2.LastParameter();
+//                   c1.Curve().Curve()->
+//                   if( p.IsEqual(p2,Precision::Confusion()) &&
+//                   radius2 - radius1 < Precision::Confusion()) {
+//                       return true;
+//                   }
+//           } break;
+//           default: break;
+//         }
+//     }
+     
     return false;
 }
 
@@ -848,6 +873,7 @@ void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vect
         Base::SignalException se;
         #endif
         gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
+        transform.Scale(gp_Pnt(0,0,0), this->Scale);
         HLRAlgo_Projector projector( transform );
 
         brep_hlr->Projector(projector);
