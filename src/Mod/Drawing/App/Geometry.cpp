@@ -70,6 +70,7 @@
 #include <GeomConvert_BSplineCurveKnotSplitting.hxx>
 #include <Geom2d_BSplineCurve.hxx>
 
+#include <Base/Console.h>
 #include <Base/Tools2D.h>
 #include <Base/Vector3D.h>
 
@@ -124,7 +125,8 @@ Ellipse::Ellipse(const BRepAdaptor_Curve& c)
     this->minor = ellp.MinorRadius();
 
     gp_Dir xaxis = ellp.XAxis().Direction();
-    this->angle = xaxis.AngleWithRef(gp_Dir(1,0,0),gp_Dir(0,0,-1));
+    this->angle = xaxis.AngleWithRef(gp_Dir(1,0,0), ellp.Axis().Direction());
+    Base::Console().Log("%f, %f, %f \n", ellp.Axis().Direction().X(), ellp.Axis().Direction().Y(), ellp.Axis().Direction().Z());
     this->angle *= 180 / M_PI;
 }
 

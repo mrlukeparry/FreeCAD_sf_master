@@ -899,7 +899,7 @@ void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vect
     // HI = shapes.IsoLineHCompound();// isoparamtriques   invisibly
 
     // Extract Hidden Edges
-    //extractCompound(brep_hlr, invertShape, 5, false, WithHidden);// Hard Edge
+     extractEdges(brep_hlr, invertShape, 5, false, WithHidden);// Hard Edge
 //     calculateGeometry(extractCompound(brep_hlr, invertShape, 2, false), WithHidden); // Outline
 //     calculateGeometry(extractCompound(brep_hlr, invertShape, 3, false), (ExtractionType)(WithSmooth | WithHidden)); // Smooth
 

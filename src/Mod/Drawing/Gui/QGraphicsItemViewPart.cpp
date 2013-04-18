@@ -52,13 +52,67 @@ QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : referen
     if(ref > 0) {
         this->setAcceptHoverEvents(true);
     }
+    
+    strokeWidth = 1.;
+    showHidden = false;
+    highlighted = false;
+    hPen.setStyle(Qt::DashLine);
+    vPen.setStyle(Qt::SolidLine);
+    vPen.setCosmetic(false);
+    hPen.setCosmetic(false);
+    hPen.setColor(Qt::gray);
+}
+
+void QGraphicsItemEdge::setVisiblePath(const QPainterPath &path) {  
+    prepareGeometryChange();
+    this->vPath = path;   
+    bb = shape().controlPointRect();
+    update(); 
+}
+
+void QGraphicsItemEdge::setHiddenPath(const QPainterPath &path) {  
+    prepareGeometryChange();
+    this->hPath = path;   
+    bb = shape().controlPointRect();
+    update(); 
+}
+    
+QRectF QGraphicsItemEdge::boundingRect() const {
+        return shape().controlPointRect();
+
+}
+
+bool QGraphicsItemEdge::contains(const QPointF &point)
+{
+    return shape().contains(point);
 }
 
 QPainterPath QGraphicsItemEdge::shape() const
 {
     QPainterPathStroker stroker;
-    stroker.setWidth(this->pen().widthF());
-    return stroker.createStroke(this->path());
+    stroker.setWidth(strokeWidth);
+    
+    // Combine paths
+    QPainterPath p;
+    p.addPath(vPath);
+    
+    if(showHidden)
+        p.addPath(hPath);
+
+    return stroker.createStroke(p);
+}
+
+void QGraphicsItemEdge::setHighlighted(bool state) 
+{
+    highlighted = state;
+    if(highlighted) {
+        vPen.setColor(Qt::blue); 
+        hPen.setColor(Qt::blue);
+    } else {
+        vPen.setColor(Qt::black);
+        hPen.setColor(Qt::gray);
+    }
+    update(); 
 }
 
 QVariant QGraphicsItemEdge::itemChange(GraphicsItemChange change, const QVariant &value)
@@ -66,13 +120,12 @@ QVariant QGraphicsItemEdge::itemChange(GraphicsItemChange change, const QVariant
     if (change == ItemSelectedHasChanged && scene()) {
         // value is the new position.
         if(isSelected()) {
-            QPen pen = this->pen();
-            pen.setColor(Qt::blue);
-            this->setPen(pen);
+            vPen.setColor(Qt::blue);
+            hPen.setColor(Qt::blue);
         } else {
-            QPen pen = this->pen();
-            pen.setColor(Qt::black);
-            this->setPen(pen);
+            vPen.setColor(Qt::black);
+            hPen.setColor(Qt::gray);
+
         }
         update();
     }
@@ -81,9 +134,10 @@ QVariant QGraphicsItemEdge::itemChange(GraphicsItemChange change, const QVariant
  
 void QGraphicsItemEdge::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
-    QPen pen = this->pen();
-    pen.setColor(Qt::blue);
-    this->setPen(pen);
+  Base::Console().Log("hover %f \n",strokeWidth);
+  
+    vPen.setColor(Qt::blue);
+    hPen.setColor(Qt::blue);
     update();
 }
 
@@ -92,10 +146,9 @@ void QGraphicsItemEdge::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
     QGraphicsItemView *view = dynamic_cast<QGraphicsItemView *> (this->parentItem());
     assert(view != 0);
     
-    if(!isSelected() && !view->isSelected()) {
-        QPen pen = this->pen();
-        pen.setColor(Qt::black);
-        this->setPen(pen);
+    if(!isSelected() && !highlighted) {
+        vPen.setColor(Qt::black);
+        hPen.setColor(Qt::gray);
         update();
     }
 }
@@ -104,7 +157,16 @@ void QGraphicsItemEdge::paint(QPainter *painter, const QStyleOptionGraphicsItem 
 {
     QStyleOptionGraphicsItem myOption(*option);
     myOption.state &= ~QStyle::State_Selected;
-    QGraphicsPathItem::paint(painter, &myOption, widget);
+    painter->setPen(vPen);
+    painter->setBrush(vBrush);
+    painter->drawPath(vPath);
+    
+    if(showHidden) {
+        painter->setPen(hPen);
+        painter->setBrush(hBrush);
+        painter->drawPath(hPath);
+    }
+//     QGraphicsPathItem::paint(painter, &myOption, widget);
 }
 
 // QGraphicsView - Face Features
@@ -337,10 +399,6 @@ void QGraphicsItemViewPart::drawViewPart()
     Drawing::FeatureViewPart *part = dynamic_cast<Drawing::FeatureViewPart *>(this->viewObject);
    
     float lineWidth = part->LineWidth.getValue();
-
-    QPen pen;
-    pen.setWidthF(lineWidth);
-    pen.setStyle(Qt::SolidLine);
           
     QGraphicsItem *graphicsItem = 0;
     
@@ -397,70 +455,47 @@ void QGraphicsItemViewPart::drawViewPart()
     // Draw Edges      
     // iterate through all the geometries
     for(int i = 0 ; it != geoms.end(); ++it, i++) {
-      if((*it)->extractType == DrawingGeometry::WithHidden)
-          pen.setStyle(Qt::DashLine);
-      else
-          pen.setStyle(Qt::SolidLine);
+
+     
+
       
        // Attempt to find if a previous edge exists
       QGraphicsItemEdge *item = this->findRefEdge(refs.at(i));
-          
-      QPainterPath path;
-      
+      Base::Console().Log("Line Width %f", lineWidth);  
       if(!item) {
           item = new QGraphicsItemEdge(refs.at(i));
-      } else {
-          path = item->path();
+          if(part->ShowHiddenLines.getValue())
+              item->setShowHidden(true);
       }
-
+      item->setStrokeWidth(lineWidth);
+      
+      QPainterPath path;
+      
+      graphicsItem = dynamic_cast<QGraphicsItem *>(item);
+      
       switch((*it)->geomType) {
         case DrawingGeometry::CIRCLE: {
           DrawingGeometry::Circle *geom = static_cast<DrawingGeometry::Circle *>(*it);
-
-          graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-
           path.addEllipse(geom->center.fX - geom->radius ,geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2);
-          item->setPen(pen);
-          item->setPath(path);
-          
-          graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-
-          item->setPen(pen);
 
         } break;
         case DrawingGeometry::ARCOFCIRCLE: {
           DrawingGeometry::AOC  *geom = static_cast<DrawingGeometry::AOC *>(*it);
-          
-          graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-
           double startAngle = (geom->startAngle);
           double spanAngle =  (geom->endAngle - startAngle);
 
           path.arcMoveTo(geom->center.fX - geom->radius, geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2, startAngle);
           path.arcTo(geom->center.fX - geom->radius, geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2, startAngle, abs(spanAngle));
 
-          item->setPen(pen);
-          item->setPath(path);
-
-
         } break;
         case DrawingGeometry::ELLIPSE: {
           DrawingGeometry::Ellipse *geom = static_cast<DrawingGeometry::Ellipse *>(*it);
         
-          graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-
-          path.addEllipse(0,0, geom->major * 2, geom->minor * 2);
-
-          item->setPen(pen);
-          item->setPath(path);
-
-          item->setPos(geom->center.fX - geom->radius, geom->center.fY - geom->radius);
-
+          path.addEllipse(geom->center.fX - geom->radius,geom->center.fY - geom->radius, geom->major * 2, geom->minor * 2);
+          
         } break;
         case DrawingGeometry::ARCOFELLIPSE: {
           DrawingGeometry::AOE *geom = static_cast<DrawingGeometry::AOE *>(*it);
-                    
-          graphicsItem = dynamic_cast<QGraphicsItem *>(item);
 
           double startAngle = (geom->startAngle);
           double spanAngle =  (geom->endAngle - geom->startAngle);
@@ -482,18 +517,11 @@ void QGraphicsItemViewPart::drawViewPart()
 
           // Add path to existing
           path.addPath(mat.map(tmp));   
-          
-          item->setPath(path);
-          item->setPen(pen);
 
         } break;
         case DrawingGeometry::BSPLINE: {
           DrawingGeometry::BSpline *geom = static_cast<DrawingGeometry::BSpline *>(*it);
                    
-          graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-
-          QPainterPath path;
-          
           std::vector<DrawingGeometry::BezierSegment>::const_iterator it = geom->segments.begin();
           
           DrawingGeometry::BezierSegment startSeg = geom->segments.at(0);
@@ -516,36 +544,36 @@ void QGraphicsItemViewPart::drawViewPart()
 
               }
             }
-          item->setPen(pen);
-          item->setPath(path);
           
         } break;
         case DrawingGeometry::GENERIC: {
 
           DrawingGeometry::Generic *geom = static_cast<DrawingGeometry::Generic *>(*it);
-                    
-          graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-          
+
           path.moveTo(geom->points[0].fX, geom->points[0].fY);
           std::vector<Base::Vector2D>::const_iterator it = geom->points.begin();
 
           for(++it; it != geom->points.end(); ++it) {
               path.lineTo((*it).fX, (*it).fY);
           }
-          item->setPen(pen);
-          item->setPath(path);
 
         } break;
         default:
           delete item;
+          graphicsItem = 0;
           break;
       }
       
       if(graphicsItem) {
-        
-          // Hide any edges that are hidden if option is set.
-          if((*it)->extractType == DrawingGeometry::WithHidden && !part->ShowHiddenLines.getValue())
-              graphicsItem->hide();
+          if((*it)->extractType == DrawingGeometry::WithHidden) {
+              QPainterPath hPath  = item->getHiddenPath();
+              hPath.addPath(path);
+              item->setHiddenPath(hPath);
+          } else { 
+              QPainterPath vPath  = item->getVisiblePath();
+              vPath.addPath(path);
+              item->setVisiblePath(vPath);
+          }
             
           this->addToGroup(graphicsItem);
           
@@ -610,9 +638,7 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
               QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
               QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
               if(edge) {
-                  QPen pen = edge->pen();
-                  pen.setColor(color);
-                  edge->setPen(pen);
+                  edge->setHighlighted(isSelected());
               } else if(vert){
                   QBrush brush = vert->brush();
                   brush.setColor(color);

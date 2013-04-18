@@ -159,6 +159,9 @@ QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraph
     this->arrows  = arrws;    
     this->datumLabel = dLabel;
     
+    this->pen.setCosmetic(true);
+    this->pen.setWidthF(2);
+    
     this->addToGroup(arrows);
     this->addToGroup(datumLabel);
 }
@@ -241,8 +244,7 @@ void QGraphicsItemViewDimension::draw()
         
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->viewObject);
     QGraphicsItemDatumLabel *lbl = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
-    
-    this->pen.setWidthF((int) 1);
+
     pen.setStyle(Qt::SolidLine);
     
     // Crude method of determining state [TODO] improve

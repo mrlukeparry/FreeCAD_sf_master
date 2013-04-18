@@ -53,10 +53,20 @@ public:
 
     int type() const { return Type;}  
     int getReference() const { return reference; }
-    void setStrokeWidth(int width) { this->strokeWidth = width; }
+    
+    void setHighlighted(bool state);
+    void setShowHidden(bool state) {showHidden = state; update(); }
+    QPainterPath getHiddenPath() { return hPath; }
+    QPainterPath getVisiblePath() { return vPath; }
+    void setStrokeWidth(float width) { strokeWidth = width; vPen.setWidthF(width); hPen.setWidthF(width * 0.3); update(); }
+    
+    bool contains(const QPointF &point);
+    void setHiddenPath(const QPainterPath &path); 
+    void setVisiblePath(const QPainterPath &path);
     
     virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
     
+    QRectF boundingRect() const;
 protected:
     // Preselection events:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
@@ -65,11 +75,21 @@ protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
   
 protected:
-int reference;
+  int reference;
+  QPainterPath hPath;
+  QPainterPath vPath;
 
+  QBrush hBrush;
+  QBrush vBrush;
+  QPen   vPen;
+  QPen   hPen;
+  
+  QRectF bb;
+  bool highlighted;
+  bool showHidden;
 private:
-int strokeWidth;
-QPen m_pen;
+float strokeWidth;
+
 };
 
 class QGraphicsItemFace : public QObject, public QGraphicsPathItem
