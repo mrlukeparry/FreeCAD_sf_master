@@ -125,8 +125,7 @@ Ellipse::Ellipse(const BRepAdaptor_Curve& c)
     this->minor = ellp.MinorRadius();
 
     gp_Dir xaxis = ellp.XAxis().Direction();
-    this->angle = xaxis.AngleWithRef(gp_Dir(1,0,0), ellp.Axis().Direction());
-    Base::Console().Log("%f, %f, %f \n", ellp.Axis().Direction().X(), ellp.Axis().Direction().Y(), ellp.Axis().Direction().Z());
+    this->angle = xaxis.AngleWithRef(gp_Dir(1,0,0),gp_Dir(0,0,-1));
     this->angle *= 180 / M_PI;
 }
 
@@ -154,10 +153,21 @@ AOE::AOE(const BRepAdaptor_Curve& c) : Ellipse(c)
 
     this->startAngle = f;
     this->endAngle = l;
+    this->cw = (a < 0) ? true: false;
+    this->largeArc = (l-f > M_PI) ? true : false;
     
+    startPnt = Base::Vector2D(s.X(), s.Y());
+    endPnt = Base::Vector2D(e.X(), e.Y());
+    /*
+            char las = (l-f > D_PI) ? '1' : '0'; // large-arc-flag
+        char swp = (a < 0) ? '1' : '0'; // sweep-flag, i.e. clockwise (0) or counter-clockwise (1)
+        out << "<path d=\"M" << s.X() <<  " " << s.Y()
+            << " A" << r1 << " " << r2 << " "
+            << angle << " " << las << " " << swp << " "
+            << e.X() << " " << e.Y() << "\" />" << std::endl;
 //     if (this->startAngle > this->endAngle) {// if arc is reversed
 //         std::swap(this->startAngle, this->endAngle);
-//     }
+//     }*/
     
 //     double ax = s.X() - this->center.fX;
 //     double ay = s.Y() - this->center.fY;
@@ -198,19 +208,24 @@ AOC::AOC(const BRepAdaptor_Curve& c) : Circle(c)
 {
     this->geomType = ARCOFCIRCLE;
     
-//     gp_Pnt s = c.Value(c.LastParameter());
-//     gp_Pnt e = c.Value(c.FirstParameter());
-// 
-//     double ax = s.X() - this->center.fX;
-//     double ay = s.Y() - this->center.fY;
-//     double bx = e.X() - this->center.fX;
-//     double by = e.Y() - this->center.fY;
+    double f = c.FirstParameter();
+    double l = c.LastParameter();
+    gp_Pnt s = c.Value(f);
+    gp_Pnt m = c.Value((l+f)/2.0);
+    gp_Pnt e = c.Value(l);
 
-    this->startAngle= c.FirstParameter();
-    this->endAngle = c.LastParameter();
-   
-    if (this->startAngle > this->endAngle) // if arc is reversed
-        std::swap(this->startAngle, this->endAngle);
+    gp_Vec v1(m,s);
+    gp_Vec v2(m,e);
+    gp_Vec v3(0,0,1);
+    double a = v3.DotCross(v1,v2);
+
+    this->startAngle = f;
+    this->endAngle = l;
+    this->cw = (a < 0) ? true: false;
+    this->largeArc = (l-f > M_PI) ? true : false;
+    
+    startPnt = Base::Vector2D(s.X(), s.Y());
+    endPnt = Base::Vector2D(e.X(), e.Y());
               
     this->startAngle *= 180 / M_PI;
     this->endAngle   *= 180 / M_PI;

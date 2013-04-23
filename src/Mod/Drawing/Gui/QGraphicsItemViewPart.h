@@ -68,7 +68,7 @@ public:
     
     QRectF boundingRect() const;
 protected:
-    // Preselection events:
+  
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
     // Selection detection
@@ -171,6 +171,15 @@ Q_SIGNALS:
 protected:
   QGraphicsItemEdge * findRefEdge(int i);
   QPainterPath drawPainterPath(DrawingGeometry::BaseGeom *baseGeom) const;
+  
+  // Helper method for drawing ellipses
+  void pathArcSegment(QPainterPath &path,double xc, double yc, double th0, double th1,double rx, double ry, double xAxisRotation) const;
+  void pathArc(QPainterPath &path, double rx, double ry, double x_axis_rotation,
+                                   bool large_arc_flag, bool sweep_flag,
+                                   double x, double y,
+                                   double curx, double cury) const;
+    // Preselection events:
+    
   void drawViewPart();
   void drawBorder(QPainter *painter);
   virtual QPainterPath  shape () const;

@@ -85,8 +85,12 @@ public:
   AOE();
   ~AOE() {}
 public:
+  Base::Vector2D startPnt;
+  Base::Vector2D endPnt;
   double startAngle;
   double endAngle;
+  bool cw;
+  bool largeArc;
 };
 
 class DrawingExport AOC: public Circle
@@ -96,8 +100,12 @@ public:
   AOC();
   ~AOC() {}
 public:
+  Base::Vector2D startPnt;
+  Base::Vector2D endPnt;
   double startAngle;
   double endAngle;
+  bool cw;
+  bool largeArc;
 };
 
 struct BezierSegment

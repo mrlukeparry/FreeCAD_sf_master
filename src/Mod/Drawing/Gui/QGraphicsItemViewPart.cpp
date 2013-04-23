@@ -22,6 +22,7 @@
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
+#include <cmath>
 #include <QAction>
 #include <QApplication>
 #include <QContextMenuEvent>
@@ -35,8 +36,10 @@
 #include <QPainter>
 #include <QTextOption>
 #include <strstream>
-#include <cmath>
+
 #endif
+
+#include <qmath.h>
 
 #include <Base/Console.h>
 #include "../App/FeatureViewPart.h"
@@ -134,8 +137,6 @@ QVariant QGraphicsItemEdge::itemChange(GraphicsItemChange change, const QVariant
  
 void QGraphicsItemEdge::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
-  Base::Console().Log("hover %f \n",strokeWidth);
-  
     vPen.setColor(Qt::blue);
     hPen.setColor(Qt::blue);
     update();
@@ -318,7 +319,7 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
 
           double x = geom->center.fX - geom->radius;
           double y = geom->center.fY - geom->radius;
-          
+
           path.arcMoveTo(x, y, geom->radius * 2, geom->radius * 2, -startAngle);
           path.arcTo(x, y, geom->radius * 2, geom->radius * 2, -startAngle, -spanAngle);
         } break;
@@ -336,15 +337,90 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
           double startAngle = (geom->startAngle);
           double spanAngle =  (startAngle - geom->endAngle);
           double endAngle = geom->endAngle;
+         
           
-          double x = geom->center.fX - geom->major;
-          double y = geom->center.fY - geom->minor;
+          this->pathArc(path, geom->major, geom->minor, geom->angle, geom->largeArc, geom->cw, 
+                        geom->endPnt.fX, geom->endPnt.fY,
+                        geom->startPnt.fX, geom->startPnt.fY);
+// //           PainterPath &path,
+// //                     double               rx,
+// //                     double               ry,
+// //                     double               x_axis_rotation,
+// //                     int         large_arc_flag,
+// //                     int         sweep_flag,
+// //                     double               x,
+// //                     double               y,
+// //                     double curx, double cury)
+//                     
+//           double sinTheta, cosTheta;
+//           double a00, a01, a10, a11;
+//           double x0, y0, x1, y1, xc, yc, rx, ry;
+//           double d, sfactor, sfactor_sq;
+//           double theta0, theta1, thetaArc;
+//           int i, numSegs;
+//           double dx, dy, dx1, dy1, Pr1, Pr2, Px, Py, check;
+// 
+//           rx = geom->major;
+//           ry = geom->minor;
+//           
+//           sinTheta = sin(geom->angle * M_PI / 180);
+//           cosTheta  = cos(geom->angle * M_PI / 18D_PI0);
+//           dx = (geom->startPnt.fX - geom->endPnt.fX) / 2.0;
+//           dy = (geom->startPnt.fY - geom->endPnt.fY) / 2.0;
+//           dx1 =  cosTheta * dx + sinTheta * dy;
+//           dy1 = -sinTheta * dx + cosTheta * dy;
+//           Pr1 = rx * rx;
+//           Pr2 = ry * ry;
+//           Px = dx1 * dx1;
+//           Py = dy1 * dy1;
+//           /* Spec : check if radii are large enough */
+//           check = Px / Pr1 + Py / Pr2;
+//           if (check > 1) {
+//               rx = rx * sqrt(check);
+//               ry = ry * sqrt(check);
+//           }
+//           a00 =  cosTheta / rx;D_PI
+//           a01 =  sinTheta / rx;
+//           a10 = -sinTheta / ry;
+//           a11 =  cosTheta / ry;
+//           x0 = a00 * geom->startPnt.fX  + a01 * geom->startPnt.fY;
+//           y0 = a10 * geom->startPnt.fX  + a11 * geom->startPnt.fY;
+//           x1 = a00 * geom->endPnt.fX + a01 * geom->endPnt.fY;
+//           y1 = a10 * geom->endPnt.fX + a11 * geom->endPnt.fY;
+// 
+//           d = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
+//           sfactor_sq = 1.0 / d - 0.25;
+//           if (sfactor_sq < 0) 
+//               sfactor_sq = 0;
+//           
+//           sfactor = sqrt(sfactor_sq);
+//           
+//           if (geom->cw == geom->largeArc)
+//               sfactor = -sfactor;
+// 
+//           xc = 0.5 * (x0 + x1) - sfactor * (y1 - y0);
+//           yc = 0.5 * (y0 + y1) + sfactor * (x1 - x0);
+//           /* (xc, yc) is center of the circle. */
+// 
+//           theta0 = atan2f(y0 - yc, x0 - xc);
+//           theta1 = atan2f(y1 - yc, x1 - xc);
+//           thetaArc = theta1 - theta0;
+//           if (thetaArc < 0 && geom->cw)
+//               thetaArc += 2 * M_PI;
+//           else if (thetaArc > 0 && !geom->cw)
+//               thetaArc -= 2 * M_PI;
+// 
+//           numSegs = ceil(fabs(thetaArc / (M_PI * 0.5 + 0.001)));
+// 
+//           for (i = 0; i < numSegs; i++) {
+//               this->pathArcSegment(path, xc, yc,
+//                             theta0 + i * thetaArc / numSegs,
+//                             theta0 + (i + 1) * thetaArc / numSegs,
+//                             rx, ry, geom->angle);
+//           }
           
-          double maj = geom->major * 2 * cos(geom->angle * M_PI / 180);
-          double min = geom->minor * 2 * sin(geom->angle * M_PI / 180);
-
-          path.arcMoveTo(x, y, maj, min, startAngle);
-          path.arcTo(x, y, maj, min, startAngle, spanAngle);
+//           path.arcMoveTo(x, y, maj, min, startAngle);
+//           path.arcTo(x, y, maj, min, startAngle, spanAngle);
 
         } break;
         case DrawingGeometry::BSPLINE: {
@@ -388,6 +464,7 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
       }
       return path;
 }
+
 
 void QGraphicsItemViewPart::drawViewPart()
 {    
@@ -455,13 +532,9 @@ void QGraphicsItemViewPart::drawViewPart()
     // Draw Edges      
     // iterate through all the geometries
     for(int i = 0 ; it != geoms.end(); ++it, i++) {
-
-     
-
-      
        // Attempt to find if a previous edge exists
       QGraphicsItemEdge *item = this->findRefEdge(refs.at(i));
-      Base::Console().Log("Line Width %f", lineWidth);  
+
       if(!item) {
           item = new QGraphicsItemEdge(refs.at(i));
           if(part->ShowHiddenLines.getValue())
@@ -480,12 +553,10 @@ void QGraphicsItemViewPart::drawViewPart()
 
         } break;
         case DrawingGeometry::ARCOFCIRCLE: {
-          DrawingGeometry::AOC  *geom = static_cast<DrawingGeometry::AOC *>(*it);
-          double startAngle = (geom->startAngle);
-          double spanAngle =  (geom->endAngle - startAngle);
-
-          path.arcMoveTo(geom->center.fX - geom->radius, geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2, startAngle);
-          path.arcTo(geom->center.fX - geom->radius, geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2, startAngle, abs(spanAngle));
+          DrawingGeometry::AOC  *geom = static_cast<DrawingGeometry::AOC *>(*it);           
+          pathArc(path, geom->radius, geom->radius, 0., geom->largeArc, geom->cw,
+                geom->endPnt.fX, geom->endPnt.fY,
+                geom->startPnt.fX, geom->startPnt.fY);
 
         } break;
         case DrawingGeometry::ELLIPSE: {
@@ -497,26 +568,33 @@ void QGraphicsItemViewPart::drawViewPart()
         case DrawingGeometry::ARCOFELLIPSE: {
           DrawingGeometry::AOE *geom = static_cast<DrawingGeometry::AOE *>(*it);
 
+#if 0
           double startAngle = (geom->startAngle);
           double spanAngle =  (geom->endAngle - geom->startAngle);
           double endAngle = geom->endAngle;
-
           
           Base::Console().Log("(C <%f, %f> rot %f, SA %f, EA %f, SA %f Maj %f Min %f\n",
-          geom->center.fX, 
+          geom          path.arcMoveTo(geom->center.fX - geom->radius, geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2, startAngle);
+          path.arcTo(geom->center.fX - geom->radius, geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2, startAngle, abs(spanAngle));->center.fX, 
           geom-> center.fY,
           geom->angle, startAngle, endAngle, spanAngle, geom->major, geom->minor);
           
           // Create a temporary painterpath since we are applying matrix transformation
+#endif
+
+          // Add path to existing
           QPainterPath tmp;
-          tmp.arcMoveTo(-geom->major, -geom->minor, geom->major * 2, geom->minor * 2, startAngle);
-          tmp.arcTo(-geom->major,     -geom->minor, geom->major * 2, geom->minor * 2, startAngle, spanAngle);
+          tmp.arcMoveTo(-geom->major, -geom->minor, geom->major * 2, geom->minor * 2, geom->startAngle);
+          tmp.arcTo(-geom->major,     -geom->minor, geom->major * 2, geom->minor * 2, geom->startAngle, thetaArc * 180 / M_PI);
           
           QMatrix mat;
           mat.translate(+geom->center.fX, +geom->center.fY).rotate(geom->angle);
-
-          // Add path to existing
-          path.addPath(mat.map(tmp));   
+          path.addPath(mat.map(tmp)); 
+         
+        pathArc(path, geom->major, geom->minor, geom->angle, geom->largeArc, geom->cw,
+                geom->endPnt.fX, geom->endPnt.fY,
+                geom->startPnt.fX, geom->startPnt.fY);
+        
 
         } break;
         case DrawingGeometry::BSPLINE: {
@@ -605,6 +683,121 @@ void QGraphicsItemViewPart::drawViewPart()
           item->setFlag(QGraphicsItem::ItemIsSelectable, true);
           this->addToGroup(item);
     }
+}
+
+void QGraphicsItemViewPart::pathArc(QPainterPath &path, double rx, double ry, double x_axis_rotation,
+                                    bool large_arc_flag, bool sweep_flag,
+                                    double x, double y,
+                                    double curx, double cury) const
+{
+    double sin_th, cos_th;
+    double a00, a01, a10, a11;
+    double x0, y0, x1, y1, xc, yc;
+    double d, sfactor, sfactor_sq;
+    double th0, th1, th_arc;
+    int i, n_segs;
+    double dx, dy, dx1, dy1, Pr1, Pr2, Px, Py, check;
+
+    rx = qAbs(rx);
+    ry = qAbs(ry);
+
+    sin_th = qSin(x_axis_rotation * (M_PI / 180.0));
+    cos_th = qCos(x_axis_rotation * (M_PI / 180.0));
+
+    dx = (curx - x) / 2.0;
+    dy = (cury - y) / 2.0;
+    dx1 =  cos_th * dx + sin_th * dy;
+    dy1 = -sin_th * dx + cos_th * dy;
+    Pr1 = rx * rx;
+    Pr2 = ry * ry;
+    Px = dx1 * dx1;
+    Py = dy1 * dy1;
+    /* Spec : check if radii are large enough */
+    check = Px / Pr1 + Py / Pr2;
+    if (check > 1) {
+        rx = rx * qSqrt(check);
+        ry = ry * qSqrt(check);
+    }
+
+    a00 =  cos_th / rx;
+    a01 =  sin_th / rx;
+    a10 = -sin_th / ry;
+    a11 =  cos_th / ry;
+    x0 = a00 * curx + a01 * cury;
+    y0 = a10 * curx + a11 * cury;
+    x1 = a00 * x + a01 * y;
+    y1 = a10 * x + a11 * y;
+    /* (x0, y0) is current point in transformed coordinate space.
+       (x1, y1) is new point in transformed coordinate space.
+
+       The arc fits a unit-radius circle in this space.
+    */
+    d = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
+    sfactor_sq = 1.0 / d - 0.25;
+    if (sfactor_sq < 0)
+        sfactor_sq = 0;
+    
+    sfactor = qSqrt(sfactor_sq);
+    
+    if (sweep_flag == large_arc_flag)
+        sfactor = -sfactor;
+    
+    xc = 0.5 * (x0 + x1) - sfactor * (y1 - y0);
+    yc = 0.5 * (y0 + y1) + sfactor * (x1 - x0);
+    /* (xc, yc) is center of the circle. */
+
+    th0 = qAtan2(y0 - yc, x0 - xc);
+    th1 = qAtan2(y1 - yc, x1 - xc);
+
+    th_arc = th1 - th0;
+    if (th_arc < 0 && sweep_flag)
+        th_arc += 2 * M_PI;
+    else if (th_arc > 0 && !sweep_flag)
+        th_arc -= 2 * M_PI;
+
+    n_segs = qCeil(qAbs(th_arc / (M_PI * 0.5 + 0.001)));
+
+    path.moveTo(curx, cury);
+    
+    for (i = 0; i < n_segs; i++) {
+        pathArcSegment(path, xc, yc,
+                       th0 + i * th_arc / n_segs,
+                       th0 + (i + 1) * th_arc / n_segs,
+                       rx, ry, x_axis_rotation);
+    }
+}
+
+void QGraphicsItemViewPart::pathArcSegment(QPainterPath &path,
+                           double xc, double yc,
+                           double th0, double th1,
+                           double rx, double ry, double xAxisRotation) const
+{
+    double sinTh, cosTh;
+    double a00, a01, a10, a11;
+    double x1, y1, x2, y2, x3, y3;
+    double t;
+    double thHalf;
+
+    sinTh = qSin(xAxisRotation * (M_PI / 180.0));
+    cosTh = qCos(xAxisRotation * (M_PI / 180.0));
+
+    a00 =  cosTh * rx;
+    a01 = -sinTh * ry;
+    a10 =  sinTh * rx;
+    a11 =  cosTh * ry;
+
+    thHalf = 0.5 * (th1 - th0);
+    t = (8.0 / 3.0) * qSin(thHalf * 0.5) * qSin(thHalf * 0.5) / qSin(thHalf);
+    x1 = xc + qCos(th0) - t * qSin(th0);
+    y1 = yc + qSin(th0) + t * qCos(th0);
+    x3 = xc + qCos(th1);
+    y3 = yc + qSin(th1);
+    x2 = x3 + t * qSin(th1);
+    y2 = y3 - t * qCos(th1);
+
+    path.cubicTo(a00 * x1 + a01 * y1, a10 * x1 + a11 * y1,
+                 a00 * x2 + a01 * y2, a10 * x2 + a11 * y2,
+                 a00 * x3 + a01 * y3, a10 * x3 + a11 * y3);
 }
 
 QGraphicsItemEdge * QGraphicsItemViewPart::findRefEdge(int idx)
