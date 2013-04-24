@@ -151,8 +151,6 @@ void GeometryObject::clear()
     edgeGeom.clear();
     edgeReferences.clear();
     
-    if(brep_hlr)
-        brep_hlr->Delete();
 }
 
 TopoDS_Shape GeometryObject::invertY(const TopoDS_Shape& shape)
@@ -166,6 +164,7 @@ TopoDS_Shape GeometryObject::invertY(const TopoDS_Shape& shape)
     bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
     mat.SetMirror(gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2), gp_Dir(0,1,0)));
     BRepBuilderAPI_Transform mkTrf(shape, mat);
+    
     return mkTrf.Shape();
 }
 
@@ -280,12 +279,16 @@ DrawingGeometry::Vertex * GeometryObject::projectVertex(const TopoDS_Shape &vert
     Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
     bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
     mat.SetMirror(gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2), gp_Dir(0,1,0)));
+    
+    gp_Trsf matScale;
+    matScale.SetScaleFactor(Scale);
+    
     BRepBuilderAPI_Transform mkTrf(vert, mat);
+    BRepBuilderAPI_Transform mkTrfScale(mkTrf.Shape(), matScale);
 
-    const TopoDS_Vertex &refVert = TopoDS::Vertex(mkTrf.Shape());
+    const TopoDS_Vertex &refVert = TopoDS::Vertex(mkTrfScale.Shape());
     
     gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
-    transform.Scale(gp_Pnt(0,0,0), this->Scale);
     
     HLRAlgo_Projector projector = HLRAlgo_Projector( transform );
     projector.Scaled(true);
@@ -308,14 +311,17 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
     Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
     bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
     mat.SetMirror(gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2), gp_Dir(0,1,0)));
+    gp_Trsf matScale;
+    matScale.SetScaleFactor(Scale);
+    
     BRepBuilderAPI_Transform mkTrf(edge, mat);
+    BRepBuilderAPI_Transform mkTrfScale(mkTrf.Shape(), matScale);
 
-    const TopoDS_Edge &refEdge = TopoDS::Edge(mkTrf.Shape());
+    const TopoDS_Edge &refEdge = TopoDS::Edge(mkTrfScale.Shape());
     
     HLRBRep_Curve curve;
     
     gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
-    transform.Scale(gp_Pnt(0,0,0), this->Scale);
     HLRAlgo_Projector *projector = new HLRAlgo_Projector( transform );
     
     curve.Projector(projector);
@@ -859,21 +865,27 @@ void GeometryObject::createWire(const TopoDS_Shape &input, std::list<TopoDS_Wire
     }
 }
 
-void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vector3f &direction)
+void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vector3f &direction, bool extractHidden)
 {
     // Clear previous Geometry and References that may have been stored
     this->clear();
 
-    const TopoDS_Shape invertShape = invertY(input);
+    // Scale the shape TODO - unsure how to apply scale transformation to projection
+    gp_Trsf matScale;
+    matScale.SetScaleFactor(Scale);
+    
+    // Apply the transformation
+    BRepBuilderAPI_Transform mkTrf(invertY(input), matScale);
+    const TopoDS_Shape transShape = mkTrf.Shape();
+    
     HLRBRep_Algo *brep_hlr = new HLRBRep_Algo();
-    brep_hlr->Add(invertShape);
+    brep_hlr->Add(transShape);
 
     try {
         #if defined(__GNUC__) && defined (FC_OS_LINUX)
         Base::SignalException se;
         #endif
         gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
-        transform.Scale(gp_Pnt(0,0,0), this->Scale);
         HLRAlgo_Projector projector( transform );
 
         brep_hlr->Projector(projector);
@@ -899,17 +911,21 @@ void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vect
     // HI = shapes.IsoLineHCompound();// isoparamtriques   invisibly
 
     // Extract Hidden Edges
-     extractEdges(brep_hlr, invertShape, 5, false, WithHidden);// Hard Edge
+    if(extractHidden)
+        extractEdges(brep_hlr, transShape, 5, false, WithHidden);// Hard Edge
 //     calculateGeometry(extractCompound(brep_hlr, invertShape, 2, false), WithHidden); // Outline
 //     calculateGeometry(extractCompound(brep_hlr, invertShape, 3, false), (ExtractionType)(WithSmooth | WithHidden)); // Smooth
 
     // Extract Visible Edges
-     extractEdges(brep_hlr, invertShape, 5, true, WithSmooth);  // Hard Edge   
+     extractEdges(brep_hlr, transShape, 5, true, WithSmooth);  // Hard Edge   
     
       // Extract Faces
 //       !extractFaces(brep_hlr, invertShape, 5, true, WithSmooth);  // 
 //     calculateGeometry(extractCompound(brep_hlr, invertShape, 2, true), Plain);  // Outline
 //     calculateGeometry(extractCompound(brep_hlr, invertShape, 3, true), WithSmooth); // Smooth Edge
+     
+     // House Keeping
+     delete brep_hlr;
 }
 
 int GeometryObject::calculateGeometry(const TopoDS_Shape &input, const ExtractionType extractionType, std::vector<BaseGeom *> &geom)

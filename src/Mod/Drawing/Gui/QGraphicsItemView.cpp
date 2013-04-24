@@ -37,6 +37,7 @@
 #endif
 
 #include <App/Document.h>
+#include <Base/Console.h>
 #include <Gui/Selection.h>
 #include <Gui/Command.h>
 #include "../App/FeatureView.h"
@@ -91,6 +92,7 @@ void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 
 void QGraphicsItemView::updateView()
 {
+    Base::Console().Log("Updating View");
     this->setPos(viewObject->X.getValue(), viewObject->Y.getValue());
 }
 

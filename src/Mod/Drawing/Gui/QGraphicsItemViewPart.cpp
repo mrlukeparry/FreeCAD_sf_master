@@ -61,8 +61,8 @@ QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : referen
     highlighted = false;
     hPen.setStyle(Qt::DashLine);
     vPen.setStyle(Qt::SolidLine);
-    vPen.setCosmetic(false);
-    hPen.setCosmetic(false);
+    vPen.setCosmetic(true);
+    hPen.setCosmetic(true);
     hPen.setColor(Qt::gray);
 }
 
@@ -225,14 +225,13 @@ QGraphicsItemVertex::QGraphicsItemVertex(int ref, QGraphicsScene *scene  ) : ref
     if(scene) {
         scene->addItem(this);
     }
+    this->setFlag(ItemIgnoresTransformations);
     this->setAcceptHoverEvents(true);    
 }
 
 QPainterPath QGraphicsItemVertex::shape() const
 {
-    QPainterPathStroker stroker;
-    stroker.setWidth(this->pen().widthF());
-    return stroker.createStroke(this->path());
+    return this->path();
 }
 
 QVariant QGraphicsItemVertex::itemChange(GraphicsItemChange change, const QVariant &value)
@@ -583,14 +582,14 @@ void QGraphicsItemViewPart::drawViewPart()
 #endif
 
           // Add path to existing
-          QPainterPath tmp;
-          tmp.arcMoveTo(-geom->major, -geom->minor, geom->major * 2, geom->minor * 2, geom->startAngle);
-          tmp.arcTo(-geom->major,     -geom->minor, geom->major * 2, geom->minor * 2, geom->startAngle, thetaArc * 180 / M_PI);
-          
-          QMatrix mat;
-          mat.translate(+geom->center.fX, +geom->center.fY).rotate(geom->angle);
-          path.addPath(mat.map(tmp)); 
-         
+//           QPainterPath tmp;
+//           tmp.arcMoveTo(-geom->major, -geom->minor, geom->major * 2, geom->minor * 2, geom->startAngle);
+//           tmp.arcTo(-geom->major,     -geom->minor, geom->major * 2, geom->minor * 2, geom->startAngle, thetaArc * 180 / M_PI);
+//           
+//           QMatrix mat;
+//           mat.translate(+geom->center.fX, +geom->center.fY).rotate(geom->angle);
+//           path.addPath(mat.map(tmp)); 
+//          
         pathArc(path, geom->major, geom->minor, geom->angle, geom->largeArc, geom->cw,
                 geom->endPnt.fX, geom->endPnt.fY,
                 geom->startPnt.fX, geom->startPnt.fY);
@@ -677,10 +676,11 @@ void QGraphicsItemViewPart::drawViewPart()
           QGraphicsItemVertex *item = new QGraphicsItemVertex(vertRefs.at(i));
           QPainterPath path;
           item->setBrush(vertBrush);
-          path.addEllipse(0 ,0, 1, 1);
+          path.addEllipse(-2 ,-2, 4, 4);
           item->setPath(path);
-          item->setPos(myVertex->pnt.fX - 0.5, myVertex->pnt.fY - 0.5);
-          item->setFlag(QGraphicsItem::ItemIsSelectable, true);
+          item->setPos(myVertex->pnt.fX, myVertex->pnt.fY);
+          if(vertRefs.at(i) > 0)
+              item->setFlag(QGraphicsItem::ItemIsSelectable, true);
           this->addToGroup(item);
     }
 }

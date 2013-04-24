@@ -93,7 +93,8 @@ short FeatureViewPart::mustExecute() const
 {
     // If Tolerance Property is touched
     if(Direction.isTouched() || 
-       Source.isTouched())
+       Source.isTouched() ||
+       Scale.isTouched())
           return 1;
     else 
         return 0;
@@ -189,7 +190,7 @@ App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
     try {
         geometryObject->setTolerance(Tolerance.getValue());
         geometryObject->setScale(Scale.getValue());
-        geometryObject->extractGeometry(shape, Direction.getValue());
+        geometryObject->extractGeometry(shape, Direction.getValue(), ShowHiddenLines.getValue());
         return App::DocumentObject::StdReturn;
     }
     catch (Standard_Failure) {
