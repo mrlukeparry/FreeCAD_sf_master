@@ -164,15 +164,20 @@ public:
     void setViewPartFeature(Drawing::FeatureViewPart *obj);
     int type() const { return Type;}
     virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
+    
+    void toggleVertices(bool state);
 
 Q_SIGNALS:
   void dirty();
   
 protected:
   QGraphicsItemEdge * findRefEdge(int i);
+  QGraphicsItemVertex * findRefVertex(int idx);
+  
+  
   QPainterPath drawPainterPath(DrawingGeometry::BaseGeom *baseGeom) const;
   
-  // Helper method for drawing ellipses
+  // Helper methods for drawing arc segments
   void pathArcSegment(QPainterPath &path,double xc, double yc, double th0, double th1,double rx, double ry, double xAxisRotation) const;
   void pathArc(QPainterPath &path, double rx, double ry, double x_axis_rotation,
                                    bool large_arc_flag, bool sweep_flag,
@@ -183,7 +188,8 @@ protected:
   void drawViewPart();
   void drawBorder(QPainter *painter);
   virtual QPainterPath  shape () const;
-  virtual QRectF boundingRect() const; 
+  virtual QRectF boundingRect() const;
+  
   // Selection detection
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
   void hoverEnterEvent(QGraphicsSceneHoverEvent *event);

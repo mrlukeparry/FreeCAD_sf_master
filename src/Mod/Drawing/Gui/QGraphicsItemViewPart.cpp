@@ -337,89 +337,9 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
           double spanAngle =  (startAngle - geom->endAngle);
           double endAngle = geom->endAngle;
          
-          
           this->pathArc(path, geom->major, geom->minor, geom->angle, geom->largeArc, geom->cw, 
                         geom->endPnt.fX, geom->endPnt.fY,
                         geom->startPnt.fX, geom->startPnt.fY);
-// //           PainterPath &path,
-// //                     double               rx,
-// //                     double               ry,
-// //                     double               x_axis_rotation,
-// //                     int         large_arc_flag,
-// //                     int         sweep_flag,
-// //                     double               x,
-// //                     double               y,
-// //                     double curx, double cury)
-//                     
-//           double sinTheta, cosTheta;
-//           double a00, a01, a10, a11;
-//           double x0, y0, x1, y1, xc, yc, rx, ry;
-//           double d, sfactor, sfactor_sq;
-//           double theta0, theta1, thetaArc;
-//           int i, numSegs;
-//           double dx, dy, dx1, dy1, Pr1, Pr2, Px, Py, check;
-// 
-//           rx = geom->major;
-//           ry = geom->minor;
-//           
-//           sinTheta = sin(geom->angle * M_PI / 180);
-//           cosTheta  = cos(geom->angle * M_PI / 18D_PI0);
-//           dx = (geom->startPnt.fX - geom->endPnt.fX) / 2.0;
-//           dy = (geom->startPnt.fY - geom->endPnt.fY) / 2.0;
-//           dx1 =  cosTheta * dx + sinTheta * dy;
-//           dy1 = -sinTheta * dx + cosTheta * dy;
-//           Pr1 = rx * rx;
-//           Pr2 = ry * ry;
-//           Px = dx1 * dx1;
-//           Py = dy1 * dy1;
-//           /* Spec : check if radii are large enough */
-//           check = Px / Pr1 + Py / Pr2;
-//           if (check > 1) {
-//               rx = rx * sqrt(check);
-//               ry = ry * sqrt(check);
-//           }
-//           a00 =  cosTheta / rx;D_PI
-//           a01 =  sinTheta / rx;
-//           a10 = -sinTheta / ry;
-//           a11 =  cosTheta / ry;
-//           x0 = a00 * geom->startPnt.fX  + a01 * geom->startPnt.fY;
-//           y0 = a10 * geom->startPnt.fX  + a11 * geom->startPnt.fY;
-//           x1 = a00 * geom->endPnt.fX + a01 * geom->endPnt.fY;
-//           y1 = a10 * geom->endPnt.fX + a11 * geom->endPnt.fY;
-// 
-//           d = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
-//           sfactor_sq = 1.0 / d - 0.25;
-//           if (sfactor_sq < 0) 
-//               sfactor_sq = 0;
-//           
-//           sfactor = sqrt(sfactor_sq);
-//           
-//           if (geom->cw == geom->largeArc)
-//               sfactor = -sfactor;
-// 
-//           xc = 0.5 * (x0 + x1) - sfactor * (y1 - y0);
-//           yc = 0.5 * (y0 + y1) + sfactor * (x1 - x0);
-//           /* (xc, yc) is center of the circle. */
-// 
-//           theta0 = atan2f(y0 - yc, x0 - xc);
-//           theta1 = atan2f(y1 - yc, x1 - xc);
-//           thetaArc = theta1 - theta0;
-//           if (thetaArc < 0 && geom->cw)
-//               thetaArc += 2 * M_PI;
-//           else if (thetaArc > 0 && !geom->cw)
-//               thetaArc -= 2 * M_PI;
-// 
-//           numSegs = ceil(fabs(thetaArc / (M_PI * 0.5 + 0.001)));
-// 
-//           for (i = 0; i < numSegs; i++) {
-//               this->pathArcSegment(path, xc, yc,
-//                             theta0 + i * thetaArc / numSegs,
-//                             theta0 + (i + 1) * thetaArc / numSegs,
-//                             rx, ry, geom->angle);
-//           }
-          
-//           path.arcMoveTo(x, y, maj, min, startAngle);
-//           path.arcTo(x, y, maj, min, startAngle, spanAngle);
 
         } break;
         case DrawingGeometry::BSPLINE: {
@@ -802,15 +722,45 @@ void QGraphicsItemViewPart::pathArcSegment(QPainterPath &path,
 
 QGraphicsItemEdge * QGraphicsItemViewPart::findRefEdge(int idx)
 {
+      QList<QGraphicsItem *> items = this->childItems();
+      for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); it++) {
+          QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+          if(edge && edge->getReference() == idx) {
+              return edge;
+          }
+      }
+      return 0;
+}
+
+QGraphicsItemVertex * QGraphicsItemViewPart::findRefVertex(int idx)
+{
     QList<QGraphicsItem *> items = this->childItems();
     for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); it++) {
-        QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
-        if(edge && edge->getReference() == idx) {
-            return edge;
+        QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
+        if(vert && vert->getReference() == idx) {
+            return vert;
         }
     }
     return 0;
 }
+
+
+
+void QGraphicsItemViewPart::toggleVertices(bool state)
+{
+    QList<QGraphicsItem *> items = this->childItems();
+    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); it++) {
+        QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
+        if(vert) {
+            if(state)
+                vert->show();
+            else
+                vert->hide();
+        }
+    }
+}
+
+
 QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     if (change == ItemSelectedHasChanged && scene()) {
@@ -887,6 +837,7 @@ QRectF QGraphicsItemViewPart::boundingRect() const
 {
     return QGraphicsItemView::boundingRect().adjusted(-5,-5,5,5);
 }
+
 void QGraphicsItemViewPart::drawBorder(QPainter *painter){
   QRectF box = this->boundingRect().adjusted(2,2,-2,-2);
   // Save the current painter state and restore at end
