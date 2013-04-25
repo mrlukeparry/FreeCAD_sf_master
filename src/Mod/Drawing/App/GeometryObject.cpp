@@ -656,9 +656,6 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
     TopTools_IndexedMapOfShape anIndices;
     
     TopExp::MapShapes(S, TopAbs_EDGE, anIndices);
-
-    Base::Console().Log("Num edges: %i",  anIndices.Extent());
-    Base::Console().Log("Num edges gen: %i",  Edges.Extent());   
     
     for (int j = e1; j <= e2; j++) {
         ed++;
@@ -757,42 +754,42 @@ bool GeometryObject::isSameCurve(const BRepAdaptor_Curve &c1, const BRepAdaptor_
     
     if(c1.GetType() != c2.GetType())
         return false;
-//     
-//     const gp_Pnt& p1S = c1.Value(c1.FirstParameter());
-//     const gp_Pnt& p1E = c1.Value(c1.LastParameter());
-//     
-//     const gp_Pnt& p2S = c2.Value(c2.FirstParameter());
-//     const gp_Pnt& p2E = c2.Value(c2.LastParameter());
-//     
-//     bool state =  (p1S.IsEqual(p2S, Precision::Confusion()) && p1E.IsEqual(p2E, Precision::Confusion()));
-//     
-//     if( s ||
-//         (p1S.IsEqual(p2E, Precision::Confusion()) && p1E.IsEqual(p2S, Precision::Confusion())) ){ 
-//         switch(c1.GetType()) {
-//           case GeomAbs_Circle: {
-//               
-//                   gp_Circ circ1 = c1.Circle();
-//                   gp_Circ circ2 = c2.Circle();
-//                   
-//                   const gp_Pnt& p = circ1.Location();
-//                   const gp_Pnt& p2 = circ2.Location();
-//                   
-//                   double radius1 = circ1.Radius();
-//                   double radius2 = circ2.Radius();
-//                   double f1 = c1.FirstParameter();
-//                   double f2 = c2.FirstParameter();
-//                   double l1 = c1.LastParameter();
-//                   double l2 = c2.LastParameter();
-//                   c1.Curve().Curve()->
-//                   if( p.IsEqual(p2,Precision::Confusion()) &&
-//                   radius2 - radius1 < Precision::Confusion()) {
-//                       return true;
-//                   }
-//           } break;
-//           default: break;
-//         }
-//     }
-     
+#if 0    
+    const gp_Pnt& p1S = c1.Value(c1.FirstParameter());
+    const gp_Pnt& p1E = c1.Value(c1.LastParameter());
+    
+    const gp_Pnt& p2S = c2.Value(c2.FirstParameter());
+    const gp_Pnt& p2E = c2.Value(c2.LastParameter());
+    
+    bool state =  (p1S.IsEqual(p2S, Precision::Confusion()) && p1E.IsEqual(p2E, Precision::Confusion()));
+    
+    if( s ||
+        (p1S.IsEqual(p2E, Precision::Confusion()) && p1E.IsEqual(p2S, Precision::Confusion())) ){ 
+        switch(c1.GetType()) {
+          case GeomAbs_Circle: {
+              
+                  gp_Circ circ1 = c1.Circle();
+                  gp_Circ circ2 = c2.Circle();
+                  
+                  const gp_Pnt& p = circ1.Location();
+                  const gp_Pnt& p2 = circ2.Location();
+                  
+                  double radius1 = circ1.Radius();
+                  double radius2 = circ2.Radius();
+                  double f1 = c1.FirstParameter();
+                  double f2 = c2.FirstParameter();
+                  double l1 = c1.LastParameter();
+                  double l2 = c2.LastParameter();
+                  c1.Curve().Curve()->
+                  if( p.IsEqual(p2,Precision::Confusion()) &&
+                  radius2 - radius1 < Precision::Confusion()) {
+                      return true;
+                  }
+          } break;
+          default: break;
+        }
+    }
+#endif
     return false;
 }
 

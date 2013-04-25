@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2005 Werner Mayer <wmayer[at]users.sourceforge.net>     *
+ *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,21 +21,23 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
 # include <qobject.h>
 #endif
 
-#include "Workbench.h"
 #include <Gui/MenuManager.h>
 #include <Gui/ToolBarManager.h>
+
+#include "Workbench.h"
 
 using namespace DrawingGui;
 
 #if 0 // needed for Qt's lupdate utility
-    qApp->translate("Workbench", "Drawing");
+    qApp->translate("Workbench", "Drawing Pages");
+    qApp->translate("Workbench", "Drawing Views");
+    qApp->translate("Workbench", "Drawing Dimensions");
 #endif
 
 /// @namespace DrawingGui @class Workbench
@@ -56,39 +59,51 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     Gui::MenuItem* part = new Gui::MenuItem;
     root->insertItem(item, part);
     part->setCommand("Drawing");
-    *part << "Drawing_Open";
-    //*part << "Drawing_NewA3Landscape";
-    *part << "Drawing_NewPage";
-    *part << "Drawing_NewView";
-    *part << "Drawing_NewDimension";
-    *part << "Drawing_NewViewSection";
-    *part << "Drawing_OrthoViews";
+    *part << "Drawing_Open"
+          << "Drawing_NewPage"
+          << "Drawing_NewView"
+          << "Drawing_NewDimension"
+          << "Drawing_OrthoViews";
+    
+#if 0
+          << "Drawing_NewViewSection"
     *part << "Drawing_OpenBrowserView";
     *part << "Drawing_Annotation";
     *part << "Drawing_Clip";
     *part << "Drawing_ExportPage";
     *part << "Separator";
     *part << "Drawing_ProjectShape";
-
+#endif
     return root;
 }
 
 Gui::ToolBarItem* Workbench::setupToolBars() const
 {
     Gui::ToolBarItem* root = StdWorkbench::setupToolBars();
-    Gui::ToolBarItem* part = new Gui::ToolBarItem(root);
-    part->setCommand("Drawing");
-    *part << "Drawing_Open";
-    //*part << "Drawing_NewA3Landscape";
-    *part << "Drawing_NewPage";
-    *part << "Drawing_NewView";
-    *part << "Drawing_NewDimension";
-    *part << "Drawing_NewViewSection";
-    *part << "Drawing_OrthoViews";
+    Gui::ToolBarItem *pages = new Gui::ToolBarItem(root);
+    pages->setCommand("Drawing Pages");
+    *pages << "Drawing_NewPage";
+    
+    Gui::ToolBarItem *views = new Gui::ToolBarItem(root);
+    views->setCommand("Drawing Views");
+    *views << "Drawing_NewView"
+           << "Drawing_OrthoViews";
+           
+    Gui::ToolBarItem *dims = new Gui::ToolBarItem(root);
+    dims->setCommand("Drawing Dimensions");
+    *dims << "Drawing_NewDimension";
+
+//     *img << "Drawing_OpenBrowserView";
+//     *img << "Drawing_Annotation";
+//     *img << "Drawing_Clip";
+
+#if 0
     *part << "Drawing_OpenBrowserView";
+    *part << "Drawing_NewViewSection"
     *part << "Drawing_Annotation";
     *part << "Drawing_Clip";
     *part << "Drawing_ExportPage";
+#endif
     return root;
 }
 
@@ -96,21 +111,28 @@ Gui::ToolBarItem* Workbench::setupCommandBars() const
 {
     // Part tools
     Gui::ToolBarItem* root = new Gui::ToolBarItem;
-    Gui::ToolBarItem* img = new Gui::ToolBarItem(root);
-    img->setCommand("I/O");
-    *img << "Drawing_Open";
-    img = new Gui::ToolBarItem(root);
-    img->setCommand("Drawing types");
-  //*img << "Drawing_NewA3Landscape";
-    *img << "Drawing_NewPage";
-    *img << "Drawing_NewDimension";
-    *img << "Drawing_OrthoViews";
-    *img << "Drawing_OpenBrowserView";
-    *img << "Drawing_Annotation";
-    *img << "Drawing_Clip";
-    img = new Gui::ToolBarItem(root);
-    img->setCommand("Views");
-    *img << "Drawing_NewView";
+    
+    Gui::ToolBarItem* io = new Gui::ToolBarItem(root);
+    io->setCommand("I/O");
+    *io << "Drawing_Open";
+    
+    Gui::ToolBarItem *pages = new Gui::ToolBarItem(root);
+    pages->setCommand("Drawing Pages");
+    *pages << "Drawing_NewPage";
+    
+    Gui::ToolBarItem *dims = new Gui::ToolBarItem(root);
+    dims->setCommand("Drawing Dimensions");
+    *dims << "Drawing_NewDimension";
+
+//     *img << "Drawing_OpenBrowserView";
+//     *img << "Drawing_Annotation";
+//     *img << "Drawing_Clip";
+         
+    Gui::ToolBarItem *views = new Gui::ToolBarItem(root);
+    views->setCommand("Views");
+    *views << "Drawing_NewView"
+           << "Drawing_OrthoViews";
+           
     return root;
 }
 

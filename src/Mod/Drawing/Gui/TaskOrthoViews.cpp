@@ -32,6 +32,7 @@
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
+#include <Gui/Document.h>
 #include <Base/BoundBoxPy.h>
 #include <Mod/Part/App/PartFeature.h>
 #include <Mod/Drawing/App/FeaturePage.h>
@@ -93,9 +94,6 @@ void rotate_coords(int& x, int& y, int i)
     y = t2;
 }
 
-
-
-
 orthoView::orthoView(std::string name, const char * targetpage, const char * sourcepart, Base::BoundBox3d partbox)
 {
     myname = name;
@@ -112,11 +110,21 @@ orthoView::orthoView(std::string name, const char * targetpage, const char * sou
     angle = 0;
     active = true;
 
-    Command::doCommand(Command::Doc,"App.activeDocument().addObject('Drawing::FeatureViewPart','%s')",myname.c_str());
-    Command::doCommand(Command::Doc,"App.activeDocument().%s.Source = App.activeDocument().%s",myname.c_str(), sourcepart);
-    Command::doCommand(Command::Doc,"App.activeDocument().%s.addObject(App.activeDocument().%s)",targetpage,myname.c_str());
-    Command::doCommand(Command::Doc,"App.activeDocument().%s.Direction = (1,0,0)",myname.c_str());
+    Gui::Command::doCommand(Command::Doc,"App.activeDocument().addObject('Drawing::FeatureViewPart','%s')",myname.c_str());
+    Gui::Command::doCommand(Command::Doc,"App.activeDocument().%s.Source = App.activeDocument().%s",myname.c_str(), sourcepart);
+    Gui::Command::doCommand(Command::Doc,"App.activeDocument().%s.addObject(App.activeDocument().%s)",targetpage,myname.c_str());
+    Gui::Command::doCommand(Command::Doc,"App.activeDocument().%s.Direction = (1,0,0)",myname.c_str());
+    
+    App::Document *doc =  Gui::Application::Instance->activeDocument()->getDocument();
+    std::vector<App::DocumentObject*> pages = doc->getObjectsOfType(Drawing::FeaturePage::getClassTypeId());
+    if (pages.empty()){
+        
+        return;
+    }
 
+    std::string PageName = pages.front()->getNameInDocument();
+    Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
+    page->addView(page->getDocument()->getObject(myname.c_str()));    
     activate(false);
 }
 
@@ -128,7 +136,7 @@ orthoView::~orthoView()
 
 void orthoView::deleteme()
 {
-    Command::doCommand(Command::Doc,"App.activeDocument().removeObject('%s')", myname.c_str());
+    Gui::Command::doCommand(Command::Doc,"App.activeDocument().removeObject('%s')", myname.c_str());
 }
 
 

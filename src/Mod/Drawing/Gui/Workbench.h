@@ -20,7 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #ifndef DRAWING_WORKBENCH_H
 #define DRAWING_WORKBENCH_H
 
@@ -46,6 +45,5 @@ protected:
 };
 
 } // namespace DrawingGui
-
 
 #endif // DRAWING_WORKBENCH_H 
