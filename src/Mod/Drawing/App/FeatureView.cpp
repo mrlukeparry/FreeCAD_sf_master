@@ -73,6 +73,12 @@ FeatureView::~FeatureView()
 {
 }
 
+void FeatureView::onDocumentRestored()
+{
+    // Rebuild the view
+    this->execute();
+}
+
 App::DocumentObjectExecReturn *FeatureView::execute(void)
 {
     return App::DocumentObject::StdReturn;

@@ -84,6 +84,7 @@ protected:
   QPen   vPen;
   QPen   hPen;
   
+  float sf;
   QRectF bb;
   bool highlighted;
   bool showHidden;
@@ -166,7 +167,7 @@ public:
     virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
     
     void toggleVertices(bool state);
-
+    virtual void updateView();
 Q_SIGNALS:
   void dirty();
   

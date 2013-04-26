@@ -287,7 +287,7 @@ DrawingGeometry::Vertex * GeometryObject::projectVertex(const TopoDS_Shape &vert
     BRepBuilderAPI_Transform mkTrfScale(mkTrf.Shape(), matScale);
 
     const TopoDS_Vertex &refVert = TopoDS::Vertex(mkTrfScale.Shape());
-    
+    Base::Console().Log("dir %f %f %f",direction.x,direction.y,direction.z);
     gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
     
     HLRAlgo_Projector projector = HLRAlgo_Projector( transform );

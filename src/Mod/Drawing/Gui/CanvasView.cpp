@@ -129,14 +129,13 @@ void CanvasView::addViewDimension(Drawing::FeatureViewDimension *dim)
                 dimGroup->setPos(view->pos()); 
                 view->addToGroup(dimGroup);
                 //Must transfer to new coordinate system of parent view
-                
-                return;
             }
         }
     }
     
     // The dimensions parent couldn't be found. Add for now.
-    views.push_back(dimGroup); 
+    views.push_back(dimGroup);            
+    return;
 }
 
 

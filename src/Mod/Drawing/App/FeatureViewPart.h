@@ -66,7 +66,8 @@ public:
     
     short mustExecute() const;
     
-    /** @name methods overide Feature */
+    /** @name methods overide Feature */    
+   
     //@{
     /// recalculate the Feature
     virtual App::DocumentObjectExecReturn *execute(void);

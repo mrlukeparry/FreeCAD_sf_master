@@ -485,9 +485,7 @@ void DrawingView::selectionChanged()
 void DrawingView::updateDrawing()
 {
     const std::vector<QGraphicsItemView *> &views = m_view->getViews();
-    
     for(std::vector<QGraphicsItemView *>::const_iterator it = views.begin(); it != views.end(); ++it) {
-
         (*it)->updateView();      
     }
     

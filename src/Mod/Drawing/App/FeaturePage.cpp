@@ -73,8 +73,9 @@ short FeaturePage::mustExecute() const
     bool ViewsTouched = false;
     const std::vector<App::DocumentObject*> &vals = Views.getValues();
     for(std::vector<App::DocumentObject *>::const_iterator it = vals.begin(); it < vals.end(); ++it) {
-        if((*it)->isTouched())
-            ViewsTouched = true;
+        if((*it)->isTouched()) {
+            ViewsTouched = true;            
+        }
     }
 
     return (ViewsTouched) ? 1 : App::DocumentObjectGroup::mustExecute();
@@ -86,6 +87,8 @@ void FeaturePage::onChanged(const App::Property* prop)
     if (prop == &Template) {
         if (!this->isRestoring()) {
         }
+    } else if (prop == &Views) {
+        Base::Console().Log("views changed -> feature page \n");
     }
     App::DocumentObjectGroup::onChanged(prop);
 }
@@ -115,6 +118,7 @@ App::DocumentObjectExecReturn *FeaturePage::execute(void)
             Drawing::FeatureClip *Clip = dynamic_cast<Drawing::FeatureClip *>(*it);        
         }
     }
+    Views.touch();
     return App::DocumentObject::StdReturn;
 }
 //     std::string temp = Template.getValue();

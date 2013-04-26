@@ -50,6 +50,7 @@ public:
     /** @name methods overide Feature */
     //@{
     /// recalculate the Feature
+    virtual void onDocumentRestored();
     virtual App::DocumentObjectExecReturn *execute(void);
     //@}
 

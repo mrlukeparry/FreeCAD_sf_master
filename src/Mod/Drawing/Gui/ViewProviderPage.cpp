@@ -98,7 +98,7 @@ std::vector<std::string> ViewProviderDrawingPage::getDisplayModes(void) const
     
 void ViewProviderDrawingPage::updateData(const App::Property* prop)
 {
-
+Base::Console().Log("Test");
     if (prop == &(getPageObject()->Views)) {
         if(this->view) {
             view->updateDrawing();

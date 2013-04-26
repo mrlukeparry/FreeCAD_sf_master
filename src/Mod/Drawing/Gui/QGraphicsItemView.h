@@ -51,7 +51,7 @@ public:
     void setViewFeature(Drawing::FeatureView *obj);
     int type() const { return Type;}
     
-    void updateView();
+    virtual void updateView();
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
     Drawing::FeatureView * getViewObject() const { return viewObject; }
 

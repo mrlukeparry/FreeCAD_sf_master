@@ -57,6 +57,7 @@ QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : referen
     }
     
     strokeWidth = 1.;
+    sf = 1.;
     showHidden = false;
     highlighted = false;
     hPen.setStyle(Qt::DashLine);
@@ -92,9 +93,12 @@ bool QGraphicsItemEdge::contains(const QPointF &point)
 
 QPainterPath QGraphicsItemEdge::shape() const
 {
+//     QPointF pnt = this->scene()->
     QPainterPathStroker stroker;
-    stroker.setWidth(strokeWidth);
-    
+//     double scale = pnt.y();
+//     Base::Console().Log("scale %f", scale);
+    stroker.setWidth(strokeWidth / sf);
+
     // Combine paths
     QPainterPath p;
     p.addPath(vPath);
@@ -162,6 +166,8 @@ void QGraphicsItemEdge::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     painter->setBrush(vBrush);
     painter->drawPath(vPath);
     
+    // hacky method to get scale for shape()
+    this->sf = painter->worldTransform().m11();
     if(showHidden) {
         painter->setPen(hPen);
         painter->setBrush(hBrush);
@@ -383,7 +389,44 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
       }
       return path;
 }
-
+void QGraphicsItemViewPart::updateView()
+{
+      // Iterate
+    if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()))
+        return;
+        
+    Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(this->viewObject);
+   
+    // Identify what changed to prevent complete redraw
+    if(viewPart->LineWidth.isTouched()) {
+        Base::Console().Log("line width touched");
+        QList<QGraphicsItem *> items = this->childItems();
+        for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
+            QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+            if(edge)
+                edge->setStrokeWidth(viewPart->LineWidth.getValue());
+        }
+    } else if(viewPart->Direction.isTouched() || 
+              viewPart->Tolerance.isTouched() ||
+              viewPart->Scale.isTouched() ||
+              viewPart->ShowHiddenLines.isTouched()){
+        Base::Console().Log("Drawing View has changed");
+        QList<QGraphicsItem *> items = this->childItems();
+    
+        for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
+            if(dynamic_cast<QGraphicsItemEdge *> (*it) || 
+               dynamic_cast<QGraphicsItemVertex *>(*it) ) {
+                (*it)->setParentItem(0);
+                this->removeFromGroup(*it);
+                this->scene()->removeItem(*it);
+            }
+        }
+        
+        drawViewPart();
+        
+    }
+//     float lineWidth = part->LineWidth.isTouched()
+}
 
 void QGraphicsItemViewPart::drawViewPart()
 {    
@@ -603,6 +646,8 @@ void QGraphicsItemViewPart::drawViewPart()
               item->setFlag(QGraphicsItem::ItemIsSelectable, true);
           this->addToGroup(item);
     }
+    
+    Q_EMIT dirty();
 }
 
 void QGraphicsItemViewPart::pathArc(QPainterPath &path, double rx, double ry, double x_axis_rotation,

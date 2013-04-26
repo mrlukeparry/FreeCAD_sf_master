@@ -183,6 +183,32 @@ void QGraphicsItemViewDimension::hover(bool state)
     draw();
 }
 
+void QGraphicsItemViewDimension::updateView()
+{
+          // Iterate
+    if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
+        return;
+    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension*>(this->viewObject);
+   
+    // Identify what changed to prevent complete redraw
+    if(dim->Fontsize.isTouched() ||
+       dim->Font.isTouched())
+    {
+        QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
+        QFont font = dLabel->font();
+        font.setPointSizeF(dim->Fontsize.getValue());
+        font.setFamily(QString::fromAscii(dim->Font.getValue()));
+        dLabel->setFont(font);
+        dLabel->updatePos();
+        draw(); 
+        Q_EMIT dirty();
+    } else {
+        draw(); 
+        Q_EMIT dirty();
+    }
+    
+}
+
 void QGraphicsItemViewDimension::updateDim()
 {
     // For now assume only show absolute dimension values
