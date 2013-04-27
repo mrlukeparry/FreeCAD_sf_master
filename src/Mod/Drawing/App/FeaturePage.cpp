@@ -88,7 +88,7 @@ void FeaturePage::onChanged(const App::Property* prop)
         if (!this->isRestoring()) {
         }
     } else if (prop == &Views) {
-        Base::Console().Log("views changed -> feature page \n");
+        Base::Console().Log("Views changed -> feature page \n");
     }
     App::DocumentObjectGroup::onChanged(prop);
 }
@@ -103,7 +103,7 @@ int FeaturePage::addView(App::DocumentObject *docObj)
     std::vector<App::DocumentObject *> newVals(vals);
     newVals.push_back(docObj);
     Views.setValues(newVals);
-
+    Views.touch();
     return Views.getSize();
 }
 

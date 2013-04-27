@@ -261,7 +261,7 @@ DrawingView::DrawingView(Gui::Document* doc, QWidget* parent)
 
     setCentralWidget(m_view);
     //setWindowTitle(tr("SVG Viewer"));
-    
+
     // Connect Signals and Slots
     QObject::connect(
         m_view->scene(), SIGNAL(selectionChanged()),
@@ -269,42 +269,55 @@ DrawingView::DrawingView(Gui::Document* doc, QWidget* parent)
        );
 }
 
+DrawingView::~DrawingView()
+{
+
+}
+
 void DrawingView::attachPageObject(Drawing::FeaturePage *pageFeature)
 {
-    // get through the children and collect all the views
+    // A fresh page is added and we iterate through its collected children and add these to Canvas View
     const std::vector<App::DocumentObject*> &grp = pageFeature->Views.getValues();
     for (std::vector<App::DocumentObject*>::const_iterator it = grp.begin();it != grp.end(); ++it) {
-        if ( (*it)->getTypeId().isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()) ) {
-            Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(*it);
-            m_view->addViewPart(viewPart);
-        } else if((*it)->getTypeId().isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()) ) {
-            Drawing::FeatureViewDimension *viewDim = dynamic_cast<Drawing::FeatureViewDimension *>(*it);
-            m_view->addViewDimension(viewDim);
-        }
+        attachView(*it);
+    }
+
+    // Save a link to the page feature - exclusivly one page per drawing view
+    pageFeat.setValue(dynamic_cast<App::DocumentObject*>(pageFeature));
+}
+
+void DrawingView::attachView(App::DocumentObject *obj)
+{
+    if ( obj->getTypeId().isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()) ) {
+        Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(obj);
+        m_view->addViewPart(viewPart);
+    } else if(obj->getTypeId().isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()) ) {
+        Drawing::FeatureViewDimension *viewDim = dynamic_cast<Drawing::FeatureViewDimension *>(obj);
+        m_view->addViewDimension(viewDim);
     }
 }
 
 void DrawingView::preSelectionChanged(const QPoint &pos)
 {
     QObject *obj = QObject::sender();
-    
+
     if(!obj)
         return;
-    
+
     // Check if an edge was preselected
     QGraphicsItemEdge *edge = qobject_cast<QGraphicsItemEdge *>(obj);
     QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(obj);
     if(edge) {
-      
+
         // Find the parent view that this edges is contained within
         QGraphicsItem *parent = edge->parentItem();
         if(!parent)
             return;
-        
+
         QGraphicsItemView *viewItem = dynamic_cast<QGraphicsItemView *>(parent);
         if(!viewItem)
           return;
-            
+
         Drawing::FeatureView *viewObj = viewItem->getViewObject();
         std::stringstream ss;
         ss << "Edge" << edge->getReference();
@@ -321,11 +334,11 @@ void DrawingView::preSelectionChanged(const QPoint &pos)
         QGraphicsItem *parent = vert->parentItem();
         if(!parent)
             return;
-        
+
         QGraphicsItemView *viewItem = dynamic_cast<QGraphicsItemView *>(parent);
         if(!viewItem)
           return;
-            
+
         Drawing::FeatureView *viewObj = viewItem->getViewObject();
         std::stringstream ss;
         ss << "Edge" << vert->getReference();
@@ -339,7 +352,7 @@ void DrawingView::preSelectionChanged(const QPoint &pos)
     } else {
             // Check if an edge was preselected
         QGraphicsItemView *view = qobject_cast<QGraphicsItemView *>(obj);
-        
+
         if(!view)
             return;
         Drawing::FeatureView *viewObj = view->getViewObject();
@@ -360,23 +373,23 @@ void DrawingView::selectionChanged()
     Gui::Selection().clearSelection();
     for (QList<QGraphicsItem *>::iterator it = selection.begin(); it != selection.end(); ++it) {
         // All selectable items must be of QGraphicsItemView type
-            
+
         QGraphicsItemView *itemView = dynamic_cast<QGraphicsItemView *>(*it);
         if(itemView == 0) {
             QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
             if(edge) {
-              
+
                 // Find the parent view that this edges is contained within
                 QGraphicsItem *parent = edge->parentItem();
                 if(!parent)
                     return;
-                
+
                 QGraphicsItemView *viewItem = dynamic_cast<QGraphicsItemView *>(parent);
                 if(!viewItem)
                   return;
-                    
+
                 Drawing::FeatureView *viewObj = viewItem->getViewObject();
-        
+
                 std::stringstream ss;
                 ss << "Edge" << edge->getReference();
                 bool accepted =
@@ -384,113 +397,181 @@ void DrawingView::selectionChanged()
                                             ,viewObj->getNameInDocument()
                                             ,ss.str().c_str());
             }
-            
+
             QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
             if(vert) {
               // Find the parent view that this edges is contained within
                 QGraphicsItem *parent = vert->parentItem();
                 if(!parent)
                     return;
-                
+
                 QGraphicsItemView *viewItem = dynamic_cast<QGraphicsItemView *>(parent);
                 if(!viewItem)
                   return;
-                    
+
                 Drawing::FeatureView *viewObj = viewItem->getViewObject();
-        
+
                 std::stringstream ss;
                 ss << "Vertex" << vert->getReference();
                 bool accepted =
                 Gui::Selection().addSelection(viewObj->getDocument()->getName()
                                             ,viewObj->getNameInDocument()
                                             ,ss.str().c_str());
-                
+
             }
-            
+
             QGraphicsItemDatumLabel *dimLabel = dynamic_cast<QGraphicsItemDatumLabel*>(*it);
             if(dimLabel) {
                 // Find the parent view (dimLabel->dim->view)
 
                 QGraphicsItem *dimParent = dimLabel->parentItem();
-                
+
                 if(!dimParent)
                     return;
-                
-                QGraphicsItemView *dimItem = dynamic_cast<QGraphicsItemView *>(dimParent); 
-                
+
+                QGraphicsItemView *dimItem = dynamic_cast<QGraphicsItemView *>(dimParent);
+
                 if(!dimItem)
                   return;
 
                 Drawing::FeatureView *dimObj = dimItem->getViewObject();
-        
+
                 bool accepted =
                 Gui::Selection().addSelection(dimObj->getDocument()->getName(),dimObj->getNameInDocument());
-                
+
             }
             continue;
-            
-        }        
-        
+
+        }
+
         Drawing::FeatureView *viewObj = itemView->getViewObject();
-        
+
         std::string doc_name = viewObj->getDocument()->getName();
         std::string obj_name = viewObj->getNameInDocument();
 
         Gui::Selection().addSelection(doc_name.c_str(), obj_name.c_str());
     }
     this->blockConnection(block);
-    
-//     QList<QGraphicsItem *> addSelection;
-//     QList<QGraphicsItem *> remSelection;
-// 
-//     for(QList<QGraphicsItem *>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
-//         bool found = false;
-//         for(QList<QGraphicsItem *>::const_iterator pit = prevSelection.begin(); pit != prevSelection.end(); ++pit) {
-//             if((*it) == (*pit)) {
-//                 found = true;
-//                 prevSelection.removeOne(*pit);
-//                 break;
-//             }
-//         }
-//         if(!found)
-//             addSelection.push_back(*it);
-        
-//     }
-// 
-//     // Any remaining entries must have be removed
-//     remSelection = prevSelection;
+
+    QList<QGraphicsItem *> addSelection;
+    QList<QGraphicsItem *> remSelection;
+#if 0
+    for(QList<QGraphicsItem *>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
+        bool found = false;
+        for(QList<QGraphicsItem *>::const_iterator pit = prevSelection.begin(); pit != prevSelection.end(); ++pit) {
+            if((*it) == (*pit)) {
+                found = true;
+                prevSelection.removeOne(*pit);
+                break;
+            }
+        }
+        if(!found)
+            addSelection.push_back(*it);
+
+    }
+
+    // Any remaining entries must have be removed
+    remSelection = prevSelection;
 
 
-//     QGraphicsItemGroup *group = qgraphicsitem_cast<QGraphicsItemGroup *>(items.at(0));
-//     if(group == NULL)
-//         return;
-//     bool selected = group->isSelected();
-//
-//     QList<QGraphicsItem *> children = group->children();
-//     for(QList<QGraphicsItem *>::const_iterator it = children.begin(); it != children.end(); ++it) {
-//       QAbstractGraphicsShapeItem *item = qgraphicsitem_cast<QAbstractGraphicsShapeItem *>(*it);
-//       QPen pen = item->pen();
-//       if(selected)
-//           pen.setColor(SelectColor);
-//       else
-//           pen.setColor(QColor(0, 0,0));
-//       item->setPen(pen);
-//     }
-//
-//     // Cache the selection
-//     prevSelection.clear();
-//     prevSelection = scene()->selectedItems();
+    QGraphicsItemGroup *group = qgraphicsitem_cast<QGraphicsItemGroup *>(items.at(0));
+    if(group == NULL)
+        return;
+    bool selected = group->isSelected();
+
+    QList<QGraphicsItem *> children = group->children();
+    for(QList<QGraphicsItem *>::const_iterator it = children.begin(); it != children.end(); ++it) {
+      QAbstractGraphicsShapeItem *item = qgraphicsitem_cast<QAbstractGraphicsShapeItem *>(*it);
+      QPen pen = item->pen();
+      if(selected)
+          pen.setColor(SelectColor);
+      else
+          pen.setColor(QColor(0, 0,0));
+      item->setPen(pen);
+    }
+
+    // Cache the selection
+    prevSelection.clear();
+    prevSelection = scene()->selectedItems();
+#endif
 }
 
 void DrawingView::updateDrawing()
 {
+    // We cannot guarantee if the number of views have changed so check the number
     const std::vector<QGraphicsItemView *> &views = m_view->getViews();
-    for(std::vector<QGraphicsItemView *>::const_iterator it = views.begin(); it != views.end(); ++it) {
-        (*it)->updateView();      
+    Drawing::FeaturePage *pageFeature = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
+    std::vector<App::DocumentObject*> grp = pageFeature->Views.getValues();
+
+    //
+    if(views.size() < grp.size()) {
+        // An  view object has been added so update graphicsviews
+        std::list<App::DocumentObject*> notFnd;
+        // Iterate through to find any views that are missing
+        std::vector<QGraphicsItemView *>::const_iterator qview = views.begin();
+
+        // TODO think of a better algorithm to deal with any changes to views list
+        // Find any additions
+        for(std::vector<App::DocumentObject*>::const_iterator it = grp.begin(); it != grp.end(); ++it) {
+            bool fnd = false;
+            while(qview != views.end()) {
+
+                // Unsure if we can compare pointers so rely on name
+                if(strcmp((*qview)->getViewObject()->getNameInDocument(), (*it)->getNameInDocument()) == 0) {
+                    fnd = true;
+                    break;
+                }
+                qview++;
+            }
+
+            if(!fnd)
+                notFnd.push_back(*it);
+        }
+
+         // Iterate over missing views and add them
+        for(std::list<App::DocumentObject*>::const_iterator it = notFnd.begin(); it != notFnd.end(); ++it) {
+            attachView(*it);
+        }
+
+    } else if(views.size() > grp.size()) {
+        // A View Object has been removed
+        std::vector<QGraphicsItemView *>::const_iterator qview = views.begin();
+        bool fnd = false;
+
+        // Updated QItemView List
+        std::vector<QGraphicsItemView *> myViews;
+
+        // Remove any orphans
+        while(qview != views.end()) {
+            fnd = false;
+            for(std::vector<App::DocumentObject*>::const_iterator it = grp.begin(); it != grp.end(); ++it) {
+
+                // Unsure if we can compare pointers so rely on name
+                if(strcmp((*qview)->getViewObject()->getNameInDocument(), (*it)->getNameInDocument()) == 0) {
+                    fnd = true;
+                    myViews.push_back(*qview);
+                    break;
+                }
+            }
+
+            if(!fnd) {
+                m_view->scene()->removeItem(*qview);
+            }
+            qview++;
+        }
+
+        // Update the canvas view list of QGraphicsItemViews
+        m_view->setViews(myViews);
     }
-    
+
+    // Updated all the views
+    const std::vector<QGraphicsItemView *> &upviews = m_view->getViews();
+    for(std::vector<QGraphicsItemView *>::const_iterator it = upviews.begin(); it != upviews.end(); ++it) {
+        (*it)->updateView();
+    }
+
 }
-    
+
 void DrawingView::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu menu;

@@ -28,7 +28,7 @@
   # include <TopoDS_Edge.hxx>
   # include <TopoDS.hxx>
   # include <BRepAdaptor_Curve.hxx>
-  
+
   # include <QAction>
   # include <QApplication>
   # include <QContextMenuEvent>
@@ -59,7 +59,7 @@
 using namespace DrawingGui;
 
 
-QGraphicsItemDatumLabel::QGraphicsItemDatumLabel(int ref, QGraphicsScene *scene  ) : reference(ref) 
+QGraphicsItemDatumLabel::QGraphicsItemDatumLabel(int ref, QGraphicsScene *scene  ) : reference(ref)
 {
     if(scene) {
         scene->addItem(this);
@@ -69,7 +69,7 @@ QGraphicsItemDatumLabel::QGraphicsItemDatumLabel(int ref, QGraphicsScene *scene 
     this->setFlag(ItemSendsGeometryChanges, true);
     this->setFlag(ItemIsMovable, true);
     this->setFlag(ItemIsSelectable, true);
-    this->setAcceptHoverEvents(true);    
+    this->setAcceptHoverEvents(true);
 }
 
 QVariant QGraphicsItemDatumLabel::itemChange(GraphicsItemChange change, const QVariant &value)
@@ -78,7 +78,7 @@ QVariant QGraphicsItemDatumLabel::itemChange(GraphicsItemChange change, const QV
         // value is the new position.
         if(isSelected()) {
             Q_EMIT selected(true);
-            this->setDefaultTextColor(Qt::blue); 
+            this->setDefaultTextColor(Qt::blue);
         } else {
             Q_EMIT selected(false);
             this->setDefaultTextColor(Qt::black);
@@ -88,7 +88,7 @@ QVariant QGraphicsItemDatumLabel::itemChange(GraphicsItemChange change, const QV
         updatePos();
         Q_EMIT dragging();
     }
-    
+
     return QGraphicsItem::itemChange(change, value);
 }
 void QGraphicsItemDatumLabel::updatePos()
@@ -105,10 +105,10 @@ void QGraphicsItemDatumLabel::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 }
 
 void QGraphicsItemDatumLabel::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
-{    
+{
     QGraphicsItemView *view = dynamic_cast<QGraphicsItemView *> (this->parentItem());
     assert(view != 0);
-    
+
     Q_EMIT hover(false);
     if(!isSelected() && !view->isSelected()) {
         this->setDefaultTextColor(Qt::black);
@@ -117,11 +117,11 @@ void QGraphicsItemDatumLabel::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 }
 
 void QGraphicsItemDatumLabel::mouseReleaseEvent( QGraphicsSceneMouseEvent * event)
-{       
+{
     if(scene() && this == scene()->mouseGrabberItem()) {
         Q_EMIT dragFinished();
     }
-    QGraphicsItem::mouseReleaseEvent(event);   
+    QGraphicsItem::mouseReleaseEvent(event);
 }
 
 void QGraphicsItemDatumLabel::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
@@ -131,44 +131,44 @@ void QGraphicsItemDatumLabel::paint(QPainter *painter, const QStyleOptionGraphic
     QGraphicsTextItem::paint(painter, &myOption, widget);
 }
 
-QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemView(pos, scene)                 
+QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemView(pos, scene)
 {
     setHandlesChildEvents(false);
     this->setFlag(QGraphicsItem::ItemIsMovable, false);
-    
+
     QGraphicsItemDatumLabel *dLabel = new QGraphicsItemDatumLabel();
     QGraphicsPathItem *arrws = new QGraphicsPathItem();
-   
+
          // connecting the needed signals
     QObject::connect(
         dLabel  , SIGNAL(dragging()),
         this    , SLOT  (datumLabelDragged()));
-    
+
     QObject::connect(
         dLabel  , SIGNAL(dragFinished()),
         this    , SLOT  (datumLabelDragFinished()));
-    
+
     QObject::connect(
         dLabel  , SIGNAL(selected(bool)),
         this    , SLOT  (select(bool)));
-    
+
     QObject::connect(
         dLabel  , SIGNAL(hover(bool)),
         this    , SLOT  (hover(bool)));
-    
-    this->arrows  = arrws;    
+
+    this->arrows  = arrws;
     this->datumLabel = dLabel;
-    
+
     this->pen.setCosmetic(true);
     this->pen.setWidthF(2);
-    
+
     this->addToGroup(arrows);
     this->addToGroup(datumLabel);
 }
 
 QGraphicsItemViewDimension::~QGraphicsItemViewDimension()
 {
-    
+
 }
 
 void QGraphicsItemViewDimension::select(bool state)
@@ -189,7 +189,7 @@ void QGraphicsItemViewDimension::updateView()
     if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
         return;
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension*>(this->viewObject);
-   
+
     // Identify what changed to prevent complete redraw
     if(dim->Fontsize.isTouched() ||
        dim->Font.isTouched())
@@ -200,13 +200,13 @@ void QGraphicsItemViewDimension::updateView()
         font.setFamily(QString::fromAscii(dim->Font.getValue()));
         dLabel->setFont(font);
         dLabel->updatePos();
-        draw(); 
+        draw();
         Q_EMIT dirty();
     } else {
-        draw(); 
+        draw();
         Q_EMIT dirty();
     }
-    
+
 }
 
 void QGraphicsItemViewDimension::updateDim()
@@ -216,22 +216,22 @@ void QGraphicsItemViewDimension::updateDim()
 
     if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
         return;
-        
+
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->viewObject);
-    
+
     QString str;
 
     int precision = dim->Precision.getValue();
     str.setNum((absolute) ? abs(dim->getValue()): dim->getValue(), 'g', precision);
     
     QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
-     
+
     QFont font = dLabel->font();
     font.setPointSizeF(dim->Fontsize.getValue());
     font.setFamily(QString::fromAscii(dim->Font.getValue()));
-    
+
     dLabel->setPlainText(str);
-    dLabel->setFont(font);    
+    dLabel->setFont(font);
     dLabel->updatePos();
 }
 
@@ -250,7 +250,7 @@ void QGraphicsItemViewDimension::datumLabelDragFinished()
 
     if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
         return;
-        
+
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->viewObject);
     QGraphicsItemDatumLabel *datumLbl = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
 
@@ -263,39 +263,39 @@ void QGraphicsItemViewDimension::datumLabelDragFinished()
 
 
 void QGraphicsItemViewDimension::draw()
-{        
+{
     // Iterate
     if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
         return;
-        
+
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->viewObject);
     QGraphicsItemDatumLabel *lbl = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
 
     pen.setStyle(Qt::SolidLine);
-    
+
     // Crude method of determining state [TODO] improve
     if(this->isSelected() || this->hasHover) {
         pen.setColor(QColor(Qt::blue));
     } else {
         pen.setColor(QColor(Qt::black));
     }
-    
+
     QString str = lbl->toPlainText();
-    //Relcalculate the measurement based on references stored.  
+    //Relcalculate the measurement based on references stored.
     const std::vector<App::DocumentObject*> &objects = dim->References.getValues();
     const std::vector<std::string> &SubNames     = dim->References.getSubValues();
-           
-    if(strcmp(dim->Type.getValueAsString(), "Distance") == 0 || 
-       strcmp(dim->Type.getValueAsString(), "DistanceX") == 0 || 
+
+    if(strcmp(dim->Type.getValueAsString(), "Distance") == 0 ||
+       strcmp(dim->Type.getValueAsString(), "DistanceX") == 0 ||
        strcmp(dim->Type.getValueAsString(), "DistanceY") == 0) {
-      
-        Base::Vector3d p1, p2;  
+
+        Base::Vector3d p1, p2;
         if(dim->References.getValues().size() == 1 && SubNames[0].substr(0,4) == "Edge") {
             // Assuming currently just edge
 
             const Drawing::FeatureViewPart *refObj = static_cast<const Drawing::FeatureViewPart*>(objects[0]);
             int idx = std::atoi(SubNames[0].substr(4,4000).c_str());
-            
+
             DrawingGeometry::BaseGeom *geom = refObj->getCompleteEdge(idx);
 
             if(geom && geom->geomType == DrawingGeometry::GENERIC ) {
@@ -304,37 +304,37 @@ void QGraphicsItemViewDimension::draw()
                   Base::Vector2D pnt2 = gen->points.at(1);
                   p1 = Base::Vector3d (pnt1.fX, pnt1.fY, 0);
                   p2 = Base::Vector3d (pnt2.fX, pnt2.fY, 0);
-                  
+
             } else {
                 delete geom;
                 throw Base::Exception("Original edge not found or is invalid type");
             }
-            
+
             // Finished with geomtry so do housekeeping
             delete geom;
             geom = 0;
-            
-        } else if(dim->References.getValues().size() == 2 && 
+
+        } else if(dim->References.getValues().size() == 2 &&
                   SubNames[0].substr(0,6) == "Vertex" &&
-                  SubNames[1].substr(0,6) == "Vertex") { 
+                  SubNames[1].substr(0,6) == "Vertex") {
             // Point to Point Dimension
             const Drawing::FeatureViewPart *refObj = static_cast<const Drawing::FeatureViewPart*>(objects[0]);
             int idx = std::atoi(SubNames[0].substr(6,4000).c_str());
             int idx2 = std::atoi(SubNames[1].substr(6,4000).c_str());
-        
+
             DrawingGeometry::Vertex *v1 = refObj->getVertex(idx);
             DrawingGeometry::Vertex *v2 = refObj->getVertex(idx2);
             p1 = Base::Vector3d (v1->pnt.fX, v1->pnt.fY, 0);
             p2 = Base::Vector3d (v2->pnt.fX, v2->pnt.fY, 0);
-            
+
             // Do some house keeping
             delete v1; v1 = 0;
             delete v2; v2 = 0;
-            
+
         } else {
             throw Base::Exception("Invalid reference for dimension type");
         }
-        
+
         Base::Vector3d dir, norm;
 
         if (strcmp(dim->Type.getValueAsString(), "Distance") == 0 ) {
@@ -358,36 +358,36 @@ void QGraphicsItemViewDimension::draw()
             angle += (float)M_PI;
             flip = true;
         }
-        
+
         // when the datum line is not parallel to p1-p2 the projection of
         // p1-p2 on norm is not zero, p2 is considered as reference and p1
         // is replaced by its projection p1_
         float normproj12 = (p2-p1)[0] * norm[0] + (p2-p1)[1] * norm[1];
         Base::Vector3d p1_ = p1 + norm * normproj12;
 
-        Base::Vector3d midpos = (p1_ + p2) / 2;    
-     
+        Base::Vector3d midpos = (p1_ + p2) / 2;
+
         Base::Vector3d labelPos(lbl->X(), lbl->Y(), 0);
-        
+
         QFontMetrics fm(lbl->font());
         int w = fm.width(str);
         int h = fm.height();
 
-        Base::Vector3d vec = labelPos - p2;        
+        Base::Vector3d vec = labelPos - p2;
         float length = vec.x * norm.x + vec.y * norm.y;
 
         float margin = 3.f;
         float scaler = 1.;
-        
+
         float offset1 = (length + normproj12 < 0) ? -margin : margin;
         float offset2 = (length < 0) ? -margin : margin;
-        
+
         Base::Vector3d perp1 = p1_ + norm * (length + offset1 * scaler);
         Base::Vector3d perp2 = p2  + norm * (length + offset2 * scaler);
 
         // Calculate the coordinates for the parallel datum lines
         Base::Vector3d  par1 = p1_ + norm * length;
-                
+
         Base::Vector3d  par2 = labelPos - dir * (w / 2 + margin);
         Base::Vector3d  par3 = labelPos + dir * (w / 2 + margin);
         Base::Vector3d  par4 = p2  + norm * length;
@@ -417,7 +417,7 @@ void QGraphicsItemViewDimension::draw()
                 flipTriang = true;
             }
         }
-        
+
         // Perp Lines
         QPainterPath path;
         path.moveTo(p1[0], p1[1]);
@@ -425,18 +425,18 @@ void QGraphicsItemViewDimension::draw()
 
         path.moveTo(p2[0], p2[1]);
         path.lineTo(perp2[0], perp2[1]);
-        
-        // Parallel Lines        
+
+        // Parallel Lines
         path.moveTo(par1[0], par1[1]);
         path.lineTo(par2[0], par2[1]);
-        
+
         path.moveTo(par3[0], par3[1]);
         path.lineTo(par4[0], par4[1]);
-        
+
         QGraphicsPathItem *arrw = dynamic_cast<QGraphicsPathItem *> (this->arrows);
         arrw->setPath(path);
         arrw->setPen(pen);
-        
+
         // Note Bounding Box size is not the same width or height as text (only used for finding center)
         float bbX  = lbl->boundingRect().width();
         float bbY = lbl->boundingRect().height();
@@ -446,7 +446,7 @@ void QGraphicsItemViewDimension::draw()
 //         SbVec3f ar1 = par1 + ((flipTriang) ? -1 : 1) * dir * 0.866f * 2 * margin;
 //         SbVec3f ar2 = ar1 + norm * margin;
 //                 ar1 -= norm * margin;
-// 
+//
 //         SbVec3f ar3 = par4 - ((flipTriang) ? -1 : 1) * dir * 0.866f * 2 * margin;
 //         SbVec3f ar4 = ar3 + norm * margin ;
 //                 ar3 -= norm * margin;
@@ -456,7 +456,7 @@ void QGraphicsItemViewDimension::draw()
 //           glVertex2f(par1[0], par1[1]);
 //           glVertex2f(ar1[0], ar1[1]);
 //           glVertex2f(ar2[0], ar2[1]);
-// 
+//
 //           glVertex2f(par4[0], par4[1]);
 //           glVertex2f(ar3[0], ar3[1]);
 //           glVertex2f(ar4[0], ar4[1]);
@@ -464,22 +464,22 @@ void QGraphicsItemViewDimension::draw()
     } else if(strcmp(dim->Type.getValueAsString(), "Radius") == 0 ||
               strcmp(dim->Type.getValueAsString(), "Diameter") == 0) {
         // Not sure whether to treat radius and diameter as the same
-      
-        Base::Vector3d p1, p2, dir; 
+
+        Base::Vector3d p1, p2, dir;
         QGraphicsItemDatumLabel *lbl = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
         Base::Vector3d labelPos(lbl->X(), lbl->Y(), 0);
-    
+
         double radius;
-    
+
         if(dim->References.getValues().size() == 1 && SubNames[0].substr(0,4) == "Edge") {
             // Assuming currently just edge
 
             const Drawing::FeatureViewPart *refObj = static_cast<const Drawing::FeatureViewPart*>(objects[0]);
             int idx = std::atoi(SubNames[0].substr(4,4000).c_str());
-            
+
             DrawingGeometry::BaseGeom *geom = refObj->getCompleteEdge(idx);
 
-            if(geom && 
+            if(geom &&
                (geom->geomType == DrawingGeometry::CIRCLE || geom->geomType == DrawingGeometry::ARCOFCIRCLE)) {
                   DrawingGeometry::Circle *circ = static_cast<DrawingGeometry::Circle *>(geom);
                   Base::Vector2D pnt1 = circ->center;
@@ -491,16 +491,16 @@ void QGraphicsItemViewDimension::draw()
         } else {
             throw Base::Exception("Invalid reference for dimension type");
         }
-        
+
         // Note Bounding Box size is not the same width or height as text (only used for finding center)
         float bbX  = lbl->boundingRect().width();
         float bbY = lbl->boundingRect().height();
-        
+
         // TODO consider modifying behaviour of SoDatumLabel so position is at center
         // Orientate Position to be at the center of the datumLabel
 //         labelPos += 0.5 * Base::Vector3d(bbX, bbY, 0.f);
         dir = (labelPos - p1).Normalize();
-        
+
         // Get magnitude of angle between horizontal
         float angle = atan2f(dir[1],dir[0]);
         bool flip=false;
@@ -511,26 +511,26 @@ void QGraphicsItemViewDimension::draw()
             angle += (float)M_PI;
             flip = true;
         }
-        
+
         float s = sin(angle);
         float c = cos(angle);
         /*
-        
+
         Base::Console().Log("angle (%f, %f), bbx %f, bby %f", s,c,bbX, bbY);*/
         // Note QGraphicsTextItem takes coordinate system from TOP LEFT - transfer to center
         // Create new coordinate system based around x,y
 //         labelPos += 0.5 * Base::Vector3d(bbX * c - bbY * s, bbX * s + bbY * c, 0.f);
 //         dir = (labelPos - p1).Normalize();
-//         
+//
 //         angle = atan2f(dir[1],dir[0]);
-//         
+//
         p2 = p1 + dir * radius;
- 
+
         QFontMetrics fm(lbl->font());
-            
+
         int w = fm.width(str);
         int h = fm.height();
-                          
+
         float scaler = 1.;
         float margin = 1.f;
         margin *= scaler;
@@ -544,21 +544,21 @@ void QGraphicsItemViewDimension::draw()
         // Calculate the points
         Base::Vector3d pnt1 = labelPos - dir * (margin + w / 2);
         Base::Vector3d pnt2 = labelPos + dir * (margin + w / 2);
-        
+
         if ((labelPos-p1).Length() > (p2-p1).Length())
             p2 = pnt2;
-        
+
         QPainterPath path;
         path.moveTo(p1[0], p1[1]);
         path.lineTo(pnt1[0], pnt1[1]);
 
         path.moveTo(pnt2[0], pnt2[1]);
-        path.lineTo(p2[0], p2[1]);  
-        
+        path.lineTo(p2[0], p2[1]);
+
         QGraphicsPathItem *arrw = dynamic_cast<QGraphicsPathItem *> (this->arrows);
         arrw->setPath(path);
         arrw->setPen(pen);
-        
+
         lbl->setTransformOriginPoint(bbX / 2, bbY /2);
         lbl->setRotation(angle * 180 / M_PI);
 
@@ -566,22 +566,22 @@ void QGraphicsItemViewDimension::draw()
 //         glBegin(GL_LINES);
 //         glVertex2f(p1[0], p1[1]);
 //         glVertex2f(pnt1[0], pnt1[1]);
-// 
+//
 //         glVertex2f(pnt2[0], pnt2[1]);
 //         glVertex2f(p2[0], p2[1]);
 //         glEnd();
-// 
+//
 //         glBegin(GL_TRIANGLES);
 //           glVertex2f(ar0[0], ar0[1]);
 //           glVertex2f(ar1[0], ar1[1]);
 //           glVertex2f(ar2[0], ar2[1]);
 //         glEnd();
     }
-    
+
 }
 
 QVariant QGraphicsItemViewDimension::itemChange(GraphicsItemChange change, const QVariant &value)
-{   
+{
     return QGraphicsItemView::itemChange(change, value);
 }
 
@@ -589,14 +589,14 @@ void QGraphicsItemViewDimension::setViewPartFeature(Drawing::FeatureViewDimensio
 {
     if(obj == 0)
         return;
-    
+
     this->setViewFeature(static_cast<Drawing::FeatureView *>(obj));
 
       // Set the QGraphicsItemGroup Properties based on the FeatureView
     float x = obj->X.getValue();
     float y = obj->Y.getValue();
 
-    this->datumLabel->setPos(x, y);    
+    this->datumLabel->setPos(x, y);
     updateDim();
     this->draw();
     Q_EMIT dirty();

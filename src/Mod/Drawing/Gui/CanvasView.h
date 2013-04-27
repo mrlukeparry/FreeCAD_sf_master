@@ -69,6 +69,7 @@ public Q_SLOTS:
     void setViewOutline(bool enable);
     
     const std::vector<QGraphicsItemView *> & getViews() const { return views; }
+    void setViews(const std::vector<QGraphicsItemView *> &view) {views = view; }
 
 protected:
     void wheelEvent(QWheelEvent *event);

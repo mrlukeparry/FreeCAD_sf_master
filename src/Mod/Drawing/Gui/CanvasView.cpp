@@ -105,19 +105,19 @@ void CanvasView::drawBackground(QPainter *p, const QRectF &)
 }
 
 void CanvasView::addViewPart(Drawing::FeatureViewPart *part)
-{   
+{
     QGraphicsItemViewPart *group = new QGraphicsItemViewPart(QPoint(0,0), this->scene());
     group->setViewPartFeature(part);
-    
-    views.push_back(group); 
+
+    views.push_back(group);
 }
 
 void CanvasView::addViewDimension(Drawing::FeatureViewDimension *dim)
-{   
+{
     QGraphicsItemViewDimension *dimGroup = new QGraphicsItemViewDimension(QPoint(0,0), this->scene());
     dimGroup->setViewPartFeature(dim);
     std::vector<App::DocumentObject *> objs = dim->References.getValues();
-    
+
     if(objs.size() > 0)
     {
         // Attach the dimension to the first object's group
@@ -126,15 +126,15 @@ void CanvasView::addViewDimension(Drawing::FeatureViewDimension *dim)
             if(viewObj == objs.at(0)) {
                 // Found dimensions parent view reference
                 QGraphicsItemView *view = (*it);
-                dimGroup->setPos(view->pos()); 
+                dimGroup->setPos(view->pos());
                 view->addToGroup(dimGroup);
                 //Must transfer to new coordinate system of parent view
             }
         }
     }
-    
+
     // The dimensions parent couldn't be found. Add for now.
-    views.push_back(dimGroup);            
+    views.push_back(dimGroup);
     return;
 }
 

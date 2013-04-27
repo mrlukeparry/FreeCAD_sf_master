@@ -29,6 +29,7 @@
 #include <Gui/Selection.h>
 #include <QGraphicsView>
 
+#include <App/PropertyLinks.h>
 #include <App/DocumentObject.h>
 
 QT_BEGIN_NAMESPACE
@@ -55,9 +56,10 @@ class CanvasView;
 class DrawingGuiExport DrawingView : public Gui::MDIView, public Gui::SelectionObserver
 {
     Q_OBJECT
-
+    
 public:
     DrawingView(Gui::Document* doc, QWidget* parent = 0);
+    ~DrawingView();
 
 public Q_SLOTS:
     void attachPageObject(Drawing::FeaturePage *pageFeature);
@@ -80,6 +82,9 @@ public:
     PyObject* getPyObject();
 
 protected:
+    App::PropertyLink pageFeat;
+protected:
+    void attachView(App::DocumentObject *obj);
     void contextMenuEvent(QContextMenuEvent *event);
 
 private:
