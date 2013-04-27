@@ -34,12 +34,12 @@ class FeatureViewPart;
 }
 
 namespace DrawingGeometry {
-class BaseGeom;  
+class BaseGeom;
 }
 
 namespace DrawingGui
 {
-  
+
 class QGraphicsItemEdge : public QObject, public QGraphicsPathItem
 {
 Q_OBJECT
@@ -48,32 +48,32 @@ public:
 
     ~QGraphicsItemEdge() {}
      QPainterPath shape() const;
-    
+
     enum {Type = QGraphicsItem::UserType + 103};
 
-    int type() const { return Type;}  
+    int type() const { return Type;}
     int getReference() const { return reference; }
-    
+
     void setHighlighted(bool state);
     void setShowHidden(bool state) {showHidden = state; update(); }
     QPainterPath getHiddenPath() { return hPath; }
     QPainterPath getVisiblePath() { return vPath; }
     void setStrokeWidth(float width) { strokeWidth = width; vPen.setWidthF(width); hPen.setWidthF(width * 0.3); update(); }
-    
+
     bool contains(const QPointF &point);
-    void setHiddenPath(const QPainterPath &path); 
+    void setHiddenPath(const QPainterPath &path);
     void setVisiblePath(const QPainterPath &path);
-    
+
     virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
-    
+
     QRectF boundingRect() const;
 protected:
-  
+
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
     // Selection detection
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-  
+
 protected:
   int reference;
   QPainterPath hPath;
@@ -83,7 +83,7 @@ protected:
   QBrush vBrush;
   QPen   vPen;
   QPen   hPen;
-  
+
   float sf;
   QRectF bb;
   bool highlighted;
@@ -101,19 +101,19 @@ public:
 
     ~QGraphicsItemFace() {}
 //      QPainterPath shape() const;
-    
+
     enum {Type = QGraphicsItem::UserType + 104};
 
-    int type() const { return Type;}  
-    int getReference() const { return reference; } 
-    
+    int type() const { return Type;}
+    int getReference() const { return reference; }
+
 protected:
     // Preselection events:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
     // Selection detection
      QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-  
+
 protected:
 int reference;
 
@@ -130,11 +130,11 @@ public:
 
     ~QGraphicsItemVertex() {}
      QPainterPath shape() const;
-    
+
     enum {Type = QGraphicsItem::UserType + 105};
 
-    int type() const { return Type;}  
-    int getReference() const { return reference; } 
+    int type() const { return Type;}
+    int getReference() const { return reference; }
     void setStrokeWidth(int width) { this->strokeWidth = width; }
     virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
 protected:
@@ -143,7 +143,7 @@ protected:
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
     // Selection detection
      QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-  
+
 protected:
 int reference;
 
@@ -165,19 +165,19 @@ public:
     void setViewPartFeature(Drawing::FeatureViewPart *obj);
     int type() const { return Type;}
     virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
-    
+
     void toggleVertices(bool state);
     virtual void updateView();
 Q_SIGNALS:
   void dirty();
-  
+
 protected:
   QGraphicsItemEdge * findRefEdge(int i);
   QGraphicsItemVertex * findRefVertex(int idx);
-  
-  
+
+
   QPainterPath drawPainterPath(DrawingGeometry::BaseGeom *baseGeom) const;
-  
+
   // Helper methods for drawing arc segments
   void pathArcSegment(QPainterPath &path,double xc, double yc, double th0, double th1,double rx, double ry, double xAxisRotation) const;
   void pathArc(QPainterPath &path, double rx, double ry, double x_axis_rotation,
@@ -185,17 +185,19 @@ protected:
                                    double x, double y,
                                    double curx, double cury) const;
     // Preselection events:
-    
+
   void drawViewPart();
   void drawBorder(QPainter *painter);
   virtual QPainterPath  shape () const;
   virtual QRectF boundingRect() const;
-  
+
   // Selection detection
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
   void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
   void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
   QPen pen;
+
+  QRectF bbox;
 };
 
 } // namespace DrawingViewGui

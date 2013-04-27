@@ -47,7 +47,7 @@
 
 using namespace DrawingGui;
 
-QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : reference(ref) 
+QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : reference(ref)
 {
     if(scene) {
         scene->addItem(this);
@@ -55,7 +55,7 @@ QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : referen
     if(ref > 0) {
         this->setAcceptHoverEvents(true);
     }
-    
+
     strokeWidth = 1.;
     sf = 1.;
     showHidden = false;
@@ -67,20 +67,20 @@ QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : referen
     hPen.setColor(Qt::gray);
 }
 
-void QGraphicsItemEdge::setVisiblePath(const QPainterPath &path) {  
+void QGraphicsItemEdge::setVisiblePath(const QPainterPath &path) {
     prepareGeometryChange();
-    this->vPath = path;   
+    this->vPath = path;
     bb = shape().controlPointRect();
-    update(); 
+    update();
 }
 
-void QGraphicsItemEdge::setHiddenPath(const QPainterPath &path) {  
+void QGraphicsItemEdge::setHiddenPath(const QPainterPath &path) {
     prepareGeometryChange();
-    this->hPath = path;   
+    this->hPath = path;
     bb = shape().controlPointRect();
-    update(); 
+    update();
 }
-    
+
 QRectF QGraphicsItemEdge::boundingRect() const {
         return shape().controlPointRect();
 
@@ -102,24 +102,24 @@ QPainterPath QGraphicsItemEdge::shape() const
     // Combine paths
     QPainterPath p;
     p.addPath(vPath);
-    
+
     if(showHidden)
         p.addPath(hPath);
 
     return stroker.createStroke(p);
 }
 
-void QGraphicsItemEdge::setHighlighted(bool state) 
+void QGraphicsItemEdge::setHighlighted(bool state)
 {
     highlighted = state;
     if(highlighted) {
-        vPen.setColor(Qt::blue); 
+        vPen.setColor(Qt::blue);
         hPen.setColor(Qt::blue);
     } else {
         vPen.setColor(Qt::black);
         hPen.setColor(Qt::gray);
     }
-    update(); 
+    update();
 }
 
 QVariant QGraphicsItemEdge::itemChange(GraphicsItemChange change, const QVariant &value)
@@ -138,7 +138,7 @@ QVariant QGraphicsItemEdge::itemChange(GraphicsItemChange change, const QVariant
     }
     return QGraphicsItem::itemChange(change, value);
 }
- 
+
 void QGraphicsItemEdge::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
     vPen.setColor(Qt::blue);
@@ -147,10 +147,10 @@ void QGraphicsItemEdge::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 }
 
 void QGraphicsItemEdge::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
-{    
+{
     QGraphicsItemView *view = dynamic_cast<QGraphicsItemView *> (this->parentItem());
     assert(view != 0);
-    
+
     if(!isSelected() && !highlighted) {
         vPen.setColor(Qt::black);
         hPen.setColor(Qt::gray);
@@ -165,7 +165,7 @@ void QGraphicsItemEdge::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     painter->setPen(vPen);
     painter->setBrush(vBrush);
     painter->drawPath(vPath);
-    
+
     // hacky method to get scale for shape()
     this->sf = painter->worldTransform().m11();
     if(showHidden) {
@@ -178,12 +178,12 @@ void QGraphicsItemEdge::paint(QPainter *painter, const QStyleOptionGraphicsItem 
 
 // QGraphicsView - Face Features
 
-QGraphicsItemFace::QGraphicsItemFace(int ref, QGraphicsScene *scene  ) : reference(ref) 
+QGraphicsItemFace::QGraphicsItemFace(int ref, QGraphicsScene *scene  ) : reference(ref)
 {
     if(scene) {
         scene->addItem(this);
     }
-    this->setAcceptHoverEvents(true);    
+    this->setAcceptHoverEvents(true);
 }
 
 QVariant QGraphicsItemFace::itemChange(GraphicsItemChange change, const QVariant &value)
@@ -203,7 +203,7 @@ QVariant QGraphicsItemFace::itemChange(GraphicsItemChange change, const QVariant
     }
     return QGraphicsItem::itemChange(change, value);
 }
- 
+
 void QGraphicsItemFace::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
     QPen pen = this->pen();
@@ -213,10 +213,10 @@ void QGraphicsItemFace::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 }
 
 void QGraphicsItemFace::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
-{    
+{
     QGraphicsItemView *view = dynamic_cast<QGraphicsItemView *> (this->parentItem());
     assert(view != 0);
-    
+
     if(!isSelected() && !view->isSelected()) {
         QPen pen = this->pen();
         pen.setColor(Qt::black);
@@ -226,13 +226,13 @@ void QGraphicsItemFace::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 }
 
 // Vertex Features
-QGraphicsItemVertex::QGraphicsItemVertex(int ref, QGraphicsScene *scene  ) : reference(ref) 
+QGraphicsItemVertex::QGraphicsItemVertex(int ref, QGraphicsScene *scene  ) : reference(ref)
 {
     if(scene) {
         scene->addItem(this);
     }
     this->setFlag(ItemIgnoresTransformations);
-    this->setAcceptHoverEvents(true);    
+    this->setAcceptHoverEvents(true);
 }
 
 QPainterPath QGraphicsItemVertex::shape() const
@@ -257,7 +257,7 @@ QVariant QGraphicsItemVertex::itemChange(GraphicsItemChange change, const QVaria
     }
     return QGraphicsItem::itemChange(change, value);
 }
- 
+
 void QGraphicsItemVertex::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
     QBrush brush = this->brush();
@@ -267,10 +267,10 @@ void QGraphicsItemVertex::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 }
 
 void QGraphicsItemVertex::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
-{    
+{
     QGraphicsItemView *view = dynamic_cast<QGraphicsItemView *> (this->parentItem());
     assert(view != 0);
-    
+
     if(!isSelected() && !view->isSelected()) {
           QBrush brush = this->brush();
           brush.setColor(Qt::black);
@@ -288,19 +288,19 @@ void QGraphicsItemVertex::paint(QPainter *painter, const QStyleOptionGraphicsIte
 
 // ########## QGraphic Item Part #############
 
-QGraphicsItemViewPart::QGraphicsItemViewPart(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemView(pos, scene)                 
+QGraphicsItemViewPart::QGraphicsItemViewPart(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemView(pos, scene)
 {
     setHandlesChildEvents(false);
-    
+
     pen.setColor(QColor(150,150,150));
-    
+
     this->setAcceptHoverEvents(true);
     this->setFlag(QGraphicsItem::ItemIsMovable, true);
 }
 
 QGraphicsItemViewPart::~QGraphicsItemViewPart()
 {
-  
+
 }
 
 QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *baseGeom) const
@@ -309,10 +309,10 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
     switch(baseGeom->geomType) {
         case DrawingGeometry::CIRCLE: {
           DrawingGeometry::Circle *geom = static_cast<DrawingGeometry::Circle *>(baseGeom);
-          
+
           double x = geom->center.fX - geom->radius;
           double y = geom->center.fY - geom->radius;
-          
+
           path.addEllipse(x, y, geom->radius * 2, geom->radius * 2);
 
         } break;
@@ -333,30 +333,30 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
 
           double x = geom->center.fX - geom->radius;
           double y = geom->center.fY - geom->radius;
-          
+
           path.addEllipse(x,y, geom->major * 2, geom->minor * 2);
         } break;
         case DrawingGeometry::ARCOFELLIPSE: {
           DrawingGeometry::AOE *geom = static_cast<DrawingGeometry::AOE *>(baseGeom);
-          
+
           double startAngle = (geom->startAngle);
           double spanAngle =  (startAngle - geom->endAngle);
           double endAngle = geom->endAngle;
-         
-          this->pathArc(path, geom->major, geom->minor, geom->angle, geom->largeArc, geom->cw, 
+
+          this->pathArc(path, geom->major, geom->minor, geom->angle, geom->largeArc, geom->cw,
                         geom->endPnt.fX, geom->endPnt.fY,
                         geom->startPnt.fX, geom->startPnt.fY);
 
         } break;
         case DrawingGeometry::BSPLINE: {
           DrawingGeometry::BSpline *geom = static_cast<DrawingGeometry::BSpline *>(baseGeom);
-         
+
           std::vector<DrawingGeometry::BezierSegment>::const_iterator it = geom->segments.begin();
-          
+
           DrawingGeometry::BezierSegment startSeg = geom->segments.at(0);
           path.moveTo(startSeg.pnts[0].fX, startSeg.pnts[0].fY);
           Base::Vector2D prevContPnt = startSeg.pnts[1];
-          
+
           for(int i = 0; it != geom->segments.end(); ++it, ++i) {
               DrawingGeometry::BezierSegment seg = *it;
               if(seg.poles == 4) {
@@ -372,10 +372,10 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
                   path.quadTo(prevContPnt.fX, prevContPnt.fY, seg.pnts[2].fX, seg.pnts[2].fY);
 
               }
-            }          
+            }
         } break;
         case DrawingGeometry::GENERIC: {
-          DrawingGeometry::Generic *geom = static_cast<DrawingGeometry::Generic *>(baseGeom);          
+          DrawingGeometry::Generic *geom = static_cast<DrawingGeometry::Generic *>(baseGeom);
 
           path.moveTo(geom->points[0].fX, geom->points[0].fY);
           std::vector<Base::Vector2D>::const_iterator it = geom->points.begin();
@@ -394,9 +394,9 @@ void QGraphicsItemViewPart::updateView()
       // Iterate
     if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()))
         return;
-        
+
     Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(this->viewObject);
-   
+
     // Identify what changed to prevent complete redraw
     if(viewPart->LineWidth.isTouched()) {
         Base::Console().Log("line width touched");
@@ -406,81 +406,82 @@ void QGraphicsItemViewPart::updateView()
             if(edge)
                 edge->setStrokeWidth(viewPart->LineWidth.getValue());
         }
-    } else if(viewPart->Direction.isTouched() || 
-              viewPart->Tolerance.isTouched() ||
-              viewPart->Scale.isTouched() ||
-              viewPart->ShowHiddenLines.isTouched()){
+    }
+
+    if(viewPart->Direction.isTouched() ||
+       viewPart->Tolerance.isTouched() ||
+       viewPart->Scale.isTouched() ||
+       viewPart->ShowHiddenLines.isTouched()){
         Base::Console().Log("Drawing View has changed");
         QList<QGraphicsItem *> items = this->childItems();
-    
+
         for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
-            if(dynamic_cast<QGraphicsItemEdge *> (*it) || 
-               dynamic_cast<QGraphicsItemVertex *>(*it) ) {
+            if(dynamic_cast<QGraphicsItemEdge *> (*it) ||
+            dynamic_cast<QGraphicsItemVertex *>(*it) ) {
                 (*it)->setParentItem(0);
                 this->removeFromGroup(*it);
                 this->scene()->removeItem(*it);
             }
         }
-        
+
         drawViewPart();
-        
     }
 //     float lineWidth = part->LineWidth.isTouched()
 }
 
 void QGraphicsItemViewPart::drawViewPart()
-{    
-    
+{
+
     // Iterate
     if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()))
         return;
-        
+
     Drawing::FeatureViewPart *part = dynamic_cast<Drawing::FeatureViewPart *>(this->viewObject);
-   
+
     float lineWidth = part->LineWidth.getValue();
-          
+
     QGraphicsItem *graphicsItem = 0;
-    
+
 #if 0
-    // Draw Faces     
+    // Draw Faces
     const std::vector<DrawingGeometry::Face *> &faceGeoms = part->getFaceGeometry();
     const std::vector<int> &faceRefs = part->getFaceReferences();
-    
+
     std::vector<DrawingGeometry::Face *>::const_iterator fit = faceGeoms.begin();
-    
+
     QPen facePen;
     for(int i = 0 ; fit != faceGeoms.end(); ++fit, i++) {
         std::vector<DrawingGeometry::Wire *> faceWires = (*fit)->wires;
         QPainterPath facePath;
         for(std::vector<DrawingGeometry::Wire *>::iterator wire = faceWires.begin(); wire != faceWires.end(); ++wire) {
-            QPainterPath wirePath;            
+            QPainterPath wirePath;
             for(std::vector<DrawingGeometry::BaseGeom *>::iterator baseGeom = (*wire)->geoms.begin(); baseGeom != (*wire)->geoms.end(); ++baseGeom) {
                 wirePath.connectPath(drawPainterPath(*baseGeom));
             }
             wirePath.closeSubpath();
             facePath.addPath(wirePath);
         }
-        
+
         QGraphicsItemFace *item = new QGraphicsItemFace(-1);
- 
-        item->setPath(facePath);        
+
+        item->setPath(facePath);
 //         item->setStrokeWidth(lineWidth);
-        
+
         QBrush faceBrush(QBrush(QColor(0,0,255,40)));
-        
+
         item->setBrush(faceBrush);
         facePen.setColor(Qt::black);
         item->setPen(facePen);
         graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-               
-        if(graphicsItem) {          
+
+        if(graphicsItem) {
             // Hide any edges that are hidden if option is set.
 //             if((*fit)->extractType == DrawingGeometry::WithHidden && !part->ShowHiddenLines.getValue())
 //                 graphicsItem->hide();
-              
+
             this->addToGroup(graphicsItem);
             graphicsItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
-        }      
+        }
     }
 #endif
 
@@ -490,8 +491,8 @@ void QGraphicsItemViewPart::drawViewPart()
     const std::vector<DrawingGeometry::BaseGeom *> &geoms = part->getEdgeGeometry();
     const std::vector<int> &refs = part->getEdgeReferences();
     std::vector<DrawingGeometry::BaseGeom *>::const_iterator it = geoms.begin();
-    
-    // Draw Edges      
+
+    // Draw Edges
     // iterate through all the geometries
     for(int i = 0 ; it != geoms.end(); ++it, i++) {
        // Attempt to find if a previous edge exists
@@ -503,11 +504,11 @@ void QGraphicsItemViewPart::drawViewPart()
               item->setShowHidden(true);
       }
       item->setStrokeWidth(lineWidth);
-      
+
       QPainterPath path;
-      
+
       graphicsItem = dynamic_cast<QGraphicsItem *>(item);
-      
+
       switch((*it)->geomType) {
         case DrawingGeometry::CIRCLE: {
           DrawingGeometry::Circle *geom = static_cast<DrawingGeometry::Circle *>(*it);
@@ -515,7 +516,7 @@ void QGraphicsItemViewPart::drawViewPart()
 
         } break;
         case DrawingGeometry::ARCOFCIRCLE: {
-          DrawingGeometry::AOC  *geom = static_cast<DrawingGeometry::AOC *>(*it);           
+          DrawingGeometry::AOC  *geom = static_cast<DrawingGeometry::AOC *>(*it);
           pathArc(path, geom->radius, geom->radius, 0., geom->largeArc, geom->cw,
                 geom->endPnt.fX, geom->endPnt.fY,
                 geom->startPnt.fX, geom->startPnt.fY);
@@ -523,9 +524,9 @@ void QGraphicsItemViewPart::drawViewPart()
         } break;
         case DrawingGeometry::ELLIPSE: {
           DrawingGeometry::Ellipse *geom = static_cast<DrawingGeometry::Ellipse *>(*it);
-        
+
           path.addEllipse(geom->center.fX - geom->radius,geom->center.fY - geom->radius, geom->major * 2, geom->minor * 2);
-          
+
         } break;
         case DrawingGeometry::ARCOFELLIPSE: {
           DrawingGeometry::AOE *geom = static_cast<DrawingGeometry::AOE *>(*it);
@@ -534,13 +535,13 @@ void QGraphicsItemViewPart::drawViewPart()
           double startAngle = (geom->startAngle);
           double spanAngle =  (geom->endAngle - geom->startAngle);
           double endAngle = geom->endAngle;
-          
+
           Base::Console().Log("(C <%f, %f> rot %f, SA %f, EA %f, SA %f Maj %f Min %f\n",
           geom          path.arcMoveTo(geom->center.fX - geom->radius, geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2, startAngle);
-          path.arcTo(geom->center.fX - geom->radius, geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2, startAngle, abs(spanAngle));->center.fX, 
+          path.arcTo(geom->center.fX - geom->radius, geom->center.fY - geom->radius, geom->radius * 2, geom->radius * 2, startAngle, abs(spanAngle));->center.fX,
           geom-> center.fY,
           geom->angle, startAngle, endAngle, spanAngle, geom->major, geom->minor);
-          
+
           // Create a temporary painterpath since we are applying matrix transformation
 #endif
 
@@ -548,26 +549,26 @@ void QGraphicsItemViewPart::drawViewPart()
 //           QPainterPath tmp;
 //           tmp.arcMoveTo(-geom->major, -geom->minor, geom->major * 2, geom->minor * 2, geom->startAngle);
 //           tmp.arcTo(-geom->major,     -geom->minor, geom->major * 2, geom->minor * 2, geom->startAngle, thetaArc * 180 / M_PI);
-//           
+//
 //           QMatrix mat;
 //           mat.translate(+geom->center.fX, +geom->center.fY).rotate(geom->angle);
-//           path.addPath(mat.map(tmp)); 
-//          
+//           path.addPath(mat.map(tmp));
+//
         pathArc(path, geom->major, geom->minor, geom->angle, geom->largeArc, geom->cw,
                 geom->endPnt.fX, geom->endPnt.fY,
                 geom->startPnt.fX, geom->startPnt.fY);
-        
+
 
         } break;
         case DrawingGeometry::BSPLINE: {
           DrawingGeometry::BSpline *geom = static_cast<DrawingGeometry::BSpline *>(*it);
-                   
+
           std::vector<DrawingGeometry::BezierSegment>::const_iterator it = geom->segments.begin();
-          
+
           DrawingGeometry::BezierSegment startSeg = geom->segments.at(0);
           path.moveTo(startSeg.pnts[0].fX, startSeg.pnts[0].fY);
           Base::Vector2D prevContPnt = startSeg.pnts[1];
-          
+
           for(int i = 0; it != geom->segments.end(); ++it, ++i) {
               DrawingGeometry::BezierSegment seg = *it;
               if(seg.poles == 4) {
@@ -584,7 +585,7 @@ void QGraphicsItemViewPart::drawViewPart()
 
               }
             }
-          
+
         } break;
         case DrawingGeometry::GENERIC: {
 
@@ -603,36 +604,36 @@ void QGraphicsItemViewPart::drawViewPart()
           graphicsItem = 0;
           break;
       }
-      
+
       if(graphicsItem) {
           if((*it)->extractType == DrawingGeometry::WithHidden) {
               QPainterPath hPath  = item->getHiddenPath();
               hPath.addPath(path);
               item->setHiddenPath(hPath);
-          } else { 
+          } else {
               QPainterPath vPath  = item->getVisiblePath();
               vPath.addPath(path);
               item->setVisiblePath(vPath);
           }
-            
+
           this->addToGroup(graphicsItem);
-          
+
           // Don't allow selection for any edges with no references
           if(refs.at(i) > 0) {
               graphicsItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
           }
       }
     }
-    
+
     graphicsItem = 0;
     // Draw Vertexs:
     const std::vector<DrawingGeometry::Vertex *> &verts = part->getVertexGeometry();
     const std::vector<int> &vertRefs = part->getVertexReferences();
-    
+
     std::vector<DrawingGeometry::Vertex *>::const_iterator vert = verts.begin();
-    
-    QBrush vertBrush(QBrush(QColor(0,0,0,255)));        
-          
+
+    QBrush vertBrush(QBrush(QColor(0,0,0,255)));
+
      // iterate through all the geometries
     for(int i = 0 ; vert != verts.end(); ++vert, i++) {
           DrawingGeometry::Vertex *myVertex = *vert;
@@ -646,7 +647,7 @@ void QGraphicsItemViewPart::drawViewPart()
               item->setFlag(QGraphicsItem::ItemIsSelectable, true);
           this->addToGroup(item);
     }
-    
+
     Q_EMIT dirty();
 }
 
@@ -701,12 +702,12 @@ void QGraphicsItemViewPart::pathArc(QPainterPath &path, double rx, double ry, do
     sfactor_sq = 1.0 / d - 0.25;
     if (sfactor_sq < 0)
         sfactor_sq = 0;
-    
+
     sfactor = qSqrt(sfactor_sq);
-    
+
     if (sweep_flag == large_arc_flag)
         sfactor = -sfactor;
-    
+
     xc = 0.5 * (x0 + x1) - sfactor * (y1 - y0);
     yc = 0.5 * (y0 + y1) + sfactor * (x1 - x0);
     /* (xc, yc) is center of the circle. */
@@ -723,7 +724,7 @@ void QGraphicsItemViewPart::pathArc(QPainterPath &path, double rx, double ry, do
     n_segs = qCeil(qAbs(th_arc / (M_PI * 0.5 + 0.001)));
 
     path.moveTo(curx, cury);
-    
+
     for (i = 0; i < n_segs; i++) {
         pathArcSegment(path, xc, yc,
                        th0 + i * th_arc / n_segs,
@@ -811,7 +812,7 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
     if (change == ItemSelectedHasChanged && scene()) {
         // value is the new position.
         QColor color;
-        if(isSelected()) { 
+        if(isSelected()) {
           color.setRgb(0,0,255);
           pen.setColor(color);
 
@@ -819,7 +820,7 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
           color.setRgb(0,0,0);
           pen.setColor(QColor(150,150,150)); // Drawing Border
         }
-        
+
         QList<QGraphicsItem *> items = this->childItems();
           for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
 
@@ -842,9 +843,24 @@ void QGraphicsItemViewPart::setViewPartFeature(Drawing::FeatureViewPart *obj)
 {
     if(obj == 0)
         return;
-    
+
     this->setViewFeature(static_cast<Drawing::FeatureView *>(obj));
     this->drawViewPart();
+
+
+    // Collect all edges and their bounding boxes, to define partfeature boundingbox
+    // QGraphicsitem group collects bounding from all children - not needed
+    bbox = QRectF();
+    QList<QGraphicsItem *> items = this->childItems();
+
+    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
+        QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+//         QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
+        if(edge) {
+            bbox = bbox.united(edge->boundingRect());
+        }
+    }
+
       // Set the QGraphicsItemGroup Properties based on the FeatureView
     float x = obj->X.getValue();
     float y = obj->Y.getValue();
@@ -856,7 +872,7 @@ void QGraphicsItemViewPart::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
     // TODO don't like this but only solution at the minute
     if(this->shape().contains(event->pos())) {
-        pen.setColor(Qt::blue);        
+        pen.setColor(Qt::blue);
     }
     update();
 }
@@ -880,31 +896,31 @@ QPainterPath QGraphicsItemViewPart::shape() const {
 
 QRectF QGraphicsItemViewPart::boundingRect() const
 {
-    return QGraphicsItemView::boundingRect().adjusted(-5,-5,5,5);
+    return bbox.adjusted(-5,-5,5,5);
 }
 
 void QGraphicsItemViewPart::drawBorder(QPainter *painter){
   QRectF box = this->boundingRect().adjusted(2,2,-2,-2);
   // Save the current painter state and restore at end
-  painter->save(); 
+  painter->save();
   QPen myPen = pen;
   myPen.setStyle(Qt::DashLine);
   myPen.setWidth(0.3);
   painter->setPen(myPen);
   QString name = QString::fromAscii(this->viewObject->Label.getValue());
-  
+
   QFont font;
   font.setPointSize(3.f);
   painter->setFont(font);
   QFontMetrics fm(font);
-  
+
   QPointF pos = box.center();
   pos.setY(pos.y() + box.height() / 2. - 3.);
-  
+
   pos.setX(pos.x() - fm.width(name) / 2.);
   painter->drawText(pos, name);
   painter->drawRect(box);
-  
+
   painter->restore();
 }
 
@@ -912,7 +928,7 @@ void QGraphicsItemViewPart::paint(QPainter *painter, const QStyleOptionGraphicsI
 {
     QStyleOptionGraphicsItem myOption(*option);
     myOption.state &= ~QStyle::State_Selected;
-    
+
     this->drawBorder(painter);
     QGraphicsItemView::paint(painter, &myOption, widget);
 }

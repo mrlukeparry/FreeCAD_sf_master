@@ -223,7 +223,7 @@ void QGraphicsItemViewDimension::updateDim()
 
     int precision = dim->Precision.getValue();
     str.setNum((absolute) ? abs(dim->getValue()): dim->getValue(), 'g', precision);
-    
+
     QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
 
     QFont font = dLabel->font();
