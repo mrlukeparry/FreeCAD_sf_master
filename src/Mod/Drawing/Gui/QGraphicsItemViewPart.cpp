@@ -500,6 +500,9 @@ void QGraphicsItemViewPart::drawViewPart()
 
       if(!item) {
           item = new QGraphicsItemEdge(refs.at(i));
+
+          // Edges and Vertexs must be transformed to the ViewPart's coordinate system
+          item->moveBy(this->x(), this->y());
           if(part->ShowHiddenLines.getValue())
               item->setShowHidden(true);
       }
@@ -645,7 +648,23 @@ void QGraphicsItemViewPart::drawViewPart()
           item->setPos(myVertex->pnt.fX, myVertex->pnt.fY);
           if(vertRefs.at(i) > 0)
               item->setFlag(QGraphicsItem::ItemIsSelectable, true);
+
+          // Edges and Vertexs must be transformed to the ViewPart's coordinate system
+          item->moveBy(this->x(), this->y());
           this->addToGroup(item);
+    }
+
+    // Collect all edges and their bounding boxes, to define partfeature boundingbox
+    // QGraphicsitem group collects bounding from all children - not needed
+    bbox = QRectF();
+    QList<QGraphicsItem *> items = this->childItems();
+
+    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
+        QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+        //         QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
+        if(edge) {
+            bbox = bbox.united(edge->boundingRect());
+        }
     }
 
     Q_EMIT dirty();
@@ -846,20 +865,6 @@ void QGraphicsItemViewPart::setViewPartFeature(Drawing::FeatureViewPart *obj)
 
     this->setViewFeature(static_cast<Drawing::FeatureView *>(obj));
     this->drawViewPart();
-
-
-    // Collect all edges and their bounding boxes, to define partfeature boundingbox
-    // QGraphicsitem group collects bounding from all children - not needed
-    bbox = QRectF();
-    QList<QGraphicsItem *> items = this->childItems();
-
-    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
-        QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
-//         QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
-        if(edge) {
-            bbox = bbox.united(edge->boundingRect());
-        }
-    }
 
       // Set the QGraphicsItemGroup Properties based on the FeatureView
     float x = obj->X.getValue();

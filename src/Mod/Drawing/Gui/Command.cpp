@@ -79,7 +79,7 @@ CmdDrawingOpen::CmdDrawingOpen()
 void CmdDrawingOpen::activated(int iMsg)
 {
     // Reading an image
-    QString filename = Gui::FileDialog::getOpenFileName(Gui::getMainWindow(), QObject::tr("Choose an SVG file to open"), QString::null, 
+    QString filename = Gui::FileDialog::getOpenFileName(Gui::getMainWindow(), QObject::tr("Choose an SVG file to open"), QString::null,
                                            QObject::tr("Scalable Vector Graphics (*.svg *.svgz)"));
     if (!filename.isEmpty())
     {
@@ -287,7 +287,7 @@ void CmdDrawingNewView::activated(int iMsg)
         doCommand(Doc,"App.activeDocument().%s.Scale = 1.0",FeatName.c_str());
 //         doCommand(Doc,"App.activeDocument().%s.addObject(App.activeDocument().%s)",PageName.c_str(),);
         Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
-        page->addView(page->getDocument()->getObject(FeatName.c_str()));       
+        page->addView(page->getDocument()->getObject(FeatName.c_str()));
     }
     updateActive();
     commitCommand();
@@ -314,16 +314,16 @@ CmdDrawingNewDimension::CmdDrawingNewDimension()
 
 void CmdDrawingNewDimension::activated(int iMsg)
 {
-  
+
       // get the selection
     std::vector<Gui::SelectionObject> selection = getSelection().getSelectionEx();
     if(!selection[0].getObject()){
         return;
     }
-    
+
     Drawing::FeatureViewPart * Obj = dynamic_cast<Drawing::FeatureViewPart *>(selection[0].getObject());
     App::DocumentObject *docObj = Obj->Source.getValue();
-    
+
     // get the needed lists and objects
     const std::vector<std::string> &SubNames = selection[0].getSubNames();
 
@@ -332,48 +332,51 @@ void CmdDrawingNewDimension::activated(int iMsg)
             QObject::tr("Incorrect selection"));
         return;
     }
-    
+
     std::vector<App::DocumentObject*> pages = this->getDocument()->getObjectsOfType(Drawing::FeaturePage::getClassTypeId());
     if (pages.empty()){
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("No page to insert"),
             QObject::tr("Create a page to insert."));
         return;
     }
-    Drawing::FeatureViewDimension *dim = 0;    
+    Drawing::FeatureViewDimension *dim = 0;
     std::string support = selection[0].getAsPropertyLinkSubString();
-    std::string FeatName = getUniqueObjectName("Dimension");    
+    std::string FeatName = getUniqueObjectName("Dimension");
     if (SubNames.size() == 1) {
         // Selected edge constraint
         if (SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge") {
             int GeoId = std::atoi(SubNames[0].substr(4,4000).c_str());
             DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
-            
+
             std::string dimMode = "Distance";
-            if(geom->geomType == DrawingGeometry::CIRCLE || 
-               geom->geomType == DrawingGeometry::ARCOFELLIPSE) {
-                dimMode = "Radius";              
+            if(geom->geomType == DrawingGeometry::CIRCLE ||
+               geom->geomType == DrawingGeometry::ARCOFCIRCLE ||
+               geom->geomType == DrawingGeometry::ELLIPSE ||
+               geom->geomType == DrawingGeometry::ARCOFELLIPSE
+            ) {
+                dimMode = "Radius";
             }
-            
+
             openCommand("Create Dimension");
-            doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewDimension','%s')",FeatName.c_str());            
+            doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewDimension','%s')",FeatName.c_str());
             doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str(), dimMode.c_str());
-            
+
             dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
             dim->References.setValue(Obj, SubNames[0].c_str());
         } else {
             return;
-        }    
+        }
 
-       
+
     } else if(SubNames.size() == 2) {
-        if (SubNames[0].size() > 6 && SubNames[0].substr(0,6) == "Vertex" && 
+        if (SubNames[0].size() > 6 && SubNames[0].substr(0,6) == "Vertex" &&
             SubNames[1].size() > 6 && SubNames[1].substr(0,6) == "Vertex") {
             int GeoId1 = std::atoi(SubNames[0].substr(6,4000).c_str());
             int GeoId2 = std::atoi(SubNames[1].substr(6,4000).c_str());
             openCommand("Create Dimension");
-            doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewDimension','%s')",FeatName.c_str());            
+            doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewDimension','%s')",FeatName.c_str());
             doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str(), "Distance");
-        
+
             dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
             std::vector<App::DocumentObject *> objs;
             objs.push_back(Obj);
@@ -382,28 +385,28 @@ void CmdDrawingNewDimension::activated(int iMsg)
             subs.push_back(SubNames[0]);
             subs.push_back(SubNames[1]);
             dim->References.setValues(objs, subs);
-            
+
         } else {
 
             QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please provide a valid selection"),
             QObject::tr("Incorrect selection"));
             return;
-        }    
-    } 
-    
+        }
+    }
+
 //     App::DocumentObject *dimObj = this->getDocument()->addObject("Drawing::FeatureViewDimension", getUniqueObjectName("Dimension").c_str());
 //     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(dimObj);
 
-   
-    
+
+
 //     doCommand(Doc,"App.activeDocument().%s.References = %s",FeatName.c_str(), support.c_str());
 
-    
+
     Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
-    page->addView(page->getDocument()->getObject(FeatName.c_str()));       
-        
+    page->addView(page->getDocument()->getObject(FeatName.c_str()));
+
     updateActive();
-    commitCommand();   
+    commitCommand();
 }
 
 //===========================================================================
@@ -453,7 +456,7 @@ void CmdDrawingNewViewSection::activated(int iMsg)
         doCommand(Doc,"App.activeDocument().%s.Scale = 1.0",FeatName.c_str());
 //         doCommand(Doc,"App.activeDocument().%s.addObject(App.activeDocument().%s)",PageName.c_str(),);
         Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
-        page->addView(page->getDocument()->getObject(FeatName.c_str()));       
+        page->addView(page->getDocument()->getObject(FeatName.c_str()));
     }
     updateActive();
     commitCommand();
@@ -492,7 +495,7 @@ void CmdDrawingOrthoViews::activated(int iMsg)
             QObject::tr("Create a page to insert views into."));
         return;
     }
- 
+
     Gui::Control().showDialog(new TaskDlgOrthoViews());
 }
 

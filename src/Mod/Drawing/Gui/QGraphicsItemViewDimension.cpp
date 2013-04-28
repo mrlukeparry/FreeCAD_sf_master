@@ -192,7 +192,9 @@ void QGraphicsItemViewDimension::updateView()
 
     // Identify what changed to prevent complete redraw
     if(dim->Fontsize.isTouched() ||
-       dim->Font.isTouched())
+       dim->Font.isTouched() ||
+       dim->Type.isTouched()
+    )
     {
         QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
         QFont font = dLabel->font();
