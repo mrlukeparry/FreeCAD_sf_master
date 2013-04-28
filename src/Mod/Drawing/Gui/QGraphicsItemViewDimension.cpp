@@ -156,6 +156,8 @@ QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraph
         dLabel  , SIGNAL(hover(bool)),
         this    , SLOT  (hover(bool)));
 
+    projGeom = 0;
+    
     this->arrows  = arrws;
     this->datumLabel = dLabel;
 
@@ -168,7 +170,7 @@ QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraph
 
 QGraphicsItemViewDimension::~QGraphicsItemViewDimension()
 {
-
+    delete projGeom;
 }
 
 void QGraphicsItemViewDimension::select(bool state)
@@ -192,19 +194,21 @@ void QGraphicsItemViewDimension::updateView()
 
     // Identify what changed to prevent complete redraw
     if(dim->Fontsize.isTouched() ||
-       dim->Font.isTouched() ||
-       dim->Type.isTouched()
-    )
+       dim->Font.isTouched())
     {
         QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
+
         QFont font = dLabel->font();
         font.setPointSizeF(dim->Fontsize.getValue());
         font.setFamily(QString::fromAscii(dim->Font.getValue()));
+
         dLabel->setFont(font);
         dLabel->updatePos();
+
         draw();
         Q_EMIT dirty();
     } else {
+        updateDim();
         draw();
         Q_EMIT dirty();
     }
@@ -283,9 +287,10 @@ void QGraphicsItemViewDimension::draw()
     }
 
     QString str = lbl->toPlainText();
+
     //Relcalculate the measurement based on references stored.
     const std::vector<App::DocumentObject*> &objects = dim->References.getValues();
-    const std::vector<std::string> &SubNames     = dim->References.getSubValues();
+    const std::vector<std::string> &SubNames         = dim->References.getSubValues();
 
     if(strcmp(dim->Type.getValueAsString(), "Distance") == 0 ||
        strcmp(dim->Type.getValueAsString(), "DistanceX") == 0 ||
@@ -298,23 +303,22 @@ void QGraphicsItemViewDimension::draw()
             const Drawing::FeatureViewPart *refObj = static_cast<const Drawing::FeatureViewPart*>(objects[0]);
             int idx = std::atoi(SubNames[0].substr(4,4000).c_str());
 
-            DrawingGeometry::BaseGeom *geom = refObj->getCompleteEdge(idx);
+            // Use the cached value
+            if(!projGeom)
+                    projGeom = refObj->getCompleteEdge(idx);
 
-            if(geom && geom->geomType == DrawingGeometry::GENERIC ) {
-                  DrawingGeometry::Generic *gen = static_cast<DrawingGeometry::Generic *>(geom);
+            if(projGeom && projGeom->geomType == DrawingGeometry::GENERIC ) {
+                  DrawingGeometry::Generic *gen = static_cast<DrawingGeometry::Generic *>(projGeom);
                   Base::Vector2D pnt1 = gen->points.at(0);
                   Base::Vector2D pnt2 = gen->points.at(1);
                   p1 = Base::Vector3d (pnt1.fX, pnt1.fY, 0);
                   p2 = Base::Vector3d (pnt2.fX, pnt2.fY, 0);
 
             } else {
-                delete geom;
+                delete projGeom;
+                projGeom = 0;
                 throw Base::Exception("Original edge not found or is invalid type");
             }
-
-            // Finished with geomtry so do housekeeping
-            delete geom;
-            geom = 0;
 
         } else if(dim->References.getValues().size() == 2 &&
                   SubNames[0].substr(0,6) == "Vertex" &&
@@ -444,25 +448,26 @@ void QGraphicsItemViewDimension::draw()
         float bbY = lbl->boundingRect().height();
         lbl->setTransformOriginPoint(bbX / 2, bbY /2);
         lbl->setRotation(angle * 180 / M_PI);
+#if 0
+        SbVec3f ar1 = par1 + ((flipTriang) ? -1 : 1) * dir * 0.866f * 2 * margin;
+        SbVec3f ar2 = ar1 + norm * margin;
+                ar1 -= norm * margin;
 
-//         SbVec3f ar1 = par1 + ((flipTriang) ? -1 : 1) * dir * 0.866f * 2 * margin;
-//         SbVec3f ar2 = ar1 + norm * margin;
-//                 ar1 -= norm * margin;
-//
-//         SbVec3f ar3 = par4 - ((flipTriang) ? -1 : 1) * dir * 0.866f * 2 * margin;
-//         SbVec3f ar4 = ar3 + norm * margin ;
-//                 ar3 -= norm * margin;
+        SbVec3f ar3 = par4 - ((flipTriang) ? -1 : 1) * dir * 0.866f * 2 * margin;
+        SbVec3f ar4 = ar3 + norm * margin ;
+                ar3 -= norm * margin;
 
-//         //Draw a pretty arrowhead (Equilateral) (Eventually could be improved to other shapes?)
-//         glBegin(GL_TRIANGLES);
-//           glVertex2f(par1[0], par1[1]);
-//           glVertex2f(ar1[0], ar1[1]);
-//           glVertex2f(ar2[0], ar2[1]);
-//
-//           glVertex2f(par4[0], par4[1]);
-//           glVertex2f(ar3[0], ar3[1]);
-//           glVertex2f(ar4[0], ar4[1]);
-//         glEnd();
+        //Draw a pretty arrowhead (Equilateral) (Eventually could be improved to other shapes?)
+        glBegin(GL_TRIANGLES);
+          glVertex2f(par1[0], par1[1]);
+          glVertex2f(ar1[0], ar1[1]);
+          glVertex2f(ar2[0], ar2[1]);
+
+          glVertex2f(par4[0], par4[1]);
+          glVertex2f(ar3[0], ar3[1]);
+          glVertex2f(ar4[0], ar4[1]);
+        glEnd();
+#endif
     } else if(strcmp(dim->Type.getValueAsString(), "Radius") == 0 ||
               strcmp(dim->Type.getValueAsString(), "Diameter") == 0) {
         // Not sure whether to treat radius and diameter as the same
@@ -479,11 +484,13 @@ void QGraphicsItemViewDimension::draw()
             const Drawing::FeatureViewPart *refObj = static_cast<const Drawing::FeatureViewPart*>(objects[0]);
             int idx = std::atoi(SubNames[0].substr(4,4000).c_str());
 
-            DrawingGeometry::BaseGeom *geom = refObj->getCompleteEdge(idx);
+            // Use the cached value if available otherwise load this
+            if(!projGeom)
+                projGeom = refObj->getCompleteEdge(idx);
 
-            if(geom &&
-               (geom->geomType == DrawingGeometry::CIRCLE || geom->geomType == DrawingGeometry::ARCOFCIRCLE)) {
-                  DrawingGeometry::Circle *circ = static_cast<DrawingGeometry::Circle *>(geom);
+            if(projGeom &&
+                (projGeom->geomType == DrawingGeometry::CIRCLE || projGeom->geomType == DrawingGeometry::ARCOFCIRCLE)) {
+                  DrawingGeometry::Circle *circ = static_cast<DrawingGeometry::Circle *>(projGeom);
                   Base::Vector2D pnt1 = circ->center;
                   radius = circ->radius;
                   p1 = Base::Vector3d (pnt1.fX, pnt1.fY, 0);

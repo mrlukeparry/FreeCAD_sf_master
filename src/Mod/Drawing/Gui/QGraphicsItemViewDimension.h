@@ -33,12 +33,12 @@ class FeatureViewDimension;
 }
 
 namespace DrawingGeometry {
-class BaseGeom;  
+class BaseGeom;
 }
 
 namespace DrawingGui
 {
- 
+
 class QGraphicsItemDatumLabel : public QGraphicsTextItem
 {
 Q_OBJECT
@@ -46,15 +46,15 @@ public:
     explicit QGraphicsItemDatumLabel(int ref = -1, QGraphicsScene *scene = 0 );
 
     ~QGraphicsItemDatumLabel() {}
-    
+
     void updatePos();
     enum {Type = QGraphicsItem::UserType + 107};
-    int type() const { return Type;}  
+    int type() const { return Type;}
     double X() const { return posX; }
     double Y() const { return posY; }
-    
+
     virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
-    
+
 Q_SIGNALS:
   void dragging();
   void hover(bool state);
@@ -68,7 +68,7 @@ protected:
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
     // Selection detection
      QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-  
+
 protected:
 int reference;
 double posX;
@@ -85,31 +85,36 @@ class DrawingGuiExport QGraphicsItemViewDimension : public QGraphicsItemView
 
 public:
     enum {Type = QGraphicsItem::UserType + 106};
+
     explicit QGraphicsItemViewDimension(const QPoint &position, QGraphicsScene *scene);
     ~QGraphicsItemViewDimension();
 
     void setViewPartFeature(Drawing::FeatureViewDimension *obj);
     int type() const { return Type;}
+
     virtual void updateView();
+
 Q_SIGNALS:
   void dirty();
-  
+
 public Q_SLOTS:
   void datumLabelDragged(void);
   void datumLabelDragFinished(void);
   void select(bool state);
   void hover(bool state);
   void updateDim(void);
-  
+
 protected:
   void draw();
-  
+
     // Selection detection
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-  
+
+protected:
   bool hasHover;
   QGraphicsItem *datumLabel;
   QGraphicsItem *arrows;
+  DrawingGeometry::BaseGeom *projGeom;
   QPen pen;
 };
 
