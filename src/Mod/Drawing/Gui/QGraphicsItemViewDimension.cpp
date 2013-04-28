@@ -157,7 +157,7 @@ QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraph
         this    , SLOT  (hover(bool)));
 
     projGeom = 0;
-    
+
     this->arrows  = arrws;
     this->datumLabel = dLabel;
 
@@ -192,6 +192,10 @@ void QGraphicsItemViewDimension::updateView()
         return;
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension*>(this->viewObject);
 
+    // Reset the cache;
+    delete projGeom;
+    projGeom = 0;
+
     // Identify what changed to prevent complete redraw
     if(dim->Fontsize.isTouched() ||
        dim->Font.isTouched())
@@ -206,13 +210,14 @@ void QGraphicsItemViewDimension::updateView()
         dLabel->updatePos();
 
         draw();
-        Q_EMIT dirty();
+
     } else {
         updateDim();
         draw();
-        Q_EMIT dirty();
+
     }
 
+    Q_EMIT dirty();
 }
 
 void QGraphicsItemViewDimension::updateDim()

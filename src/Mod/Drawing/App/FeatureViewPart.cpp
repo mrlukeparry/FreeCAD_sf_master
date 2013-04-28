@@ -85,18 +85,18 @@ FeatureViewPart::FeatureViewPart(void) : geometryObject(0)
     ADD_PROPERTY_TYPE(LineWidth,(2.f),vgroup,App::Prop_None,"The thickness of the resulting lines");
     ADD_PROPERTY_TYPE(Tolerance,(0.05f),vgroup,App::Prop_None,"The tessellation tolerance");
     Tolerance.setConstraints(&floatRange);
-    
+
     geometryObject = new DrawingGeometry::GeometryObject();
 }
 
 short FeatureViewPart::mustExecute() const
 {
     // If Tolerance Property is touched
-    if(Direction.isTouched() || 
+    if(Direction.isTouched() ||
        Source.isTouched() ||
        Scale.isTouched())
           return 1;
-    else 
+    else
         return 0;
 //     return Drawing::FeatureView::mustExecute();
 }
@@ -104,7 +104,7 @@ short FeatureViewPart::mustExecute() const
 FeatureViewPart::~FeatureViewPart()
 {
     delete geometryObject;
-}  
+}
 
 const std::vector<DrawingGeometry::Vertex *> & FeatureViewPart::getVertexGeometry() const
 {
@@ -140,10 +140,10 @@ DrawingGeometry::BaseGeom *FeatureViewPart::getCompleteEdge(int idx) const
 {
    //## Get the Part Link ##/
     App::DocumentObject* link = Source.getValue();
-    
+
     if (!link || !link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
         return 0;
-    
+
     const Part::TopoShape &topoShape = static_cast<Part::Feature*>(link)->Shape.getShape();
     std::stringstream str;
     str << "Edge" << idx;
@@ -158,10 +158,10 @@ DrawingGeometry::Vertex * FeatureViewPart::getVertex(int idx) const
 {
    //## Get the Part Link ##/
     App::DocumentObject* link = Source.getValue();
-    
+
     if (!link || !link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
         return 0;
-    
+
     const Part::TopoShape &topoShape = static_cast<Part::Feature*>(link)->Shape.getShape();
     std::stringstream str;
     str << "Vertex" << idx;
@@ -176,21 +176,23 @@ App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
 {
     //## Get the Part Link ##/
     App::DocumentObject* link = Source.getValue();
-    
+
     if (!link)
         return new App::DocumentObjectExecReturn("No object linked");
-    
+
     if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
         return new App::DocumentObjectExecReturn("Linked object is not a Part object");
 
     TopoDS_Shape shape = static_cast<Part::Feature*>(link)->Shape.getShape()._Shape;
     if (shape.IsNull())
         return new App::DocumentObjectExecReturn("Linked shape object is empty");
-   
+
     try {
         geometryObject->setTolerance(Tolerance.getValue());
         geometryObject->setScale(Scale.getValue());
         geometryObject->extractGeometry(shape, Direction.getValue(), ShowHiddenLines.getValue());
+
+        this->touch();
         return App::DocumentObject::StdReturn;
     }
     catch (Standard_Failure) {

@@ -398,17 +398,9 @@ void QGraphicsItemViewPart::updateView()
     Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(this->viewObject);
 
     // Identify what changed to prevent complete redraw
-    if(viewPart->LineWidth.isTouched()) {
-        Base::Console().Log("line width touched");
-        QList<QGraphicsItem *> items = this->childItems();
-        for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
-            QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
-            if(edge)
-                edge->setStrokeWidth(viewPart->LineWidth.getValue());
-        }
-    }
 
-    if(viewPart->Direction.isTouched() ||
+    if(viewPart->isTouched() ||
+       viewPart->Direction.isTouched() ||
        viewPart->Tolerance.isTouched() ||
        viewPart->Scale.isTouched() ||
        viewPart->ShowHiddenLines.isTouched()){
@@ -425,7 +417,16 @@ void QGraphicsItemViewPart::updateView()
         }
 
         drawViewPart();
+    } else if(viewPart->LineWidth.isTouched()) {
+        Base::Console().Log("line width touched");
+        QList<QGraphicsItem *> items = this->childItems();
+        for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
+            QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+            if(edge)
+                edge->setStrokeWidth(viewPart->LineWidth.getValue());
+        }
     }
+
 //     float lineWidth = part->LineWidth.isTouched()
 }
 
