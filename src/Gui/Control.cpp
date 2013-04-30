@@ -81,6 +81,16 @@ void ControlSingleton::showTaskView()
         _taskPanel->raise();
 }
 
+void ControlSingleton::showModelView()
+{
+    Gui::DockWnd::CombiView* pcCombiView = qobject_cast<Gui::DockWnd::CombiView*>
+        (Gui::DockWindowManager::instance()->getDockWindow("Combo View"));
+    if (pcCombiView)
+        pcCombiView->showTreeView();
+    else if (_taskPanel)
+        _taskPanel->raise();
+}
+
 void ControlSingleton::showDialog(Gui::TaskView::TaskDialog *dlg)
 {
     // only one dialog at a time
@@ -95,6 +105,7 @@ void ControlSingleton::showDialog(Gui::TaskView::TaskDialog *dlg)
         if (dw) {
             dw->setVisible(true);
             dw->toggleViewAction()->setVisible(true);
+            dw->setFeatures(QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetFloatable);
         }
 
         if (ActiveDialog == dlg)
@@ -149,6 +160,10 @@ void ControlSingleton::closedDialog()
     // should return the pointer to combo view
     assert(pcCombiView);
     pcCombiView->closedDialog();
+    // make sure that the combo view is shown
+    QDockWidget* dw = qobject_cast<QDockWidget*>(pcCombiView->parentWidget());
+    if (dw)
+        dw->setFeatures(QDockWidget::AllDockWidgetFeatures);
 }
 
 bool ControlSingleton::isAllowedAlterDocument(void) const

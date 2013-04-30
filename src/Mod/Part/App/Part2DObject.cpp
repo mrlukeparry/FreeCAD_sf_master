@@ -44,7 +44,7 @@
 #endif
 
 
-
+#include <Base/Exception.h>
 #include "Part2DObject.h"
 #include "Geometry.h"
 
@@ -53,6 +53,7 @@ using namespace Part;
 
 const int Part2DObject::H_Axis = -1;
 const int Part2DObject::V_Axis = -2;
+const int Part2DObject::N_Axis = -3;
 
 PROPERTY_SOURCE(Part::Part2DObject, Part::Feature)
 
@@ -161,30 +162,10 @@ void Part2DObject::positionBySupport(void)
     gp_Trsf Trf;
     Trf.SetTransformation(SketchPos);
     Trf.Invert();
+    Trf.SetScaleFactor(Standard_Real(1.0));
 
     Base::Matrix4D mtrx;
-
-    gp_Mat m = Trf._CSFDB_Getgp_Trsfmatrix();
-    gp_XYZ p = Trf._CSFDB_Getgp_Trsfloc();
-    Standard_Real scale = 1.0;
-
-    // set Rotation matrix
-    mtrx[0][0] = scale * m._CSFDB_Getgp_Matmatrix(0,0);
-    mtrx[0][1] = scale * m._CSFDB_Getgp_Matmatrix(0,1);
-    mtrx[0][2] = scale * m._CSFDB_Getgp_Matmatrix(0,2);
-
-    mtrx[1][0] = scale * m._CSFDB_Getgp_Matmatrix(1,0);
-    mtrx[1][1] = scale * m._CSFDB_Getgp_Matmatrix(1,1);
-    mtrx[1][2] = scale * m._CSFDB_Getgp_Matmatrix(1,2);
-
-    mtrx[2][0] = scale * m._CSFDB_Getgp_Matmatrix(2,0);
-    mtrx[2][1] = scale * m._CSFDB_Getgp_Matmatrix(2,1);
-    mtrx[2][2] = scale * m._CSFDB_Getgp_Matmatrix(2,2);
-
-    // set pos vector
-    mtrx[0][3] = p._CSFDB_Getgp_XYZx();
-    mtrx[1][3] = p._CSFDB_Getgp_XYZy();
-    mtrx[2][3] = p._CSFDB_Getgp_XYZz();
+    TopoShape::convertToMatrix(Trf,mtrx);
 
     // check the angle against the Z Axis
     //Standard_Real a = Normal.Angle(gp_Ax1(gp_Pnt(0,0,0),gp_Dir(0,0,1)));
@@ -214,6 +195,9 @@ Base::Axis Part2DObject::getAxis(int axId) const
     }
     else if (axId == V_Axis) {
         return Base::Axis(Base::Vector3d(0,0,0), Base::Vector3d(0,1,0));
+    }
+    else if (axId == N_Axis) {
+        return Base::Axis(Base::Vector3d(0,0,0), Base::Vector3d(0,0,1));
     }
     return Base::Axis();
 }

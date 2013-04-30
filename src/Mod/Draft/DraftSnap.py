@@ -104,13 +104,14 @@ class Snapper:
                         'ortho':':/icons/Snap_Ortho.svg',
                         'intersection':':/icons/Snap_Intersection.svg'}
         
-    def snap(self,screenpos,lastpoint=None,active=True,constrain=False):
-        """snap(screenpos,lastpoint=None,active=True,constrain=False): returns a snapped
+    def snap(self,screenpos,lastpoint=None,active=True,constrain=False,noTracker=False):
+        """snap(screenpos,lastpoint=None,active=True,constrain=False,noTracker=False): returns a snapped
         point from the given (x,y) screenpos (the position of the mouse cursor), active is to
         activate active point snapping or not (passive), lastpoint is an optional
         other point used to draw an imaginary segment and get additional snap locations. Constrain can
         be True to constrain the point against the closest working plane axis.
-        Screenpos can be a list, a tuple or a coin.SbVec2s object."""
+        Screenpos can be a list, a tuple or a coin.SbVec2s object. If noTracker is True,
+        the tracking line is not displayed."""
 
         global Part, DraftGeomUtils
         import Part, DraftGeomUtils
@@ -196,7 +197,7 @@ class Snapper:
             if active:
                 point = self.snapToGrid(point)
             fp = cstr(point)
-            if self.trackLine and lastpoint:
+            if self.trackLine and lastpoint and (not noTracker):
                 self.trackLine.p2(fp)
                 self.trackLine.on()
             return fp
@@ -257,7 +258,7 @@ class Snapper:
                                 snaps.extend(self.snapToIntersection(edge))
                                 snaps.extend(self.snapToElines(edge,eline))
 
-                                if isinstance (edge.Curve,Part.Circle):
+                                if DraftGeomUtils.geomType(edge) == "Circle":
                                     # the edge is an arc, we have extra options
                                     snaps.extend(self.snapToAngles(edge))
                                     snaps.extend(self.snapToCenter(edge))
@@ -383,7 +384,7 @@ class Snapper:
                         edges = ob.Shape.Edges
                         if (not self.maxEdges) or (len(edges) <= self.maxEdges):
                             for e in edges:
-                                if isinstance(e.Curve,Part.Line):
+                                if DraftGeomUtils.geomType(e) == "Line":
                                     np = self.getPerpendicular(e,point)
                                     if not DraftGeomUtils.isPtOnEdge(np,e):
                                         if (np.sub(point)).Length < self.radius:
@@ -501,13 +502,13 @@ class Snapper:
         if self.isEnabled("perpendicular"):
             if last:
                 if isinstance(shape,Part.Edge):
-                    if isinstance(shape.Curve,Part.Line):
+                    if DraftGeomUtils.geomType(shape) == "Line":
                         np = self.getPerpendicular(shape,last)
-                    elif isinstance(shape.Curve,Part.Circle):
+                    elif DraftGeomUtils.geomType(shape) == "Circle":
                         dv = last.sub(shape.Curve.Center)
                         dv = DraftVecUtils.scaleTo(dv,shape.Curve.Radius)
                         np = (shape.Curve.Center).add(dv)
-                    elif isinstance(shape.Curve,Part.BSplineCurve):
+                    elif DraftGeomUtils.geomType(shape) == "BSplineCurve":
                         pr = shape.Curve.parameter(last)
                         np = shape.Curve.value(pr)
                     else:
@@ -522,7 +523,7 @@ class Snapper:
             if constrain:
                 if isinstance(shape,Part.Edge):
                     if last:
-                        if isinstance(shape.Curve,Part.Line):
+                        if DraftGeomUtils(shape) == "Line":
                             if self.constraintAxis:
                                 tmpEdge = Part.Line(last,last.add(self.constraintAxis)).toShape()
                                 # get the intersection points

@@ -93,6 +93,8 @@
 #include "ViewProviderVRMLObject.h"
 #include "ViewProviderAnnotation.h"
 #include "ViewProviderMeasureDistance.h"
+#include "ViewProviderPlacement.h"
+#include "ViewProviderPlane.h"
 
 #include "Language/Translator.h"
 #include "TaskView/TaskDialogPython.h"
@@ -447,6 +449,7 @@ Application::~Application()
 void Application::open(const char* FileName, const char* Module)
 {
     WaitCursor wc;
+    wc.setIgnoreEvents(WaitCursor::NoEvents);
     Base::FileInfo File(FileName);
     string te = File.extension();
 
@@ -489,6 +492,7 @@ void Application::open(const char* FileName, const char* Module)
 void Application::importFrom(const char* FileName, const char* DocName, const char* Module)
 {
     WaitCursor wc;
+    wc.setIgnoreEvents(WaitCursor::NoEvents);
     Base::FileInfo File(FileName);
     std::string te = File.extension();
 
@@ -795,19 +799,19 @@ Gui::Document* Application::getDocument(const App::Document* pDoc) const
         return 0;
 }
 
-void Application::showViewProvider(App::DocumentObject* obj)
+void Application::showViewProvider(const App::DocumentObject* obj)
 {
     ViewProvider* vp = getViewProvider(obj);
     if (vp) vp->show();
 }
 
-void Application::hideViewProvider(App::DocumentObject* obj)
+void Application::hideViewProvider(const App::DocumentObject* obj)
 {
     ViewProvider* vp = getViewProvider(obj);
     if (vp) vp->hide();
 }
 
-Gui::ViewProvider* Application::getViewProvider(App::DocumentObject* obj) const
+Gui::ViewProvider* Application::getViewProvider(const App::DocumentObject* obj) const
 {
     App::Document* doc = obj->getDocument();
     if (doc) {
@@ -1443,6 +1447,8 @@ void Application::initTypes(void)
     Gui::ViewProviderMeasureDistance            ::init();
     Gui::ViewProviderPythonFeature              ::init();
     Gui::ViewProviderPythonGeometry             ::init();
+    Gui::ViewProviderPlacement                  ::init();
+    Gui::ViewProviderPlane                      ::init();
 
     // Workbench
     Gui::Workbench                              ::init();
@@ -1690,6 +1696,9 @@ void Application::runApplication(void)
                               SetASCII("AutoloadModule", start.c_str());
     }
 
+    // Call this before showing the main window because otherwise:
+    // 1. it shows a white window for a few seconds which doesn't look nice
+    // 2. the layout of the toolbars is completely broken
     app.activateWorkbench(start.c_str());
 
     // show the main window
@@ -1705,6 +1714,7 @@ void Application::runApplication(void)
     SoDebugError::setHandlerCallback( messageHandlerCoin, 0 );
     SoQt::setFatalErrorHandler( messageHandlerSoQt, 0 );
 #endif
+
 
     Instance->d->startingUp = false;
 

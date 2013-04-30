@@ -147,7 +147,7 @@ PyObject*  DocumentPy::addObject(PyObject *args)
                     pyvp.setAttr("__vobject__", pyftr.getAttr("ViewObject"));
                 }
                 pyftr.getAttr("ViewObject").setAttr("Proxy", pyvp);
-                return Py::new_reference_to(Py::None());
+                return Py::new_reference_to(pyftr);
             }
             catch (Py::Exception& e) {
                 e.clear();
@@ -182,7 +182,7 @@ PyObject*  DocumentPy::removeObject(PyObject *args)
 
 PyObject*  DocumentPy::copyObject(PyObject *args)
 {
-    PyObject *obj, *rec=0, *keep=0;
+    PyObject *obj, *rec=Py_False, *keep=Py_False;
     if (!PyArg_ParseTuple(args, "O!|O!O!",&(DocumentObjectPy::Type),&obj,&PyBool_Type,&rec,&PyBool_Type,&keep))
         return NULL;    // NULL triggers exception
 
@@ -201,7 +201,7 @@ PyObject*  DocumentPy::copyObject(PyObject *args)
 
 PyObject*  DocumentPy::moveObject(PyObject *args)
 {
-    PyObject *obj, *rec=0;
+    PyObject *obj, *rec=Py_False;
     if (!PyArg_ParseTuple(args, "O!|O!",&(DocumentObjectPy::Type),&obj,&PyBool_Type,&rec))
         return NULL;    // NULL triggers exception
 

@@ -43,6 +43,7 @@
 #include "SoTextLabel.h"
 #include "SoNavigationDragger.h"
 #include "Inventor/SoDrawingGrid.h"
+#include "Inventor/SoAutoZoomTranslation.h"
 
 #include "propertyeditor/PropertyItem.h"
 #include "NavigationStyle.h"
@@ -97,6 +98,7 @@ void Gui::SoFCDB::init()
     SoAxisCrossKit                  ::initClass();
     SoRegPoint                      ::initClass();
     SoDrawingGrid                   ::initClass();
+    SoAutoZoomTranslation           ::initClass();
 
     PropertyItem                    ::init();
     PropertySeparatorItem           ::init();
@@ -119,6 +121,7 @@ void Gui::SoFCDB::init()
     PropertyFileItem                ::init();
     PropertyPathItem                ::init();
     PropertyTransientFileItem       ::init();
+    PropertyLinkItem                ::init();
 
     NavigationStyle                 ::init();
     UserNavigationStyle             ::init();

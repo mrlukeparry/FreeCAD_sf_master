@@ -32,11 +32,27 @@
 #include <Gui/DockWindow.h>
 #include <Gui/Selection.h>
 
+
 namespace Gui {
 
 class ViewProviderDocumentObject;
 class DocumentObjectItem;
 class DocumentItem;
+
+/// highlight modes for the tree items
+enum HighlightMode {    Underlined,
+                        Italic    ,
+                        Overlined ,
+                        Bold      ,
+                        Blue      
+};
+
+/// highlight modes for the tree items
+enum TreeItemMode {  Expand,
+                     Collapse,
+                     Toggle
+};
+
 
 /** Tree view that allows drag & drop of document objects.
  * @author Werner Mayer
@@ -54,6 +70,8 @@ public:
 
     static const int DocumentType;
     static const int ObjectType;
+
+    void markItem(const App::DocumentObject* Obj,bool mark);
 
 protected:
     /// Observer message from the Selection
@@ -78,6 +96,8 @@ protected Q_SLOTS:
 private Q_SLOTS:
     void onItemSelectionChanged(void);
     void onItemEntered(QTreeWidgetItem * item);
+    void onItemCollapsed(QTreeWidgetItem * item);
+    void onItemExpanded(QTreeWidgetItem * item);
     void onTestStatus(void);
 
 private:
@@ -130,12 +150,14 @@ protected:
     /** Removes a view provider from the document item.
      * If this view provider is not added nothing happens.
      */
-    void slotDeleteObject(const Gui::ViewProviderDocumentObject&);
-    void slotChangeObject(const Gui::ViewProviderDocumentObject&);
-    void slotRenameObject(const Gui::ViewProviderDocumentObject&);
-    void slotActiveObject(const Gui::ViewProviderDocumentObject&);
-    void slotInEdit      (const Gui::ViewProviderDocumentObject&);
-    void slotResetEdit   (const Gui::ViewProviderDocumentObject&);
+    void slotDeleteObject    (const Gui::ViewProviderDocumentObject&);
+    void slotChangeObject    (const Gui::ViewProviderDocumentObject&);
+    void slotRenameObject    (const Gui::ViewProviderDocumentObject&);
+    void slotActiveObject    (const Gui::ViewProviderDocumentObject&);
+    void slotInEdit          (const Gui::ViewProviderDocumentObject&);
+    void slotResetEdit       (const Gui::ViewProviderDocumentObject&);
+    void slotHighlightObject (const Gui::ViewProviderDocumentObject&,const Gui::HighlightMode&,bool);
+    void slotExpandObject    (const Gui::ViewProviderDocumentObject&,const Gui::TreeItemMode&);
 
 private:
     const Gui::Document* pDocument;
@@ -156,6 +178,7 @@ public:
     Gui::ViewProviderDocumentObject* object() const;
     void testStatus();
     void displayStatusInfo();
+    void setExpandedStatus(bool);
     void setData(int column, int role, const QVariant & value);
 
 protected:

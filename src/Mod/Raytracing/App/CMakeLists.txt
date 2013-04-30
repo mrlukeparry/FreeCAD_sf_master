@@ -20,6 +20,7 @@ link_directories(${OCC_LIBRARY_DIR})
 set(Raytracing_LIBS
     Part
     ${OCC_LIBRARIES}
+    ${OCC_DEBUG_LIBRARIES}
     FreeCADApp
 )
 

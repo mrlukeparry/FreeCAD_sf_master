@@ -112,6 +112,10 @@ TreeWidget::TreeWidget(QWidget* parent)
             this, SLOT(onTestStatus()));
     connect(this, SIGNAL(itemEntered(QTreeWidgetItem*, int)),
             this, SLOT(onItemEntered(QTreeWidgetItem*)));
+    connect(this, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
+            this, SLOT(onItemCollapsed(QTreeWidgetItem*)));
+    connect(this, SIGNAL(itemExpanded(QTreeWidgetItem*)),
+            this, SLOT(onItemExpanded(QTreeWidgetItem*)));
     connect(this, SIGNAL(itemSelectionChanged()),
             this, SLOT(onItemSelectionChanged()));
 
@@ -437,7 +441,6 @@ void TreeWidget::dropEvent(QDropEvent *event)
         // Open command
         App::Document* doc = grp->getDocument();
         Gui::Document* gui = Gui::Application::Instance->getDocument(doc);
-        Base::Type DOGPython = Base::Type::fromName("App::DocumentObjectGroupPython");
         gui->openCommand("Move object");
         for (QList<QTreeWidgetItem*>::Iterator it = items.begin(); it != items.end(); ++it) {
             // get document object
@@ -448,38 +451,21 @@ void TreeWidget::dropEvent(QDropEvent *event)
             if (par) {
                 // allow an object to be in one group only
                 QString cmd;
-                if (par->getTypeId().isDerivedFrom(DOGPython)) {
-                    // if this is a python group, call the method of its Proxy
-                    cmd = QString::fromAscii("App.getDocument(\"%1\").getObject(\"%2\").Proxy.removeObject("
-                                      "App.getDocument(\"%1\").getObject(\"%3\"))")
-                                      .arg(QString::fromAscii(doc->getName()))
-                                      .arg(QString::fromAscii(par->getNameInDocument()))
-                                      .arg(QString::fromAscii(obj->getNameInDocument()));
-                } else {
-                    cmd = QString::fromAscii("App.getDocument(\"%1\").getObject(\"%2\").removeObject("
-                                      "App.getDocument(\"%1\").getObject(\"%3\"))")
-                                      .arg(QString::fromAscii(doc->getName()))
-                                      .arg(QString::fromAscii(par->getNameInDocument()))
-                                      .arg(QString::fromAscii(obj->getNameInDocument()));
-                }
+                cmd = QString::fromAscii("App.getDocument(\"%1\").getObject(\"%2\").removeObject("
+                                  "App.getDocument(\"%1\").getObject(\"%3\"))")
+                                  .arg(QString::fromAscii(doc->getName()))
+                                  .arg(QString::fromAscii(par->getNameInDocument()))
+                                  .arg(QString::fromAscii(obj->getNameInDocument()));
                 Gui::Application::Instance->runPythonCode(cmd.toUtf8());
             }
 
             // build Python command for execution
             QString cmd;
-            if (grp->getTypeId().isDerivedFrom(DOGPython)) {
-                cmd = QString::fromAscii("App.getDocument(\"%1\").getObject(\"%2\").Proxy.addObject("
-                                  "App.getDocument(\"%1\").getObject(\"%3\"))")
-                                  .arg(QString::fromAscii(doc->getName()))
-                                  .arg(QString::fromAscii(grp->getNameInDocument()))
-                                  .arg(QString::fromAscii(obj->getNameInDocument()));
-            } else {
-                cmd = QString::fromAscii("App.getDocument(\"%1\").getObject(\"%2\").addObject("
-                                  "App.getDocument(\"%1\").getObject(\"%3\"))")
-                                  .arg(QString::fromAscii(doc->getName()))
-                                  .arg(QString::fromAscii(grp->getNameInDocument()))
-                                  .arg(QString::fromAscii(obj->getNameInDocument()));
-            }
+            cmd = QString::fromAscii("App.getDocument(\"%1\").getObject(\"%2\").addObject("
+                              "App.getDocument(\"%1\").getObject(\"%3\"))")
+                              .arg(QString::fromAscii(doc->getName()))
+                              .arg(QString::fromAscii(grp->getNameInDocument()))
+                              .arg(QString::fromAscii(obj->getNameInDocument()));
             Gui::Application::Instance->runPythonCode(cmd.toUtf8());
         }
         gui->commitCommand();
@@ -573,6 +559,7 @@ void TreeWidget::slotActiveDocument(const Gui::Document& Doc)
     }
 }
 
+
 void TreeWidget::onTestStatus(void)
 {
     if (isVisible()) {
@@ -589,9 +576,27 @@ void TreeWidget::onTestStatus(void)
 void TreeWidget::onItemEntered(QTreeWidgetItem * item)
 {
     // object item selected
-    if ( item && item->type() == TreeWidget::ObjectType ) {
+    if (item && item->type() == TreeWidget::ObjectType) {
         DocumentObjectItem* obj = static_cast<DocumentObjectItem*>(item);
         obj->displayStatusInfo();
+    }
+}
+
+void TreeWidget::onItemCollapsed(QTreeWidgetItem * item)
+{
+    // object item collapsed
+    if (item && item->type() == TreeWidget::ObjectType) {
+        DocumentObjectItem* obj = static_cast<DocumentObjectItem*>(item);
+        obj->setExpandedStatus(false);
+    }
+}
+
+void TreeWidget::onItemExpanded(QTreeWidgetItem * item)
+{
+    // object item expanded
+    if (item && item->type() == TreeWidget::ObjectType) {
+        DocumentObjectItem* obj = static_cast<DocumentObjectItem*>(item);
+        obj->setExpandedStatus(true);
     }
 }
 
@@ -758,6 +763,8 @@ DocumentItem::DocumentItem(const Gui::Document* doc, QTreeWidgetItem * parent)
     doc->signalActivatedObject.connect(boost::bind(&DocumentItem::slotActiveObject, this, _1));
     doc->signalInEdit.connect(boost::bind(&DocumentItem::slotInEdit, this, _1));
     doc->signalResetEdit.connect(boost::bind(&DocumentItem::slotResetEdit, this, _1));
+    doc->signalHighlightObject.connect(boost::bind(&DocumentItem::slotHighlightObject, this, _1,_2,_3));
+    doc->signalExpandObject.connect(boost::bind(&DocumentItem::slotExpandObject, this, _1,_2));
 
     setFlags(Qt::ItemIsEnabled/*|Qt::ItemIsEditable*/);
 }
@@ -825,94 +832,52 @@ void DocumentItem::slotChangeObject(const Gui::ViewProviderDocumentObject& view)
     std::string objectName = obj->getNameInDocument();
     std::map<std::string, DocumentObjectItem*>::iterator it = ObjectMap.find(objectName);
     if (it != ObjectMap.end()) {
-         // use new grouping style
-#        if 1
-            std::set<QTreeWidgetItem*> children;
-            std::vector<App::DocumentObject*> group = view.claimChildren();
-            for (std::vector<App::DocumentObject*>::iterator jt = group.begin(); jt != group.end(); ++jt) {
-                if(*jt){
-                    const char* internalName = (*jt)->getNameInDocument();
-                    if (internalName) {
-                        std::map<std::string, DocumentObjectItem*>::iterator kt = ObjectMap.find(internalName);
-                        if (kt != ObjectMap.end()) {
-                            children.insert(kt->second);
-                            QTreeWidgetItem* parent = kt->second->parent();
-                            if (parent && parent != it->second) {
-                                if (it->second != kt->second) {
-                                    int index = parent->indexOfChild(kt->second);
-                                    parent->takeChild(index);
-                                    it->second->addChild(kt->second);
-                                }
-                                else {
-                                    Base::Console().Warning("Gui::DocumentItem::slotChangedObject(): Object references to itself.\n");
-                                }
-                            }
-                        }
-                        else {
-                            Base::Console().Warning("Gui::DocumentItem::slotChangedObject(): Cannot reparent unknown object.\n");
-                        }
-                    }
-                    else {
-                        Base::Console().Warning("Gui::DocumentItem::slotChangedObject(): Group references unknown object.\n");
-                    }
-                }
-            }
-            // move all children which are not part of the group anymore to this item
-            int count = it->second->childCount();
-            for (int i=0; i < count; i++) {
-                QTreeWidgetItem* child = it->second->child(i);
-                if (children.find(child) == children.end()) {
-                    it->second->takeChild(i);
-                    this->addChild(child);
-                }
-            }
-            //this->treeWidget()->expandItem(it->second);
-         // old grouping style here
-#        else 
-
-            // is the object a group?
-            if (obj->getTypeId().isDerivedFrom(App::DocumentObjectGroup::getClassTypeId())) {
-                std::set<QTreeWidgetItem*> children;
-                std::vector<App::DocumentObject*> group = static_cast<App::DocumentObjectGroup*>(obj)->Group.getValues();
-                for (std::vector<App::DocumentObject*>::iterator jt = group.begin(); jt != group.end(); ++jt) {
-                    const char* internalName = (*jt)->getNameInDocument();
-                    if (internalName) {
-                        std::map<std::string, DocumentObjectItem*>::iterator kt = ObjectMap.find(internalName);
-                        if (kt != ObjectMap.end()) {
-                            children.insert(kt->second);
-                            QTreeWidgetItem* parent = kt->second->parent();
-                            if (parent && parent != it->second) {
+        // use new grouping style
+        std::set<QTreeWidgetItem*> children;
+        std::vector<App::DocumentObject*> group = view.claimChildren();
+        for (std::vector<App::DocumentObject*>::iterator jt = group.begin(); jt != group.end(); ++jt) {
+            if (*jt) {
+                const char* internalName = (*jt)->getNameInDocument();
+                if (internalName) {
+                    std::map<std::string, DocumentObjectItem*>::iterator kt = ObjectMap.find(internalName);
+                    if (kt != ObjectMap.end()) {
+                        children.insert(kt->second);
+                        QTreeWidgetItem* parent = kt->second->parent();
+                        if (parent && parent != it->second) {
+                            if (it->second != kt->second) {
                                 int index = parent->indexOfChild(kt->second);
                                 parent->takeChild(index);
                                 it->second->addChild(kt->second);
                             }
-                        }
-                        else {
-                            Base::Console().Warning("DocumentItem::slotChangedObject: Cannot reparent unknown object.\n");
+                            else {
+                                Base::Console().Warning("Gui::DocumentItem::slotChangedObject(): Object references to itself.\n");
+                            }
                         }
                     }
                     else {
-                        Base::Console().Warning("DocumentItem::slotChangedObject: Group references unknown object.\n");
+                        Base::Console().Warning("Gui::DocumentItem::slotChangedObject(): Cannot reparent unknown object.\n");
                     }
                 }
-
-                // move all children which are not part of the group anymore to this item
-                int count = it->second->childCount();
-                for (int i=0; i < count; i++) {
-                    QTreeWidgetItem* child = it->second->child(i);
-                    if (children.find(child) == children.end()) {
-                        it->second->takeChild(i);
-                        this->addChild(child);
-                    }
+                else {
+                    Base::Console().Warning("Gui::DocumentItem::slotChangedObject(): Group references unknown object.\n");
                 }
-                this->treeWidget()->expandItem(it->second);
             }
-        // end of grouping style switch
-#       endif 
+        }
+        // move all children which are not part of the group anymore to this item
+        int count = it->second->childCount();
+        for (int i=0; i < count; i++) {
+            QTreeWidgetItem* child = it->second->child(i);
+            if (children.find(child) == children.end()) {
+                it->second->takeChild(i);
+                this->addChild(child);
+            }
+        }
+
         // set the text label
         std::string displayName = obj->Label.getValue();
         it->second->setText(0, QString::fromUtf8(displayName.c_str()));
-    } else {
+    }
+    else {
         Base::Console().Warning("Gui::DocumentItem::slotChangedObject(): Cannot change unknown object.\n");
     }
 }
@@ -948,10 +913,79 @@ void DocumentItem::slotActiveObject(const Gui::ViewProviderDocumentObject& obj)
     }
 }
 
+void DocumentItem::slotHighlightObject (const Gui::ViewProviderDocumentObject& obj,const Gui::HighlightMode& high,bool set)
+{
+    std::string objectName = obj.getObject()->getNameInDocument();
+    std::map<std::string, DocumentObjectItem*>::iterator jt = ObjectMap.find(objectName);
+    if (jt == ObjectMap.end())
+        return; // signal is emitted before the item gets created
+
+    QFont f = jt->second->font(0);
+    switch (high) {
+    case Gui::Bold: f.setBold(set);             break;
+    case Gui::Italic: f.setItalic(set);         break;
+    case Gui::Underlined: f.setUnderline(set);  break;
+    case Gui::Overlined: f.setOverline(set);    break;
+    case Gui::Blue:
+        if(set)
+            jt->second->setBackgroundColor(0,QColor(200,200,255));
+        else
+            jt->second->setData(0, Qt::BackgroundColorRole,QVariant());
+        break;
+    default:
+        // not defined enum
+        assert(0);
+    }
+
+    jt->second->setFont(0,f);
+}
+
+void DocumentItem::slotExpandObject (const Gui::ViewProviderDocumentObject& obj,const Gui::TreeItemMode& mode)
+{
+    std::string objectName = obj.getObject()->getNameInDocument();
+    std::map<std::string, DocumentObjectItem*>::iterator jt = ObjectMap.find(objectName);
+    if (jt == ObjectMap.end())
+        return; // signal is emitted before the item gets created
+
+    switch (mode) {
+    case Gui::Expand:
+        jt->second->setExpanded(true);
+        break;
+    case Gui::Collapse:
+        jt->second->setExpanded(false);
+        break;
+    case Gui::Toggle:
+        if (jt->second->isExpanded())
+            jt->second->setExpanded(false);
+        else
+            jt->second->setExpanded(true);
+        break;
+
+    default:
+        // not defined enum
+        assert(0);
+    }
+}
+
 const Gui::Document* DocumentItem::document() const
 {
     return this->pDocument;
 }
+
+//void DocumentItem::markItem(const App::DocumentObject* Obj,bool mark)
+//{
+//    // never call without Object! 
+//    assert(Obj);
+//
+//
+//    std::map<std::string,DocumentObjectItem*>::iterator pos;
+//    pos = ObjectMap.find(Obj->getNameInDocument());
+//    if (pos != ObjectMap.end()) {
+//        QFont f = pos->second->font(0);
+//        f.setUnderline(mark);
+//        pos->second->setFont(0,f);
+//    }
+//}
 
 void DocumentItem::testStatus(void)
 {
@@ -1212,6 +1246,12 @@ void DocumentObjectItem::displayStatusInfo()
         info += QString::fromAscii(" (but must be executed)");
     getMainWindow()->showMessage( info );
    
+}
+
+void DocumentObjectItem::setExpandedStatus(bool on)
+{
+    App::DocumentObject* Obj = viewObject->getObject();
+    Obj->setStatus(App::Expand, on);
 }
 
 void DocumentObjectItem::setData (int column, int role, const QVariant & value)

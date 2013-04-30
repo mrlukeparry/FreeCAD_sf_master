@@ -114,6 +114,7 @@ View3DInventor::View3DInventor(Gui::Document* pcDocument, QWidget* parent, Qt::W
     // create the inventor widget and set the defaults
 #if !defined (NO_USE_QT_MDI_AREA)
     _viewer = new View3DInventorViewer(0);
+    _viewer->setDocument(this->_pcDocument);
     stack->addWidget(_viewer->getWidget());
     setCentralWidget(stack);
 #else
@@ -307,7 +308,7 @@ void View3DInventor::OnChange(ParameterGrp::SubjectType &rCaller,ParameterGrp::M
         _viewer->setAnimationEnabled(rGrp.GetBool("UseAutoRotation",true));
     }
     else if (strcmp(Reason,"Gradient") == 0) {
-        _viewer->setGradientBackgroud((rGrp.GetBool("Gradient",true)));
+        _viewer->setGradientBackground((rGrp.GetBool("Gradient",true)));
     }
     else if (strcmp(Reason,"UseAntialiasing") == 0) {
         _viewer->getGLRenderAction()->setSmoothing(rGrp.GetBool("UseAntialiasing",false));
@@ -357,9 +358,9 @@ void View3DInventor::OnChange(ParameterGrp::SubjectType &rCaller,ParameterGrp::M
         r4 = ((col4 >> 24) & 0xff) / 255.0; g4 = ((col4 >> 16) & 0xff) / 255.0; b4 = ((col4 >> 8) & 0xff) / 255.0;
         _viewer->setBackgroundColor(SbColor(r1, g1, b1));
         if (rGrp.GetBool("UseBackgroundColorMid",false) == false)
-            _viewer->setGradientBackgroudColor(SbColor(r2, g2, b2), SbColor(r3, g3, b3));
+            _viewer->setGradientBackgroundColor(SbColor(r2, g2, b2), SbColor(r3, g3, b3));
         else
-            _viewer->setGradientBackgroudColor(SbColor(r2, g2, b2), SbColor(r3, g3, b3), SbColor(r4, g4, b4));
+            _viewer->setGradientBackgroundColor(SbColor(r2, g2, b2), SbColor(r3, g3, b3), SbColor(r4, g4, b4));
     }
 }
 
@@ -772,12 +773,9 @@ bool View3DInventor::hasClippingPlane() const
     return _viewer->hasClippingPlane();
 }
 
-void View3DInventor::setOverlayWidget(GLOverlayWidget* widget)
+void View3DInventor::setOverlayWidget(QWidget* widget)
 {
     removeOverlayWidget();
-    QGLWidget* w = static_cast<QGLWidget*>(_viewer->getGLWidget());
-    QImage img = w->grabFrameBuffer();
-    widget->setImage(img);
     stack->addWidget(widget);
     stack->setCurrentIndex(1);
 }
@@ -789,14 +787,14 @@ void View3DInventor::removeOverlayWidget()
     if (overlay) stack->removeWidget(overlay);
 }
 
-void View3DInventor::setCursor(const QCursor& aCursor)
+void View3DInventor::setOverrideCursor(const QCursor& aCursor)
 {
     _viewer->getWidget()->setCursor(aCursor);
 }
 
-void View3DInventor::setCursor(Qt::CursorShape aCursor)
+void View3DInventor::restoreOverrideCursor()
 {
-    _viewer->getWidget()->setCursor(aCursor);
+    _viewer->getWidget()->setCursor(QCursor(Qt::ArrowCursor));
 }
 
 void View3DInventor::dump(const char* filename)
