@@ -26,9 +26,11 @@ set(DrawingGui_LIBS
 set(DrawingGui_MOC_HDRS
     CanvasView.h
     DrawingView.h
+    QGraphicsItemEdge.h
+    QGraphicsItemVertex.h
     QGraphicsItemView.h
-    QGraphicsItemViewPart.h
     QGraphicsItemViewDimension.h
+    QGraphicsItemViewPart.h
     TaskOrthoViews.h
     TaskDialog.h
 )
@@ -68,6 +70,10 @@ SET(DrawingGuiView_SRCS
     DrawingView.h
     QGraphicsItemView.cpp
     QGraphicsItemView.h
+    QGraphicsItemEdge.cpp
+    QGraphicsItemEdge.h
+    QGraphicsItemVertex.cpp
+    QGraphicsItemVertex.h
     QGraphicsItemViewDimension.cpp
     QGraphicsItemViewDimension.h
     QGraphicsItemViewPart.cpp
@@ -101,7 +107,7 @@ add_library(DrawingGui SHARED ${DrawingGui_SRCS} ${DrawingGuiView_SRCS} ${Drawin
 target_link_libraries(DrawingGui ${DrawingGui_LIBS})
 
 
-fc_target_copy_resource(DrawingGui 
+fc_target_copy_resource(DrawingGui
     ${CMAKE_SOURCE_DIR}/src/Mod/Drawing
     ${CMAKE_BINARY_DIR}/Mod/Drawing
     InitGui.py)

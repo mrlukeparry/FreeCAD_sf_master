@@ -43,250 +43,10 @@
 
 #include <Base/Console.h>
 #include "../App/FeatureViewPart.h"
+
 #include "QGraphicsItemViewPart.h"
 
 using namespace DrawingGui;
-
-QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : reference(ref)
-{
-    if(scene) {
-        scene->addItem(this);
-    }
-    if(ref > 0) {
-        this->setAcceptHoverEvents(true);
-    }
-
-    strokeWidth = 1.;
-    sf = 1.;
-    showHidden = false;
-    highlighted = false;
-    hPen.setStyle(Qt::DashLine);
-    vPen.setStyle(Qt::SolidLine);
-    vPen.setCosmetic(true);
-    hPen.setCosmetic(true);
-    hPen.setColor(Qt::gray);
-}
-
-void QGraphicsItemEdge::setVisiblePath(const QPainterPath &path) {
-    prepareGeometryChange();
-    this->vPath = path;
-    bb = shape().controlPointRect();
-    update();
-}
-
-void QGraphicsItemEdge::setHiddenPath(const QPainterPath &path) {
-    prepareGeometryChange();
-    this->hPath = path;
-    bb = shape().controlPointRect();
-    update();
-}
-
-QRectF QGraphicsItemEdge::boundingRect() const {
-        return shape().controlPointRect();
-
-}
-
-bool QGraphicsItemEdge::contains(const QPointF &point)
-{
-    return shape().contains(point);
-}
-
-QPainterPath QGraphicsItemEdge::shape() const
-{
-//     QPointF pnt = this->scene()->
-    QPainterPathStroker stroker;
-//     double scale = pnt.y();
-//     Base::Console().Log("scale %f", scale);
-    stroker.setWidth(strokeWidth / sf);
-
-    // Combine paths
-    QPainterPath p;
-    p.addPath(vPath);
-
-    if(showHidden)
-        p.addPath(hPath);
-
-    return stroker.createStroke(p);
-}
-
-void QGraphicsItemEdge::setHighlighted(bool state)
-{
-    highlighted = state;
-    if(highlighted) {
-        vPen.setColor(Qt::blue);
-        hPen.setColor(Qt::blue);
-    } else {
-        vPen.setColor(Qt::black);
-        hPen.setColor(Qt::gray);
-    }
-    update();
-}
-
-QVariant QGraphicsItemEdge::itemChange(GraphicsItemChange change, const QVariant &value)
-{
-    if (change == ItemSelectedHasChanged && scene()) {
-        // value is the new position.
-        if(isSelected()) {
-            vPen.setColor(Qt::blue);
-            hPen.setColor(Qt::blue);
-        } else {
-            vPen.setColor(Qt::black);
-            hPen.setColor(Qt::gray);
-
-        }
-        update();
-    }
-    return QGraphicsItem::itemChange(change, value);
-}
-
-void QGraphicsItemEdge::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
-{
-    vPen.setColor(Qt::blue);
-    hPen.setColor(Qt::blue);
-    update();
-}
-
-void QGraphicsItemEdge::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
-{
-    QGraphicsItemView *view = dynamic_cast<QGraphicsItemView *> (this->parentItem());
-    assert(view != 0);
-
-    if(!isSelected() && !highlighted) {
-        vPen.setColor(Qt::black);
-        hPen.setColor(Qt::gray);
-        update();
-    }
-}
-
-void QGraphicsItemEdge::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
-{
-    QStyleOptionGraphicsItem myOption(*option);
-    myOption.state &= ~QStyle::State_Selected;
-    painter->setPen(vPen);
-    painter->setBrush(vBrush);
-    painter->drawPath(vPath);
-
-    // hacky method to get scale for shape()
-    this->sf = painter->worldTransform().m11();
-    if(showHidden) {
-        painter->setPen(hPen);
-        painter->setBrush(hBrush);
-        painter->drawPath(hPath);
-    }
-//     QGraphicsPathItem::paint(painter, &myOption, widget);
-}
-
-// QGraphicsView - Face Features
-
-QGraphicsItemFace::QGraphicsItemFace(int ref, QGraphicsScene *scene  ) : reference(ref)
-{
-    if(scene) {
-        scene->addItem(this);
-    }
-    this->setAcceptHoverEvents(true);
-}
-
-QVariant QGraphicsItemFace::itemChange(GraphicsItemChange change, const QVariant &value)
-{
-    if (change == ItemSelectedHasChanged && scene()) {
-        // value is the new position.
-        if(isSelected()) {
-            QPen pen = this->pen();
-            pen.setColor(Qt::blue);
-            this->setPen(pen);
-        } else {
-            QPen pen = this->pen();
-            pen.setColor(Qt::gray);
-            this->setPen(pen);
-        }
-        update();
-    }
-    return QGraphicsItem::itemChange(change, value);
-}
-
-void QGraphicsItemFace::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
-{
-    QPen pen = this->pen();
-    pen.setColor(Qt::blue);
-    this->setPen(pen);
-    update();
-}
-
-void QGraphicsItemFace::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
-{
-    QGraphicsItemView *view = dynamic_cast<QGraphicsItemView *> (this->parentItem());
-    assert(view != 0);
-
-    if(!isSelected() && !view->isSelected()) {
-        QPen pen = this->pen();
-        pen.setColor(Qt::black);
-        this->setPen(pen);
-        update();
-    }
-}
-
-// Vertex Features
-QGraphicsItemVertex::QGraphicsItemVertex(int ref, QGraphicsScene *scene  ) : reference(ref)
-{
-    if(scene) {
-        scene->addItem(this);
-    }
-    this->setFlag(ItemIgnoresTransformations);
-    this->setAcceptHoverEvents(true);
-}
-
-QPainterPath QGraphicsItemVertex::shape() const
-{
-    return this->path();
-}
-
-QVariant QGraphicsItemVertex::itemChange(GraphicsItemChange change, const QVariant &value)
-{
-    if (change == ItemSelectedHasChanged && scene()) {
-        // value is the new position.
-        if(isSelected()) {
-            QBrush brush = this->brush();
-            brush.setColor(Qt::blue);
-            this->setBrush(brush);
-        } else {
-            QBrush brush = this->brush();
-            brush.setColor(Qt::black);
-            this->setBrush(brush);
-        }
-        update();
-    }
-    return QGraphicsItem::itemChange(change, value);
-}
-
-void QGraphicsItemVertex::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
-{
-    QBrush brush = this->brush();
-    brush.setColor(Qt::blue);
-    this->setBrush(brush);
-    update();
-}
-
-void QGraphicsItemVertex::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
-{
-    QGraphicsItemView *view = dynamic_cast<QGraphicsItemView *> (this->parentItem());
-    assert(view != 0);
-
-    if(!isSelected() && !view->isSelected()) {
-          QBrush brush = this->brush();
-          brush.setColor(Qt::black);
-          this->setBrush(brush);
-        update();
-    }
-}
-
-void QGraphicsItemVertex::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
-{
-    QStyleOptionGraphicsItem myOption(*option);
-    myOption.state &= ~QStyle::State_Selected;
-    QGraphicsPathItem::paint(painter, &myOption, widget);
-}
-
-// ########## QGraphic Item Part #############
 
 QGraphicsItemViewPart::QGraphicsItemViewPart(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemView(pos, scene)
 {
@@ -302,6 +62,23 @@ QGraphicsItemViewPart::~QGraphicsItemViewPart()
 {
 
 }
+
+void QGraphicsItemViewPart::setViewPartFeature(Drawing::FeatureViewPart *obj)
+{
+    if(obj == 0)
+        return;
+
+    this->setViewFeature(static_cast<Drawing::FeatureView *>(obj));
+    this->drawViewPart();
+
+    // Set the QGraphicsItemGroup Properties based on the FeatureView
+    float x = obj->X.getValue();
+    float y = obj->Y.getValue();
+    
+    this->setPos(x, y);
+    Q_EMIT dirty();
+}
+
 
 QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *baseGeom) const
 {
@@ -427,12 +204,10 @@ void QGraphicsItemViewPart::updateView()
         }
     }
 
-//     float lineWidth = part->LineWidth.isTouched()
 }
 
 void QGraphicsItemViewPart::drawViewPart()
 {
-
     // Iterate
     if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()))
         return;
@@ -754,9 +529,9 @@ void QGraphicsItemViewPart::pathArc(QPainterPath &path, double rx, double ry, do
 }
 
 void QGraphicsItemViewPart::pathArcSegment(QPainterPath &path,
-                           double xc, double yc,
-                           double th0, double th1,
-                           double rx, double ry, double xAxisRotation) const
+                                           double xc, double yc,
+                                           double th0, double th1,
+                                           double rx, double ry, double xAxisRotation) const
 {
     double sinTh, cosTh;
     double a00, a01, a10, a11;
@@ -788,14 +563,13 @@ void QGraphicsItemViewPart::pathArcSegment(QPainterPath &path,
 
 QGraphicsItemEdge * QGraphicsItemViewPart::findRefEdge(int idx)
 {
-      QList<QGraphicsItem *> items = this->childItems();
-      for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); it++) {
-          QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
-          if(edge && edge->getReference() == idx) {
-              return edge;
-          }
-      }
-      return 0;
+    QList<QGraphicsItem *> items = this->childItems();
+    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); it++) {
+        QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+        if(edge && edge->getReference() == idx)
+            return edge;
+    }
+    return 0;
 }
 
 QGraphicsItemVertex * QGraphicsItemViewPart::findRefVertex(int idx)
@@ -803,14 +577,11 @@ QGraphicsItemVertex * QGraphicsItemViewPart::findRefVertex(int idx)
     QList<QGraphicsItem *> items = this->childItems();
     for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); it++) {
         QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
-        if(vert && vert->getReference() == idx) {
+        if(vert && vert->getReference() == idx)
             return vert;
-        }
     }
     return 0;
 }
-
-
 
 void QGraphicsItemViewPart::toggleVertices(bool state)
 {
@@ -857,21 +628,6 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
         update();
     }
     return QGraphicsItemView::itemChange(change, value);
-}
-
-void QGraphicsItemViewPart::setViewPartFeature(Drawing::FeatureViewPart *obj)
-{
-    if(obj == 0)
-        return;
-
-    this->setViewFeature(static_cast<Drawing::FeatureView *>(obj));
-    this->drawViewPart();
-
-      // Set the QGraphicsItemGroup Properties based on the FeatureView
-    float x = obj->X.getValue();
-    float y = obj->Y.getValue();
-    this->setPos(x, y);
-    Q_EMIT dirty();
 }
 
 void QGraphicsItemViewPart::hoverEnterEvent(QGraphicsSceneHoverEvent *event)

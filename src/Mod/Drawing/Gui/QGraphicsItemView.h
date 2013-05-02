@@ -23,7 +23,6 @@
 #ifndef DRAWINGGUI_QGRAPHICSITEMVIEW_H
 #define DRAWINGGUI_QGRAPHICSITEMVIEW_H
 
-#include <Gui/MDIView.h>
 #include <QGraphicsItemGroup>
 #include <QObject>
 
@@ -44,16 +43,17 @@ class DrawingGuiExport  QGraphicsItemView : public QObject, public QGraphicsItem
     Q_OBJECT
 
 public:
-    enum {Type = QGraphicsItem::UserType + 101};
     QGraphicsItemView(const QPoint &position, QGraphicsScene *scene);
     ~QGraphicsItemView();
 
-    void setViewFeature(Drawing::FeatureView *obj);
+    enum {Type = QGraphicsItem::UserType + 101};
     int type() const { return Type;}
-    
+
+    void setViewFeature(Drawing::FeatureView *obj);
+    Drawing::FeatureView * getViewObject() const { return viewObject; }
+
     virtual void updateView();
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
-    Drawing::FeatureView * getViewObject() const { return viewObject; }
 
 Q_SIGNALS:
   void dirty();

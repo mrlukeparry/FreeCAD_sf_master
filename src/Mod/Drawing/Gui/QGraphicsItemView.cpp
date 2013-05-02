@@ -40,46 +40,33 @@
 #include <Base/Console.h>
 #include <Gui/Selection.h>
 #include <Gui/Command.h>
+
 #include "../App/FeatureView.h"
 #include "QGraphicsItemView.h"
 
 using namespace DrawingGui;
 
-QGraphicsItemView::QGraphicsItemView(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemGroup(),viewObject(0)                 
+QGraphicsItemView::QGraphicsItemView(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemGroup(),viewObject(0)
 {
-    this->setFlags(QGraphicsItem::ItemIsSelectable/* |
-              QGraphicsItem::ItemSendsGeometryChanges |
-              QGraphicsItem::ItemIsMovable |
-              QGraphicsItem::ItemIsFocusable |
-              QGraphicsItem::ItemSendsGeometryChanges*/);
+    this->setFlags(QGraphicsItem::ItemIsSelectable);
     this->setPos(pos);
-    
+
     //Add object to scene
     scene->addItem(this);
 }
 
 QGraphicsItemView::~QGraphicsItemView()
 {
-  
+
 }
 
 QVariant QGraphicsItemView::itemChange(GraphicsItemChange change, const QVariant &value)
 {
-    switch(change) {
-//       case QGraphicsItem::ItemSelectedHasChanged: {
-//         
-//       } break;
-      case QGraphicsItem::ItemPositionChange: {
-          
-              
-      } break;
-    }
-
     return QGraphicsItemGroup::itemChange(change, value);
 }
 
 void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
-{       
+{
     if(scene() && this == scene()->mouseGrabberItem()) {
         Gui::Command::openCommand("Drag View");
         Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", viewObject->getNameInDocument(), this->x());
@@ -87,12 +74,11 @@ void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
         Gui::Command::commitCommand();
         Gui::Command::updateActive();
     }
-    QGraphicsItem::mouseReleaseEvent(event);   
+    QGraphicsItem::mouseReleaseEvent(event);
 }
 
 void QGraphicsItemView::updateView()
 {
-    Base::Console().Log("Updating View");
     this->setPos(viewObject->X.getValue(), viewObject->Y.getValue());
 }
 

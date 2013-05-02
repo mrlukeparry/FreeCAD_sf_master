@@ -20,21 +20,13 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef DRAWINGGUI_QGRAPHICSITEMVIEWPART_H
-#define DRAWINGGUI_QGRAPHICSITEMVIEWPART_H
+#ifndef DRAWINGGUI_QGRAPHICSITEMVERTEX_H
+#define DRAWINGGUI_QGRAPHICSITEMVERTEX_H
 
-#include <QObject>
-#include <QGraphicsView>
-#include <QPainter>
-#include <QStyleOptionGraphicsItem>
-
-#include "QGraphicsItemView.h"
-#include "QGraphicsItemEdge.h"
-#include "QGraphicsItemVertex.h"
-
-namespace Drawing {
-class FeatureViewPart;
-}
+# include <QObject>
+# include <QGraphicsItem>
+# include <QPainter>
+# include <QStyleOptionGraphicsItem>
 
 namespace DrawingGeometry {
 class BaseGeom;
@@ -43,57 +35,38 @@ class BaseGeom;
 namespace DrawingGui
 {
 
-class DrawingGuiExport QGraphicsItemViewPart : public QGraphicsItemView
+class DrawingGuiExport QGraphicsItemVertex : public QObject, public QGraphicsPathItem
 {
     Q_OBJECT
-
 public:
+    explicit QGraphicsItemVertex(int ref = -1, QGraphicsScene *scene = 0 );
+    ~QGraphicsItemVertex() {}
 
-    explicit QGraphicsItemViewPart(const QPoint &position, QGraphicsScene *scene);
-    ~QGraphicsItemViewPart();
-
-    enum {Type = QGraphicsItem::UserType + 102};
+    enum {Type = QGraphicsItem::UserType + 105};
     int type() const { return Type;}
 
-    void setViewPartFeature(Drawing::FeatureViewPart *obj);
-
-    void toggleVertices(bool state);
-    virtual void updateView();
-
-Q_SIGNALS:
-  void dirty();
+    int getReference() const { return reference; }
+    void setStrokeWidth(int width) { this->strokeWidth = width; }
 
 public:
-    virtual QPainterPath  shape () const;
-    virtual QRectF boundingRect() const;
+    QPainterPath shape() const;
     virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
 
 protected:
-  QGraphicsItemEdge * findRefEdge(int i);
-  QGraphicsItemVertex * findRefVertex(int idx);
-
-  QPainterPath drawPainterPath(DrawingGeometry::BaseGeom *baseGeom) const;
-
-  // Helper methods for drawing arc segments
-  void pathArcSegment(QPainterPath &path,double xc, double yc, double th0, double th1,double rx, double ry, double xAxisRotation) const;
-  void pathArc(QPainterPath &path, double rx, double ry, double x_axis_rotation,
-                                   bool large_arc_flag, bool sweep_flag,
-                                   double x, double y,
-                                   double curx, double cury) const;
-
-  void drawViewPart();
-  void drawBorder(QPainter *painter);
-
-  // Selection detection
-  virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-  void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
-  void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
+    // Preselection events:
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
+    // Selection detection
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
 protected:
-  QPen pen;
-  QRectF bbox;
+    int reference;
+
+private:
+    int strokeWidth;
+    QPen m_pen;
 };
 
 } // namespace DrawingViewGui
 
-#endif // DRAWINGGUI_QGRAPHICSITEMVIEWPART_H
+#endif // DRAWINGGUI_QGRAPHICSITEMVERTEX_H

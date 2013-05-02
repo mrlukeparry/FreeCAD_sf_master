@@ -20,21 +20,13 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef DRAWINGGUI_QGRAPHICSITEMVIEWPART_H
-#define DRAWINGGUI_QGRAPHICSITEMVIEWPART_H
+#ifndef DRAWINGGUI_QGRAPHICSITEMEDGE_H
+#define DRAWINGGUI_QGRAPHICSITEMEDGE_H
 
-#include <QObject>
-#include <QGraphicsView>
-#include <QPainter>
-#include <QStyleOptionGraphicsItem>
-
-#include "QGraphicsItemView.h"
-#include "QGraphicsItemEdge.h"
-#include "QGraphicsItemVertex.h"
-
-namespace Drawing {
-class FeatureViewPart;
-}
+# include <QObject>
+# include <QGraphicsItem>
+# include <QPainter>
+# include <QStyleOptionGraphicsItem>
 
 namespace DrawingGeometry {
 class BaseGeom;
@@ -43,57 +35,60 @@ class BaseGeom;
 namespace DrawingGui
 {
 
-class DrawingGuiExport QGraphicsItemViewPart : public QGraphicsItemView
+class DrawingGuiExport QGraphicsItemEdge : public QObject, public QGraphicsPathItem
 {
-    Q_OBJECT
-
+Q_OBJECT
 public:
+    explicit QGraphicsItemEdge(int ref = -1, QGraphicsScene *scene = 0 );
+    ~QGraphicsItemEdge() {}
 
-    explicit QGraphicsItemViewPart(const QPoint &position, QGraphicsScene *scene);
-    ~QGraphicsItemViewPart();
+    enum {Type = QGraphicsItem::UserType + 103};
 
-    enum {Type = QGraphicsItem::UserType + 102};
     int type() const { return Type;}
 
-    void setViewPartFeature(Drawing::FeatureViewPart *obj);
+    void setHighlighted(bool state);
+    void setShowHidden(bool state) {showHidden = state; update(); }
 
-    void toggleVertices(bool state);
-    virtual void updateView();
+    int getReference() const { return reference; }
+    QPainterPath getHiddenPath() { return hPath; }
+    QPainterPath getVisiblePath() { return vPath; }
 
-Q_SIGNALS:
-  void dirty();
+    void setStrokeWidth(float width) { strokeWidth = width; vPen.setWidthF(width); hPen.setWidthF(width * 0.3); update(); }
+    void setHiddenPath(const QPainterPath &path);
+    void setVisiblePath(const QPainterPath &path);
 
 public:
-    virtual QPainterPath  shape () const;
-    virtual QRectF boundingRect() const;
+    bool contains(const QPointF &point);
+    QPainterPath shape() const;
+    QRectF boundingRect() const;
     virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
 
 protected:
-  QGraphicsItemEdge * findRefEdge(int i);
-  QGraphicsItemVertex * findRefVertex(int idx);
-
-  QPainterPath drawPainterPath(DrawingGeometry::BaseGeom *baseGeom) const;
-
-  // Helper methods for drawing arc segments
-  void pathArcSegment(QPainterPath &path,double xc, double yc, double th0, double th1,double rx, double ry, double xAxisRotation) const;
-  void pathArc(QPainterPath &path, double rx, double ry, double x_axis_rotation,
-                                   bool large_arc_flag, bool sweep_flag,
-                                   double x, double y,
-                                   double curx, double cury) const;
-
-  void drawViewPart();
-  void drawBorder(QPainter *painter);
-
-  // Selection detection
-  virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-  void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
-  void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
+    // Selection detection
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
 protected:
-  QPen pen;
-  QRectF bbox;
+  int reference;
+  QPainterPath hPath;
+  QPainterPath vPath;
+
+  QBrush hBrush;
+  QBrush vBrush;
+  QPen   vPen;
+  QPen   hPen;
+
+  float sf;
+  QRectF bb;
+  bool highlighted;
+  bool showHidden;
+
+private:
+float strokeWidth;
+
 };
 
 } // namespace DrawingViewGui
 
-#endif // DRAWINGGUI_QGRAPHICSITEMVIEWPART_H
+#endif // DRAWINGGUI_QGRAPHICSITEMEDGE_H
