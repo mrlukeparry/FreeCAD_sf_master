@@ -106,7 +106,7 @@ public Q_SLOTS:
 
 protected:
   void draw();
-
+  void clearProjectionCache();
     // Selection detection
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
@@ -114,7 +114,7 @@ protected:
   bool hasHover;
   QGraphicsItem *datumLabel;
   QGraphicsItem *arrows;
-  DrawingGeometry::BaseGeom *projGeom;
+  std::vector<DrawingGeometry::BaseGeom *> projGeom;
   QPen pen;
 };
 

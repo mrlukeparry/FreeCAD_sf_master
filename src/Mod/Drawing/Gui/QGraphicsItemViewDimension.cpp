@@ -93,8 +93,8 @@ QVariant QGraphicsItemDatumLabel::itemChange(GraphicsItemChange change, const QV
 }
 void QGraphicsItemDatumLabel::updatePos()
 {
-    this->posX = this->x() + this->boundingRect().width() / 2;
-    this->posY = this->y() + this->boundingRect().height() / 2;
+    this->posX = this->x() + this->boundingRect().width() / 2.;
+    this->posY = this->y() + this->boundingRect().height() / 2.;
 }
 
 void QGraphicsItemDatumLabel::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
@@ -156,8 +156,6 @@ QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraph
         dLabel  , SIGNAL(hover(bool)),
         this    , SLOT  (hover(bool)));
 
-    projGeom = 0;
-
     this->arrows  = arrws;
     this->datumLabel = dLabel;
 
@@ -170,7 +168,16 @@ QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraph
 
 QGraphicsItemViewDimension::~QGraphicsItemViewDimension()
 {
-    delete projGeom;
+    clearProjectionCache();
+}
+
+void QGraphicsItemViewDimension::clearProjectionCache()
+{
+    for(std::vector<DrawingGeometry::BaseGeom *>::iterator it = projGeom.begin(); it != projGeom.end(); ++it) {
+        delete *it;
+    }
+
+    projGeom.clear();
 }
 
 void QGraphicsItemViewDimension::select(bool state)
@@ -193,8 +200,7 @@ void QGraphicsItemViewDimension::updateView()
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension*>(this->viewObject);
 
     // Reset the cache;
-    delete projGeom;
-    projGeom = 0;
+    clearProjectionCache();
 
     // Identify what changed to prevent complete redraw
     if(dim->Fontsize.isTouched() ||
@@ -230,10 +236,7 @@ void QGraphicsItemViewDimension::updateDim()
 
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->viewObject);
 
-    QString str;
-
-    int precision = dim->Precision.getValue();
-    str.setNum((absolute) ? abs(dim->getValue()): dim->getValue(), 'g', precision);
+    QString str = QString::number((absolute) ? abs(dim->getValue()) : dim->getValue(), 'f', dim->Precision.getValue());
 
     QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
 
@@ -309,19 +312,20 @@ void QGraphicsItemViewDimension::draw()
             int idx = std::atoi(SubNames[0].substr(4,4000).c_str());
 
             // Use the cached value
-            if(!projGeom)
-                    projGeom = refObj->getCompleteEdge(idx);
+            if(projGeom.size() != 1 || !projGeom.at(0)) {
+                clearProjectionCache();
+                projGeom.push_back(refObj->getCompleteEdge(idx));
+            }
 
-            if(projGeom && projGeom->geomType == DrawingGeometry::GENERIC ) {
-                  DrawingGeometry::Generic *gen = static_cast<DrawingGeometry::Generic *>(projGeom);
-                  Base::Vector2D pnt1 = gen->points.at(0);
-                  Base::Vector2D pnt2 = gen->points.at(1);
-                  p1 = Base::Vector3d (pnt1.fX, pnt1.fY, 0);
-                  p2 = Base::Vector3d (pnt2.fX, pnt2.fY, 0);
+            if(projGeom.at(0) && projGeom.at(0)->geomType == DrawingGeometry::GENERIC ) {
+                DrawingGeometry::Generic *gen = static_cast<DrawingGeometry::Generic *>(projGeom.at(0));
+                Base::Vector2D pnt1 = gen->points.at(0);
+                Base::Vector2D pnt2 = gen->points.at(1);
+                p1 = Base::Vector3d (pnt1.fX, pnt1.fY, 0);
+                p2 = Base::Vector3d (pnt2.fX, pnt2.fY, 0);
 
             } else {
-                delete projGeom;
-                projGeom = 0;
+                clearProjectionCache();
                 throw Base::Exception("Original edge not found or is invalid type");
             }
 
@@ -342,8 +346,44 @@ void QGraphicsItemViewDimension::draw()
             delete v1; v1 = 0;
             delete v2; v2 = 0;
 
-        } else {
-            throw Base::Exception("Invalid reference for dimension type");
+        } else if(dim->References.getValues().size() == 2 &&
+            SubNames[0].substr(0,6) == "Edge" &&
+            SubNames[1].substr(0,6) == "Edge") {
+            // Point to Point Dimension
+            const Drawing::FeatureViewPart *refObj = static_cast<const Drawing::FeatureViewPart*>(objects[0]);
+            int idx = std::atoi(SubNames[0].substr(6,4000).c_str());
+            int idx2 = std::atoi(SubNames[1].substr(6,4000).c_str());
+
+            // Use the cached value or gather projected edges
+            if(projGeom.size() != 2 || !projGeom.at(0) || !projGeom.at(0)) {
+                clearProjectionCache();
+                projGeom.push_back(refObj->getCompleteEdge(idx));
+                projGeom.push_back(refObj->getCompleteEdge(idx2));
+            }
+
+            if(projGeom.at(0) && projGeom.at(0)->geomType == DrawingGeometry::GENERIC ||
+               projGeom.at(1) && projGeom.at(1)->geomType == DrawingGeometry::GENERIC) {
+                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(projGeom.at(0));
+                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(projGeom.at(1));
+
+                // Get Points for loine
+                Base::Vector2D pnt1, pnt2;
+                Base::Vector3d p1S, p1E, p2S, p2E;
+                pnt1 = gen1->points.at(0);
+                pnt2 = gen1->points.at(1);
+
+                p1S = Base::Vector3d(pnt1.fX, pnt1.fY, 0);
+                p1E = Base::Vector3d(pnt2.fX, pnt2.fY, 0);
+
+                pnt1 = gen2->points.at(0);
+                pnt2 = gen2->points.at(1);
+
+                p2S = Base::Vector3d(pnt1.fX, pnt1.fY, 0);
+                p2E = Base::Vector3d(pnt2.fX, pnt2.fY, 0);
+
+            } else {
+                throw Base::Exception("Invalid reference for dimension type");
+            }
         }
 
         Base::Vector3d dir, norm;
@@ -490,16 +530,24 @@ void QGraphicsItemViewDimension::draw()
             int idx = std::atoi(SubNames[0].substr(4,4000).c_str());
 
             // Use the cached value if available otherwise load this
-            if(!projGeom)
-                projGeom = refObj->getCompleteEdge(idx);
+            if(projGeom.size() != 1) {
+                clearProjectionCache();
+                DrawingGeometry::BaseGeom *geom = refObj->getCompleteEdge(idx);
 
-            if(projGeom &&
-                (projGeom->geomType == DrawingGeometry::CIRCLE || projGeom->geomType == DrawingGeometry::ARCOFCIRCLE)) {
-                  DrawingGeometry::Circle *circ = static_cast<DrawingGeometry::Circle *>(projGeom);
+                if(!geom)
+                    throw Base::Exception("Edge couldn't be found for radius / diameter dimension");
+
+                projGeom.push_back(geom);
+            }
+
+            if(projGeom.at(0) &&
+               (projGeom.at(0)->geomType == DrawingGeometry::CIRCLE || projGeom.at(0)->geomType == DrawingGeometry::ARCOFCIRCLE)) {
+                  DrawingGeometry::Circle *circ = static_cast<DrawingGeometry::Circle *>(projGeom.at(0));
                   Base::Vector2D pnt1 = circ->center;
                   radius = circ->radius;
                   p1 = Base::Vector3d (pnt1.fX, pnt1.fY, 0);
             } else {
+                clearProjectionCache();
                 throw Base::Exception("Original edge not found or is invalid type");
             }
         } else {

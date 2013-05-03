@@ -118,17 +118,18 @@ void CanvasView::addViewDimension(Drawing::FeatureViewDimension *dim)
     dimGroup->setViewPartFeature(dim);
     std::vector<App::DocumentObject *> objs = dim->References.getValues();
 
-    if(objs.size() > 0)
-    {
+    if(objs.size() > 0) {
         // Attach the dimension to the first object's group
         for(std::vector<QGraphicsItemView *>::iterator it = views.begin(); it != views.end(); ++it) {
             Drawing::FeatureView *viewObj = (*it)->getViewObject();
             if(viewObj == objs.at(0)) {
                 // Found dimensions parent view reference
                 QGraphicsItemView *view = (*it);
+
+                //Must transfer to new coordinate system of parent view
                 dimGroup->setPos(view->pos());
                 view->addToGroup(dimGroup);
-                //Must transfer to new coordinate system of parent view
+
             }
         }
     }
