@@ -47,7 +47,7 @@ std::string MeasurementPy::representation(void) const
 
 PyObject *MeasurementPy::PyMake(struct _typeobject *, PyObject *, PyObject *)  // Python wrapper
 {
-    // create a new instance of BoundBoxPy and the Twin object 
+    // create a new instance of BoundBoxPy and the Twin object
     return new MeasurementPy(new Measurement);
 }
 
@@ -87,14 +87,14 @@ PyObject* MeasurementPy::addReference(PyObject *args)
 PyObject* MeasurementPy::clear(PyObject *)
 {
     this->getMeasurementPtr()->clear();
-    
+
     Py_Return;
 }
 
 PyObject* MeasurementPy::delta(PyObject *)
 {
     Py::Vector delta(this->getMeasurementPtr()->delta());
-    
+
     return Py::new_reference_to(delta);
 }
 
@@ -103,7 +103,7 @@ PyObject* MeasurementPy::length(PyObject *)
 {
     Py::Float length;
     length = this->getMeasurementPtr()->length();
-    
+
     return Py::new_reference_to(length);
 }
 
@@ -111,15 +111,22 @@ PyObject* MeasurementPy::radius(PyObject *)
 {
     Py::Float radius;
     radius = this->getMeasurementPtr()->radius();
-    
+
     return Py::new_reference_to(radius);
 }
 
+PyObject* MeasurementPy::angle(PyObject *)
+{
+    Py::Float angle;
+    angle = this->getMeasurementPtr()->angle();
+
+    return Py::new_reference_to(angle);
+}
 
 PyObject* MeasurementPy::com(PyObject *)
 {
     Py::Vector com(this->getMeasurementPtr()->massCenter());
-    
+
     return Py::new_reference_to(com);
 }
 
@@ -130,7 +137,7 @@ PyObject *MeasurementPy::getCustomAttributes(const char* /*attr*/) const
 
 int MeasurementPy::setCustomAttributes(const char* /*attr*/, PyObject* /*obj*/)
 {
-    return 0; 
+    return 0;
 }
 
 

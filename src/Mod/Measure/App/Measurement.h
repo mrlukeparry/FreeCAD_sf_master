@@ -43,42 +43,45 @@ namespace Measure
         EdgeToEdge, // Measure between TWO edges
         Invalid
     };
-    
+
 class MeasureExport Measurement : public Base::BaseClass {
       TYPESYSTEM_HEADER();
 public:
-   
+
     App::PropertyLinkSubList References;
-    
+
 public:
     Measurement();
     ~Measurement();
-    
+
     void clear();
     bool hasReferences();
-    
+
     /// Add a reference
     int addReference(App::DocumentObject *obj, const char *subName);
-    
+
     MeasureType getType();
 
      // from base class
     virtual PyObject *getPyObject(void);
     virtual unsigned int getMemSize(void) const;
-    
+
 public:
   // Methods for distances (edge length, two points, edge and a point
-  double length();
-  Base::Vector3d delta();
-  
+  double length() const;
+  Base::Vector3d delta() const;
+
   // Calculates the radius for an arc or circular edge
-  double radius();
-  
+  double radius() const;
+
+  // Calculates the angle between two edges
+  double angle(const Base::Vector3d &param = Base::Vector3d(0,0,0)) const;
+
   // Calculate volumetric/mass properties
-  Base::Vector3d massCenter();
+  Base::Vector3d massCenter() const;
 
 protected:
-  TopoDS_Shape getShape(App::DocumentObject *obj , const char *subName);
+  TopoDS_Shape getShape(App::DocumentObject *obj , const char *subName) const;
   MeasureType measureType;
   Py::Object PythonObject;
 };

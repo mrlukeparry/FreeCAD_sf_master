@@ -37,13 +37,14 @@
   # include <BRepAdaptor_Curve.hxx>
   # include <BRepExtrema_DistShapeShape.hxx>
   # include <GProp_GProps.hxx>
+  # include <GeomAPI_ExtremaCurveCurve.hxx>
   # include <BRepGProp.hxx>
 #endif
 
 
 #include <Base/Exception.h>
 #include <Base/Console.h>
-#include <Base/VectorPy.h> 
+#include <Base/VectorPy.h>
 
 #include <Mod/Part/App/Geometry.h>
 #include <Mod/Part/App/PartFeature.h>
@@ -60,14 +61,14 @@ TYPESYSTEM_SOURCE(Measure::Measurement, Base::BaseClass)
 
 Measurement::Measurement()
 {
-  
+
 }
 
 Measurement::~Measurement()
 {
-  
+
 }
-    
+
 void Measurement::clear()
 {
     std::vector<App::DocumentObject*> Objects;
@@ -80,7 +81,7 @@ bool Measurement::hasReferences()
 {
     return (References.getSize() > 0);
 }
-    
+
 /// Convenience Methods for adding points
 int Measurement::addReference(App::DocumentObject *obj, const char* subName)
 {
@@ -89,9 +90,9 @@ int Measurement::addReference(App::DocumentObject *obj, const char* subName)
 
   objects.push_back(obj);
   subElements.push_back(subName);
-  
+
   References.setValues(objects, subElements);
-  
+
   measureType = getType();
   return References.getSize();
 }
@@ -100,20 +101,20 @@ MeasureType Measurement::getType()
 {
     const std::vector<App::DocumentObject*> &objects = References.getValues();
     const std::vector<std::string> &subElements = References.getSubValues();
-    
+
     std::vector<App::DocumentObject*>::const_iterator obj = objects.begin();
     std::vector<std::string>::const_iterator subEl = subElements.begin();
-    
+
     //
     int dims = -1;
     MeasureType mode;
-    
+
     // Type of References
     int verts = 0;
     int edges = 0;
     int faces = 0;
     int vols = 0;
-    
+
     for (;obj != objects.end(); ++obj, ++subEl) {
 
         const Part::Feature *refObj = static_cast<const Part::Feature*>((*obj));
@@ -123,7 +124,7 @@ MeasureType Measurement::getType()
         if(strcmp((*subEl).c_str(), "") == 0) {
             vols++;
         } else {
-          
+
             TopoDS_Shape refSubShape;
             try {
                 refSubShape = refShape.getSubShape((*subEl).c_str());
@@ -146,7 +147,7 @@ MeasureType Measurement::getType()
                 break;
               case TopAbs_FACE:
                 {
-                    faces++;                
+                    faces++;
                 }
                 break;
               default:
@@ -154,7 +155,7 @@ MeasureType Measurement::getType()
             }
         }
     }
-    
+
     if(vols > 0) {
         if(verts > 0 || edges > 0 || faces > 0) {
             mode = Invalid;
@@ -191,11 +192,11 @@ MeasureType Measurement::getType()
     } else {
         mode = Invalid;
     }
-    
+
     return mode;
 }
 
-TopoDS_Shape Measurement::getShape(App::DocumentObject *obj , const char *subName)
+TopoDS_Shape Measurement::getShape(App::DocumentObject *obj , const char *subName) const
 {
     const Part::Feature *refObj = static_cast<const Part::Feature*>(obj);
     const Part::TopoShape& refShape = refObj->Shape.getShape();
@@ -216,31 +217,31 @@ TopoDS_Shape Measurement::getShape(App::DocumentObject *obj , const char *subNam
         return refSubShape;
     }
 }
-              
+
 // Methods for distances (edge length, two points, edge and a point
-double Measurement::length()
+double Measurement::length() const
 {
   int numRefs =  References.getSize();
   if(!numRefs || measureType == Invalid)
       throw Base::Exception("Invalid References Provided");
-    
+
   const std::vector<App::DocumentObject*> &objects = References.getValues();
   const std::vector<std::string> &subElements = References.getSubValues();
 
-  if(measureType == Points || 
-     measureType == PointToEdge || 
+  if(measureType == Points ||
+     measureType == PointToEdge ||
      measureType == PointToSurface)  {
-      
+
       Base::Vector3d diff = this->delta();
       return diff.Length();
-      
+
   } else if(measureType == Edges) {
-      
+
       double length = 0.f;
       // Iterate through edges and calculate each length
       std::vector<App::DocumentObject*>::const_iterator obj = objects.begin();
       std::vector<std::string>::const_iterator subEl = subElements.begin();
-   
+
       for (;obj != objects.end(); ++obj, ++subEl) {
           const Part::Feature *refObj = static_cast<const Part::Feature*>((*obj));
           const Part::TopoShape& refShape = refObj->Shape.getShape();
@@ -253,12 +254,12 @@ double Measurement::length()
             case GeomAbs_Line : {
                 gp_Pnt P1 = curve.Value(curve.FirstParameter());
                 gp_Pnt P2 = curve.Value(curve.LastParameter());
-                gp_XYZ diff = P2.XYZ() - P1.XYZ();                
-                length += diff.Modulus();      
+                gp_XYZ diff = P2.XYZ() - P1.XYZ();
+                length += diff.Modulus();
             } break;
             case GeomAbs_Circle : {
-                double u = curve.FirstParameter();   
-                double v = curve.LastParameter();   
+                double u = curve.FirstParameter();
+                double v = curve.LastParameter();
                 double radius = curve.Circle().Radius();
                 if (u > v) // if arc is reversed
                     std::swap(u, v);
@@ -280,7 +281,62 @@ double Measurement::length()
   }
 }
 
-double Measurement::radius()
+double Measurement::angle(const Base::Vector3d &param) const
+{
+    int numRefs = References.getSize();
+    if(!numRefs)
+        throw Base::Exception("No references provided");
+
+    if(measureType == Edges) {
+        // Only case that is supported is angle to angle
+        if(numRefs == 2) {
+            const std::vector<App::DocumentObject*> &objects = References.getValues();
+            const std::vector<std::string> &subElements = References.getSubValues();
+
+            TopoDS_Shape shape1 = getShape(objects.at(0), subElements.at(0).c_str());
+            TopoDS_Shape shape2 = getShape(objects.at(1), subElements.at(1).c_str());
+
+            BRepAdaptor_Curve curve1(TopoDS::Edge(shape1));
+            BRepAdaptor_Curve curve2(TopoDS::Edge(shape2));
+
+            if(curve1.GetType() == GeomAbs_Line &&
+               curve2.GetType() == GeomAbs_Line) {
+
+                gp_Pnt pnt1 = curve1.Value(curve1.FirstParameter());
+                gp_Pnt pnt2 = curve1.Value(curve1.LastParameter());
+                gp_Dir dir1 = curve1.Line().Direction();
+                gp_Dir dir2 = curve2.Line().Direction();
+
+                throw Base::Exception("Not implemented yet");
+//                 // Find point of intersection (TODO use a simplified algorithm for 3D lines) determinant
+//                 GeomAPI_ExtremaCurveCurve intersector(curve1, curve2);
+//                 if(intersector.Distance() < Precision::Confusion()) {
+//                     // Lines do intersect
+//                     gp_Pnt p1, p2;
+//                     intersector.NearestPoints(p1, p2);
+//
+//                 }
+
+
+                if(param.Length() > FLT_EPSILON) {
+
+                    // Calculate which sector to use
+                }
+//                 gp_Pnt P1S = curve1.Value(curve1.FirstParameter());
+//                 gp_Pnt P1E = curve1.Value(curve1.LastParameter());
+//
+//                 gp_Pnt P2S = curve2.Value(curve2.FirstParameter());
+//                 gp_Pnt P2E = curve2.Value(curve2.LastParameter());
+                /*
+                gp_XYZ diff = P2.XYZ() - P1.XYZ();*/
+//                 return angle * 180  / M_PI;
+            }
+        }
+    }
+    throw Base::Exception("Invalid References Provided");
+}
+
+double Measurement::radius() const
 {
     int numRefs = References.getSize();
     if(!numRefs)
@@ -289,24 +345,24 @@ double Measurement::radius()
     if(numRefs == 1 || measureType == Edges) {
         const std::vector<App::DocumentObject*> &objects = References.getValues();
         const std::vector<std::string> &subElements = References.getSubValues();
-        
+
         TopoDS_Shape shape = getShape(objects.at(0), subElements.at(0).c_str());
         const TopoDS_Edge& edge = TopoDS::Edge(shape);
-        
+
         BRepAdaptor_Curve curve(edge);
         if(curve.GetType() == GeomAbs_Circle) {
             return (double) curve.Circle().Radius();
-        }       
+        }
     }
-    throw Base::Exception("Invalid References Provided");    
+    throw Base::Exception("Invalid References Provided");
 }
 
-Base::Vector3d Measurement::delta()
+Base::Vector3d Measurement::delta() const
 {
     int numRefs =  References.getSize();
     if(!numRefs || measureType == Invalid)
         throw Base::Exception("Invalid References Provided");
-    
+
     const std::vector<App::DocumentObject*> &objects = References.getValues();
     const std::vector<std::string> &subElements = References.getSubValues();
 
@@ -315,33 +371,33 @@ Base::Vector3d Measurement::delta()
             // Keep Seperate case for two points to reduce need for complex algorithm
             TopoDS_Shape shape1 = getShape(objects.at(0), subElements.at(0).c_str());
             TopoDS_Shape shape2 = getShape(objects.at(1), subElements.at(1).c_str());
-            
+
             const TopoDS_Vertex& vert1 = TopoDS::Vertex(shape1);
             const TopoDS_Vertex& vert2 = TopoDS::Vertex(shape2);
-            
+
             gp_Pnt P1 = BRep_Tool::Pnt(vert1);
             gp_Pnt P2 = BRep_Tool::Pnt(vert2);
             gp_XYZ diff = P2.XYZ() - P1.XYZ();
-            return Base::Vector3d(diff.X(), diff.Y(), diff.Z());       
+            return Base::Vector3d(diff.X(), diff.Y(), diff.Z());
         }
-    } else if(measureType == PointToEdge || 
+    } else if(measureType == PointToEdge ||
               measureType == PointToSurface) {
         // BrepExtema can calculate minimum distance between any set of topology sets.
         if(numRefs == 2) {
             TopoDS_Shape shape1 = getShape(objects.at(0), subElements.at(0).c_str());
             TopoDS_Shape shape2 = getShape(objects.at(1), subElements.at(1).c_str());
-            
+
             BRepExtrema_DistShapeShape extrema(shape1, shape2);
-            
+
             if(extrema.IsDone()) {
                 // Found the nearest point between point and curve
-                // NOTE we will assume there is only 1 solution (cyclic topology will create multiple solutions. 
+                // NOTE we will assume there is only 1 solution (cyclic topology will create multiple solutions.
                 gp_Pnt P1 = extrema.PointOnShape1(1);
                 gp_Pnt P2 = extrema.PointOnShape2(1);
                 gp_XYZ diff = P2.XYZ() - P1.XYZ();
-                return Base::Vector3d(diff.X(), diff.Y(), diff.Z());    
-            }         
-        }        
+                return Base::Vector3d(diff.X(), diff.Y(), diff.Z());
+            }
+        }
     } else if(measureType == Edges) {
         // Only case that is supported is straight line edge
         if(numRefs == 1) {
@@ -349,11 +405,32 @@ Base::Vector3d Measurement::delta()
             const TopoDS_Edge& edge = TopoDS::Edge(shape);
             BRepAdaptor_Curve curve(edge);
 
-            if(curve.GetType() == GeomAbs_Line) {              
+            if(curve.GetType() == GeomAbs_Line) {
                   gp_Pnt P1 = curve.Value(curve.FirstParameter());
                   gp_Pnt P2 = curve.Value(curve.LastParameter());
-                  gp_XYZ diff = P2.XYZ() - P1.XYZ();                
-                  return Base::Vector3d(diff.X(), diff.Y(), diff.Z());          
+                  gp_XYZ diff = P2.XYZ() - P1.XYZ();
+                  return Base::Vector3d(diff.X(), diff.Y(), diff.Z());
+            }
+        } else if(numRefs == 2) {
+            TopoDS_Shape shape1 = getShape(objects.at(0), subElements.at(0).c_str());
+            TopoDS_Shape shape2 = getShape(objects.at(1), subElements.at(1).c_str());
+
+            BRepAdaptor_Curve curve1(TopoDS::Edge(shape1));
+            BRepAdaptor_Curve curve2(TopoDS::Edge(shape2));
+
+            // Only permit line to line distance
+            if(curve1.GetType() == GeomAbs_Line &&
+               curve2.GetType() == GeomAbs_Line) {
+                BRepExtrema_DistShapeShape extrema(shape1, shape2);
+
+                if(extrema.IsDone()) {
+                    // Found the nearest point between point and curve
+                    // NOTE we will assume there is only 1 solution (cyclic topology will create multiple solutions.
+                    gp_Pnt P1 = extrema.PointOnShape1(1);
+                    gp_Pnt P2 = extrema.PointOnShape2(1);
+                    gp_XYZ diff = P2.XYZ() - P1.XYZ();
+                    return Base::Vector3d(diff.X(), diff.Y(), diff.Z());
+                }
             }
         }
     }
@@ -361,43 +438,43 @@ Base::Vector3d Measurement::delta()
 }
 
 
-Base::Vector3d Measurement::massCenter()
+Base::Vector3d Measurement::massCenter() const
 {
-  
+
     int numRefs =  References.getSize();
     if(!numRefs || measureType == Invalid)
         throw Base::Exception("Invalid References Provided");
-         
+
     const std::vector<App::DocumentObject*> &objects = References.getValues();
     const std::vector<std::string> &subElements = References.getSubValues();
-    
+
 
     GProp_GProps gprops = GProp_GProps();
-    
+
     if(measureType == Volumes) {
         // Iterate through edges and calculate each length
         std::vector<App::DocumentObject*>::const_iterator obj = objects.begin();
         std::vector<std::string>::const_iterator subEl = subElements.begin();
-    
+
         for (;obj != objects.end(); ++obj, ++subEl) {
             const Part::Feature *refObj = static_cast<const Part::Feature*>((*obj));
             const Part::TopoShape& refShape = refObj->Shape.getShape();
-            
+
             // Compute inertia properties
-            
+
             GProp_GProps props = GProp_GProps();
             BRepGProp::VolumeProperties(getShape((*obj), ""), props);
             gprops.Add(props);
-            // Get inertia properties            
+            // Get inertia properties
         }
-        
+
         double mass = gprops.Mass();
         gp_Pnt cog = gprops.CentreOfMass();
-                
+
         return Base::Vector3d(cog.X(), cog.Y(), cog.Z());
-        
+
       } else {
-          throw Base::Exception("Invalid References Provided"); 
+          throw Base::Exception("Invalid References Provided");
       }
 }
 

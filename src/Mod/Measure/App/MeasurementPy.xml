@@ -23,17 +23,22 @@
       <Documentation>
         <UserDocu>measure the difference between references to obtain resultant vector</UserDocu>
       </Documentation>
-    </Methode>        
+    </Methode>
     <Methode Name="delta">
       <Documentation>
         <UserDocu>measure the difference between references to obtain resultant vector</UserDocu>
       </Documentation>
-    </Methode>        
+    </Methode>
     <Methode Name="length">
       <Documentation>
         <UserDocu>measure the length of the references</UserDocu>
       </Documentation>
-    </Methode>   
+    </Methode>
+    <Methode Name="angle">
+        <Documentation>
+            <UserDocu>measure the angle between two edges</UserDocu>
+        </Documentation>
+    </Methode>
     <Methode Name="radius">
       <Documentation>
         <UserDocu>measure the radius of an arc or circle edge</UserDocu>
@@ -43,6 +48,6 @@
       <Documentation>
         <UserDocu>measure the center of mass for selected volumes</UserDocu>
       </Documentation>
-    </Methode>  
+    </Methode>
   </PythonExport>
 </GenerateModel>
