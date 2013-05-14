@@ -29,6 +29,8 @@ SET(Features_SRCS
     FeatureProjection.h
     FeatureClip.cpp
     FeatureClip.h
+    FeatureOrthoView.cpp
+    FeatureOrthoView.h
     FeatureView.cpp
     FeatureView.h
     FeatureViewAnnotation.cpp
