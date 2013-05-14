@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) Jï¿½rgen Riegel          (juergen.riegel@web.de) 2002     *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -32,7 +32,6 @@
 #include <Base/FileInfo.h>
 #include <App/Application.h>
 
-#include <boost/regex.hpp>
 #include <iostream>
 #include <iterator>
 
@@ -121,87 +120,6 @@ App::DocumentObjectExecReturn *FeaturePage::execute(void)
     Views.touch();
     return App::DocumentObject::StdReturn;
 }
-//     std::string temp = Template.getValue();
-//     if (temp.empty())
-//         return App::DocumentObject::StdReturn;
-// 
-//     Base::FileInfo fi(temp);
-//     if (!fi.isReadable()) {
-//         // if there is a old absolute template file set use a redirect
-//         fi.setFile(App::Application::getResourceDir() + "Mod/Drawing/Templates/" + fi.fileName());
-//         // try the redirect
-//         if (!fi.isReadable()) {
-//             Base::Console().Log("FeaturePage::execute() not able to open %s!\n",Template.getValue());
-//             std::string error = std::string("Cannot open file ") + Template.getValue();
-//             return new App::DocumentObjectExecReturn(error);
-//         }
-//     }
-// 
-//     if (std::string(PageResult.getValue()).empty())
-//         PageResult.setValue(fi.filePath().c_str());
-// 
-//     // open Template file
-//     string line;
-//     ifstream file (fi.filePath().c_str());
-// 
-//     // make a temp file for FileIncluded Property
-//     string tempName = PageResult.getExchangeTempFile();
-//     ostringstream ofile;
-//     string tempendl = "--endOfLine--";
-// 
-//     while (!file.eof())
-//     {
-//         getline (file,line);
-//         // check if the marker in the template is found
-//         if(line.find("<!-- DrawingContent -->") == string::npos)
-//             // if not -  write through
-//             ofile << line << tempendl;
-//         else
-//         {
-//      
-//         }
-//     }
-// 
-//     file.close();
-// 
-//     // checking for freecad editable texts
-//     string outfragment(ofile.str());
-//     if (EditableTexts.getSize() > 0) {
-//         boost::regex e1 ("<text.*?freecad:editable=\"(.*?)\".*?<tspan.*?>(.*?)</tspan>");
-//         string::const_iterator begin, end;
-//         begin = outfragment.begin();
-//         end = outfragment.end();
-//         boost::match_results<std::string::const_iterator> what;
-//         int count = 0;
-// 
-//         while (boost::regex_search(begin, end, what, e1)) {
-//             if (count < EditableTexts.getSize()) {
-//                 // change values of editable texts
-//                 boost::regex e2 ("(<text.*?freecad:editable=\""+what[1].str()+"\".*?<tspan.*?)>(.*?)(</tspan>)");
-//                 outfragment = boost::regex_replace(outfragment, e2, "$1>"+EditableTexts.getValues()[count]+"$3");
-//             }
-//             count ++;
-//             begin = what[0].second;
-//         }
-//     }
-// 
-//     // restoring linebreaks and saving the file
-//     boost::regex e3 ("--endOfLine--");
-//     string fmt = "\\n";
-//     outfragment = boost::regex_replace(outfragment, e3, fmt);
-//     ofstream outfinal(tempName.c_str());
-//     outfinal << outfragment;
-//     outfinal.close();
-// 
-//     PageResult.setValue(tempName.c_str());
-// 
-//     //const char* text = "lskdfjlsd";
-//     //const char* regex = "lskdflds";
-//     //boost::regex e(regex);
-//     //boost::smatch what;
-//     //if(boost::regex_match(string(text), what, e))
-//     //{
-//     //}
 
 
 #if 0

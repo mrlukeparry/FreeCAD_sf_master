@@ -164,7 +164,6 @@ TopoDS_Shape GeometryObject::invertY(const TopoDS_Shape& shape)
     bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
     mat.SetMirror(gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2), gp_Dir(0,1,0)));
     BRepBuilderAPI_Transform mkTrf(shape, mat);
-
     return mkTrf.Shape();
 }
 
@@ -862,7 +861,7 @@ void GeometryObject::createWire(const TopoDS_Shape &input, std::list<TopoDS_Wire
     }
 }
 
-void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vector3f &direction, bool extractHidden)
+void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vector3f &direction, bool extractHidden, const Base::Vector3f &xAxis)
 {
     // Clear previous Geometry and References that may have been stored
     this->clear();
@@ -879,16 +878,29 @@ void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vect
     brep_hlr->Add(transShape);
 
     try {
-        #if defined(__GNUC__) && defined (FC_OS_LINUX)
-        Base::SignalException se;
-        #endif
-        gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
-        HLRAlgo_Projector projector( transform );
+//         #if defined(__GNUC__) && defined (FC_OS_LINUX)
+//         Base::SignalException se;
+//         #endif
 
+        Bnd_Box bounds;
+        BRepBndLib::Add(transShape, bounds);
+        bounds.SetGap(0.0);
+        Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
+        bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+
+
+        projXAxis = xAxis;
+        projNorm = direction;
+        gp_Ax2 transform;
+        if(xAxis.Length() > FLT_EPSILON) {
+            transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),gp_Dir(direction.x, direction.y, direction.z), gp_Dir(xAxis.x, xAxis.y, xAxis.z));
+        } else {
+            transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),gp_Dir(direction.x, direction.y, direction.z));
+        }
+        HLRAlgo_Projector projector( transform );
         brep_hlr->Projector(projector);
         brep_hlr->Update();
         brep_hlr->Hide();
-
     }
     catch (...) {
         Standard_Failure::Raise("Fatal error occurred while projecting shape");

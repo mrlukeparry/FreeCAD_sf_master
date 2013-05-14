@@ -56,43 +56,46 @@ public:
     const std::vector<Vertex *>   & getVertexGeometry() const { return vertexGeom; };
     const std::vector<BaseGeom *> & getEdgeGeometry() const { return edgeGeom; };
     const std::vector<Face *>     & getFaceGeometry() const { return faceGeom; };
-    
+
     const std::vector<int> & getVertexRefs() const { return vertexReferences; };
     const std::vector<int> & getEdgeRefs() const { return edgeReferences; };
     const std::vector<int> & getFaceRefs() const { return faceReferences; };
-    
+
     DrawingGeometry::BaseGeom * projectEdge(const TopoDS_Shape &edge, const TopoDS_Shape &support, const Base::Vector3f &direction);
     DrawingGeometry::Vertex   * projectVertex(const TopoDS_Shape &vert, const TopoDS_Shape &support, const Base::Vector3f &direction);
-    
-    void extractGeometry(const TopoDS_Shape &input,const Base::Vector3f &direction, bool extractHidden = false);
+
+    void extractGeometry(const TopoDS_Shape &input,const Base::Vector3f &direction, bool extractHidden = false, const Base::Vector3f &vAxis = Base::Vector3f(0.,0.,0.));
 
 protected:
     bool shouldDraw(const bool inFace, const int typ,HLRBRep_EdgeData& ed);
     bool isSameCurve(const BRepAdaptor_Curve &c1, const BRepAdaptor_Curve &c2) const;
-  
+
     // Reimplements HLRBRep Drawing Algorithms to satisfy Drawing Workbench requirements
     void drawFace(const bool visible, const int typ, const int iface, Handle_HLRBRep_Data & DS, TopoDS_Shape& Result) const;
     void drawEdge(HLRBRep_EdgeData& ed, TopoDS_Shape& Result, const bool visible) const;
-    
+
     void extractVerts(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, HLRBRep_EdgeData& ed, int ie, ExtractionType extractionType);
     void extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType);
     void extractFaces(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType);
 
     int calculateGeometry(const TopoDS_Shape &input, ExtractionType extractionType, std::vector<BaseGeom *> &geoms);
-    
-    void createWire(const TopoDS_Shape &input, std::list<TopoDS_Wire> &wires) const;    
+
+    void createWire(const TopoDS_Shape &input, std::list<TopoDS_Wire> &wires) const;
     TopoDS_Shape invertY(const TopoDS_Shape& shape);
-    
+
     // Geometry
     std::vector<BaseGeom *> edgeGeom;
     std::vector<Vertex *> vertexGeom;
     std::vector<Face *> faceGeom;
-    
+
     // Linked Edges and Faces to base object
     std::vector<int> vertexReferences;
     std::vector<int> edgeReferences;
     std::vector<int> faceReferences;
 
+    Base::Vector3f projNorm;
+    Base::Vector3f projXAxis;
+    
     double Tolerance;
     double Scale;
     HLRBRep_Algo *brep_hlr;

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2007     *
+ *   Copyright (c) Jï¿½rgen Riegel          (juergen.riegel@web.de) 2007     *
  *   Copyright (c) Luke Parry             (l.parry@warwick.ac.uk) 2013     *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
@@ -47,27 +47,27 @@ public:
 
     App::PropertyLink   Source;
     App::PropertyVector Direction;
+    App::PropertyVector XAxisDirection;
     App::PropertyBool   ShowHiddenLines;
-    App::PropertyBool   ShowSmoothLines;
     App::PropertyFloat  LineWidth;
     App::PropertyFloatConstraint  Tolerance;
 
     const std::vector<DrawingGeometry::Vertex *> & getVertexGeometry() const;
     const std::vector<DrawingGeometry::BaseGeom  *> & getEdgeGeometry() const;
     const std::vector<DrawingGeometry::Face *> & getFaceGeometry() const;
-    
+
     DrawingGeometry::BaseGeom * getCompleteEdge(int idx) const;
     DrawingGeometry::Vertex   * getVertex(int idx) const;
-    
+
     /// Get References for geometric features
     const std::vector<int> & getVertexReferences() const;
     const std::vector<int> & getEdgeReferences() const;
     const std::vector<int> & getFaceReferences() const;
-    
+
     short mustExecute() const;
-    
-    /** @name methods overide Feature */    
-   
+
+    /** @name methods overide Feature */
+
     //@{
     /// recalculate the Feature
     virtual App::DocumentObjectExecReturn *execute(void);

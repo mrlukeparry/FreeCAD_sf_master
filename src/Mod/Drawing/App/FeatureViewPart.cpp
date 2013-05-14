@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) Jï¿½rgen Riegel          (juergen.riegel@web.de) 2002     *
  *   Copyright (c) Luke Parry             (l.parry@warwick.ac.uk) 2013     *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
@@ -27,32 +27,10 @@
 # include <sstream>
 #endif
 
-#include <HLRBRep_Algo.hxx>
-#include <TopoDS_Shape.hxx>
-#include <HLRTopoBRep_OutLiner.hxx>
-//#include <BRepAPI_MakeOutLine.hxx>
-#include <HLRAlgo_Projector.hxx>
-#include <HLRBRep_ShapeBounds.hxx>
-#include <HLRBRep_HLRToShape.hxx>
-#include <gp_Ax2.hxx>
-#include <gp_Pnt.hxx>
-#include <gp_Dir.hxx>
-#include <Poly_Polygon3D.hxx>
-#include <Poly_Triangulation.hxx>
-#include <Poly_PolygonOnTriangulation.hxx>
 #include <TopoDS.hxx>
-#include <TopoDS_Face.hxx>
-#include <TopoDS_Edge.hxx>
-#include <TopoDS_Vertex.hxx>
-#include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
-#include <TopTools_IndexedMapOfShape.hxx>
-#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
-#include <TopTools_ListOfShape.hxx>
-#include <TColgp_Array1OfPnt2d.hxx>
-#include <BRep_Tool.hxx>
-#include <BRepMesh.hxx>
 
+#include <Base/Console.h>
 #include <Base/Exception.h>
 #include <Base/FileInfo.h>
 
@@ -70,7 +48,6 @@ using namespace std;
 //===========================================================================
 
 App::PropertyFloatConstraint::Constraints FeatureViewPart::floatRange = {0.01f,5.0f,0.05f};
-
 PROPERTY_SOURCE(Drawing::FeatureViewPart, Drawing::FeatureView)
 
 FeatureViewPart::FeatureViewPart(void) : geometryObject(0)
@@ -78,12 +55,12 @@ FeatureViewPart::FeatureViewPart(void) : geometryObject(0)
     static const char *group = "Shape view";
     static const char *vgroup = "Drawing view";
 
-    ADD_PROPERTY_TYPE(Direction ,(0,0,1.0),group,App::Prop_None,"Projection direction");
-    ADD_PROPERTY_TYPE(Source    ,(0),group,App::Prop_None,"Shape to view");
+    ADD_PROPERTY_TYPE(Direction ,(0,0,1.0)    ,group,App::Prop_None,"Projection normal direction");
+    ADD_PROPERTY_TYPE(XAxisDirection ,(0,0,0) ,group,App::Prop_None,"X-Axis direction");
+    ADD_PROPERTY_TYPE(Source    ,(0)          ,group,App::Prop_None,"Shape to view");
     ADD_PROPERTY_TYPE(ShowHiddenLines ,(false),group,App::Prop_None,"Control the appearance of the dashed hidden lines");
-    ADD_PROPERTY_TYPE(ShowSmoothLines ,(false),group,App::Prop_None,"Control the appearance of the smooth lines");
-    ADD_PROPERTY_TYPE(LineWidth,(2.f),vgroup,App::Prop_None,"The thickness of the resulting lines");
-    ADD_PROPERTY_TYPE(Tolerance,(0.05f),vgroup,App::Prop_None,"The tessellation tolerance");
+    ADD_PROPERTY_TYPE(LineWidth,(2.f)         ,vgroup,App::Prop_None,"The thickness of the resulting lines");
+    ADD_PROPERTY_TYPE(Tolerance,(0.05f)       ,vgroup,App::Prop_None,"The tessellation tolerance");
     Tolerance.setConstraints(&floatRange);
 
     geometryObject = new DrawingGeometry::GeometryObject();
@@ -93,6 +70,7 @@ short FeatureViewPart::mustExecute() const
 {
     // If Tolerance Property is touched
     if(Direction.isTouched() ||
+       XAxisDirection.isTouched() ||
        Source.isTouched() ||
        Scale.isTouched())
           return 1;
@@ -177,6 +155,7 @@ App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
     //## Get the Part Link ##/
     App::DocumentObject* link = Source.getValue();
 
+    Base::Console().Log("execute view feat");
     if (!link)
         return new App::DocumentObjectExecReturn("No object linked");
 
@@ -190,7 +169,7 @@ App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
     try {
         geometryObject->setTolerance(Tolerance.getValue());
         geometryObject->setScale(Scale.getValue());
-        geometryObject->extractGeometry(shape, Direction.getValue(), ShowHiddenLines.getValue());
+        geometryObject->extractGeometry(shape, Direction.getValue(), ShowHiddenLines.getValue(), XAxisDirection.getValue());
 
         this->touch();
         return App::DocumentObject::StdReturn;
