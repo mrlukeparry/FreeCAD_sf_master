@@ -41,15 +41,16 @@ using namespace Drawing;
 
 PROPERTY_SOURCE(Drawing::FeatureViewDimension, Drawing::FeatureViewAnnotation)
 
-const char* FeatureViewDimension::TypeEnums[]= {"Distance", 
+const char* FeatureViewDimension::TypeEnums[]= {"Distance",
                                                 "DistanceX",
                                                 "DistanceY",
                                                 "DistanceZ",
                                                 "Radius",
                                                 "Diameter",
+//                                                 "Angle",
                                                 NULL};
 
-FeatureViewDimension::FeatureViewDimension(void) 
+FeatureViewDimension::FeatureViewDimension(void)
 {
     ADD_PROPERTY_TYPE(References,(0,0),"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Supporting References");
     ADD_PROPERTY_TYPE(Precision,(2)   ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Precision");
@@ -69,7 +70,7 @@ short FeatureViewDimension::mustExecute() const
     // If Tolerance Property is touched
     if(References.isTouched())
         return 1;
-    else 
+    else
         return 0;
 //     return Drawing::FeatureView::mustExecute();
 }
@@ -78,29 +79,29 @@ App::DocumentObjectExecReturn *FeatureViewDimension::execute(void)
 {
     //Clear the previous measurement made
     measurement->clear();
-    
-    //Relcalculate the measurement based on references stored.  
+
+    //Relcalculate the measurement based on references stored.
     const std::vector<App::DocumentObject*> &objects = References.getValues();
     const std::vector<std::string> &subElements = References.getSubValues();
-    
+
     std::vector<App::DocumentObject*>::const_iterator obj = objects.begin();
     std::vector<std::string>::const_iterator subEl = subElements.begin();
-    
+
     for(; obj != objects.end(); ++obj, ++subEl) {
         Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(*obj);
         App::DocumentObject *docObj = viewPart->Source.getValue();
-        
+
         if((*subEl).substr(0,4) == "Edge") {
-            int idx = std::atoi((*subEl).substr(4,4000).c_str());            
+            int idx = std::atoi((*subEl).substr(4,4000).c_str());
             char buff[100];
             sprintf(buff, "Edge%i", idx);
-            measurement->addReference(docObj, buff); 
+            measurement->addReference(docObj, buff);
         } else if((*subEl).substr(0,6) == "Vertex") {
-            int idx = std::atoi((*subEl).substr(6,4000).c_str());            
+            int idx = std::atoi((*subEl).substr(6,4000).c_str());
             char buff[100];
             sprintf(buff, "Vertex%i", idx);
-            measurement->addReference(docObj, buff); 
-        }   
+            measurement->addReference(docObj, buff);
+        }
     }
 
     return App::DocumentObject::StdReturn;
@@ -112,19 +113,20 @@ double FeatureViewDimension::getValue() const
         return measurement->length();
     } else if(strcmp(Type.getValueAsString(), "DistanceX") == 0){
         Base::Vector3d delta = measurement->delta();
-        return delta.x;        
+        return delta.x;
     } else if(strcmp(Type.getValueAsString(), "DistanceY") == 0){
         Base::Vector3d delta = measurement->delta();
-        return delta.y;        
+        return delta.y;
     } else if(strcmp(Type.getValueAsString(), "DistanceZ") == 0){
         Base::Vector3d delta = measurement->delta();
-        return delta.z;        
+        return delta.z;
     } else if(strcmp(Type.getValueAsString(), "Radius") == 0){
-        return measurement->radius();      
+        return measurement->radius();
     } else if(strcmp(Type.getValueAsString(), "Diameter") == 0){
-        return measurement->radius() * 2;      
-    } 
-    
+        return measurement->radius() * 2;
+    } else if(strcmp(Type.getValueAsString(), "Angle") == 0){
+        return measurement->angle();
+    }
     throw Base::Exception("Dimension Value couldn't be calculated");
 }
 
