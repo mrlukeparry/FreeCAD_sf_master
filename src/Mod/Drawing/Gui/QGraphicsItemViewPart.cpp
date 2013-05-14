@@ -187,6 +187,7 @@ void QGraphicsItemViewPart::updateView()
         for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
             if(dynamic_cast<QGraphicsItemEdge *> (*it) ||
             dynamic_cast<QGraphicsItemVertex *>(*it) ) {
+                prepareGeometryChange();
                 (*it)->setParentItem(0);
                 this->removeFromGroup(*it);
                 this->scene()->removeItem(*it);
@@ -216,6 +217,8 @@ void QGraphicsItemViewPart::drawViewPart()
 
     float lineWidth = part->LineWidth.getValue();
 
+    prepareGeometryChange();
+    bbox = QRectF();
     QGraphicsItem *graphicsItem = 0;
 
 #if 0
@@ -395,6 +398,7 @@ void QGraphicsItemViewPart::drawViewPart()
               item->setVisiblePath(vPath);
           }
 
+          bbox |=  this->transform().mapRect(graphicsItem->boundingRect());
           this->addToGroup(graphicsItem);
 
           // Don't allow selection for any edges with no references
@@ -402,8 +406,10 @@ void QGraphicsItemViewPart::drawViewPart()
               graphicsItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
           }
       }
+
     }
 
+    update();
     graphicsItem = 0;
     // Draw Vertexs:
     const std::vector<DrawingGeometry::Vertex *> &verts = part->getVertexGeometry();
@@ -428,19 +434,6 @@ void QGraphicsItemViewPart::drawViewPart()
           // Edges and Vertexs must be transformed to the ViewPart's coordinate system
           item->moveBy(this->x(), this->y());
           this->addToGroup(item);
-    }
-
-    // Collect all edges and their bounding boxes, to define partfeature boundingbox
-    // QGraphicsitem group collects bounding from all children - not needed
-    bbox = QRectF();
-    QList<QGraphicsItem *> items = this->childItems();
-
-    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
-        QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
-        //         QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
-        if(edge) {
-            bbox = bbox.united(edge->boundingRect());
-        }
     }
 
     Q_EMIT dirty();
@@ -649,7 +642,7 @@ void QGraphicsItemViewPart::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 
 QPainterPath QGraphicsItemViewPart::shape() const {
     QPainterPath path;
-    QRectF box = this->boundingRect().adjusted(2,2,-2,-2);
+    QRectF box = this->boundingRect().adjusted(2.,2.,-2.,-2.);
     path.addRect(box);
     QPainterPathStroker stroker;
     stroker.setWidth(5.f);
@@ -658,11 +651,11 @@ QPainterPath QGraphicsItemViewPart::shape() const {
 
 QRectF QGraphicsItemViewPart::boundingRect() const
 {
-    return bbox.adjusted(-5,-5,5,5);
+    return bbox.adjusted(-5.,-5.,5.,5.);
 }
 
 void QGraphicsItemViewPart::drawBorder(QPainter *painter){
-  QRectF box = this->boundingRect().adjusted(2,2,-2,-2);
+  QRectF box = this->boundingRect().adjusted(2.,2.,-2.,-2.);
   // Save the current painter state and restore at end
   painter->save();
   QPen myPen = pen;

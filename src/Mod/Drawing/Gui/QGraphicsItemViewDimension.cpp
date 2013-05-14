@@ -638,7 +638,9 @@ void QGraphicsItemViewDimension::draw()
 //           glVertex2f(ar1[0], ar1[1]);
 //           glVertex2f(ar2[0], ar2[1]);
 //         glEnd();
-    }
+        } else if(strcmp(dim->Type.getValueAsString(), "Angle") == 0) {
+
+        }
 
 }
 

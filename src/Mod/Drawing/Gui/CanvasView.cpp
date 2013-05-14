@@ -53,6 +53,7 @@
 # include <cmath>
 #endif
 
+#include <Base/Console.h>
 #include <Base/Tools2D.h>
 #include <Base/Stream.h>
 #include <Base/gzstream.h>
