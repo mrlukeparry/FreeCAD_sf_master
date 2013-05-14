@@ -305,6 +305,30 @@ Qt::DropActions TreeWidget::supportedDropActions () const
     return QTreeWidget::supportedDropActions();
 }
 
+bool TreeWidget::event(QEvent *e)
+{
+#if 0
+    if (e->type() == QEvent::ShortcutOverride) {
+        QKeyEvent* ke = static_cast<QKeyEvent *>(e);
+        switch (ke->key()) {
+            case Qt::Key_Delete:
+                ke->accept();
+        }
+    }
+#endif
+    return QTreeWidget::event(e);
+}
+
+void TreeWidget::keyPressEvent(QKeyEvent *event)
+{
+#if 0
+    if (event && event->matches(QKeySequence::Delete)) {
+        event->ignore();
+    }
+#endif
+    QTreeWidget::keyPressEvent(event);
+}
+
 void TreeWidget::mouseDoubleClickEvent (QMouseEvent * event)
 {
     QTreeWidgetItem* item = itemAt(event->pos());
@@ -340,6 +364,15 @@ QMimeData * TreeWidget::mimeData (const QList<QTreeWidgetItem *> items) const
             doc = obj->getDocument();
         else if (doc != obj->getDocument())
             return 0;
+        // Now check for object with a parent that is an ObjectType, too.
+        // If this object is *not* a group we are not allowed to remove
+        // its child (e.g. the sketch of a pad).
+        QTreeWidgetItem* parent = (*it)->parent();
+        if (parent && parent->type() == TreeWidget::ObjectType) {
+            App::DocumentObject* par = static_cast<DocumentObjectItem *>(parent)->object()->getObject();
+            if (!par->getTypeId().isDerivedFrom(App::DocumentObjectGroup::getClassTypeId()))
+                return 0;
+        }
     }
     return QTreeWidget::mimeData(items);
 }
@@ -933,8 +966,7 @@ void DocumentItem::slotHighlightObject (const Gui::ViewProviderDocumentObject& o
             jt->second->setData(0, Qt::BackgroundColorRole,QVariant());
         break;
     default:
-        // not defined enum
-        assert(0);
+        break;
     }
 
     jt->second->setFont(0,f);
