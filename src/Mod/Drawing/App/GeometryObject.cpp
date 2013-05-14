@@ -287,7 +287,13 @@ DrawingGeometry::Vertex * GeometryObject::projectVertex(const TopoDS_Shape &vert
 
     const TopoDS_Vertex &refVert = TopoDS::Vertex(mkTrfScale.Shape());
 
-    gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
+    gp_Ax2 transform;
+    if(projXAxis.Length() > FLT_EPSILON) {
+        transform = gp_Ax2(gp_Pnt(0.,0.,0.),gp_Dir(direction.x, direction.y, direction.z),
+                           gp_Dir(projXAxis.x, projXAxis.y, projXAxis.z));
+    } else {
+        transform = gp_Ax2(gp_Pnt(0.,0.,0.),gp_Dir(direction.x, direction.y, direction.z));
+    }
 
     HLRAlgo_Projector projector = HLRAlgo_Projector( transform );
     projector.Scaled(true);
@@ -298,14 +304,15 @@ DrawingGeometry::Vertex * GeometryObject::projectVertex(const TopoDS_Shape &vert
     return myVert;
 }
 
-DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge, const TopoDS_Shape &support, const Base::Vector3f &direction)
+DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge, const TopoDS_Shape &support, const Base::Vector3f &direction, const Base::Vector3f &xaxis)
 {
     if(edge.IsNull())
         throw Base::Exception("Projected edge is null");
     // Inverty y function using support to calculate bounding box
+
     gp_Trsf mat;
     Bnd_Box bounds;
-    BRepBndLib::Add(support, bounds);
+    BRepBndLib::Add(invertY(support), bounds);
     bounds.SetGap(0.0);
     Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
     bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
@@ -320,7 +327,14 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
 
     HLRBRep_Curve curve;
 
-    gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(direction.x,direction.y,direction.z));
+    gp_Ax2 transform;
+    if(xaxis.Length() > FLT_EPSILON) {
+        transform = gp_Ax2(gp_Pnt(0.,0.,0.),gp_Dir(direction.x, direction.y, direction.z),
+                           gp_Dir(xaxis.x, xaxis.y, xaxis.z));
+        Base::Console().Log("using xaxis ");
+    } else {
+        transform = gp_Ax2(gp_Pnt(0.,0.,0.),gp_Dir(direction.x, direction.y, direction.z));
+    }
     HLRAlgo_Projector *projector = new HLRAlgo_Projector( transform );
 
     curve.Projector(projector);
@@ -893,9 +907,9 @@ void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vect
         projNorm = direction;
         gp_Ax2 transform;
         if(xAxis.Length() > FLT_EPSILON) {
-            transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),gp_Dir(direction.x, direction.y, direction.z), gp_Dir(xAxis.x, xAxis.y, xAxis.z));
+            transform = gp_Ax2(gp_Pnt(0.,0.,0.),gp_Dir(direction.x, direction.y, direction.z), gp_Dir(xAxis.x, xAxis.y, xAxis.z));
         } else {
-            transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),gp_Dir(direction.x, direction.y, direction.z));
+            transform = gp_Ax2(gp_Pnt(0.,0.,0.),gp_Dir(direction.x, direction.y, direction.z));
         }
         HLRAlgo_Projector projector( transform );
         brep_hlr->Projector(projector);

@@ -40,6 +40,7 @@
 #endif
 
 #include <qmath.h>
+#include <boost/concept_check.hpp>
 
 #include <Base/Console.h>
 #include "../App/FeatureViewPart.h"
@@ -51,7 +52,6 @@ using namespace DrawingGui;
 QGraphicsItemViewPart::QGraphicsItemViewPart(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemView(pos, scene)
 {
     setHandlesChildEvents(false);
-
     pen.setColor(QColor(150,150,150));
 
     this->setAcceptHoverEvents(true);
@@ -74,7 +74,7 @@ void QGraphicsItemViewPart::setViewPartFeature(Drawing::FeatureViewPart *obj)
     // Set the QGraphicsItemGroup Properties based on the FeatureView
     float x = obj->X.getValue();
     float y = obj->Y.getValue();
-    
+
     this->setPos(x, y);
     Q_EMIT dirty();
 }
@@ -175,6 +175,13 @@ void QGraphicsItemViewPart::updateView()
     Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(this->viewObject);
 
     // Identify what changed to prevent complete redraw
+    QList<QGraphicsItem *> items = this->childItems();
+    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
+        if((*it)->isSelected()) {
+            (*it)->setSelected(false);
+            Base::Console().Log("tried to update whilst selected");
+        }
+    }
 
     if(viewPart->isTouched() ||
        viewPart->Direction.isTouched() ||
@@ -182,17 +189,20 @@ void QGraphicsItemViewPart::updateView()
        viewPart->Scale.isTouched() ||
        viewPart->ShowHiddenLines.isTouched()){
         Base::Console().Log("Drawing View has changed");
-        QList<QGraphicsItem *> items = this->childItems();
+
 
         for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
             if(dynamic_cast<QGraphicsItemEdge *> (*it) ||
             dynamic_cast<QGraphicsItemVertex *>(*it) ) {
-                prepareGeometryChange();
                 (*it)->setParentItem(0);
                 this->removeFromGroup(*it);
                 this->scene()->removeItem(*it);
+                delete *it;
             }
         }
+
+        prepareGeometryChange();
+        bbox = QRectF();
 
         drawViewPart();
     } else if(viewPart->LineWidth.isTouched()) {
@@ -217,8 +227,7 @@ void QGraphicsItemViewPart::drawViewPart()
 
     float lineWidth = part->LineWidth.getValue();
 
-    prepareGeometryChange();
-    bbox = QRectF();
+    QRectF box;
     QGraphicsItem *graphicsItem = 0;
 
 #if 0
@@ -398,7 +407,7 @@ void QGraphicsItemViewPart::drawViewPart()
               item->setVisiblePath(vPath);
           }
 
-          bbox |=  this->transform().mapRect(graphicsItem->boundingRect());
+          box |=  this->transform().mapRect(graphicsItem->boundingRect());
           this->addToGroup(graphicsItem);
 
           // Don't allow selection for any edges with no references
@@ -409,7 +418,6 @@ void QGraphicsItemViewPart::drawViewPart()
 
     }
 
-    update();
     graphicsItem = 0;
     // Draw Vertexs:
     const std::vector<DrawingGeometry::Vertex *> &verts = part->getVertexGeometry();
@@ -436,6 +444,7 @@ void QGraphicsItemViewPart::drawViewPart()
           this->addToGroup(item);
     }
 
+    bbox = box;
     Q_EMIT dirty();
 }
 
@@ -601,7 +610,7 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
           pen.setColor(color);
 
         } else {
-          color.setRgb(0,0,0);
+            color.setRgb(0,0,0);
           pen.setColor(QColor(150,150,150)); // Drawing Border
         }
 

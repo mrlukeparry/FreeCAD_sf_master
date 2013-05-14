@@ -26,8 +26,6 @@ set(DrawingGui_LIBS
 set(DrawingGui_MOC_HDRS
     CanvasView.h
     DrawingView.h
-    QGraphicsItemEdge.h
-    QGraphicsItemVertex.h
     QGraphicsItemView.h
     QGraphicsItemViewDimension.h
     QGraphicsItemViewPart.h

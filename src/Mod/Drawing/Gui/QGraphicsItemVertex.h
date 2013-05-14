@@ -35,9 +35,8 @@ class BaseGeom;
 namespace DrawingGui
 {
 
-class DrawingGuiExport QGraphicsItemVertex : public QObject, public QGraphicsPathItem
+class DrawingGuiExport QGraphicsItemVertex : public QGraphicsPathItem
 {
-    Q_OBJECT
 public:
     explicit QGraphicsItemVertex(int ref = -1, QGraphicsScene *scene = 0 );
     ~QGraphicsItemVertex() {}

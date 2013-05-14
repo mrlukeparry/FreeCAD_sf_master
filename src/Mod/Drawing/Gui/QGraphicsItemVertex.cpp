@@ -98,5 +98,3 @@ void QGraphicsItemVertex::paint(QPainter *painter, const QStyleOptionGraphicsIte
     myOption.state &= ~QStyle::State_Selected;
     QGraphicsPathItem::paint(painter, &myOption, widget);
 }
-
-#include "moc_QGraphicsItemVertex.cpp"

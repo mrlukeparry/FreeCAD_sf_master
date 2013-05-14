@@ -35,9 +35,8 @@ class BaseGeom;
 namespace DrawingGui
 {
 
-class DrawingGuiExport QGraphicsItemEdge : public QObject, public QGraphicsPathItem
+class DrawingGuiExport QGraphicsItemEdge : public QGraphicsPathItem
 {
-Q_OBJECT
 public:
     explicit QGraphicsItemEdge(int ref = -1, QGraphicsScene *scene = 0 );
     ~QGraphicsItemEdge() {}

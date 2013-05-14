@@ -305,7 +305,7 @@ void DrawingView::preSelectionChanged(const QPoint &pos)
         return;
 
     // Check if an edge was preselected
-    QGraphicsItemEdge *edge = qobject_cast<QGraphicsItemEdge *>(obj);
+    QGraphicsItemEdge *edge   = dynamic_cast<QGraphicsItemEdge *>(obj);
     QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(obj);
     if(edge) {
 

@@ -127,7 +127,7 @@ DrawingGeometry::BaseGeom *FeatureViewPart::getCompleteEdge(int idx) const
     str << "Edge" << idx;
     TopoDS_Shape shape = topoShape.getSubShape(str.str().c_str());
 
-    DrawingGeometry::BaseGeom *prjShape = geometryObject->projectEdge(shape, static_cast<Part::Feature*>(link)->Shape.getValue(), Direction.getValue());
+    DrawingGeometry::BaseGeom *prjShape = geometryObject->projectEdge(shape, static_cast<Part::Feature*>(link)->Shape.getValue(), Direction.getValue(), XAxisDirection.getValue());
 
     return prjShape;
 }

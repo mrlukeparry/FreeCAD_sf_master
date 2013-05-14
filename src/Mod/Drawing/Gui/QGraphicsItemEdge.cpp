@@ -163,5 +163,3 @@ void QGraphicsItemEdge::paint(QPainter *painter, const QStyleOptionGraphicsItem 
         painter->drawPath(hPath);
     }
 }
-
-#include "moc_QGraphicsItemEdge.cpp"

@@ -61,7 +61,7 @@ public:
     const std::vector<int> & getEdgeRefs() const { return edgeReferences; };
     const std::vector<int> & getFaceRefs() const { return faceReferences; };
 
-    DrawingGeometry::BaseGeom * projectEdge(const TopoDS_Shape &edge, const TopoDS_Shape &support, const Base::Vector3f &direction);
+    DrawingGeometry::BaseGeom * projectEdge(const TopoDS_Shape &edge, const TopoDS_Shape &support, const Base::Vector3f &direction, const Base::Vector3f &xaxis);
     DrawingGeometry::Vertex   * projectVertex(const TopoDS_Shape &vert, const TopoDS_Shape &support, const Base::Vector3f &direction);
 
     void extractGeometry(const TopoDS_Shape &input,const Base::Vector3f &direction, bool extractHidden = false, const Base::Vector3f &vAxis = Base::Vector3f(0.,0.,0.));
@@ -95,7 +95,7 @@ protected:
 
     Base::Vector3f projNorm;
     Base::Vector3f projXAxis;
-    
+
     double Tolerance;
     double Scale;
     HLRBRep_Algo *brep_hlr;
