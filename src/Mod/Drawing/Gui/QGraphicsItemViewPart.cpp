@@ -174,36 +174,42 @@ void QGraphicsItemViewPart::updateView()
 
     Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(this->viewObject);
 
-    // Identify what changed to prevent complete redraw
-    QList<QGraphicsItem *> items = this->childItems();
-    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
-        if((*it)->isSelected()) {
-            (*it)->setSelected(false);
-            Base::Console().Log("tried to update whilst selected");
-        }
-    }
-
-    if(viewPart->isTouched() ||
-       viewPart->Direction.isTouched() ||
+    if(viewPart->Direction.isTouched() ||
        viewPart->Tolerance.isTouched() ||
        viewPart->Scale.isTouched() ||
        viewPart->ShowHiddenLines.isTouched()){
-        Base::Console().Log("Drawing View has changed");
 
+        Base::Console().Log("Drawing View Shapes need redrawing");
+
+        // Identify what changed to prevent complete redraw
+        QList<QGraphicsItem *> items = this->childItems();
+        QList<QGraphicsItem *> bboxItems = items;
 
         for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
+            // Rebuild bounding box on every deletion - unfortunatly necessary
+            QRectF tmpBox;
+            for(QList<QGraphicsItem *>::iterator qit = bboxItems.begin(); qit!= bboxItems.end(); ++qit) {
+                if(*qit)
+                    tmpBox |=  this->transform().mapRect((*qit)->boundingRect());
+            }
+
+            // Declare the bounding box will change and set to new one without element
+            prepareGeometryChange();
+            bbox = tmpBox;
+
             if(dynamic_cast<QGraphicsItemEdge *> (*it) ||
             dynamic_cast<QGraphicsItemVertex *>(*it) ) {
+                // Delete the item
                 (*it)->setParentItem(0);
                 this->removeFromGroup(*it);
                 this->scene()->removeItem(*it);
                 delete *it;
             }
+
+            bboxItems.removeFirst();
         }
 
-        prepareGeometryChange();
-        bbox = QRectF();
-
+        // Redraw the part
         drawViewPart();
     } else if(viewPart->LineWidth.isTouched()) {
         Base::Console().Log("line width touched");
@@ -408,6 +414,9 @@ void QGraphicsItemViewPart::drawViewPart()
           }
 
           box |=  this->transform().mapRect(graphicsItem->boundingRect());
+          prepareGeometryChange();
+
+          bbox = box;
           this->addToGroup(graphicsItem);
 
           // Don't allow selection for any edges with no references
@@ -443,9 +452,6 @@ void QGraphicsItemViewPart::drawViewPart()
           item->moveBy(this->x(), this->y());
           this->addToGroup(item);
     }
-
-    bbox = box;
-    Q_EMIT dirty();
 }
 
 void QGraphicsItemViewPart::pathArc(QPainterPath &path, double rx, double ry, double x_axis_rotation,
@@ -660,6 +666,7 @@ QPainterPath QGraphicsItemViewPart::shape() const {
 
 QRectF QGraphicsItemViewPart::boundingRect() const
 {
+//     Base::Console().Log("bbox %f,%f,%f,%f\n", bbox.bottomLeft().x(), bbox.bottomLeft().y(),  bbox.topRight().x(), bbox.topRight().y());
     return bbox.adjusted(-5.,-5.,5.,5.);
 }
 

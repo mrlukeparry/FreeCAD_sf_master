@@ -16,7 +16,7 @@
 
 # include <Base/Console.h>
 # include <Base/Interpreter.h>
- 
+
 # include "FeaturePage.h"
 # include "FeatureView.h"
 # include "FeatureViewPart.h"
@@ -24,6 +24,7 @@
 
 # include "FeatureViewAnnotation.h"
 # include "FeatureViewDimension.h"
+# include "FeatureOrthoView.h"
 # include "FeatureProjection.h"
 # include "FeatureClip.h"
 # include "PageGroup.h"
@@ -55,18 +56,19 @@ void DrawingExport initDrawing()
     // NOTE: To finish the initialization of our own type objects we must
     // call PyType_Ready, otherwise we run into a segmentation fault, later on.
     // This function is responsible for adding inherited slots from a type's base class.
- 
+
     Drawing::FeaturePage            ::init();
     Drawing::FeatureView            ::init();
     Drawing::FeatureViewPart        ::init();
     Drawing::FeatureViewSection     ::init();
     Drawing::FeatureViewAnnotation  ::init();
     Drawing::FeatureViewDimension   ::init();
-    
+    Drawing::FeatureOrthoView       ::init();
+
     Drawing::FeatureProjection      ::init();
     Drawing::FeatureViewPartPython  ::init();
     Drawing::FeatureViewPython      ::init();
-    
+
     Drawing::FeatureClip            ::init();
 }
 

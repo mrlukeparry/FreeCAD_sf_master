@@ -279,9 +279,9 @@ void CmdDrawingNewView::activated(int iMsg)
     openCommand("Create view");
     for (std::vector<App::DocumentObject*>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
         std::string FeatName = getUniqueObjectName("View");
-        doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewPart','%s')",FeatName.c_str());
+        doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureOrthoView','%s')",FeatName.c_str());
         doCommand(Doc,"App.activeDocument().%s.Source = App.activeDocument().%s",FeatName.c_str(),(*it)->getNameInDocument());
-        doCommand(Doc,"App.activeDocument().%s.Direction = (0.0,0.0,1.0)",FeatName.c_str());
+//         doCommand(Doc,"App.activeDocument().%s.Direction = (0.0,0.0,1.0)",FeatName.c_str());
         doCommand(Doc,"App.activeDocument().%s.X = 0.0",FeatName.c_str());
         doCommand(Doc,"App.activeDocument().%s.Y = 0.0",FeatName.c_str());
         doCommand(Doc,"App.activeDocument().%s.Scale = 1.0",FeatName.c_str());
