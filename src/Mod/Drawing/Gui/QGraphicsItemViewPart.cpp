@@ -612,12 +612,12 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
         // value is the new position.
         QColor color;
         if(isSelected()) {
-          color.setRgb(0,0,255);
-          pen.setColor(color);
+            color.setRgb(0,0,255);
+            pen.setColor(color);
 
         } else {
             color.setRgb(0,0,0);
-          pen.setColor(QColor(150,150,150)); // Drawing Border
+            pen.setColor(QColor(150,150,150)); // Drawing Border
         }
 
         QList<QGraphicsItem *> items = this->childItems();
@@ -666,7 +666,6 @@ QPainterPath QGraphicsItemViewPart::shape() const {
 
 QRectF QGraphicsItemViewPart::boundingRect() const
 {
-//     Base::Console().Log("bbox %f,%f,%f,%f\n", bbox.bottomLeft().x(), bbox.bottomLeft().y(),  bbox.topRight().x(), bbox.topRight().y());
     return bbox.adjusted(-5.,-5.,5.,5.);
 }
 

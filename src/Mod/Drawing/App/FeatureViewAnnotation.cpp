@@ -33,7 +33,7 @@ using namespace Drawing;
 
 PROPERTY_SOURCE(Drawing::FeatureViewAnnotation, Drawing::FeatureView)
 
-FeatureViewAnnotation::FeatureViewAnnotation(void) 
+FeatureViewAnnotation::FeatureViewAnnotation(void)
 {
     static const char *vgroup = "Drawing annotation";
 
@@ -49,4 +49,3 @@ App::DocumentObjectExecReturn *FeatureViewAnnotation::execute(void)
 {
     return App::DocumentObject::StdReturn;
 }
-

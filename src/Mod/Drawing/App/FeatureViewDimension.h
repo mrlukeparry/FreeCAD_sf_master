@@ -30,7 +30,7 @@
 #include "FeatureViewAnnotation.h"
 
 namespace Measure {
-class Measurement; 
+class Measurement;
 }
 namespace Drawing
 {
@@ -45,15 +45,16 @@ public:
     /// Constructor
     FeatureViewDimension();
     virtual ~FeatureViewDimension();
-    
+
 //     App::PropertyLinkSubList View;
     App::PropertyLinkSubList References;
     App::PropertyInteger Precision;
     App::PropertyFloat Fontsize;
     App::PropertyEnumeration Type;
+    App::PropertyEnumeration ProjectionType;
 
     short mustExecute() const;
-    
+
     /** @name methods overide Feature */
     //@{
     /// recalculate the Feature
@@ -64,13 +65,14 @@ public:
     virtual const char* getViewProviderName(void) const {
         return "DrawingGui::ViewProviderDrawingView";
     }
-    
+
     double virtual getValue() const;
-    
+
 protected:
     Measure::Measurement *measurement;
 private:
     static const char* TypeEnums[];
+    static const char* ProjTypeEnums[];
 };
 
 } //namespace Drawing

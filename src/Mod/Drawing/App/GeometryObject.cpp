@@ -22,38 +22,40 @@
 
 # include "PreCompiled.h"
 #ifndef _PreComp_
-# include <sstream>
-# include <BRepAdaptor_Curve.hxx>
-# include <Geom_Circle.hxx>
+
+# include <gp_Ax2.hxx>
 # include <gp_Circ.hxx>
+# include <gp_Dir.hxx>
 # include <gp_Elips.hxx>
+# include <gp_Pln.hxx>
+# include <gp_Pnt.hxx>
+# include <gp_Vec.hxx>
 
 # include <Bnd_Box.hxx>
 # include <BRepBndLib.hxx>
 # include <BRepBuilderAPI_Transform.hxx>
-# include <HLRBRep_Algo.hxx>
 
-# include <TopoDS_Shape.hxx>
 # include <HLRTopoBRep_OutLiner.hxx>
-//# include <BRepAPI_MakeOutLine.hxx>
+# include <HLRBRep.hxx>
+# include <HLRBRep_Algo.hxx>
+# include <HLRBRep_Data.hxx>
+# include <HLRBRep_EdgeData.hxx>
+# include <HLRAlgo_EdgeIterator.hxx>
+# include <HLRBRep_HLRToShape.hxx>
 # include <HLRAlgo_Projector.hxx>
 # include <HLRBRep_ShapeBounds.hxx>
-# include <HLRBRep_EdgeData.hxx>
-# include <HLRBRep_HLRToShape.hxx>
-# include <HLRBRep_Data.hxx>
-# include <gp_Ax2.hxx>
-# include <gp_Pnt.hxx>
-# include <gp_Dir.hxx>
-# include <gp_Vec.hxx>
+
 # include <Poly_Polygon3D.hxx>
 # include <Poly_Triangulation.hxx>
 # include <Poly_PolygonOnTriangulation.hxx>
+
 # include <TopoDS.hxx>
 # include <TopoDS_Face.hxx>
 # include <TopoDS_Edge.hxx>
 # include <TopoDS_Vertex.hxx>
 # include <TopExp.hxx>
 # include <TopExp_Explorer.hxx>
+# include <TopoDS_Shape.hxx>
 # include <TopTools_ListIteratorOfListOfShape.hxx>
 # include <TopTools_IndexedMapOfShape.hxx>
 # include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
@@ -68,24 +70,21 @@
 # include <ShapeFix_Wire.hxx>
 # include <BRepProj_Projection.hxx>
 
-# include <BRepAdaptor_CompCurve.hxx>
-# include <HLRBRep.hxx>
-# include <HLRAlgo_EdgeIterator.hxx>
-# include <Handle_BRepAdaptor_HCompCurve.hxx>
-# include <Approx_Curve3d.hxx>
 # include <BRepAdaptor_HCurve.hxx>
-# include <Handle_BRepAdaptor_HCurve.hxx>
+# include <BRepAdaptor_CompCurve.hxx>
+
+// # include <Handle_BRepAdaptor_HCompCurve.hxx>
+# include <Approx_Curve3d.hxx>
+
+# include <BRepAdaptor_HCurve.hxx>
 # include <Handle_HLRBRep_Data.hxx>
 # include <Geom_BSplineCurve.hxx>
-# include <Handle_Geom_BSplineCurve.hxx>
 # include <Geom_BezierCurve.hxx>
 # include <GeomConvert_BSplineCurveToBezierCurve.hxx>
 # include <GeomConvert_BSplineCurveKnotSplitting.hxx>
 # include <Geom2d_BSplineCurve.hxx>
-# include <gp_Pln.hxx>
+
 #include <ProjLib_Plane.hxx>
-#include <boost/graph/graph_concepts.hpp>
-#include <Geom_Line.hxx>
 #endif
 
 # include <Base/Console.h>
@@ -96,7 +95,6 @@
 # include <Mod/Part/App/PartFeature.h>
 
 # include "GeometryObject.h"
-# include "ProjectionAlgos.h"
 
 using namespace DrawingGeometry;
 
@@ -150,7 +148,6 @@ void GeometryObject::clear()
 
     edgeGeom.clear();
     edgeReferences.clear();
-
 }
 
 TopoDS_Shape GeometryObject::invertY(const TopoDS_Shape& shape)
@@ -325,19 +322,20 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
 
     const TopoDS_Edge &refEdge = TopoDS::Edge(mkTrfScale.Shape());
 
-    HLRBRep_Curve curve;
-
     gp_Ax2 transform;
     if(xaxis.Length() > FLT_EPSILON) {
-        transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),gp_Dir(direction.x, direction.y, direction.z),
+        transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),
+                           gp_Dir(direction.x, direction.y, direction.z),
                            gp_Dir(xaxis.x, xaxis.y, xaxis.z));
-        Base::Console().Log("using xaxis ");
     } else {
-        transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),gp_Dir(direction.x, direction.y, direction.z));
+        transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),
+                           gp_Dir(direction.x, direction.y, direction.z));
     }
-    HLRAlgo_Projector *projector = new HLRAlgo_Projector( transform );
 
+    HLRAlgo_Projector *projector = new HLRAlgo_Projector(transform);
     projector->Scaled(true);
+
+    HLRBRep_Curve curve;
     curve.Projector(projector);
     curve.Curve(refEdge);
 
@@ -547,7 +545,6 @@ void GeometryObject::extractVerts(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, H
       return;
 
     DS->Projector().Scaled(true);
-
 
     TopTools_IndexedMapOfShape anIndices;
     TopTools_IndexedMapOfShape anvIndices;
@@ -940,7 +937,7 @@ void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vect
 //     calculateGeometry(extractCompound(brep_hlr, invertShape, 3, false), (ExtractionType)(WithSmooth | WithHidden)); // Smooth
 
     // Extract Visible Edges
-     extractEdges(brep_hlr, transShape, 5, true, WithSmooth);  // Hard Edge
+    extractEdges(brep_hlr, transShape, 5, true, WithSmooth);  // Hard Edge
 
       // Extract Faces
 //       !extractFaces(brep_hlr, invertShape, 5, true, WithSmooth);  //
@@ -1023,4 +1020,3 @@ int GeometryObject::calculateGeometry(const TopoDS_Shape &input, const Extractio
     }
     return geomsAdded;
 }
-

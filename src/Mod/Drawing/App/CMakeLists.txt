@@ -96,12 +96,12 @@ SET(Drawing_Scripts
     DrawingAlgos.py
 )
 
-fc_target_copy_resource(Drawing 
+fc_target_copy_resource(Drawing
     ${CMAKE_SOURCE_DIR}/src/Mod/Drawing
     ${CMAKE_BINARY_DIR}/Mod/Drawing
     ${Drawing_Scripts})
 
-fc_target_copy_resource(Drawing 
+fc_target_copy_resource(Drawing
     ${CMAKE_SOURCE_DIR}/src/Mod/Drawing
     ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/Mod/Drawing
     ${Drawing_Templates})

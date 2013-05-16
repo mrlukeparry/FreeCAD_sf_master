@@ -50,13 +50,21 @@ const char* FeatureViewDimension::TypeEnums[]= {"Distance",
 //                                                 "Angle",
                                                 NULL};
 
+const char* FeatureViewDimension::ProjTypeEnums[]= {"True",
+                                                    "Projected",
+                                                    NULL};
+
 FeatureViewDimension::FeatureViewDimension(void)
 {
     ADD_PROPERTY_TYPE(References,(0,0),"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Supporting References");
     ADD_PROPERTY_TYPE(Precision,(2)   ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Precision");
-    ADD_PROPERTY_TYPE(Fontsize,(6)   ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Font Size");
+    ADD_PROPERTY_TYPE(Fontsize,(6)    ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Font Size");
     Type.setEnums(TypeEnums);
     ADD_PROPERTY(Type,((long)0));
+
+    ProjectionType.setEnums(ProjTypeEnums);
+    ADD_PROPERTY(ProjectionType,((long)0));
+
     this->measurement = new Measure::Measurement();
 }
 
