@@ -29,23 +29,11 @@
 # include <QFileDialog>
 # include <QGLWidget>
 # include <QGraphicsScene>
-# include <QGraphicsRectItem>
 # include <QGraphicsSvgItem>
-# include <QGridLayout>
-# include <QGroupBox>
-# include <QListWidget>
-# include <QMenu>
-# include <QMessageBox>
 # include <QMouseEvent>
 # include <QPainter>
 # include <QPaintEvent>
 # include <QPrinter>
-# include <QPrintDialog>
-# include <QPrintPreviewDialog>
-# include <QPrintPreviewWidget>
-# include <QScrollArea>
-# include <QSlider>
-# include <QStatusBar>
 # include <QSvgRenderer>
 # include <QSvgWidget>
 # include <QWheelEvent>
@@ -54,10 +42,7 @@
 #endif
 
 #include <Base/Console.h>
-#include <Base/Tools2D.h>
 #include <Base/Stream.h>
-#include <Base/gzstream.h>
-#include <Base/PyObjectBase.h>
 #include <Gui/FileDialog.h>
 #include <Gui/WaitCursor.h>
 
@@ -109,7 +94,6 @@ void CanvasView::addViewPart(Drawing::FeatureViewPart *part)
 {
     QGraphicsItemViewPart *group = new QGraphicsItemViewPart(QPoint(0,0), this->scene());
     group->setViewPartFeature(part);
-
     views.push_back(group);
 }
 

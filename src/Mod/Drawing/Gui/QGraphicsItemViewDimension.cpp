@@ -66,6 +66,8 @@ QGraphicsItemDatumLabel::QGraphicsItemDatumLabel(int ref, QGraphicsScene *scene 
     }
     this->posX = 0;
     this->posY = 0;
+
+    this->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
     this->setFlag(ItemSendsGeometryChanges, true);
     this->setFlag(ItemIsMovable, true);
     this->setFlag(ItemIsSelectable, true);
@@ -135,6 +137,7 @@ QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraph
 {
     setHandlesChildEvents(false);
     this->setFlag(QGraphicsItem::ItemIsMovable, false);
+    this->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
     QGraphicsItemDatumLabel *dLabel = new QGraphicsItemDatumLabel();
     QGraphicsPathItem *arrws = new QGraphicsPathItem();
@@ -638,10 +641,12 @@ void QGraphicsItemViewDimension::draw()
 //           glVertex2f(ar1[0], ar1[1]);
 //           glVertex2f(ar2[0], ar2[1]);
 //         glEnd();
-        } else if(strcmp(dim->Type.getValueAsString(), "Angle") == 0) {
+    } else if(strcmp(dim->Type.getValueAsString(), "Angle") == 0) {
 
-        }
+    }
 
+    // Call to redraw the object
+    update();
 }
 
 QVariant QGraphicsItemViewDimension::itemChange(GraphicsItemChange change, const QVariant &value)

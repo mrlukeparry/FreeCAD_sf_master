@@ -23,10 +23,12 @@
 #ifndef DRAWINGGUI_QGRAPHICSITEMEDGE_H
 #define DRAWINGGUI_QGRAPHICSITEMEDGE_H
 
-# include <QObject>
 # include <QGraphicsItem>
-# include <QPainter>
-# include <QStyleOptionGraphicsItem>
+
+QT_BEGIN_NAMESPACE
+class QPainter;
+class QStyleOptionGraphicsItem;
+QT_END_NAMESPACE
 
 namespace DrawingGeometry {
 class BaseGeom;
@@ -79,7 +81,6 @@ protected:
   QPen   hPen;
 
   float sf;
-  QRectF bb;
   bool highlighted;
   bool showHidden;
 

@@ -23,21 +23,7 @@
 #ifndef DRAWINGGUI_CANVASVIEW_H
 #define DRAWINGGUI_CANVASVIEW_H
 
-#include <Gui/MDIView.h>
 #include <QGraphicsView>
-
-QT_BEGIN_NAMESPACE
-class QSlider;
-class QAction;
-class QActionGroup;
-class QFile;
-class QGraphicsItemGroup;
-class QPopupMenu;
-class QToolBar;
-class QSvgWidget;
-class QScrollArea;
-class QPrinter;
-QT_END_NAMESPACE
 
 namespace Drawing {
 class FeatureViewPart;
@@ -63,13 +49,13 @@ public:
     void addViewPart(Drawing::FeatureViewPart *part);
     void addViewDimension(Drawing::FeatureViewDimension *dim);
 
+    const std::vector<QGraphicsItemView *> & getViews() const { return views; }
+    void setViews(const std::vector<QGraphicsItemView *> &view) {views = view; }
+
 public Q_SLOTS:
     void setHighQualityAntialiasing(bool highQualityAntialiasing);
     void setViewBackground(bool enable);
     void setViewOutline(bool enable);
-    
-    const std::vector<QGraphicsItemView *> & getViews() const { return views; }
-    void setViews(const std::vector<QGraphicsItemView *> &view) {views = view; }
 
 protected:
     void wheelEvent(QWheelEvent *event);
@@ -84,10 +70,10 @@ private:
 
     QGraphicsRectItem *m_backgroundItem;
     QGraphicsRectItem *m_outlineItem;
-    
+
     QImage m_image;
 };
 
 } // namespace DrawingViewGui
 
-#endif // DRAWINGGUI_DRAWINGVIEW_H
+#endif // DRAWINGGUI_CANVASVIEW_H

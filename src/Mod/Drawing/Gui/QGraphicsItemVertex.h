@@ -23,10 +23,12 @@
 #ifndef DRAWINGGUI_QGRAPHICSITEMVERTEX_H
 #define DRAWINGGUI_QGRAPHICSITEMVERTEX_H
 
-# include <QObject>
 # include <QGraphicsItem>
-# include <QPainter>
-# include <QStyleOptionGraphicsItem>
+
+QT_BEGIN_NAMESPACE
+class QPainter;
+class QStyleOptionGraphicsItem;
+QT_END_NAMESPACE
 
 namespace DrawingGeometry {
 class BaseGeom;

@@ -44,7 +44,6 @@ class QGraphicsItemDatumLabel : public QGraphicsTextItem
 Q_OBJECT
 public:
     explicit QGraphicsItemDatumLabel(int ref = -1, QGraphicsScene *scene = 0 );
-
     ~QGraphicsItemDatumLabel() {}
 
     void updatePos();

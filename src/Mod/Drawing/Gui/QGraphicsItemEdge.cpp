@@ -26,11 +26,12 @@
 # include <QApplication>
 # include <QContextMenuEvent>
 # include <QGraphicsScene>
+# include <QGraphicsSceneHoverEvent>
 # include <QMenu>
 # include <QMouseEvent>
-# include <QGraphicsSceneHoverEvent>
-# include <QPainterPathStroker>
 # include <QPainter>
+# include <QPainterPathStroker>
+# include <QStyleOptionGraphicsItem>
 #endif
 
 #include <qmath.h>
@@ -48,8 +49,12 @@ QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : referen
         this->setAcceptHoverEvents(true);
     }
 
+    // Set Cache Mode for QPainter to reduce drawing required
+    setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+
     strokeWidth = 1.;
     sf = 1.;
+
     showHidden = false;
     highlighted = false;
     hPen.setStyle(Qt::DashLine);
@@ -62,14 +67,12 @@ QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : referen
 void QGraphicsItemEdge::setVisiblePath(const QPainterPath &path) {
     prepareGeometryChange();
     this->vPath = path;
-    bb = shape().controlPointRect();
     update();
 }
 
 void QGraphicsItemEdge::setHiddenPath(const QPainterPath &path) {
     prepareGeometryChange();
     this->hPath = path;
-    bb = shape().controlPointRect();
     update();
 }
 

@@ -23,13 +23,11 @@
 #include "PreCompiled.h"
 #ifndef _PreComp_
 #include <assert.h>
-#include <QAction>
-#include <QApplication>
-#include <QContextMenuEvent>
 #include <QGraphicsScene>
 #include <QMenu>
 #include <QMouseEvent>
 #include <QGraphicsSceneHoverEvent>
+#include <QStyleOptionGraphicsItem>
 #include <QPainterPathStroker>
 #include <QPainter>
 #endif
@@ -44,8 +42,12 @@ QGraphicsItemVertex::QGraphicsItemVertex(int ref, QGraphicsScene *scene  ) : ref
     if(scene) {
         scene->addItem(this);
     }
-    this->setFlag(ItemIgnoresTransformations);
-    this->setAcceptHoverEvents(true);
+
+    // Set Cache Mode
+    setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+
+    setFlag(ItemIgnoresTransformations);
+    setAcceptHoverEvents(true);
 }
 
 QPainterPath QGraphicsItemVertex::shape() const

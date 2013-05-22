@@ -1,6 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2007 Jürgen Riegel <juergen.riegel@web.de>              *
- *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -21,7 +21,6 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #ifndef DRAWINGGUI_DRAWINGVIEW_H
 #define DRAWINGGUI_DRAWINGVIEW_H
 
@@ -30,7 +29,6 @@
 #include <QGraphicsView>
 
 #include <App/PropertyLinks.h>
-#include <App/DocumentObject.h>
 
 QT_BEGIN_NAMESPACE
 class QSlider;
@@ -56,7 +54,7 @@ class CanvasView;
 class DrawingGuiExport DrawingView : public Gui::MDIView, public Gui::SelectionObserver
 {
     Q_OBJECT
-    
+
 public:
     DrawingView(Gui::Document* doc, QWidget* parent = 0);
     ~DrawingView();
@@ -72,7 +70,7 @@ public Q_SLOTS:
 public:
    /// Observer message from the Selection
     void onSelectionChanged(const Gui::SelectionChanges& msg);
-    
+
     bool onMsg(const char* pMsg,const char** ppReturn);
     bool onHasMsg(const char* pMsg) const;
     void print();
@@ -83,6 +81,7 @@ public:
 
 protected:
     App::PropertyLink pageFeat;
+
 protected:
     void attachView(App::DocumentObject *obj);
     void contextMenuEvent(QContextMenuEvent *event);
@@ -96,7 +95,6 @@ private:
     QAction *m_outlineAction;
 
     CanvasView *m_view;
-    App::DocumentObject *docObj;
 
     QString m_currentPath;
 };

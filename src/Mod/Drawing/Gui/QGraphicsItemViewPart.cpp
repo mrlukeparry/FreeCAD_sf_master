@@ -27,24 +27,20 @@
 #include <QApplication>
 #include <QContextMenuEvent>
 #include <QGraphicsScene>
-#include <QGridLayout>
 #include <QMenu>
-#include <QMessageBox>
 #include <QMouseEvent>
 #include <QGraphicsSceneHoverEvent>
 #include <QPainterPathStroker>
 #include <QPainter>
 #include <QTextOption>
 #include <strstream>
-
 #endif
 
 #include <qmath.h>
-#include <boost/concept_check.hpp>
 
 #include <Base/Console.h>
-#include "../App/FeatureViewPart.h"
 
+#include "../App/FeatureViewPart.h"
 #include "QGraphicsItemViewPart.h"
 
 using namespace DrawingGui;
@@ -54,8 +50,9 @@ QGraphicsItemViewPart::QGraphicsItemViewPart(const QPoint &pos, QGraphicsScene *
     setHandlesChildEvents(false);
     pen.setColor(QColor(150,150,150));
 
-    this->setAcceptHoverEvents(true);
-    this->setFlag(QGraphicsItem::ItemIsMovable, true);
+    setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    setAcceptHoverEvents(true);
+    setFlag(QGraphicsItem::ItemIsMovable, true);
 }
 
 QGraphicsItemViewPart::~QGraphicsItemViewPart()

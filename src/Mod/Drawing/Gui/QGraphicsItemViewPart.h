@@ -24,7 +24,6 @@
 #define DRAWINGGUI_QGRAPHICSITEMVIEWPART_H
 
 #include <QObject>
-#include <QGraphicsView>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
