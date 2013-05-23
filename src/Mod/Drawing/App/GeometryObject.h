@@ -61,8 +61,14 @@ public:
     const std::vector<int> & getEdgeRefs() const { return edgeReferences; };
     const std::vector<int> & getFaceRefs() const { return faceReferences; };
 
-    DrawingGeometry::BaseGeom * projectEdge(const TopoDS_Shape &edge, const TopoDS_Shape &support, const Base::Vector3f &direction, const Base::Vector3f &xaxis);
-    DrawingGeometry::Vertex   * projectVertex(const TopoDS_Shape &vert, const TopoDS_Shape &support, const Base::Vector3f &direction);
+    DrawingGeometry::BaseGeom * projectEdge(const TopoDS_Shape &edge, const TopoDS_Shape &support, const Base::Vector3f &direction, const Base::Vector3f &xaxis) const;
+    DrawingGeometry::Vertex   * projectVertex(const TopoDS_Shape &vert, const TopoDS_Shape &support, const Base::Vector3f &direction) const;
+
+    void projectSurfaces(const TopoDS_Shape &face,
+                         const TopoDS_Shape &support,
+                         const Base::Vector3f &direction,
+                         const Base::Vector3f &xaxis,
+                         std::vector<DrawingGeometry::Face *> &result) const;
 
     void extractGeometry(const TopoDS_Shape &input,const Base::Vector3f &direction, bool extractHidden = false, const Base::Vector3f &vAxis = Base::Vector3f(0.,0.,0.));
 
@@ -76,12 +82,19 @@ protected:
 
     void extractVerts(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, HLRBRep_EdgeData& ed, int ie, ExtractionType extractionType);
     void extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType);
-    void extractFaces(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, int type, bool visible, ExtractionType extractionType);
 
-    int calculateGeometry(const TopoDS_Shape &input, ExtractionType extractionType, std::vector<BaseGeom *> &geoms);
+    void extractFaces(HLRBRep_Algo *myAlgo,
+                      const TopoDS_Shape &S,
+                      int type,
+                      bool visible,
+                      ExtractionType extractionType,
+                      std::vector<DrawingGeometry::Face *> &projFaces,
+                      std::vector<int> &faceRefs) const;
 
-    void createWire(const TopoDS_Shape &input, std::list<TopoDS_Wire> &wires) const;
-    TopoDS_Shape invertY(const TopoDS_Shape& shape);
+    int calculateGeometry(const TopoDS_Shape &input, ExtractionType extractionType, std::vector<BaseGeom *> &geoms) const;
+
+    void createWire(const TopoDS_Shape &input, std::vector<DrawingGeometry::Wire *> &wires) const;
+    TopoDS_Shape invertY(const TopoDS_Shape& shape) const;
 
 protected:
     // Geometry

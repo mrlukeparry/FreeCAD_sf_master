@@ -66,7 +66,7 @@ void QGraphicsItemViewPart::setViewPartFeature(Drawing::FeatureViewPart *obj)
         return;
 
     this->setViewFeature(static_cast<Drawing::FeatureView *>(obj));
-    this->drawViewPart();
+    this->draw();
 
     // Set the QGraphicsItemGroup Properties based on the FeatureView
     float x = obj->X.getValue();
@@ -98,9 +98,9 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
 
           double x = geom->center.fX - geom->radius;
           double y = geom->center.fY - geom->radius;
-
-          path.arcMoveTo(x, y, geom->radius * 2, geom->radius * 2, -startAngle);
-          path.arcTo(x, y, geom->radius * 2, geom->radius * 2, -startAngle, -spanAngle);
+          pathArc(path, geom->radius, geom->radius, 0., geom->largeArc, geom->cw,
+                  geom->endPnt.fX, geom->endPnt.fY,
+                  geom->startPnt.fX, geom->startPnt.fY);
         } break;
         case DrawingGeometry::ELLIPSE: {
           DrawingGeometry::Ellipse *geom = static_cast<DrawingGeometry::Ellipse *>(baseGeom);
@@ -134,19 +134,19 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
           for(int i = 0; it != geom->segments.end(); ++it, ++i) {
               DrawingGeometry::BezierSegment seg = *it;
               if(seg.poles == 4) {
-//                   path.cubicTo(seg.pnts[1].fX,seg.pnts[1].fY, seg.pnts[2].fX, seg.pnts[2].fY, seg.pnts[3].fX, seg.pnts[3].fY);
+                  path.cubicTo(seg.pnts[1].fX,seg.pnts[1].fY, seg.pnts[2].fX, seg.pnts[2].fY, seg.pnts[3].fX, seg.pnts[3].fY);
               } else {
                   Base::Vector2D cPnt;
                   if(i == 0) {
-                    prevContPnt.Set(startSeg.pnts[1].fX, startSeg.pnts[1].fX);
+                      prevContPnt.Set(startSeg.pnts[1].fX, startSeg.pnts[1].fX);
                   } else {
-                    prevContPnt.Set(2 * startSeg.pnts[1].fX - prevContPnt.fX, 2 * startSeg.pnts[1].fY - prevContPnt.fY);
+                      prevContPnt.Set(2 * startSeg.pnts[1].fX - prevContPnt.fX, 2 * startSeg.pnts[1].fY - prevContPnt.fY);
                   }
 
                   path.quadTo(prevContPnt.fX, prevContPnt.fY, seg.pnts[2].fX, seg.pnts[2].fY);
 
               }
-            }
+          }
         } break;
         case DrawingGeometry::GENERIC: {
           DrawingGeometry::Generic *geom = static_cast<DrawingGeometry::Generic *>(baseGeom);
@@ -163,7 +163,7 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
       }
       return path;
 }
-void QGraphicsItemViewPart::updateView()
+void QGraphicsItemViewPart::updateView(bool update)
 {
       // Iterate
     if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()))
@@ -171,7 +171,8 @@ void QGraphicsItemViewPart::updateView()
 
     Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(this->viewObject);
 
-    if(viewPart->Direction.isTouched() ||
+    if(update ||
+       viewPart->Direction.isTouched() ||
        viewPart->Tolerance.isTouched() ||
        viewPart->Scale.isTouched() ||
        viewPart->ShowHiddenLines.isTouched()){
@@ -195,7 +196,8 @@ void QGraphicsItemViewPart::updateView()
             bbox = tmpBox;
 
             if(dynamic_cast<QGraphicsItemEdge *> (*it) ||
-            dynamic_cast<QGraphicsItemVertex *>(*it) ) {
+              dynamic_cast<QGraphicsItemFace *>(*it) ||
+              dynamic_cast<QGraphicsItemVertex *>(*it)) {
                 // Delete the item
                 (*it)->setParentItem(0);
                 this->removeFromGroup(*it);
@@ -207,7 +209,7 @@ void QGraphicsItemViewPart::updateView()
         }
 
         // Redraw the part
-        drawViewPart();
+        draw();
     } else if(viewPart->LineWidth.isTouched()) {
         Base::Console().Log("line width touched");
         QList<QGraphicsItem *> items = this->childItems();
@@ -218,6 +220,10 @@ void QGraphicsItemViewPart::updateView()
         }
     }
 
+}
+
+void QGraphicsItemViewPart::draw() {
+    this->drawViewPart();
 }
 
 void QGraphicsItemViewPart::drawViewPart()
@@ -233,7 +239,6 @@ void QGraphicsItemViewPart::drawViewPart()
     QRectF box;
     QGraphicsItem *graphicsItem = 0;
 
-#if 0
     // Draw Faces
     const std::vector<DrawingGeometry::Face *> &faceGeoms = part->getFaceGeometry();
     const std::vector<int> &faceRefs = part->getFaceReferences();
@@ -246,10 +251,21 @@ void QGraphicsItemViewPart::drawViewPart()
         QPainterPath facePath;
         for(std::vector<DrawingGeometry::Wire *>::iterator wire = faceWires.begin(); wire != faceWires.end(); ++wire) {
             QPainterPath wirePath;
+            QPointF shapePos;
             for(std::vector<DrawingGeometry::BaseGeom *>::iterator baseGeom = (*wire)->geoms.begin(); baseGeom != (*wire)->geoms.end(); ++baseGeom) {
-                wirePath.connectPath(drawPainterPath(*baseGeom));
+                //Save the start Position
+
+
+                QPainterPath edgePath = drawPainterPath(*baseGeom);
+
+                // If the current end point matches the shape end point the new edge path needs reversing
+                QPointF shapePos = (wirePath.currentPosition()- edgePath.currentPosition());
+                if(sqrt(shapePos.x() * shapePos.x() + shapePos.y()*shapePos.y()) < 0.05) {
+                    edgePath = edgePath.toReversed();
+                }
+                wirePath.connectPath(edgePath);
+                wirePath.setFillRule(Qt::WindingFill);
             }
-            wirePath.closeSubpath();
             facePath.addPath(wirePath);
         }
 
@@ -263,6 +279,7 @@ void QGraphicsItemViewPart::drawViewPart()
         item->setBrush(faceBrush);
         facePen.setColor(Qt::black);
         item->setPen(facePen);
+        item->moveBy(this->x(), this->y());
         graphicsItem = dynamic_cast<QGraphicsItem *>(item);
 
         if(graphicsItem) {
@@ -274,7 +291,6 @@ void QGraphicsItemViewPart::drawViewPart()
             graphicsItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
         }
     }
-#endif
 
     graphicsItem = 0;
 

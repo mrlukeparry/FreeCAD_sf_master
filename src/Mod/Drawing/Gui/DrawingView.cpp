@@ -66,6 +66,7 @@
 
 #include "../App/FeaturePage.h"
 #include "../App/FeatureViewPart.h"
+#include "../App/FeatureViewSection.h"
 #include "../App/FeatureViewDimension.h"
 
 #include "QGraphicsItemView.h"
@@ -288,7 +289,10 @@ void DrawingView::attachPageObject(Drawing::FeaturePage *pageFeature)
 
 void DrawingView::attachView(App::DocumentObject *obj)
 {
-    if ( obj->getTypeId().isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()) ) {
+    if(obj->getTypeId().isDerivedFrom(Drawing::FeatureViewSection::getClassTypeId()) ) {
+        Drawing::FeatureViewSection *viewSect = dynamic_cast<Drawing::FeatureViewSection *>(obj);
+        m_view->addViewSection(viewSect);
+    } else if (obj->getTypeId().isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()) ) {
         Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(obj);
         m_view->addViewPart(viewPart);
     } else if(obj->getTypeId().isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()) ) {

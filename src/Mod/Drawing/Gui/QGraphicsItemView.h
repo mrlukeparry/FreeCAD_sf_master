@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2012-2013 Luke Parry <l.parry@warwick.ac.uk>            *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -52,7 +52,7 @@ public:
     void setViewFeature(Drawing::FeatureView *obj);
     Drawing::FeatureView * getViewObject() const { return viewObject; }
 
-    virtual void updateView();
+    virtual void updateView(bool update = false);
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
 
 Q_SIGNALS:

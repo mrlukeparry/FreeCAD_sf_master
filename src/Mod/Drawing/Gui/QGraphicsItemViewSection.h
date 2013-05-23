@@ -20,15 +20,14 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef DRAWINGGUI_QGRAPHICSITEMFACE_H
-#define DRAWINGGUI_QGRAPHICSITEMFACE_H
+#ifndef DRAWINGGUI_QGRAPHICSITEMVIEWSECTION_H
+#define DRAWINGGUI_QGRAPHICSITEMVIEWSECTION_H
 
-#include <QGraphicsItem>
+#include "QGraphicsItemViewPart.h"
 
-QT_BEGIN_NAMESPACE
-class QPainter;
-class QStyleOptionGraphicsItem;
-QT_END_NAMESPACE
+namespace Drawing {
+class FeatureViewSection;
+}
 
 namespace DrawingGeometry {
 class BaseGeom;
@@ -37,33 +36,28 @@ class BaseGeom;
 namespace DrawingGui
 {
 
-class QGraphicsItemFace : public QGraphicsPathItem
+class DrawingGuiExport QGraphicsItemViewSection : public QGraphicsItemViewPart
 {
-public:
-    explicit QGraphicsItemFace(int ref = -1, QGraphicsScene *scene = 0 );
-    ~QGraphicsItemFace() {}
+    Q_OBJECT
 
-    enum {Type = QGraphicsItem::UserType + 104};
+public:
+
+    explicit QGraphicsItemViewSection(const QPoint &position, QGraphicsScene *scene);
+    ~QGraphicsItemViewSection();
+
+    virtual void draw();
+    void updateView(bool update = false);
+    enum {Type = QGraphicsItem::UserType + 108};
     int type() const { return Type;}
 
-public:
-//      QPainterPath shape() const;
-    int getReference() const { return reference; }
+Q_SIGNALS:
+    void dirty();
 
 protected:
-    // Preselection events:
-    void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
-    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
-    // Selection detection
-     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-
-protected:
-int reference;
-
-private:
-QPen m_pen;
+    void drawSectionFace();
+    virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
 };
 
 } // namespace DrawingViewGui
 
-#endif // DRAWINGGUI_QGRAPHICSITEMFACE_H
+#endif // DRAWINGGUI_QGRAPHICSITEMVIEWPART_H

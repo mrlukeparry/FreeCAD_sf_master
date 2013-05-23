@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2012-2013 Luke Parry <l.parry@warwick.ac.uk>            *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -23,17 +23,14 @@
 #include "PreCompiled.h"
 #ifndef _PreComp_
 # include <QAction>
-# include <QApplication>
 # include <QContextMenuEvent>
 # include <QGraphicsScene>
 # include <QGraphicsSceneMouseEvent>
-# include <QGridLayout>
 # include <QMenu>
 # include <QMessageBox>
 # include <QMouseEvent>
 # include <QPainter>
 # include <strstream>
-# include <cmath>
 #endif
 
 #include <App/Document.h>
@@ -77,7 +74,7 @@ void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
     QGraphicsItem::mouseReleaseEvent(event);
 }
 
-void QGraphicsItemView::updateView()
+void QGraphicsItemView::updateView(bool update)
 {
     this->setPos(viewObject->X.getValue(), viewObject->Y.getValue());
 }

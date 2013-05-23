@@ -63,10 +63,11 @@ Gui::MenuItem* Workbench::setupMenuBar() const
           << "Drawing_NewPage"
           << "Drawing_NewView"
           << "Drawing_NewDimension"
-          << "Drawing_OrthoViews";
-    
+          << "Drawing_OrthoViews"
+          << "Drawing_NewViewSection";
+
 #if 0
-          << "Drawing_NewViewSection"
+
     *part << "Drawing_OpenBrowserView";
     *part << "Drawing_Annotation";
     *part << "Drawing_Clip";
@@ -83,12 +84,13 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     Gui::ToolBarItem *pages = new Gui::ToolBarItem(root);
     pages->setCommand("Drawing Pages");
     *pages << "Drawing_NewPage";
-    
+
     Gui::ToolBarItem *views = new Gui::ToolBarItem(root);
     views->setCommand("Drawing Views");
     *views << "Drawing_NewView"
-           << "Drawing_OrthoViews";
-           
+           << "Drawing_OrthoViews"
+           << "Drawing_NewViewSection";
+
     Gui::ToolBarItem *dims = new Gui::ToolBarItem(root);
     dims->setCommand("Drawing Dimensions");
     *dims << "Drawing_NewDimension";
@@ -111,15 +113,15 @@ Gui::ToolBarItem* Workbench::setupCommandBars() const
 {
     // Part tools
     Gui::ToolBarItem* root = new Gui::ToolBarItem;
-    
+
     Gui::ToolBarItem* io = new Gui::ToolBarItem(root);
     io->setCommand("I/O");
     *io << "Drawing_Open";
-    
+
     Gui::ToolBarItem *pages = new Gui::ToolBarItem(root);
     pages->setCommand("Drawing Pages");
     *pages << "Drawing_NewPage";
-    
+
     Gui::ToolBarItem *dims = new Gui::ToolBarItem(root);
     dims->setCommand("Drawing Dimensions");
     *dims << "Drawing_NewDimension";
@@ -127,12 +129,13 @@ Gui::ToolBarItem* Workbench::setupCommandBars() const
 //     *img << "Drawing_OpenBrowserView";
 //     *img << "Drawing_Annotation";
 //     *img << "Drawing_Clip";
-         
+
     Gui::ToolBarItem *views = new Gui::ToolBarItem(root);
     views->setCommand("Views");
     *views << "Drawing_NewView"
-           << "Drawing_OrthoViews";
-           
+           << "Drawing_OrthoViews"
+           << "Drawing_NewViewSection";
+
     return root;
 }
 

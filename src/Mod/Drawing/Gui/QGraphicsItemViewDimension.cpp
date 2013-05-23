@@ -195,7 +195,7 @@ void QGraphicsItemViewDimension::hover(bool state)
     draw();
 }
 
-void QGraphicsItemViewDimension::updateView()
+void QGraphicsItemViewDimension::updateView(bool update)
 {
           // Iterate
     if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))

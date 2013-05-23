@@ -91,7 +91,7 @@ public:
     void setViewPartFeature(Drawing::FeatureViewDimension *obj);
     int type() const { return Type;}
 
-    virtual void updateView();
+    virtual void updateView(bool update = false);
 
 Q_SIGNALS:
   void dirty();

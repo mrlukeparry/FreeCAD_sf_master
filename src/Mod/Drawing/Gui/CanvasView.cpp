@@ -52,6 +52,7 @@
 #include "../App/FeatureViewDimension.h"
 
 #include "QGraphicsItemViewPart.h"
+#include "QGraphicsItemViewSection.h"
 #include "QGraphicsItemViewDimension.h"
 #include "CanvasView.h"
 
@@ -93,6 +94,13 @@ void CanvasView::drawBackground(QPainter *p, const QRectF &)
 void CanvasView::addViewPart(Drawing::FeatureViewPart *part)
 {
     QGraphicsItemViewPart *group = new QGraphicsItemViewPart(QPoint(0,0), this->scene());
+    group->setViewPartFeature(part);
+    views.push_back(group);
+}
+
+void CanvasView::addViewSection(Drawing::FeatureViewPart *part)
+{
+    QGraphicsItemViewSection *group = new QGraphicsItemViewSection(QPoint(0,0), this->scene());
     group->setViewPartFeature(part);
     views.push_back(group);
 }

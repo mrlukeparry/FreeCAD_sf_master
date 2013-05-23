@@ -46,8 +46,10 @@ public:
 
     void setRenderer(RendererType type = Native);
     void drawBackground(QPainter *p, const QRectF &rect);
-    void addViewPart(Drawing::FeatureViewPart *part);
+    
     void addViewDimension(Drawing::FeatureViewDimension *dim);
+    void addViewPart(Drawing::FeatureViewPart *part);
+    void addViewSection(Drawing::FeatureViewPart *part);
 
     const std::vector<QGraphicsItemView *> & getViews() const { return views; }
     void setViews(const std::vector<QGraphicsItemView *> &view) {views = view; }

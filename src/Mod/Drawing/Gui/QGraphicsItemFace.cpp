@@ -30,8 +30,10 @@
 #include <QGraphicsSceneHoverEvent>
 #include <QPainterPathStroker>
 #include <QPainter>
+#include <QStyleOptionGraphicsItem>
 #endif
 
+#include "QGraphicsItemView.h"
 #include "QGraphicsItemFace.h"
 
 using namespace DrawingGui;
@@ -51,11 +53,17 @@ QVariant QGraphicsItemFace::itemChange(GraphicsItemChange change, const QVariant
         if(isSelected()) {
             QPen pen = this->pen();
             pen.setColor(Qt::blue);
+            QBrush brush = this->brush();
+            brush.setColor(Qt::green);
             this->setPen(pen);
+            this->setBrush(brush);
         } else {
             QPen pen = this->pen();
             pen.setColor(Qt::gray);
             this->setPen(pen);
+            QBrush brush = this->brush();
+            brush.setColor(Qt::blue);
+            this->setBrush(brush);
         }
         update();
     }
@@ -66,6 +74,7 @@ void QGraphicsItemFace::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
     QPen pen = this->pen();
     pen.setColor(Qt::blue);
+    pen.setWidthF(2);
     this->setPen(pen);
     update();
 }
@@ -73,14 +82,12 @@ void QGraphicsItemFace::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 void QGraphicsItemFace::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
     QGraphicsItemView *view = dynamic_cast<QGraphicsItemView *> (this->parentItem());
-    assert(view != 0);
 
     if(!isSelected() && !view->isSelected()) {
         QPen pen = this->pen();
         pen.setColor(Qt::black);
+        pen.setWidthF(0.5);
         this->setPen(pen);
         update();
     }
 }
-
-#include "moc_QGraphicsItemFace.cpp"

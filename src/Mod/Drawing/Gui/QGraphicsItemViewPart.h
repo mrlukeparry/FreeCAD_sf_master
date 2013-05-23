@@ -28,6 +28,7 @@
 #include <QStyleOptionGraphicsItem>
 
 #include "QGraphicsItemView.h"
+#include "QGraphicsItemFace.h"
 #include "QGraphicsItemEdge.h"
 #include "QGraphicsItemVertex.h"
 
@@ -57,7 +58,8 @@ public:
     void setViewPartFeature(Drawing::FeatureViewPart *obj);
 
     void toggleVertices(bool state);
-    virtual void updateView();
+    virtual void updateView(bool update = false);
+    virtual void draw();
 
 Q_SIGNALS:
   void dirty();

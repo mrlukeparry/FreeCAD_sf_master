@@ -29,6 +29,8 @@
 
 #include "FeatureViewPart.h"
 
+class gp_Pln;
+
 namespace Drawing
 {
 
@@ -44,8 +46,12 @@ public:
     FeatureViewSection(void);
     virtual ~FeatureViewSection();
 
+    App::PropertyVector SectionNormal;
+    App::PropertyVector SectionOrigin;
+    App::PropertyBool ShowCutSurface;
+
     short mustExecute() const;
-    
+
     /** @name methods overide Feature */
     //@{
     /// recalculate the Feature
@@ -57,6 +63,12 @@ public:
         return "DrawingGui::ViewProviderDrawingViewSection";
     }
 
+public:
+    void getSectionSurface(std::vector<DrawingGeometry::Face *> &sectionFace) const;
+
+protected:
+    TopoDS_Shape result;
+    gp_Pln getSectionPlane() const;
 };
 
 typedef App::FeaturePythonT<FeatureViewSection> FeatureViewSectionPython;
