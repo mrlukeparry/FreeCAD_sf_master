@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -26,6 +27,7 @@
 #endif
 
 #include <Gui/Application.h>
+#include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
@@ -38,11 +40,11 @@
 #include <Gui/View3DInventor.h>
 
 
-#include "../App/CamFeature.h"
-#include "../App/StockGeometry.h"
-#include "../App/CamPartsList.h"
-#include "../App/TPGList.h"
-#include "../App/GCodeFeature.h"
+#include "../App/Features/CamFeature.h"
+//#include "../App/Features/StockGeometry.h"
+//#include "../App/Features/CamPartsList.h"
+//#include "../App/Features/TPGList.h"
+//#include "../App/Features/GCodeFeature.h"
 
 #include "TaskDialog/TaskDlgEditCamFeature.h"
 #include "ViewProviderCamFeature.h"
@@ -126,15 +128,24 @@ std::vector<App::DocumentObject*> ViewProviderCamFeature::claimChildren(void) co
     std::vector<App::DocumentObject*> temp;
     Cam::CamFeature *feat = static_cast<Cam::CamFeature*>(getObject());
     try {
-      temp.push_back(dynamic_cast<App::DocumentObject* >(feat->getStockGeometry()));
-      temp.push_back(dynamic_cast<App::DocumentObject* >(feat->getPartsContainer()));
-      temp.push_back(dynamic_cast<App::DocumentObject* >(feat->getTPGContainer()));
-      temp.push_back(dynamic_cast<App::DocumentObject* >(feat->getGCodeFeature()));
-      return temp;
+    	// claim the TPG's that belong to this Feature
+    	std::vector<App::DocumentObject*> tpgs = feat->TPGList.getValues();
+    	temp.insert(temp.end(), tpgs.begin(), tpgs.end());
+
+    	// claim the Machine program's that belong to this Feature
+    	tpgs = feat->MachineProgramList.getValues();
+		temp.insert(temp.end(), tpgs.begin(), tpgs.end());
+
+    	return temp;
     } catch (...) {
         std::vector<App::DocumentObject*> tmp;
         return tmp;
     }
+}
+
+QIcon ViewProviderCamFeature::getIcon(void) const
+{
+	return Gui::BitmapFactory().pixmap("Cam_CamFeature");
 }
 
 Cam::CamFeature* ViewProviderCamFeature::getObject() const

@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -29,20 +30,22 @@
 #include <Gui/MainWindow.h>
 #include <QPointer>
 
-#include "../App/CamFeature.h"
-#include "../App/StockGeometry.h"
-#include "../App/TPGList.h"
-#include "../App/TPGFeature.h"
-#include "../App/CamPartsList.h"
+#include "../App/Features/CamFeature.h"
+#include "../App/Features/StockGeometry.h"
+#include "../App/Features/TPGList.h"
+#include "../App/Features/TPGFeature.h"
+#include "../App/Features/CamPartsList.h"
+
+#include "UIManager.h"
 
 
 //===========================================================================
 // CmdCamCreateCamFeature
 //===========================================================================
-DEF_STD_CMD_A(CmdCamCreateCamFeature);
+DEF_STD_CMD_A(CmdCamFeature);
 
-CmdCamCreateCamFeature::CmdCamCreateCamFeature()
-  :Command("Cam_CreateCamFeature")
+CmdCamFeature::CmdCamFeature()
+  :Command("Cam_CamFeature")
 {
     sAppModule    = "Cam";
     sGroup        = QT_TR_NOOP("Cam");
@@ -50,37 +53,33 @@ CmdCamCreateCamFeature::CmdCamCreateCamFeature()
     sToolTipText  = QT_TR_NOOP("Create a new Cam Feature");
     sWhatsThis    = sToolTipText;
     sStatusTip    = sToolTipText;
-    sPixmap       = "cam";
+    sPixmap       = "Cam_CamFeature";
 }
 
-void CmdCamCreateCamFeature::activated(int iMsg)
+void CmdCamFeature::activated(int iMsg)
 {
-
-    std::string FeatName = getUniqueObjectName("CamFeature");
-    App::Document *doc   = getActiveGuiDocument()->getDocument();
-
-    // NOTE Need to use simple test case file
-    App::DocumentObject *camFeat =  doc->addObject("Cam::CamFeature", FeatName.c_str());
-
-    // Initialise a few TPG Features and put this in tree for testing
-
-    App::DocumentObject *docObj = doc->getObject(FeatName.c_str());
-
-    if(docObj && docObj->isDerivedFrom(Cam::CamFeature::getClassTypeId())) {
-        Cam::CamFeature *camFeat = dynamic_cast<Cam::CamFeature *>(docObj);
-
-        // We Must Initialise the Cam Feature before usage
-        camFeat->initialise();
-    }
+    openCommand("CamFeatureNew");
+	if (CamGui::UIManager().CamFeature()) {
+//		updateActive();
+    	commitCommand();
+	}
+	else
+		abortCommand();
 }
 
-bool CmdCamCreateCamFeature::isActive(void)
+bool CmdCamFeature::isActive(void)
 {
     return hasActiveDocument();
 }
 
+//===========================================================================
+// Common Code
+//===========================================================================
+/**
+ *
+ */
 void CreateCamCommands()
 {
     Gui::CommandManager &rcCmdMgr = Gui::Application::Instance->commandManager();
-    rcCmdMgr.addCommand(new CmdCamCreateCamFeature());
+    rcCmdMgr.addCommand(new CmdCamFeature());
 }

@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -28,18 +29,18 @@
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
 
-#include "GCodeFeature.h"
-#include "TPGFeature.h"
-#include "StockGeometry.h"
-#include "CamPartsList.h"
-#include "TPGList.h"
+//#include "Features/GCodeFeature.h"
+#include "Features/TPGFeature.h"
+//#include "Features/StockGeometry.h"
+//#include "Features/CamPartsList.h"
+//#include "Features/TPGList.h"
+#include "Features/CamFeature.h"
 
 
 #include "TPG/TPGFactory.h"
 #include "TPG/TPG.h"
 #include "TPG/PyTPGFactory.h"
 
-#include "CamFeature.h"
 
 // C++ TPG Plugins
 #include "Plugins/MyPlugin.h"
@@ -88,11 +89,11 @@ void CamExport initCam()
     // This function is responsible for adding inherited slots from a type's base class.
 
     Cam::CamFeature          ::init();
-    Cam::CamPartsList        ::init();
-    Cam::GCodeFeature        ::init();
-    Cam::StockGeometry       ::init();
+//    Cam::CamPartsList        ::init();
+//    Cam::GCodeFeature        ::init();
+//    Cam::StockGeometry       ::init();
     Cam::TPGFeature          ::init();
-    Cam::TPGList             ::init();
+//    Cam::TPGList             ::init();
 
     // Perform initial scan to load all TPGDescriptors in the factory to ensure that documents can load these
     Cam::TPGFactory().scanPlugins();

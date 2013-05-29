@@ -30,18 +30,21 @@
 #include <App/Application.h>
 #include <App/Document.h>
 #include <App/DocumentObject.h>
+#include <App/DocumentObjectGroup.h>
 
 #include <Base/Console.h>
 
 #include <Gui/Application.h>
+#include <Gui/Command.h>
 #include <Gui/Document.h>
 #include <Gui/DockWindowManager.h>
 #include <Gui/MainWindow.h>
+#include <Gui/SelectionFilter.h>
 
-#include "../App/CamFeature.h"
+#include "../App/Features/CamFeature.h"
 #include "../App/CamManager.h"
-#include "../App/TPGList.h"
-#include "../App/TPGFeature.h"
+#include "../App/Features/TPGList.h"
+#include "../App/Features/TPGFeature.h"
 #include "../App/TPG/PyTPGFactory.h"
 #include "../App/TPG/TPG.h"
 
@@ -77,10 +80,57 @@ UIManagerInst::UIManagerInst() {
 UIManagerInst::~UIManagerInst() {
 }
 
+
+/**
+ * Used by the CamFeature GUI Command to do the work required to add a CamFeature
+ */
+bool UIManagerInst::CamFeature() {
+
+
+
+	App::Document* activeDoc = App::GetApplication().getActiveDocument();
+	if (!activeDoc) {
+		Base::Console().Error("No active document! Please create or open a FreeCad document\n");
+		return false;
+	}
+    std::string FeatName = activeDoc->getUniqueObjectName("Cam Feature");
+//    App::Document *doc   = Gui::Document::getActiveGuiDocument()->getDocument();
+
+    // NOTE Need to use simple test case file
+    App::DocumentObject *camFeat =  activeDoc->addObject("Cam::CamFeature", FeatName.c_str());
+
+    // Initialise a few TPG Features and put this in tree for testing
+
+//    App::DocumentObject *docObj = doc->getObject(FeatName.c_str());
+
+    if(camFeat && camFeat->isDerivedFrom(Cam::CamFeature::getClassTypeId())) {
+		Cam::CamFeature *camFeat = dynamic_cast<Cam::CamFeature *>(camFeat);
+
+		// We Must Initialise the Cam Feature before usage
+		camFeat->initialise();
+    }
+    else {
+    	Base::Console().Error("Unable to create Cam Feature\n");
+    	return false;
+	}
+//    App::DocumentObject *docObj = activeDoc->getObject(FeatName.c_str());
+//
+//    if(docObj && docObj->isDerivedFrom(Cam::CamFeature::getClassTypeId())) {
+//        Cam::CamFeature *camFeat = dynamic_cast<Cam::CamFeature *>(docObj);
+//
+//        // We Must Initialise the Cam Feature before usage
+//        camFeat->initialise();
+//    }
+//    else {
+//    	Base::Console().Error("Unable to get Cam Feature\n");
+//    	return false;
+//	}
+    return true;
+}
+
 /**
  * A Slot to receive requests to add TPG's to the document tree.
  */
-
 void UIManagerInst::addTPG(Cam::TPGDescriptor *tpgDescriptor) 
 {
     if (tpgDescriptor == NULL) {
@@ -88,11 +138,73 @@ void UIManagerInst::addTPG(Cam::TPGDescriptor *tpgDescriptor)
         return;
     }
 
-    // Test settings editor
-    Cam::TPG* tpg = tpgDescriptor->make();
-    Q_EMIT updatedTPGSelection(tpg);
+    /////// PSEUDO CODE ///////
+    // Check if CamFeature is selected?
+    	// add TPG to this feature (after other TPG's)
+    // if a parent of selection is a CamFeature?
+    	// on selection of?
+    		// TPG:
+    			// add TPG before current selection
+    		// Toolpath:
+    			// add TPG before parent TPG
+    		// Machine Program:
+    			// add TPG at end of TPG's
+    // else if count(CamFeature) == 1
+    	// add TPG to this feature (after other TPG's)
+    // else
+    	// Ask if we should create a new CamFeature?
+    		// Add CamFeature
+    		// Add TPG to new CamFeature
+    	// else do nothing
 
-    Base::Console().Log("This is where I would add a '%s' TPG to the document", tpgDescriptor->name.toStdString().c_str());
+    /////// END PSEUDO ///////
+
+    // get the Active document
+	App::Document* activeDoc = App::GetApplication().getActiveDocument();
+	if (!activeDoc) {
+		Base::Console().Error("No active document! Please create or open a FreeCad document\n");
+		return;
+	}
+
+	// check for CamFeature in selection
+    Gui::SelectionFilter CamFeatureFilter("SELECT Cam::CamFeature COUNT 1");
+    if (CamFeatureFilter.match()) {
+    	Cam::CamFeature *CamFeature = static_cast<Cam::CamFeature*>(CamFeatureFilter.Result[0][0].getObject());
+    	Gui::Command::openCommand("Add TPG");
+
+		// create the feature (for Document Tree)
+	    std::string tpgFeatName = activeDoc->getUniqueObjectName(tpgDescriptor->name.toStdString().c_str());
+	    App::DocumentObject *tpgFeat =  activeDoc->addObject("Cam::TPGFeature", tpgFeatName.c_str());
+	    if(tpgFeat && tpgFeat->isDerivedFrom(Cam::TPGFeature::getClassTypeId())) {
+			Cam::TPGFeature *tpgFeature = dynamic_cast<Cam::TPGFeature *>(tpgFeat);
+
+			// We Must Initialise the TPG Feature before usage
+			tpgFeature->initialise();
+
+			// Add descriptor details
+			tpgFeature->PluginId.setValue(tpgDescriptor->id.toStdString().c_str());
+
+			CamFeature->addTPG(tpgFeature);
+
+			activeDoc->recompute();
+	    }
+	    else {
+	    	if (tpgFeat)
+		    	Base::Console().Error("Object not TPG Feature\n");
+	    	else
+	    		Base::Console().Error("Unable to create TPG Feature\n");
+	    	Gui::Command::abortCommand();
+	    	return;
+		}
+	    Gui::Command::commitCommand();
+    }
+
+
+    // Test settings editor
+//    Cam::TPG* tpg = tpgDescriptor->make();
+//    Q_EMIT updatedTPGSelection(tpg);
+//
+//    Base::Console().Log("This is where I would add a '%s' TPG to the document", tpgDescriptor->name.toStdString().c_str());
 
 //    // TPG was successfully created
 //    // Find currently active CamFeature and add create a new TPGFeature and assign the TPG

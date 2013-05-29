@@ -82,7 +82,7 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     Gui::MenuItem* part = new Gui::MenuItem();
     root->insertItem(item, part);
     part->setCommand("Cam");
-    *part << "Cam_CreateCamFeature";
+    *part << "Cam_CamFeature";
 
     return root;
 }
@@ -93,7 +93,7 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
 
     Gui::ToolBarItem * part = new Gui::ToolBarItem(root);
     part->setCommand("Cam");
-    *part << "Cam_CreateCamFeature";
+    *part << "Cam_CamFeature";
 
     return root;
 }

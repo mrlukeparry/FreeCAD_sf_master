@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -26,6 +27,7 @@
 #endif
 
 #include <Gui/Application.h>
+#include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
@@ -37,7 +39,7 @@
 #include <Gui/SoFCBoundingBox.h>
 #include <Gui/View3DInventor.h>
 
-#include "../App/TPGFeature.h"
+#include "../App/Features/TPGFeature.h"
 
 #include "TaskDialog/TaskDlgEditTPGFeature.h"
 #include "ViewProviderTPGFeature.h"
@@ -56,10 +58,10 @@ ViewProviderTPGFeature::~ViewProviderTPGFeature()
 
 void ViewProviderTPGFeature::setupContextMenu(QMenu *menu, QObject *receiver, const char *member)
 {
-    Cam::TPG *tpg = NULL;
-    tpg = getObject()->getTPG();
-    if(tpg == NULL)
-        return;
+//    Cam::TPG *tpg = NULL;
+//    tpg = getObject()->getTPG();
+//    if(tpg == NULL)
+//        return;
     
     menu->addAction(QObject::tr("Edit ") + QString::fromAscii(getObject()->Label.getValue()), receiver, member);
 }
@@ -124,4 +126,9 @@ void ViewProviderTPGFeature::unsetEdit(int ModNum)
 Cam::TPGFeature* ViewProviderTPGFeature::getObject() const
 {
     return dynamic_cast<Cam::TPGFeature*>(pcObject);
+}
+
+QIcon ViewProviderTPGFeature::getIcon(void) const
+{
+	return Gui::BitmapFactory().pixmap("Cam_TPGFeature");
 }

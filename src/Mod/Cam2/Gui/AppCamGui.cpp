@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2007 Werner Mayer <wmayer@users.sourceforge.net>        *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -34,11 +35,11 @@
 #include <Gui/MainWindow.h>
 
 #include "ViewProviderCamFeature.h"
-#include "ViewProviderCamPartsList.h"
-#include "ViewProviderGCodeFeature.h"
-#include "ViewProviderStockGeometry.h"
+//#include "ViewProviderCamPartsList.h"
+//#include "ViewProviderGCodeFeature.h"
+//#include "ViewProviderStockGeometry.h"
 #include "ViewProviderTPGFeature.h"
-#include "ViewProviderTPGList.h"
+//#include "ViewProviderTPGList.h"
 
 #include "Workbench.h"
 
@@ -120,11 +121,11 @@ extern "C"
         Base::Console().Log("Loading GUI of Cam module... done\n");
 
         CamGui::ViewProviderCamFeature         ::init();
-        CamGui::ViewProviderGCodeFeature       ::init();
+//        CamGui::ViewProviderGCodeFeature       ::init();
         CamGui::ViewProviderTPGFeature         ::init();
-        CamGui::ViewProviderTPGList            ::init();
-        CamGui::ViewProviderStockGeometry      ::init();
-        CamGui::ViewProviderCamPartsList       ::init();
+//        CamGui::ViewProviderTPGList            ::init();
+//        CamGui::ViewProviderStockGeometry      ::init();
+//        CamGui::ViewProviderCamPartsList       ::init();
         CamGui::Workbench                      ::init();
 
         // instantiating the commands
