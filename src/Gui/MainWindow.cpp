@@ -64,6 +64,8 @@
 #include "MainWindow.h"
 #include "Application.h"
 #include "Assistant.h"
+#include "DownloadDialog.h"
+#include "DownloadManager.h"
 #include "WaitCursor.h"
 
 #include "Action.h"
@@ -1174,6 +1176,8 @@ void MainWindow::delayedStartup()
     if (hGrp->GetBool("CreateNewDoc", false)) {
         App::GetApplication().newDocument();
     }
+
+    Application::Instance->checkForPreviousCrashes();
 }
 
 void MainWindow::appendRecentFile(const QString& filename)
@@ -1397,10 +1401,21 @@ void MainWindow::dragEnterEvent (QDragEnterEvent * e)
 {
     // Here we must allow uri drafs and check them in dropEvent
     const QMimeData* data = e->mimeData();
-    if (data->hasUrls())
+    if (data->hasUrls()) {
+#ifdef QT_NO_OPENSSL
+        QList<QUrl> urls = data->urls();
+        for (QList<QUrl>::ConstIterator it = urls.begin(); it != urls.end(); ++it) {
+            if (it->scheme().toLower() == QLatin1String("https")) {
+                e->ignore();
+                return;
+            }
+        }
+#endif
         e->accept();
-    else
+    }
+    else {
         e->ignore();
+    }
 }
 
 QMimeData * MainWindow::createMimeDataFromSelection () const
@@ -1540,6 +1555,17 @@ void MainWindow::loadUrls(App::Document* doc, const QList<QUrl>& url)
                 Base::Console().Message("No support to load file '%s'\n",
                     (const char*)info.absoluteFilePath().toUtf8());
             }
+        }
+        else if (it->scheme().toLower() == QLatin1String("http")) {
+            Gui::Dialog::DownloadManager::getInstance()->download(*it);
+        }
+#ifndef QT_NO_OPENSSL
+        else if (it->scheme().toLower() == QLatin1String("https")) {
+            Gui::Dialog::DownloadManager::getInstance()->download(*it);
+        }
+#endif
+        else if (it->scheme().toLower() == QLatin1String("ftp")) {
+            Gui::Dialog::DownloadManager::getInstance()->download(*it);
         }
     }
 
