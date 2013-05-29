@@ -324,8 +324,8 @@ void QGraphicsItemViewDimension::draw()
                 DrawingGeometry::Generic *gen = static_cast<DrawingGeometry::Generic *>(projGeom.at(0));
                 Base::Vector2D pnt1 = gen->points.at(0);
                 Base::Vector2D pnt2 = gen->points.at(1);
-                p1 = Base::Vector3d (pnt1.fX, pnt1.fY, 0);
-                p2 = Base::Vector3d (pnt2.fX, pnt2.fY, 0);
+                p1 = Base::Vector3d(pnt1.fX, pnt1.fY, 0.);
+                p2 = Base::Vector3d(pnt2.fX, pnt2.fY, 0.);
 
             } else {
                 clearProjectionCache();
@@ -342,8 +342,8 @@ void QGraphicsItemViewDimension::draw()
 
             DrawingGeometry::Vertex *v1 = refObj->getVertex(idx);
             DrawingGeometry::Vertex *v2 = refObj->getVertex(idx2);
-            p1 = Base::Vector3d (v1->pnt.fX, v1->pnt.fY, 0);
-            p2 = Base::Vector3d (v2->pnt.fX, v2->pnt.fY, 0);
+            p1 = Base::Vector3d (v1->pnt.fX, v1->pnt.fY, 0.);
+            p2 = Base::Vector3d (v2->pnt.fX, v2->pnt.fY, 0.);
 
             // Do some house keeping
             delete v1; v1 = 0;
@@ -369,7 +369,7 @@ void QGraphicsItemViewDimension::draw()
                 DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(projGeom.at(0));
                 DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(projGeom.at(1));
 
-                // Get Points for loine
+                // Get Points for line
                 Base::Vector2D pnt1, pnt2;
                 Base::Vector3d p1S, p1E, p2S, p2E;
                 pnt1 = gen1->points.at(0);

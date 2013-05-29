@@ -286,10 +286,12 @@ DrawingGeometry::Vertex * GeometryObject::projectVertex(const TopoDS_Shape &vert
 
     gp_Ax2 transform;
     if(projXAxis.Length() > FLT_EPSILON) {
-        transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),gp_Dir(direction.x, direction.y, direction.z),
+        transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),
+                           gp_Dir(direction.x, direction.y, direction.z),
                            gp_Dir(projXAxis.x, projXAxis.y, projXAxis.z));
     } else {
-        transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),gp_Dir(direction.x, direction.y, direction.z));
+        transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),
+                           gp_Dir(direction.x, direction.y, direction.z));
     }
 
     HLRAlgo_Projector projector = HLRAlgo_Projector( transform );
@@ -353,8 +355,7 @@ void GeometryObject::projectSurfaces(const TopoDS_Shape &face,
 
 DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge,
                                                         const TopoDS_Shape &support,
-                                                        const Base::Vector3f &direction,
-                                                        const Base::Vector3f &xaxis) const
+                                                        const Base::Vector3f &direction) const
 {
     if(edge.IsNull())
         throw Base::Exception("Projected edge is null");
@@ -362,7 +363,7 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
 
     gp_Trsf mat;
     Bnd_Box bounds;
-    BRepBndLib::Add(invertY(support), bounds);
+    BRepBndLib::Add(support, bounds);
     bounds.SetGap(0.0);
     Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
     bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
@@ -376,10 +377,11 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
     const TopoDS_Edge &refEdge = TopoDS::Edge(mkTrfScale.Shape());
 
     gp_Ax2 transform;
-    if(xaxis.Length() > FLT_EPSILON) {
+    Base::Console().Log("xaxis: %f, %f, %f\n", projXAxis.x, projXAxis.y, projXAxis.z);
+    if(projXAxis.Length() > FLT_EPSILON) {
         transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),
                            gp_Dir(direction.x, direction.y, direction.z),
-                           gp_Dir(xaxis.x, xaxis.y, xaxis.z));
+                           gp_Dir(projXAxis.x, projXAxis.y, projXAxis.z));
     } else {
         transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),
                            gp_Dir(direction.x, direction.y, direction.z));
@@ -403,6 +405,9 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
 
           line->points.push_back(Base::Vector2D(pnt1.X(), pnt1.Y()));
           line->points.push_back(Base::Vector2D(pnt2.X(), pnt2.Y()));
+
+          Base::Console().Log("vertl %f, %f \n", line->points[0].fX,  line->points[0].fY);
+          Base::Console().Log("vertl %f, %f \n", line->points[1].fX,  line->points[1].fY);
           result = line;
         }break;
      case GeomAbs_Circle: {
@@ -949,10 +954,14 @@ void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vect
         projXAxis = xAxis;
         projNorm = direction;
         gp_Ax2 transform;
+
         if(xAxis.Length() > FLT_EPSILON) {
-            transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),gp_Dir(direction.x, direction.y, direction.z), gp_Dir(xAxis.x, xAxis.y, xAxis.z));
+            transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),
+                               gp_Dir(direction.x, direction.y, direction.z),
+                               gp_Dir(xAxis.x, xAxis.y, xAxis.z));
         } else {
-            transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),gp_Dir(direction.x, direction.y, direction.z));
+            transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),
+                               gp_Dir(direction.x, direction.y, direction.z));
         }
         HLRAlgo_Projector projector( transform );
         brep_hlr->Projector(projector);

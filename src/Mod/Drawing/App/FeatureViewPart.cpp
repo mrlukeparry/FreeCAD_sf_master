@@ -127,7 +127,8 @@ DrawingGeometry::BaseGeom *FeatureViewPart::getCompleteEdge(int idx) const
     str << "Edge" << idx;
     TopoDS_Shape shape = topoShape.getSubShape(str.str().c_str());
 
-    DrawingGeometry::BaseGeom *prjShape = geometryObject->projectEdge(shape, static_cast<Part::Feature*>(link)->Shape.getValue(), Direction.getValue(), XAxisDirection.getValue());
+    const TopoDS_Shape &support = static_cast<Part::Feature*>(link)->Shape.getValue();
+    DrawingGeometry::BaseGeom *prjShape = geometryObject->projectEdge(shape, support, Direction.getValue());
 
     return prjShape;
 }
@@ -145,8 +146,9 @@ DrawingGeometry::Vertex * FeatureViewPart::getVertex(int idx) const
     str << "Vertex" << idx;
     TopoDS_Shape shape = topoShape.getSubShape(str.str().c_str());
 
-    DrawingGeometry::Vertex *prjShape = geometryObject->projectVertex(shape, static_cast<Part::Feature*>(link)->Shape.getValue(), Direction.getValue());
-
+    const TopoDS_Shape &support = static_cast<Part::Feature*>(link)->Shape.getValue();
+    DrawingGeometry::Vertex *prjShape = geometryObject->projectVertex(shape, support, Direction.getValue());
+    Base::Console().Log("vert %f, %f \n", prjShape->pnt.fX,  prjShape->pnt.fY);
     return prjShape;
 }
 

@@ -27,6 +27,7 @@
 # include <cstring>
 #endif
 
+#include <Base/Console.h>
 # include <Base/Exception.h>
 # include <Mod/Measure/App/Measurement.h>
 
@@ -59,6 +60,8 @@ FeatureViewDimension::FeatureViewDimension(void)
     ADD_PROPERTY_TYPE(References,(0,0),"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Supporting References");
     ADD_PROPERTY_TYPE(Precision,(2)   ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Precision");
     ADD_PROPERTY_TYPE(Fontsize,(6)    ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Font Size");
+    ADD_PROPERTY_TYPE(ProjDirection ,(0,0,1.0), "Dimension",App::Prop_None,"Projection normal direction");
+
     Type.setEnums(TypeEnums);
     ADD_PROPERTY(Type,((long)0));
 
@@ -97,6 +100,9 @@ App::DocumentObjectExecReturn *FeatureViewDimension::execute(void)
 
     for(; obj != objects.end(); ++obj, ++subEl) {
         Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(*obj);
+
+        //Overall assumption is that the dimensions are only allowed for one view
+        ProjDirection.setValue(viewPart->Direction.getValue());
         App::DocumentObject *docObj = viewPart->Source.getValue();
 
         if((*subEl).substr(0,4) == "Edge") {
@@ -117,24 +123,37 @@ App::DocumentObjectExecReturn *FeatureViewDimension::execute(void)
 
 double FeatureViewDimension::getValue() const
 {
-    if(strcmp(Type.getValueAsString(), "Distance") == 0) {
-        return measurement->length();
-    } else if(strcmp(Type.getValueAsString(), "DistanceX") == 0){
-        Base::Vector3d delta = measurement->delta();
-        return delta.x;
-    } else if(strcmp(Type.getValueAsString(), "DistanceY") == 0){
-        Base::Vector3d delta = measurement->delta();
-        return delta.y;
-    } else if(strcmp(Type.getValueAsString(), "DistanceZ") == 0){
-        Base::Vector3d delta = measurement->delta();
-        return delta.z;
-    } else if(strcmp(Type.getValueAsString(), "Radius") == 0){
-        return measurement->radius();
-    } else if(strcmp(Type.getValueAsString(), "Diameter") == 0){
-        return measurement->radius() * 2;
-    } else if(strcmp(Type.getValueAsString(), "Angle") == 0){
-        return measurement->angle();
+    if(strcmp(ProjectionType.getValueAsString(), "True") == 0) {
+        // True Values
+        if(strcmp(Type.getValueAsString(), "Distance") == 0) {
+            return measurement->length();
+        } else if(strcmp(Type.getValueAsString(), "DistanceX") == 0){
+            Base::Vector3d delta = measurement->delta();
+            return delta.x;
+        } else if(strcmp(Type.getValueAsString(), "DistanceY") == 0){
+            Base::Vector3d delta = measurement->delta();
+            return delta.y;
+        } else if(strcmp(Type.getValueAsString(), "DistanceZ") == 0){
+            Base::Vector3d delta = measurement->delta();
+            return delta.z;
+        } else if(strcmp(Type.getValueAsString(), "Radius") == 0){
+            return measurement->radius();
+        } else if(strcmp(Type.getValueAsString(), "Diameter") == 0){
+            return measurement->radius() * 2;
+        } else if(strcmp(Type.getValueAsString(), "Angle") == 0){
+            return measurement->angle();
+        }
+        throw Base::Exception("Dimension Value couldn't be calculated");
+    } else {
+        // Projected Values
+        if(strcmp(Type.getValueAsString(), "Distance") == 0) {
+            Base::Vector3d delta = measurement->delta();
+            Base::Vector3f projDir = ProjDirection.getValue();
+            Base::Vector3d projDim = delta.ProjToPlane(Base::Vector3d(0.,0.,0.), Base::Vector3d(projDir.x, projDir.y,
+                                                                       projDir.z));
+
+            return projDim.Length();
+        }
     }
-    throw Base::Exception("Dimension Value couldn't be calculated");
 }
 

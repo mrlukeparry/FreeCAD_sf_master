@@ -52,6 +52,7 @@ public:
     App::PropertyFloat Fontsize;
     App::PropertyEnumeration Type;
     App::PropertyEnumeration ProjectionType;
+    App::PropertyVector ProjDirection;
 
     short mustExecute() const;
 
@@ -70,6 +71,7 @@ public:
 
 protected:
     Measure::Measurement *measurement;
+
 private:
     static const char* TypeEnums[];
     static const char* ProjTypeEnums[];
