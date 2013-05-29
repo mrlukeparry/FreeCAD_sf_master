@@ -69,6 +69,8 @@ SET(DrawingGuiView_SRCS
     DrawingView.h
     QGraphicsItemView.cpp
     QGraphicsItemView.h
+    QGraphicsItemArrow.cpp
+    QGraphicsItemArrow.h
     QGraphicsItemEdge.cpp
     QGraphicsItemEdge.h
     QGraphicsItemFace.cpp

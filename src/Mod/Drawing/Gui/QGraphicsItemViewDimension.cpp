@@ -55,6 +55,7 @@
 # include "../App/FeatureViewDimension.h"
 # include "../App/FeatureViewPart.h"
 # include "QGraphicsItemViewDimension.h"
+# include "QGraphicsItemArrow.h"
 
 using namespace DrawingGui;
 
@@ -126,6 +127,7 @@ void QGraphicsItemDatumLabel::mouseReleaseEvent( QGraphicsSceneMouseEvent * even
     QGraphicsItem::mouseReleaseEvent(event);
 }
 
+
 void QGraphicsItemDatumLabel::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     QStyleOptionGraphicsItem myOption(*option);
@@ -172,6 +174,23 @@ QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraph
 QGraphicsItemViewDimension::~QGraphicsItemViewDimension()
 {
     clearProjectionCache();
+}
+
+void QGraphicsItemViewDimension::setViewPartFeature(Drawing::FeatureViewDimension *obj)
+{
+    if(obj == 0)
+        return;
+
+    this->setViewFeature(static_cast<Drawing::FeatureView *>(obj));
+
+    // Set the QGraphicsItemGroup Properties based on the FeatureView
+    float x = obj->X.getValue();
+    float y = obj->Y.getValue();
+
+    this->datumLabel->setPos(x, y);
+    updateDim();
+    this->draw();
+    Q_EMIT dirty();
 }
 
 void QGraphicsItemViewDimension::clearProjectionCache()
@@ -496,6 +515,39 @@ void QGraphicsItemViewDimension::draw()
         float bbY = lbl->boundingRect().height();
         lbl->setTransformOriginPoint(bbX / 2, bbY /2);
         lbl->setRotation(angle * 180 / M_PI);
+
+        if(arw.size() != 2) {
+            prepareGeometryChange();
+            for(std::vector<QGraphicsItem *>::iterator it = arw.begin(); it != arw.end(); ++it) {
+                this->removeFromGroup(*it);
+                delete (*it);
+                arw.clear();
+            }
+
+            QGraphicsItemArrow *ar1 = new QGraphicsItemArrow();
+            QGraphicsItemArrow *ar2 = new QGraphicsItemArrow();
+            arw.push_back(ar1);
+            arw.push_back(ar2);
+
+            ar1->draw();
+            ar2->draw();
+
+            this->addToGroup(arw.at(0));
+            this->addToGroup(arw.at(1));
+        }
+
+        QGraphicsItemArrow *ar1 = dynamic_cast<QGraphicsItemArrow *>(arw.at(0));
+        QGraphicsItemArrow *ar2 = dynamic_cast<QGraphicsItemArrow *>(arw.at(1));
+
+        ar1->setRotation(angle * 180 / M_PI);
+        ar2->setRotation(angle * 180 / M_PI);
+
+        ar1->setPos(par1[0], par1[1]);
+        ar2->setPos(par4[0], par4[1]);
+
+        ar1->setHighlighted(isSelected() || this->hasHover);
+        ar2->setHighlighted(isSelected() || this->hasHover);
+
 #if 0
         SbVec3f ar1 = par1 + ((flipTriang) ? -1 : 1) * dir * 0.866f * 2 * margin;
         SbVec3f ar2 = ar1 + norm * margin;
@@ -654,21 +706,11 @@ QVariant QGraphicsItemViewDimension::itemChange(GraphicsItemChange change, const
     return QGraphicsItemView::itemChange(change, value);
 }
 
-void QGraphicsItemViewDimension::setViewPartFeature(Drawing::FeatureViewDimension *obj)
+void QGraphicsItemViewDimension::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    if(obj == 0)
-        return;
-
-    this->setViewFeature(static_cast<Drawing::FeatureView *>(obj));
-
-      // Set the QGraphicsItemGroup Properties based on the FeatureView
-    float x = obj->X.getValue();
-    float y = obj->Y.getValue();
-
-    this->datumLabel->setPos(x, y);
-    updateDim();
-    this->draw();
-    Q_EMIT dirty();
+    QStyleOptionGraphicsItem myOption(*option);
+    myOption.state &= ~QStyle::State_Selected;
+    QGraphicsItemView::paint(painter, &myOption, widget);
 }
 
 #include "moc_QGraphicsItemViewDimension.cpp"

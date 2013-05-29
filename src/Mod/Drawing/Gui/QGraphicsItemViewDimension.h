@@ -92,6 +92,7 @@ public:
     int type() const { return Type;}
 
     virtual void updateView(bool update = false);
+    virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
 
 Q_SIGNALS:
   void dirty();
@@ -113,6 +114,8 @@ protected:
   bool hasHover;
   QGraphicsItem *datumLabel;
   QGraphicsItem *arrows;
+
+  std::vector<QGraphicsItem *> arw;
   std::vector<DrawingGeometry::BaseGeom *> projGeom;
   QPen pen;
 };
