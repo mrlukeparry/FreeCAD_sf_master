@@ -258,7 +258,7 @@ void QGraphicsItemViewDimension::updateDim()
 
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->viewObject);
 
-    QString str = QString::number((absolute) ? abs(dim->getValue()) : dim->getValue(), 'f', dim->Precision.getValue());
+    QString str = QString::number((absolute) ? fabs(dim->getValue()) : dim->getValue(), 'f', dim->Precision.getValue());
 
     QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
 

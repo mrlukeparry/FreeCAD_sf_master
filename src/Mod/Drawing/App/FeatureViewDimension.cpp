@@ -123,36 +123,51 @@ App::DocumentObjectExecReturn *FeatureViewDimension::execute(void)
 
 double FeatureViewDimension::getValue() const
 {
+    const char *projType = Type.getValueAsString();
     if(strcmp(ProjectionType.getValueAsString(), "True") == 0) {
         // True Values
-        if(strcmp(Type.getValueAsString(), "Distance") == 0) {
+        if(strcmp(projType, "Distance") == 0) {
             return measurement->length();
-        } else if(strcmp(Type.getValueAsString(), "DistanceX") == 0){
+        } else if(strcmp(projType, "DistanceX") == 0){
             Base::Vector3d delta = measurement->delta();
             return delta.x;
-        } else if(strcmp(Type.getValueAsString(), "DistanceY") == 0){
+        } else if(strcmp(projType, "DistanceY") == 0){
             Base::Vector3d delta = measurement->delta();
             return delta.y;
-        } else if(strcmp(Type.getValueAsString(), "DistanceZ") == 0){
+        } else if(strcmp(projType, "DistanceZ") == 0){
             Base::Vector3d delta = measurement->delta();
             return delta.z;
-        } else if(strcmp(Type.getValueAsString(), "Radius") == 0){
+        } else if(strcmp(projType, "Radius") == 0){
             return measurement->radius();
-        } else if(strcmp(Type.getValueAsString(), "Diameter") == 0){
+        } else if(strcmp(projType, "Diameter") == 0){
             return measurement->radius() * 2;
-        } else if(strcmp(Type.getValueAsString(), "Angle") == 0){
+        } else if(strcmp(projType, "Angle") == 0){
             return measurement->angle();
         }
         throw Base::Exception("Dimension Value couldn't be calculated");
     } else {
         // Projected Values
-        if(strcmp(Type.getValueAsString(), "Distance") == 0) {
+        if(strcmp(projType, "Distance") == 0 ||
+            strcmp(projType, "DistanceX") == 0 ||
+            strcmp(projType, "DistanceY") == 0 ||
+            strcmp(projType, "DistanceZ") == 0) {
+            
             Base::Vector3d delta = measurement->delta();
             Base::Vector3f projDir = ProjDirection.getValue();
             Base::Vector3d projDim = delta.ProjToPlane(Base::Vector3d(0.,0.,0.), Base::Vector3d(projDir.x, projDir.y,
                                                                        projDir.z));
 
-            return projDim.Length();
+            Base::Console().Log("proj <%f %f %f>", delta.x, delta.y, delta.z);
+            Base::Console().Log("proj <%f %f %f>", projDim.x, projDim.y, projDim.z);
+            if(strcmp(projType, "Distance") == 0) {
+                return projDim.Length();
+            } else if(strcmp(projType, "DistanceX") == 0) {
+                return projDim.x;
+            } else if(strcmp(projType, "DistanceY") == 0) {
+                return projDim.y;
+            } else if(strcmp(projType, "DistanceZ") == 0) {
+                throw Base::Exception("Cannot use z direction for projection type");
+            }
         }
     }
 }
