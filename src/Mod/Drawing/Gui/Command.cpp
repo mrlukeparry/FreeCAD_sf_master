@@ -37,6 +37,7 @@
 # include <Mod/Part/App/PartFeature.h>
 
 # include <Mod/Drawing/App/FeatureViewPart.h>
+# include <Mod/Drawing/App/FeatureOrthoView.h>
 # include <Mod/Drawing/App/FeatureViewDimension.h>
 # include <Mod/Drawing/App/FeaturePage.h>
 
@@ -317,11 +318,18 @@ void CmdDrawingNewDimension::activated(int iMsg)
 
       // get the selection
     std::vector<Gui::SelectionObject> selection = getSelection().getSelectionEx();
-    if(!selection[0].getObject()){
+    if(selection.size() == 0 || !selection[0].getObject()){
         return;
     }
 
     Drawing::FeatureViewPart * Obj = dynamic_cast<Drawing::FeatureViewPart *>(selection[0].getObject());
+    
+    if(!Obj) {
+        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong sized selection"),
+                             QObject::tr("Incorrect selection"));
+                             return;
+    }
+    
     App::DocumentObject *docObj = Obj->Source.getValue();
 
     // get the needed lists and objects
@@ -346,6 +354,7 @@ void CmdDrawingNewDimension::activated(int iMsg)
         // Selected edge constraint
         if (SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge") {
             int GeoId = std::atoi(SubNames[0].substr(4,4000).c_str());
+            
             DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
 
             std::string dimMode = "Distance";
@@ -361,6 +370,18 @@ void CmdDrawingNewDimension::activated(int iMsg)
             doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewDimension','%s')",FeatName.c_str());
             doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str(), dimMode.c_str());
 
+            // Check if the part is an orthographic view;
+            Drawing::FeatureOrthoView *orthoView = dynamic_cast<Drawing::FeatureOrthoView *>(Obj);
+            
+            dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
+            
+            if(orthoView) {
+                // Set the dimension to projected type
+                doCommand(Doc,"App.activeDocument().%s.ProjectionType = 'Projected'",FeatName.c_str());
+                dim->ProjectionType.StatusBits.set(2); // Set the projection type to read only
+            }
+            
+                
             dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
             dim->References.setValue(Obj, SubNames[0].c_str());
         } else {
