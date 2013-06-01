@@ -173,7 +173,7 @@ void SelectionObserverPython::addSelection(const SelectionChanges& msg)
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        Base::Console().Error("%s\n", e.what());
+        e.ReportException();
     }
 }
 
@@ -192,7 +192,7 @@ void SelectionObserverPython::removeSelection(const SelectionChanges& msg)
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        Base::Console().Error("%s\n", e.what());
+        e.ReportException();
     }
 }
 
@@ -209,7 +209,7 @@ void SelectionObserverPython::setSelection(const SelectionChanges& msg)
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        Base::Console().Error("%s\n", e.what());
+        e.ReportException();
     }
 }
 
@@ -226,7 +226,7 @@ void SelectionObserverPython::clearSelection(const SelectionChanges& msg)
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        Base::Console().Error("%s\n", e.what());
+        e.ReportException();
     }
 }
 
@@ -245,7 +245,7 @@ void SelectionObserverPython::setPreselection(const SelectionChanges& msg)
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        Base::Console().Error("%s\n", e.what());
+        e.ReportException();
     }
 }
 
@@ -264,7 +264,7 @@ void SelectionObserverPython::removePreselection(const SelectionChanges& msg)
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        Base::Console().Error("%s\n", e.what());
+        e.ReportException();
     }
 }
 
@@ -465,32 +465,30 @@ bool SelectionSingleton::setPreselect(const char* pDocName, const char* pObjectN
     if (DocName != "")
         rmvPreselect();
 
-    if(ActiveGate)
-    {
+    if (ActiveGate) {
         App::Document* pDoc = getDocument(pDocName);
-
         if (pDoc) {
-            if(pObjectName){
+            if (pObjectName) {
                 App::DocumentObject* pObject = pDoc->getObject(pObjectName);
-                if(! ActiveGate->allow(pDoc,pObject,pSubName)){
+                if (!ActiveGate->allow(pDoc,pObject,pSubName)) {
                     snprintf(buf,512,"Not allowed: %s.%s.%s ",pDocName
                                                        ,pObjectName
                                                        ,pSubName
                                                        );
 
-                    if (getMainWindow()){
+                    if (getMainWindow()) {
                         getMainWindow()->showMessage(QString::fromAscii(buf),3000);
                         Gui::MDIView* mdi = Gui::Application::Instance->activeDocument()->getActiveView();
-                        if (mdi && mdi->isDerivedFrom(View3DInventor::getClassTypeId())) {
-                            static_cast<View3DInventor*>(mdi)->setCursor(Qt::ForbiddenCursor);
-                        }
+                        mdi->setOverrideCursor(QCursor(Qt::ForbiddenCursor));
                     }
                     return false;
                 }
 
-            }else
+            }
+            else
                 return ActiveGate->allow(pDoc,0,0);
-        }else
+        }
+        else
             return false;
 
     }
@@ -520,13 +518,13 @@ bool SelectionSingleton::setPreselect(const char* pDocName, const char* pObjectN
                                                        ,Chng.pSubName
                                                        ,x,y,z);
 
-    if (getMainWindow()){
-        getMainWindow()->showMessage(QString::fromAscii(buf),3000);
-        Gui::MDIView* mdi = Gui::Application::Instance->activeDocument()->getActiveView();
-        if (mdi && mdi->isDerivedFrom(View3DInventor::getClassTypeId())) {
-            static_cast<View3DInventor*>(mdi)->setCursor(Qt::ArrowCursor);
-        }
-    }
+    //FIXME: We shouldn't replace the possibly defined edit cursor
+    //with the arrow cursor. But it seems that we don't even have to.
+    //if (getMainWindow()){
+    //    getMainWindow()->showMessage(QString::fromAscii(buf),3000);
+    //    Gui::MDIView* mdi = Gui::Application::Instance->activeDocument()->getActiveView();
+    //    mdi->restoreOverrideCursor();
+    //}
 
     Notify(Chng);
     signalSelectionChanged(Chng);
@@ -587,11 +585,9 @@ void SelectionSingleton::rmvPreselect()
     hy = 0;
     hz = 0;
 
-    if (getMainWindow()){
+    if (ActiveGate && getMainWindow()) {
         Gui::MDIView* mdi = Gui::Application::Instance->activeDocument()->getActiveView();
-        if (mdi && mdi->isDerivedFrom(View3DInventor::getClassTypeId())) {
-            static_cast<View3DInventor*>(mdi)->setCursor(Qt::ArrowCursor);
-        }
+        mdi->restoreOverrideCursor();
     }
 
     //Base::Console().Log("Sel : Rmv preselect \n");
@@ -605,7 +601,7 @@ const SelectionChanges &SelectionSingleton::getPreselection(void) const
 // add a SelectionGate to control what is selectable
 void SelectionSingleton::addSelectionGate(Gui::SelectionGate *gate)
 {
-    if(ActiveGate)
+    if (ActiveGate)
         rmvSelectionGate();
     
     ActiveGate = gate;
@@ -621,9 +617,7 @@ void SelectionSingleton::rmvSelectionGate(void)
         Gui::Document* doc = Gui::Application::Instance->activeDocument();
         if (doc) {
             Gui::MDIView* mdi = doc->getActiveView();
-            if (mdi && mdi->isDerivedFrom(View3DInventor::getClassTypeId())) {
-                static_cast<View3DInventor*>(mdi)->setCursor(Qt::ArrowCursor);
-            }
+            mdi->restoreOverrideCursor();
         }
     }
 }
@@ -654,15 +648,12 @@ bool SelectionSingleton::addSelection(const char* pDocName, const char* pObjectN
             temp.pObject = 0;
         
         // check for a Selection Gate
-        if(ActiveGate)
-        {
-            if(! ActiveGate->allow(temp.pDoc,temp.pObject,pSubName)){
-                if (getMainWindow()){
+        if (ActiveGate) {
+            if (!ActiveGate->allow(temp.pDoc,temp.pObject,pSubName)) {
+                if (getMainWindow()) {
                     getMainWindow()->showMessage(QString::fromAscii("Selection not allowed by filter"),5000);
                     Gui::MDIView* mdi = Gui::Application::Instance->activeDocument()->getActiveView();
-                    if (mdi && mdi->isDerivedFrom(View3DInventor::getClassTypeId())) {
-                        static_cast<View3DInventor*>(mdi)->setCursor(Qt::ForbiddenCursor);
-                    }
+                    mdi->setOverrideCursor(Qt::ForbiddenCursor);
                 }
                 QApplication::beep();
                 return false;
@@ -988,15 +979,17 @@ PyMethodDef SelectionSingleton::Methods[] = {
      "document is given the selection of the active document is returned.\n"
      "The SelectionObjects contain a variety of information about the selection,\n"
      "e.g. sub-element names."},
+    {"getSelectionObject",  (PyCFunction) SelectionSingleton::sGetSelectionObject, 1,
+     "getSelectionObject(doc,obj,sub,(x,y,z)) -- Return a SelectionObject"},
     {"addObserver",         (PyCFunction) SelectionSingleton::sAddSelObserver, 1,
      "addObserver(Object) -- Install an observer\n"},
     {"removeObserver",      (PyCFunction) SelectionSingleton::sRemSelObserver, 1,
      "removeObserver(Object) -- Uninstall an observer\n"},
     {"addSelectionGate",      (PyCFunction) SelectionSingleton::sAddSelectionGate, 1,
     "addSelectionGate(String) -- activate the selection gate.\n"
-    "The selection gate will prohibit all selections which do not match the\n"
+    "The selection gate will prohibit all selections which do not match\n"
     "the given selection filter string. Examples strings are:\n"
-    "'SELECT Part::Feature SUB Edge',\n"
+    "'SELECT Part::Feature SUBELEMENT Edge',\n"
     "'SELECT Robot::RobotObject'\n"},
     {"removeSelectionGate",      (PyCFunction) SelectionSingleton::sRemoveSelectionGate, 1,
      "removeSelectionGate() -- remove the active slection gate\n"},
@@ -1119,6 +1112,41 @@ PyObject *SelectionSingleton::sGetSelectionEx(PyObject * /*self*/, PyObject *arg
         return Py::new_reference_to(list);
     }
     catch (Py::Exception&) {
+        return 0;
+    }
+}
+
+PyObject *SelectionSingleton::sGetSelectionObject(PyObject * /*self*/, PyObject *args, PyObject * /*kwd*/)
+{
+    char *docName, *objName, *subName;
+    PyObject* tuple=0;
+    if (!PyArg_ParseTuple(args, "sss|O!", &docName, &objName, &subName,
+                                          &PyTuple_Type, &tuple))
+        return NULL;
+
+    try {
+        SelectionObject selObj;
+        selObj.DocName  = docName;
+        selObj.FeatName = objName;
+        std::string sub = subName;
+        if (!sub.empty()) {
+            selObj.SubNames.push_back(sub);
+            if (tuple) {
+                Py::Tuple t(tuple);
+                double x = (double)Py::Float(t.getItem(0));
+                double y = (double)Py::Float(t.getItem(1));
+                double z = (double)Py::Float(t.getItem(2));
+                selObj.SelPoses.push_back(Base::Vector3d(x,y,z));
+            }
+        }
+
+        return selObj.getPyObject();
+    }
+    catch (const Py::Exception&) {
+        return 0;
+    }
+    catch (const Base::Exception& e) {
+        PyErr_SetString(PyExc_Exception, e.what());
         return 0;
     }
 }
