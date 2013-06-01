@@ -37,7 +37,7 @@
 #include <Gui/SoFCBoundingBox.h>
 #include <Gui/View3DInventor.h>
 
-#include "../App/CamPartsList.h"
+#include "../App/Features/CamPartsList.h"
 
 #include "TaskDialog/TaskDlgEditCamPartsList.h"
 #include "ViewProviderCamPartsList.h"

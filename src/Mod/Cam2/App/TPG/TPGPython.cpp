@@ -27,7 +27,7 @@
 
 #include <QString>
 
-#include "../TPGFeature.h"
+#include "../Features/TPGFeature.h"
 #include "TPGPython.h"
 #include "PyToolPath.h"
 

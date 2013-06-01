@@ -25,7 +25,7 @@
 #ifndef _PreComp_
 #endif
 
-#include <Mod/Cam2/App/GCodeFeature.h>
+#include <Mod/Cam2/App/Features/GCodeFeature.h>
 #include "ViewProviderGCodeFeature.h"
 
 using namespace CamGui;

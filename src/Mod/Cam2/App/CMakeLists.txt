@@ -32,20 +32,20 @@ add_subdirectory(Plugins)
 # generate_from_xml(CamPy)
 
 SET(Features_SRCS
-    CamPartsList.cpp
-    CamPartsList.h
-    Feature.cpp
-    Feature.h
-    GCodeFeature.cpp
-    GCodeFeature.h
-    StockGeometry.cpp
-    StockGeometry.h
-    TPGFeature.cpp
-    TPGFeature.h
-    TPGList.cpp
-    TPGList.h
-    CamFeature.cpp
-    CamFeature.h
+    Features/CamFeature.cpp
+    Features/CamFeature.h
+    # Features/CamPartsList.cpp
+    # Features/CamPartsList.h
+    Features/Feature.cpp
+    Features/Feature.h
+    # Features/GCodeFeature.cpp
+    # Features/GCodeFeature.h
+    # Features/StockGeometry.cpp
+    # Features/StockGeometry.h
+    Features/TPGFeature.cpp
+    Features/TPGFeature.h
+    # Features/TPGList.cpp
+    # Features/TPGList.h
 )
 SOURCE_GROUP("Features" FILES ${Features_SRCS})
 

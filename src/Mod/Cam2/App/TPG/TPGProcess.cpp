@@ -25,7 +25,7 @@
 #ifndef _PreComp_
 #endif
 
-#include "../TPGFeature.h"
+#include "../Features/TPGFeature.h"
 #include "TPGProcess.h"
 
 using namespace Cam;

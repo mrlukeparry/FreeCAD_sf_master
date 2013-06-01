@@ -40,7 +40,7 @@
 
 
 //===========================================================================
-// CmdCamCreateCamFeature
+// CmdCamFeature
 //===========================================================================
 DEF_STD_CMD_A(CmdCamFeature);
 
@@ -73,6 +73,38 @@ bool CmdCamFeature::isActive(void)
 }
 
 //===========================================================================
+// CmdCamTPGFeature
+//===========================================================================
+DEF_STD_CMD_A(CmdCamTPGFeature);
+
+CmdCamTPGFeature::CmdCamTPGFeature()
+  :Command("Cam_TPGFeature")
+{
+    sAppModule    = "Cam";
+    sGroup        = QT_TR_NOOP("Cam");
+    sMenuText     = QT_TR_NOOP("Create a new TPG Feature");
+    sToolTipText  = QT_TR_NOOP("Create a new TPG Feature");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Cam_TPGFeature";
+}
+
+void CmdCamTPGFeature::activated(int iMsg)
+{
+    openCommand("New TPG Feature");
+	if (CamGui::UIManager().TPGFeature()) {
+    	commitCommand();
+	}
+	else
+		abortCommand();
+}
+
+bool CmdCamTPGFeature::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+//===========================================================================
 // Common Code
 //===========================================================================
 /**
@@ -82,4 +114,5 @@ void CreateCamCommands()
 {
     Gui::CommandManager &rcCmdMgr = Gui::Application::Instance->commandManager();
     rcCmdMgr.addCommand(new CmdCamFeature());
+    rcCmdMgr.addCommand(new CmdCamTPGFeature());
 }

@@ -40,7 +40,7 @@
 
 #include "TaskDialog/TaskDlgEditCamFeature.h"
 #include "TaskDialog/TaskDlgEditStockGeometry.h"
-#include "../App/StockGeometry.h"
+#include "../App/Features/StockGeometry.h"
 #include "ViewProviderStockGeometry.h"
 
 using namespace CamGui;

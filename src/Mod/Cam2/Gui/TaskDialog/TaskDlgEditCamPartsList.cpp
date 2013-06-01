@@ -29,7 +29,7 @@
 #include <Gui/Control.h>
 #include <Gui/Document.h>
 
-#include "../../App/CamPartsList.h"
+#include "../../App/Features/CamPartsList.h"
 #include "TaskDlgEditCamFeature.h"
 #include "TaskDlgEditCamPartsList.h"
 #include "../ViewProviderCamPartsList.h"

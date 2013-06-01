@@ -36,9 +36,9 @@ qt4_add_resources(CamGui_SRCS Resources/Cam.qrc)
 
 set(CamGui_MOC_HDRS
     TaskDialog/TaskDlgEditCamFeature.h
-    TaskDialog/TaskDlgEditCamPartsList.h
-    TaskDialog/TaskDlgEditStockGeometry.h
-    TaskDialog/TaskDlgEditTPGFeature.h
+    # TaskDialog/TaskDlgEditCamPartsList.h
+    # TaskDialog/TaskDlgEditStockGeometry.h
+    # TaskDialog/TaskDlgEditTPGFeature.h
     CamProjectDockWindow.h
     ToolPathDockWindow.h
     TPGLibraryDockWindow.h    
@@ -63,26 +63,26 @@ SET(CamGui_SRCS
     PreCompiled.h
     TaskDialog/TaskDlgEditCamFeature.cpp
     TaskDialog/TaskDlgEditCamFeature.h
-    TaskDialog/TaskDlgEditCamPartsList.cpp
-    TaskDialog/TaskDlgEditCamPartsList.h
-    TaskDialog/TaskDlgEditStockGeometry.cpp
-    TaskDialog/TaskDlgEditStockGeometry.h
+    # TaskDialog/TaskDlgEditCamPartsList.cpp
+    # TaskDialog/TaskDlgEditCamPartsList.h
+    # TaskDialog/TaskDlgEditStockGeometry.cpp
+    # TaskDialog/TaskDlgEditStockGeometry.h
     TaskDialog/TaskDlgEditTPGFeature.cpp
     TaskDialog/TaskDlgEditTPGFeature.h
     Workbench.cpp
     Workbench.h
     ViewProviderCamFeature.cpp
     ViewProviderCamFeature.h
-    ViewProviderCamPartsList.cpp
-    ViewProviderCamPartsList.h
-    ViewProviderGCodeFeature.cpp
-    ViewProviderGCodeFeature.h
-    ViewProviderStockGeometry.cpp
-    ViewProviderStockGeometry.h
+    # ViewProviderCamPartsList.cpp
+    # ViewProviderCamPartsList.h
+    # ViewProviderGCodeFeature.cpp
+    # ViewProviderGCodeFeature.h
+    # ViewProviderStockGeometry.cpp
+    # ViewProviderStockGeometry.h
     ViewProviderTPGFeature.cpp
     ViewProviderTPGFeature
-    ViewProviderTPGList.cpp
-    ViewProviderTPGList.h
+    # ViewProviderTPGList.cpp
+    # ViewProviderTPGList.h
     CamProjectDockWindow.cpp
     CamProjectDockWindow.h
     CamProjectDockWindowComponents.cpp

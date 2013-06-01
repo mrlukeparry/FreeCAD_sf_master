@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include "../PreCompiled.h"
 #ifndef _PreComp_
 # include <Standard_Failure.hxx>
 # include <TopoDS_Solid.hxx>

@@ -25,7 +25,7 @@
 #ifndef _PreComp_
 #endif
 
-#include <Mod/Cam2/App/TPGList.h>
+#include <Mod/Cam2/App/Features/TPGList.h>
 #include "ViewProviderTPGList.h"
 
 using namespace CamGui;

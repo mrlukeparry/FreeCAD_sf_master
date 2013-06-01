@@ -26,6 +26,7 @@
 #include <QObject>
 #include <QListView>
 
+#include "../App/Features/CamFeature.h"
 #include "../App/TPG/TPGFactory.h"
 #include "../App/TPG/TPG.h"
 #include "TPGListModel.h"
@@ -36,6 +37,8 @@ namespace CamGui {
 /**
  * A class to manage the interactions between the various UI components of the
  * CAM workbench.
+ *
+ * TODO: use Boost Signal/Slots since that is what the main FreeCAD uses.
  */
 class CamGuiExport UIManagerInst : public QObject {
 
@@ -44,6 +47,18 @@ class CamGuiExport UIManagerInst : public QObject {
 protected:
   static UIManagerInst* _pcSingleton;
 
+  QString tpgLibrarySelectedID;
+
+  /**
+   * Creates a new CamFeature and adds it to the document
+   */
+  Cam::CamFeature *makeCamFeature(App::Document* Doc);
+
+  /**
+   * Creates a new TPGFeature and adds it to the CamFeature
+   */
+  Cam::TPGFeature *makeTPGFeature(App::Document* Doc, Cam::CamFeature *CamFeature, Cam::TPGDescriptor *tpgDescriptor);
+
 public:
   UIManagerInst();
   virtual ~UIManagerInst();
@@ -51,6 +66,19 @@ public:
   // singleton manipators
   static UIManagerInst& instance(void);
   static void destruct (void);
+
+  // Implementations for GUI Commands
+  bool CamFeature();
+  /**
+   * Used by the CamTPGFeature GUI Command to do the work required to add a TPGFeature
+   */
+  bool TPGFeature();
+
+  /**
+   * Change the TPG Library selection.  This controls which TPG will be created
+   * when the TPGFeature Gui Command is activated.
+   */
+  void setTPGLibrarySelection(Cam::TPGDescriptor *tpgDescriptor);
 
 public Q_SLOTS:
   void addTPG(Cam::TPGDescriptor *tpg);

@@ -132,17 +132,22 @@ void CamFeature::initialise()
 //    doc->recompute();
 }
 
-void CamFeature::onDelete(const App::DocumentObject &docObj)
-{
+void CamFeature::onDelete(const App::DocumentObject &docObj) {
+
     // If deleted object matches this cam feature, proceed to delete children
-    if(std::strcmp(docObj.getNameInDocument(), getNameInDocument()) == 0)
-    {
+	const char *myName = getNameInDocument();
+    if(myName != 0 && std::strcmp(docObj.getNameInDocument(), myName) == 0) {
         App::Document *pcDoc = getDocument();
-        // Automatically remove children linked to this CamFeature
-//        pcDoc->remObject(getGCodeFeature()->getNameInDocument());
-//        pcDoc->remObject(getPartsContainer()->getNameInDocument());
-//        pcDoc->remObject(getStockGeometry()->getNameInDocument());
-//        pcDoc->remObject(getTPGContainer()->getNameInDocument());
+
+        // remove the children TPG's
+        const std::vector<App::DocumentObject *> vals = TPGList.getValues();
+		for (int i = 0; i < vals.size(); i++)
+			pcDoc->remObject(vals[i]->getNameInDocument());
+
+        // remove the children Machine code objects's
+		const std::vector<App::DocumentObject *> vals2 = MachineProgramList.getValues();
+		for (int i = 0; i < vals2.size(); i++)
+			pcDoc->remObject(vals2[i]->getNameInDocument());
     }
 }
 

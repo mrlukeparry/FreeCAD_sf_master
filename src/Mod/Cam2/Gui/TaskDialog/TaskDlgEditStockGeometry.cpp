@@ -30,7 +30,7 @@
 #include <Gui/Document.h>
 #include <Gui/SelectionFilter.h>
 
-#include "../../App/StockGeometry.h"
+#include "../../App/Features/StockGeometry.h"
 #include "../ViewProviderStockGeometry.h"
 #include "TaskDlgEditStockGeometry.h"
 
