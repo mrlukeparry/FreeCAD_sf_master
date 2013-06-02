@@ -74,15 +74,15 @@ public:
 
     /// Methods for handling the TPG
 //    bool loadTPG(TPGDescriptor *tpgDescriptor);
-//    TPG * getTPG() const { return (this->hasTPG()) ? tpg : NULL ; }
+    TPG * getTPG();
 
     /// Convenience method for get the current TPG Status (Undefined if TPG not loaded)
 //    TPG::State getTPGStatus();
-//    bool hasTPG() const { return (tpg != NULL); }
+    bool hasTPG() const { return (tpg != NULL); }
 //    bool hasRunningTPG();
 
 protected:
-//    TPG *tpg;
+    TPG *tpg;
 //    Base::BoundBox3d inputBBox;
 //    std::vector<Part::Feature *> inputGeometry;
     

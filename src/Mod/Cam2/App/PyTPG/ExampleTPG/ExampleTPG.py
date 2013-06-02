@@ -87,6 +87,8 @@ class ExampleTPG(PyTPGBase):
         action is None, then this will return a dictionary of all actions 
         settings.  Each setting will be in format of (<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>)
         NOTE: the resulting dictionary or list should be considered read-only!'''
+        if action == 'default':
+            action = 'rough'
         if action:
             if action in self.settings:
                 return self.settings[action]

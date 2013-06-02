@@ -128,12 +128,16 @@ bool CamProjectDockWindow::saveSettings()
 /**
  * Slot that is called from the UIManager when the selection is changed.
  */
-void CamProjectDockWindow::updatedTPGSelection(Cam::TPG* tpg)
-{
-    QString action = "default";
-    Cam::TPGSettings *settings = tpg->getSettings(action);
-    if (!this->editSettings(settings))
-        Base::Console().Error("Failed to edit settings for '%s'\n", tpg->getName().toAscii().constData());
+void CamProjectDockWindow::updatedTPGSelection(Cam::TPG* tpg) {
+
+    if (tpg != NULL) {
+        QString action = "default";
+		Cam::TPGSettings *settings = tpg->getSettings(action);
+		if (!this->editSettings(settings))
+			Base::Console().Error("Failed to edit settings for '%s'\n", tpg->getName().toAscii().constData());
+    }
+    else
+    	this->editSettings(NULL);
 }
 
 

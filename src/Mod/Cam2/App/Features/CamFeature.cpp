@@ -86,7 +86,11 @@ void CamFeature::onSettingDocument()
 {
     //Create a signal to observe slot if this item is deleted
     delObjConnection = getDocument()->signalDeletedObject.connect(boost::bind(&Cam::CamFeature::onDelete, this, _1));
+
+    //test
+
 }
+
 
 /**
  * Initialise creates the basic Cam Feature tree with all the required sub features

@@ -38,6 +38,8 @@ TPGFeature::TPGFeature()// : tpg(NULL)
 {
 //    ADD_PROPERTY_TYPE(ExternalGeometry,(0, 0), "TPG Feature", (App::PropertyType)(App::Prop_None) , "External geometry");
     ADD_PROPERTY_TYPE(PluginId,        (""),   "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
+
+    tpg = NULL;
 }
 
 //// TODO not sure if this is actually needed anymore.
@@ -117,6 +119,16 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
     Base::Console().Log("Running Feature \n");
 //    this->run();
     return App::DocumentObject::StdReturn;
+}
+
+/**
+ * Get a reference to the TPG the implements this TPG Feature.
+ * Will load the TPG instance if not set already.
+ */
+TPG * TPGFeature::getTPG() {
+	if (tpg == NULL)
+		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()));
+	return tpg;
 }
 
 void TPGFeature::onDocumentRestored()

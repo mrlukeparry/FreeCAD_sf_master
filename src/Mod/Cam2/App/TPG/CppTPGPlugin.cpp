@@ -111,7 +111,8 @@ void CppTPGPlugin::release() {
  */
 bool CppTPGPlugin::isOpen() {
     if (library == NULL) {
-        library = dlopen(filename.toAscii(), RTLD_NOW);
+    	const char* filen = filename.toAscii().constData();
+        library = dlopen(filen, RTLD_NOW);
         if (!library) {
             error = QString::fromAscii(dlerror());
             return false;

@@ -26,10 +26,19 @@
 #include <QObject>
 #include <QListView>
 
+#include <boost/bind.hpp>
+#include <boost/signals.hpp>
+
+#include <Gui/Tree.h>
+#include <Gui/ViewProviderDocumentObject.h>
+
 #include "../App/Features/CamFeature.h"
 #include "../App/TPG/TPGFactory.h"
 #include "../App/TPG/TPG.h"
 #include "TPGListModel.h"
+
+
+typedef boost::signals::connection Connection;
 
 namespace CamGui {
 
@@ -40,7 +49,9 @@ namespace CamGui {
  *
  * TODO: use Boost Signal/Slots since that is what the main FreeCAD uses.
  */
-class CamGuiExport UIManagerInst : public QObject {
+class CamGuiExport UIManagerInst : public QObject,
+								   public Gui::SelectionSingleton::ObserverType
+{
 
   Q_OBJECT
 
@@ -48,6 +59,8 @@ protected:
   static UIManagerInst* _pcSingleton;
 
   QString tpgLibrarySelectedID;
+
+  Connection highlightObjectConnection;
 
   /**
    * Creates a new CamFeature and adds it to the document
@@ -58,6 +71,11 @@ protected:
    * Creates a new TPGFeature and adds it to the CamFeature
    */
   Cam::TPGFeature *makeTPGFeature(App::Document* Doc, Cam::CamFeature *CamFeature, Cam::TPGDescriptor *tpgDescriptor);
+
+  /**
+   * Performs the work to analyse the current selection and send setting update signal
+   */
+  void updateCamProjectSelection(const char* pDocName);
 
 public:
   UIManagerInst();
@@ -73,12 +91,20 @@ public:
    * Used by the CamTPGFeature GUI Command to do the work required to add a TPGFeature
    */
   bool TPGFeature();
+  bool WatchHighlight();
 
   /**
    * Change the TPG Library selection.  This controls which TPG will be created
    * when the TPGFeature Gui Command is activated.
    */
   void setTPGLibrarySelection(Cam::TPGDescriptor *tpgDescriptor);
+
+  //SLOTS (boost)
+//  void onHighlightObject(const Gui::ViewProviderDocumentObject&, const Gui::HighlightMode&, bool flag);
+
+  /// Receive selection change events so we can update the Cam settings Dock window
+  virtual void OnChange(Gui::SelectionSingleton::SubjectType &rCaller,
+                        Gui::SelectionSingleton::MessageType Reason);
 
 public Q_SLOTS:
   void addTPG(Cam::TPGDescriptor *tpg);

@@ -72,6 +72,7 @@ Workbench::Workbench()
 
 Workbench::~Workbench()
 {
+	UIManagerInst::destruct();
 }
 
 Gui::MenuItem* Workbench::setupMenuBar() const

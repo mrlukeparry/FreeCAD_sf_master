@@ -105,6 +105,33 @@ bool CmdCamTPGFeature::isActive(void)
 }
 
 //===========================================================================
+// CmdCamTPGFeature
+//===========================================================================
+DEF_STD_CMD_A(CmdCamWatchHighlight);
+
+CmdCamWatchHighlight::CmdCamWatchHighlight()
+  :Command("Cam_WatchHighlight")
+{
+    sAppModule    = "Cam";
+    sGroup        = QT_TR_NOOP("Cam");
+    sMenuText     = QT_TR_NOOP("WatchHighlight");
+    sToolTipText  = QT_TR_NOOP("WatchHighlight");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Cam_WatchHighlight";
+}
+
+void CmdCamWatchHighlight::activated(int iMsg)
+{
+    CamGui::UIManager().WatchHighlight();
+}
+
+bool CmdCamWatchHighlight::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+//===========================================================================
 // Common Code
 //===========================================================================
 /**
@@ -115,4 +142,5 @@ void CreateCamCommands()
     Gui::CommandManager &rcCmdMgr = Gui::Application::Instance->commandManager();
     rcCmdMgr.addCommand(new CmdCamFeature());
     rcCmdMgr.addCommand(new CmdCamTPGFeature());
+    rcCmdMgr.addCommand(new CmdCamWatchHighlight());
 }

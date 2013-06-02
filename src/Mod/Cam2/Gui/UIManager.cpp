@@ -25,6 +25,9 @@
 #include <Python.h>
 #endif
 
+#include <vector>
+#include <set>
+
 #include <QMessageBox>
 
 #include <App/Application.h>
@@ -39,6 +42,7 @@
 #include <Gui/Document.h>
 #include <Gui/DockWindowManager.h>
 #include <Gui/MainWindow.h>
+#include <Gui/Selection.h>
 #include <Gui/SelectionFilter.h>
 
 #include "../App/CamManager.h"
@@ -74,9 +78,13 @@ UIManagerInst::UIManagerInst() {
 	// receive tpg running state changes from Cam layer.
 	QObject::connect(&Cam::CamManager(), SIGNAL(updatedTPGState(QString, Cam::TPG::State, int)),
 			this, SLOT(updatedTPGState(QString, Cam::TPG::State, int)));
+
+    Gui::Selection().Attach(this);
 }
 
 UIManagerInst::~UIManagerInst() {
+
+    Gui::Selection().Detach(this);
 }
 
 
@@ -154,6 +162,82 @@ bool UIManagerInst::TPGFeature() {
 
 	return true;
 }
+
+bool UIManagerInst::WatchHighlight() {
+
+//	Base::Console().Message("WatchHighlight: start\n");
+//	Gui::Document *guiDoc = Gui::Command::getGuiApplication()->activeDocument();
+//	Base::Console().Message("WatchHighlight: mid\n");
+//	highlightObjectConnection = guiDoc->signalHighlightObject.connect(boost::bind(&CamGui::UIManagerInst::onHighlightObject, this, _1, _2, _3));
+//	Base::Console().Message("WatchHighlight: end\n");
+	return true;
+}
+
+//test
+//delObjConnection = getDocument()->signalDeletedObject.connect(boost::bind(&Cam::CamFeature::onDelete, this, _1));
+
+
+//void UIManagerInst::onHighlightObject(const Gui::ViewProviderDocumentObject& docObjVP,
+//		const Gui::HighlightMode& highlightMode, bool flag) {
+//
+//	if (flag)
+//		Base::Console().Message("Highlight Flag on");
+//	else
+//		Base::Console().Message("Highlight Flag off");
+//}
+
+/**
+ * Receive selection events so we can update the settings shown on the Cam Settings Dock Window
+ */
+void UIManagerInst::OnChange(Gui::SelectionSingleton::SubjectType &rCaller,
+                             Gui::SelectionSingleton::MessageType Reason) {
+
+    if (Reason.Type == Gui::SelectionChanges::AddSelection) {
+    	Q_EMIT updatedTPGSelection(NULL);
+    }
+    else if (Reason.Type == Gui::SelectionChanges::SetSelection) {
+    	updateCamProjectSelection(Reason.pDocName);
+    }
+    else if (Reason.Type == Gui::SelectionChanges::ClrSelection) {
+    	Q_EMIT updatedTPGSelection(NULL);
+    }
+    else if (Reason.Type == Gui::SelectionChanges::RmvSelection) {
+    	updateCamProjectSelection(Reason.pDocName);
+    }
+}
+
+/**
+ * Performs the work to analyse the current selection and send setting update signal
+ */
+void UIManagerInst::updateCamProjectSelection(const char* pDocName) {
+
+    // make unique list of selected objects
+    std::vector<Gui::SelectionSingleton::SelObj> objs = Gui::Selection().getSelection(pDocName);
+    std::set<App::DocumentObject*> selDocObjs;
+    for (std::vector<Gui::SelectionSingleton::SelObj>::iterator it = objs.begin(); it != objs.end(); ++it)
+    	selDocObjs.insert(it->pObject);
+
+    // display settings only if single TPG selection
+    if (selDocObjs.size() == 1)
+    {
+    	App::DocumentObject *docObj = *selDocObjs.begin();
+    	if (docObj->isDerivedFrom(Cam::TPGFeature::getClassTypeId()))
+    	{
+			Cam::TPGFeature *tpgFeature = dynamic_cast<Cam::TPGFeature *>(docObj);
+			if (tpgFeature) {
+				Cam::TPG *tpg = tpgFeature->getTPG();
+				Q_EMIT updatedTPGSelection(tpg);
+			}
+            else
+            	Q_EMIT updatedTPGSelection(NULL);
+    	}
+        else
+        	Q_EMIT updatedTPGSelection(NULL);
+    }
+    else
+    	Q_EMIT updatedTPGSelection(NULL);
+}
+
 
 // ----- Selection control -----
 
