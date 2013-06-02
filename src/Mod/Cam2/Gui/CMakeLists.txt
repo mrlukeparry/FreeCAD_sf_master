@@ -38,7 +38,7 @@ set(CamGui_MOC_HDRS
     TaskDialog/TaskDlgEditCamFeature.h
     # TaskDialog/TaskDlgEditCamPartsList.h
     # TaskDialog/TaskDlgEditStockGeometry.h
-    # TaskDialog/TaskDlgEditTPGFeature.h
+    TaskDialog/TaskDlgEditTPGFeature.h
     CamProjectDockWindow.h
     ToolPathDockWindow.h
     TPGLibraryDockWindow.h    
