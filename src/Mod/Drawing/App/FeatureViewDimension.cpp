@@ -172,7 +172,74 @@ double FeatureViewDimension::getValue() const
                 throw Base::Exception("Cannot use z direction for projection type");
             }
         } else if(strcmp(projType, "Angle") == 0){
-            return measurement->angle();
+
+            // Must project lines to 2D so cannot use measurement framework this time
+            //Relcalculate the measurement based on references stored.
+            const std::vector<App::DocumentObject*> &objects = References.getValues();
+            const std::vector<std::string> &subElements = References.getSubValues();
+
+            std::vector<App::DocumentObject*>::const_iterator obj = objects.begin();
+            std::vector<std::string>::const_iterator subEl = subElements.begin();
+
+            if(subElements.size() != 2) {
+                throw Base::Exception("Two references required for angle measurement");
+            }
+
+            DrawingGeometry::BaseGeom * projGeoms[2];
+            for(int i = 0; obj != objects.end(); ++obj, ++subEl, i++) {
+                Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(*obj);
+
+                int idx;
+                if((*subEl).substr(0,4) == "Edge") {
+                    idx = std::atoi((*subEl).substr(4,4000).c_str());
+                }
+
+                projGeoms[i] = viewPart->getCompleteEdge(idx);
+            }
+
+            // Only can find angles with straight line edges
+            if(projGeoms[0]->geomType == DrawingGeometry::GENERIC &&
+               projGeoms[1]->geomType == DrawingGeometry::GENERIC) {
+                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(projGeoms[0]);
+                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(projGeoms[1]);
+
+                Base::Vector3d p1S(gen1->points.at(0).fX, gen1->points.at(0).fY, 0.);
+                Base::Vector3d p1E(gen1->points.at(1).fX, gen1->points.at(1).fY, 0.);
+
+                Base::Vector3d p2S(gen2->points.at(0).fX, gen2->points.at(0).fY, 0.);
+                Base::Vector3d p2E(gen2->points.at(1).fX, gen2->points.at(1).fY, 0.);
+
+                Base::Vector3d dir1 = p1E - p1S;
+                Base::Vector3d dir2 = p2E - p2S;
+
+                // Line Intersetion (taken from ViewProviderSketch.cpp)
+                double det = dir1.x*dir2.y - dir1.y*dir2.x;
+                if ((det > 0 ? det : -det) < 1e-10)
+                    throw Base::Exception("Invalid selection - Det = 0");
+
+                double c1 = dir1.y*gen1->points.at(0).fX - dir1.x*gen1->points.at(0).fY;
+                double c2 = dir2.y*gen2->points.at(1).fX - dir2.x*gen2->points.at(1).fY;
+                double x = (dir1.x*c2 - dir2.x*c1)/det;
+                double y = (dir1.y*c2 - dir2.y*c1)/det;
+
+                // Intersection point
+                Base::Vector3d p0 = Base::Vector3d(x,y,0);
+
+                Base::Vector3d lPos((double) X.getValue(), (double) Y.getValue(), 0.);
+                Base::Vector3d delta = lPos - p0;
+
+                double angle = lPos.GetAngle(delta);
+
+                // Create vectors point towards intersection always
+                Base::Vector3d a = -p0, b = -p0;
+                a += ((p1S - p0).Length() < FLT_EPSILON) ? p1E : p1S;
+                b += ((p2S - p0).Length() < FLT_EPSILON) ? p2E : p2S;
+
+                double angle2 = atan2( a.x*b.y - a.y*b.x, a.x*b.x + a.y*b.y );
+                return angle2 * 180. / M_PI;
+            } else {
+                throw Base::Exception("Invalid selection");
+            }
         }
     }
 }

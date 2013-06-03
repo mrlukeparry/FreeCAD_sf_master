@@ -424,8 +424,9 @@ void CmdDrawingNewDimension::activated(int iMsg)
                 Base::Vector2D lin2 = gen2->points.at(1) - gen2->points.at(0);
 
                 // Cross product
-                double xprod = lin1.fX * lin2.fY - lin1.fY * lin2.fX;
+                double xprod = fabs(lin1.fX * lin2.fY - lin1.fY * lin2.fX);
 
+                Base::Console().Log("xprod: %f\n", xprod);
                 if(xprod < FLT_EPSILON) {
                     if(fabs(lin1.fX) < FLT_EPSILON && fabs(lin2.fX) < FLT_EPSILON)
                         dimType = "DistanceX";
