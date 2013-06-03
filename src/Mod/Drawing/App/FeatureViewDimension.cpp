@@ -48,7 +48,7 @@ const char* FeatureViewDimension::TypeEnums[]= {"Distance",
                                                 "DistanceZ",
                                                 "Radius",
                                                 "Diameter",
-//                                                 "Angle",
+                                                "Angle",
                                                 NULL};
 
 const char* FeatureViewDimension::ProjTypeEnums[]= {"True",
@@ -79,7 +79,10 @@ FeatureViewDimension::~FeatureViewDimension()
 short FeatureViewDimension::mustExecute() const
 {
     // If Tolerance Property is touched
-    if(References.isTouched())
+    if(References.isTouched() ||
+       Type.isTouched() ||
+       ProjectionType.isTouched()
+    )
         return 1;
     else
         return 0;
@@ -142,7 +145,7 @@ double FeatureViewDimension::getValue() const
         } else if(strcmp(projType, "Diameter") == 0){
             return measurement->radius() * 2;
         } else if(strcmp(projType, "Angle") == 0){
-            return measurement->angle();
+            throw Base::Exception("Cannot measure the true angle");
         }
         throw Base::Exception("Dimension Value couldn't be calculated");
     } else {
@@ -151,7 +154,7 @@ double FeatureViewDimension::getValue() const
             strcmp(projType, "DistanceX") == 0 ||
             strcmp(projType, "DistanceY") == 0 ||
             strcmp(projType, "DistanceZ") == 0) {
-            
+
             Base::Vector3d delta = measurement->delta();
             Base::Vector3f projDir = ProjDirection.getValue();
             Base::Vector3d projDim = delta.ProjToPlane(Base::Vector3d(0.,0.,0.), Base::Vector3d(projDir.x, projDir.y,
@@ -168,6 +171,8 @@ double FeatureViewDimension::getValue() const
             } else if(strcmp(projType, "DistanceZ") == 0) {
                 throw Base::Exception("Cannot use z direction for projection type");
             }
+        } else if(strcmp(projType, "Angle") == 0){
+            return measurement->angle();
         }
     }
 }

@@ -323,13 +323,13 @@ void CmdDrawingNewDimension::activated(int iMsg)
     }
 
     Drawing::FeatureViewPart * Obj = dynamic_cast<Drawing::FeatureViewPart *>(selection[0].getObject());
-    
+
     if(!Obj) {
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong sized selection"),
                              QObject::tr("Incorrect selection"));
                              return;
     }
-    
+
     App::DocumentObject *docObj = Obj->Source.getValue();
 
     // get the needed lists and objects
@@ -350,11 +350,12 @@ void CmdDrawingNewDimension::activated(int iMsg)
     Drawing::FeatureViewDimension *dim = 0;
     std::string support = selection[0].getAsPropertyLinkSubString();
     std::string FeatName = getUniqueObjectName("Dimension");
+
     if (SubNames.size() == 1) {
         // Selected edge constraint
         if (SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge") {
             int GeoId = std::atoi(SubNames[0].substr(4,4000).c_str());
-            
+
             DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
 
             std::string dimMode = "Distance";
@@ -370,18 +371,6 @@ void CmdDrawingNewDimension::activated(int iMsg)
             doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewDimension','%s')",FeatName.c_str());
             doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str(), dimMode.c_str());
 
-            // Check if the part is an orthographic view;
-            Drawing::FeatureOrthoView *orthoView = dynamic_cast<Drawing::FeatureOrthoView *>(Obj);
-            
-            dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
-            
-            if(orthoView) {
-                // Set the dimension to projected type
-                doCommand(Doc,"App.activeDocument().%s.ProjectionType = 'Projected'",FeatName.c_str());
-                dim->ProjectionType.StatusBits.set(2); // Set the projection type to read only
-            }
-            
-                
             dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
             dim->References.setValue(Obj, SubNames[0].c_str());
         } else {
@@ -407,6 +396,68 @@ void CmdDrawingNewDimension::activated(int iMsg)
             subs.push_back(SubNames[1]);
             dim->References.setValues(objs, subs);
 
+        } else if(SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge" &&
+                  SubNames[1].size() > 4 && SubNames[1].substr(0,4) == "Edge") {
+            int GeoId1 = std::atoi(SubNames[0].substr(4,4000).c_str());
+            int GeoId2 = std::atoi(SubNames[1].substr(4,4000).c_str());
+
+            // Project the edges
+            Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart * >(Obj);
+            DrawingGeometry::BaseGeom *ed1 = viewPart->getCompleteEdge(GeoId1);
+            DrawingGeometry::BaseGeom *ed2 = viewPart->getCompleteEdge(GeoId2);
+
+            std::string dimType;
+
+            if(ed1->geomType == DrawingGeometry::GENERIC &&
+               ed2->geomType == DrawingGeometry::GENERIC) {
+                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(ed1);
+                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(ed2);
+                if(gen1->points.size() > 2 || gen2->points.size() > 2) {
+                    // Only support straight line edges
+                    QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please select only straight line edges"),
+                                                               QObject::tr("Incorrect selection"));
+                    return;
+                }
+
+                // Construct edges
+                Base::Vector2D lin1 = gen1->points.at(1) - gen1->points.at(0);
+                Base::Vector2D lin2 = gen2->points.at(1) - gen2->points.at(0);
+
+                // Cross product
+                double xprod = lin1.fX * lin2.fY - lin1.fY * lin2.fX;
+
+                if(xprod < FLT_EPSILON) {
+                    if(fabs(lin1.fX) < FLT_EPSILON && fabs(lin2.fX) < FLT_EPSILON)
+                        dimType = "DistanceX";
+                    else if(fabs(lin1.fY) < FLT_EPSILON && fabs(lin2.fY) < FLT_EPSILON)
+                        dimType = "DistanceY";
+                    else
+                        dimType = "Distance";
+                } else {
+                    // Angle Measurement
+                    dimType = "Angle";
+                }
+
+            } else {
+                // Only support straight line edges
+                QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please provide a valid selection: Only straight line edges can be currently used"),
+                                                           QObject::tr("Incorrect selection"));
+                return;
+            }
+
+            openCommand("Create Dimension");
+            doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewDimension','%s')",FeatName.c_str());
+            doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str(), dimType.c_str());
+
+            dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
+            std::vector<App::DocumentObject *> objs;
+            objs.push_back(Obj);
+            objs.push_back(Obj);
+            std::vector<std::string> subs;
+            subs.push_back(SubNames[0]);
+            subs.push_back(SubNames[1]);
+            dim->References.setValues(objs, subs);
+
         } else {
 
             QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please provide a valid selection"),
@@ -415,10 +466,17 @@ void CmdDrawingNewDimension::activated(int iMsg)
         }
     }
 
+    // Check if the part is an orthographic view;
+    Drawing::FeatureOrthoView *orthoView = dynamic_cast<Drawing::FeatureOrthoView *>(Obj);
+    if(orthoView) {
+        // Set the dimension to projected type
+        doCommand(Doc,"App.activeDocument().%s.ProjectionType = 'Projected'",FeatName.c_str());
+        dim->ProjectionType.StatusBits.set(2); // Set the projection type to read only
+    }
+
+    dim->execute();
 //     App::DocumentObject *dimObj = this->getDocument()->addObject("Drawing::FeatureViewDimension", getUniqueObjectName("Dimension").c_str());
 //     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(dimObj);
-
-
 
 //     doCommand(Doc,"App.activeDocument().%s.References = %s",FeatName.c_str(), support.c_str());
 

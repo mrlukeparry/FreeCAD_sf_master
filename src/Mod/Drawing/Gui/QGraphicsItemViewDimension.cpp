@@ -317,14 +317,18 @@ void QGraphicsItemViewDimension::draw()
     }
 
     QString str = lbl->toPlainText();
+    Base::Vector3d labelPos(lbl->X(), lbl->Y(), 0);
 
     //Relcalculate the measurement based on references stored.
     const std::vector<App::DocumentObject*> &objects = dim->References.getValues();
     const std::vector<std::string> &SubNames         = dim->References.getSubValues();
 
-    if(strcmp(dim->Type.getValueAsString(), "Distance") == 0 ||
-       strcmp(dim->Type.getValueAsString(), "DistanceX") == 0 ||
-       strcmp(dim->Type.getValueAsString(), "DistanceY") == 0) {
+
+    const char *dimType = dim->Type.getValueAsString();
+
+    if(strcmp(dimType, "Distance") == 0 ||
+       strcmp(dimType, "DistanceX") == 0 ||
+       strcmp(dimType, "DistanceY") == 0) {
 
         Base::Vector3d p1, p2;
         if(dim->References.getValues().size() == 1 && SubNames[0].substr(0,4) == "Edge") {
@@ -369,12 +373,12 @@ void QGraphicsItemViewDimension::draw()
             delete v2; v2 = 0;
 
         } else if(dim->References.getValues().size() == 2 &&
-            SubNames[0].substr(0,6) == "Edge" &&
-            SubNames[1].substr(0,6) == "Edge") {
+            SubNames[0].substr(0,4) == "Edge" &&
+            SubNames[1].substr(0,4) == "Edge") {
             // Point to Point Dimension
             const Drawing::FeatureViewPart *refObj = static_cast<const Drawing::FeatureViewPart*>(objects[0]);
-            int idx = std::atoi(SubNames[0].substr(6,4000).c_str());
-            int idx2 = std::atoi(SubNames[1].substr(6,4000).c_str());
+            int idx = std::atoi(SubNames[0].substr(4,4000).c_str());
+            int idx2 = std::atoi(SubNames[1].substr(4,4000).c_str());
 
             // Use the cached value or gather projected edges
             if(projGeom.size() != 2 || !projGeom.at(0) || !projGeom.at(0)) {
@@ -403,6 +407,24 @@ void QGraphicsItemViewDimension::draw()
                 p2S = Base::Vector3d(pnt1.fX, pnt1.fY, 0);
                 p2E = Base::Vector3d(pnt2.fX, pnt2.fY, 0);
 
+                // Calaculate dot product using p1S as reference
+                Base::Vector3d lin1 = p1E - p1S;
+                Base::Vector3d lin2 = p2E - p2S;
+
+                Base::Vector3d labelV1 = labelPos - p1S;
+                Base::Vector3d labelV2 = labelPos - p2S;
+
+                //Sort first edges
+                if(lin1.x * labelV1.x + lin1.y * labelV1.y > 0.)
+                    p1 = p1E;
+                else
+                    p1 = p1S;
+
+                if(lin2.x * labelV2.x + lin2.y * labelV2.y > 0.)
+                    p2 = p2E;
+                else
+                    p2 = p2S;
+
             } else {
                 throw Base::Exception("Invalid reference for dimension type");
             }
@@ -410,11 +432,12 @@ void QGraphicsItemViewDimension::draw()
 
         Base::Vector3d dir, norm;
 
-        if (strcmp(dim->Type.getValueAsString(), "Distance") == 0 ) {
+
+        if (strcmp(dimType, "Distance") == 0 ) {
             dir = (p2-p1);
-        } else if (strcmp(dim->Type.getValueAsString(), "DistanceX") == 0 ) {
+        } else if (strcmp(dimType, "DistanceX") == 0 ) {
             dir = Base::Vector3d ( (p2[0] - p1[0] >= FLT_EPSILON) ? 1 : -1, 0, 0);
-        } else if (strcmp(dim->Type.getValueAsString(), "DistanceY") == 0 ) {
+        } else if (strcmp(dimType, "DistanceY") == 0 ) {
             dir = Base::Vector3d (0, (p2[1] - p1[1] >= FLT_EPSILON) ? 1 : -1, 0);
         }
 
@@ -439,8 +462,6 @@ void QGraphicsItemViewDimension::draw()
         Base::Vector3d p1_ = p1 + norm * normproj12;
 
         Base::Vector3d midpos = (p1_ + p2) / 2;
-
-        Base::Vector3d labelPos(lbl->X(), lbl->Y(), 0);
 
         QFontMetrics fm(lbl->font());
         int w = fm.width(str);
@@ -568,8 +589,8 @@ void QGraphicsItemViewDimension::draw()
           glVertex2f(ar4[0], ar4[1]);
         glEnd();
 #endif
-    } else if(strcmp(dim->Type.getValueAsString(), "Radius") == 0 ||
-              strcmp(dim->Type.getValueAsString(), "Diameter") == 0) {
+    } else if(strcmp(dimType, "Radius") == 0 ||
+              strcmp(dimType, "Diameter") == 0) {
         // Not sure whether to treat radius and diameter as the same
 
         Base::Vector3d p1, p2, dir;
@@ -693,7 +714,7 @@ void QGraphicsItemViewDimension::draw()
 //           glVertex2f(ar1[0], ar1[1]);
 //           glVertex2f(ar2[0], ar2[1]);
 //         glEnd();
-    } else if(strcmp(dim->Type.getValueAsString(), "Angle") == 0) {
+    } else if(strcmp(dimType, "Angle") == 0) {
 
     }
 
