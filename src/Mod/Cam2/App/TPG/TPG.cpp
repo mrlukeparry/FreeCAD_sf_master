@@ -121,7 +121,7 @@ TPGSettings *TPG::getSettings(QString &action)
  *
  * Note: the return will change once the TP Language has been set in stone
  */
-void TPG::run(TPGSettings *settings, QString action="default")
+void TPG::run(TPGSettings *settings, QString action = QString::fromAscii("default"))
 {
 	return;
 }

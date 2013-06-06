@@ -50,6 +50,9 @@ namespace Cam
 class TPGFeature;
 class TPGSettings;
 //class TPG;
+#ifdef ERROR
+	#undef ERROR	// This macro name is included in Windows standard header files so it doesn't compile on Windows builds.
+#endif
 
 class CamExport TPG : public Base::BaseClass
 {

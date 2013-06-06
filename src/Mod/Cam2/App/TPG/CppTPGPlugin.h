@@ -24,6 +24,7 @@
 #define CPPTPGPLUGIN_H_
 
 #include <vector>
+#include <QLibrary>
 
 namespace Cam {
 class CppTPGPlugin;
@@ -46,7 +47,7 @@ public:
 protected:
 
     QString filename; ///< the filename of the shared object file
-    void* library; ///< a pointer to the library when its open
+    QLibrary library; ///< a pointer to the library when its open
     getDescriptors_t* getDescriptorsPtr; ///< pointer to lib function
     getTPG_t* getTPGPtr; ///< pointer to lib function
 //    delDescriptors_t* delDescriptorsPtr; ///< pointer to lib function

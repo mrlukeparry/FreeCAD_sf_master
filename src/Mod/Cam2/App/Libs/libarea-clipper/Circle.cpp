@@ -60,7 +60,7 @@ Circle::Circle(const Point& p0, const Point& p1, const Point& p2)
 bool Circle::PointIsOn(const Point& p, double accuracy)
 {
 	double rp = p.dist(m_c);
-	bool on = fabs(m_radius - rp) < accuracy;
+	bool on = fabs(m_radius - rp) < (2.0 * accuracy);	// Each of the two points can be 'accuracy' away from where it really is.
 	return on;
 }
 
