@@ -99,7 +99,7 @@ class ExampleTPG(PyTPGBase):
         '''Runs the selected action and returns the resulting TP'''
         
         # First tell the UI we have begun processing
-        self.updateProgress('STARTED', 1)
+#        self.updateProgress('STARTED', 1)
         
         # Create a new ToolPath object to store the toolpath
         out = Cam.ToolPath()
@@ -112,21 +112,21 @@ class ExampleTPG(PyTPGBase):
         if action == 'default':
             # Add toolpath primitives
             # TODO: actually use the geometry
-            self.updateProgress('RUNNING', 2)
+#            self.updateProgress('RUNNING', 2)
             out.addToolPath('rapid(0,0,0.1)')
             out.addToolPath('feed(0,0,-0.5)')
             out.addToolPath('feed(1,0,-0.5)')
             out.addToolPath('feed(1,1,-0.5)')
-            self.updateProgress('RUNNING', 55)
+#            self.updateProgress('RUNNING', 55)
             out.addToolPath('feed(0,1,-0.5)')
             out.addToolPath('feed(0,0,-0.5)')
             out.addToolPath('rapid(0,0,0.1)')
-            self.updateProgress('RUNNING', 99)
+#            self.updateProgress('RUNNING', 99)
         elif action == 'test':
             print 'Testing ExampleTPG'
         
         # Let the UI know we are done
-        self.updateProgress('FINISHED', 100)
+#        self.updateProgress('FINISHED', 100)
         
         return out
     # end run()

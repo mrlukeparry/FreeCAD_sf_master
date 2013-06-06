@@ -91,6 +91,14 @@ public:
    * Used by the CamTPGFeature GUI Command to do the work required to add a TPGFeature
    */
   bool TPGFeature();
+  /**
+   * Executes the selected TPG(s) to (re)produce its Tool Path.
+   */
+  bool RunTPG();
+  /**
+   * Debugging Command for testing.
+   * TODO: remove this Command when no long needed
+   */
   bool WatchHighlight();
 
   /**
