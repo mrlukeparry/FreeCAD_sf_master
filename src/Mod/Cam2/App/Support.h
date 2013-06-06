@@ -22,7 +22,7 @@
 
 #ifndef CAM_SUPPORT_H_
 #define CAM_SUPPORT_H_
-#include <qstring.h>
+#include <QString>
 #include <Python.h>
 
 /**

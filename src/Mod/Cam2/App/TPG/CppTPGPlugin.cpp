@@ -27,13 +27,11 @@
 #include "CppTPGPlugin.h"
 #include "CppTPGDescriptorWrapper.h"
 
-#include <dlfcn.h>
-
 namespace Cam {
 
-CppTPGPlugin::CppTPGPlugin(QString filename) {
+CppTPGPlugin::CppTPGPlugin(QString filename) : library(filename)
+{
     this->filename = filename;
-    library = NULL;
     getDescriptorsPtr = NULL;
     getTPGPtr = NULL;
     descriptors = NULL;
@@ -43,8 +41,10 @@ CppTPGPlugin::CppTPGPlugin(QString filename) {
 CppTPGPlugin::~CppTPGPlugin() {
     if (descriptors != NULL)
         descriptors->release();
-    if (library != NULL)
+    if (library.isLoaded())
+	{
         close();
+	}
 }
 
 /**
@@ -110,22 +110,21 @@ void CppTPGPlugin::release() {
  * Makes sure library is open, attempts to open it if it isn't.
  */
 bool CppTPGPlugin::isOpen() {
-    if (library == NULL) {
-    	const char* filen = filename.toAscii().constData();
-        library = dlopen(filen, RTLD_NOW);
-        if (!library) {
-            error = QString::fromAscii(dlerror());
+	if (! library.isLoaded()) {
+        library.load();
+		if (!library.isLoaded()) {
+			error = library.errorString();
             return false;
         }
 
-        // open symbols as well
-        dlerror();// reset errors
-        getDescriptorsPtr = (getDescriptors_t*) dlsym(library, "getDescriptors");
-        const char* dlsym_error = dlerror();
-        if (dlsym_error != NULL) {error = QString::fromAscii(dlsym_error); close(); return false;}
-        getTPGPtr = (getTPG_t*) dlsym(library, "getTPG");
-        dlsym_error = dlerror();
-        if (dlsym_error != NULL) {error = QString::fromAscii(dlsym_error); close(); return false;}
+        // resolve symbols
+		getDescriptorsPtr = (getDescriptors_t*) library.resolve("getDescriptors");
+		if (getDescriptorsPtr == NULL) {error = library.errorString(); close(); return false;}
+		printf("Correctly retrieved function pointers for getDescriptors() from plugin library %s\n", this->filename.toAscii().constData() );	// TODO - remove this when the module is more robust.
+
+		getTPGPtr = (getTPG_t*) library.resolve("getTPG");
+		if (getTPGPtr == NULL) {error = library.errorString(); close(); return false;}
+		printf("Correctly retrieved function pointer for getTPG() from plugin library %s\n", this->filename.toAscii().constData() );	// TODO - remove this when the module is more robust.
     }
     return true;
 }
@@ -134,15 +133,14 @@ bool CppTPGPlugin::isOpen() {
  * Close the library and cleanup pointers
  */
 void CppTPGPlugin::close() {
-    if (library != NULL) {
+	if (library.isLoaded()) {
 //        // clear caches
 //        if (descriptors != NULL)
 //            delDescriptorsPtr(descriptors);
 
-        dlclose(library);
+		library.unload();
 
         // cleanup
-        library = NULL;
         getDescriptorsPtr = NULL;
 //        delDescriptorsPtr = NULL;
         getTPGPtr = NULL;

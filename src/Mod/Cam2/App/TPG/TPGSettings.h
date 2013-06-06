@@ -24,6 +24,7 @@
 #ifndef CAM_TPGSETTINGS_H
 #define CAM_TPGSETTINGS_H
 
+#include "../../App/PreCompiled.h"	// we need the __declspec(dllexport) macros for the Windows build
 #include <vector>
 #include <qstring.h>
 #include <qlist.h>

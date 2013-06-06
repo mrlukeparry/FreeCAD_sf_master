@@ -39,6 +39,10 @@
 #include <cstring>
 #include <cstdlib>
 
+#ifdef WIN32
+	#include <stdlib.h>	// for _abs64() prototype
+#endif
+
 namespace clipper {
 
 static double const horizontal = -3.4E+38;
@@ -60,7 +64,11 @@ class Int128
     Int128(long64 _lo = 0)
     {
       hi = 0;
-      lo = std::abs(_lo);
+	  #ifdef WIN32
+		lo = _abs64(_lo);
+	  #else
+		lo = std::abs(_lo);
+	  #endif
       if (_lo < 0) Negate(*this);
     }
 
@@ -69,7 +77,11 @@ class Int128
     long64 operator= (const long64 &val)
     {
       hi = 0;
-      lo = std::abs(val);
+	  #ifdef WIN32
+		lo = _abs64(val);
+	  #else
+		lo = std::abs(val);
+	  #endif
       if (val < 0) Negate(*this);
       return val;
     }
