@@ -23,8 +23,8 @@
 #ifndef TOOLPATH_H_
 #define TOOLPATH_H_
 
-#include <qstringlist.h>
-#include <qstring.h>
+#include <QStringList>
+#include <QString>
 
 namespace Cam {
 class ToolPath;

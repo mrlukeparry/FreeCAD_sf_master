@@ -29,7 +29,7 @@
 #endif
 
 #include <vector>
-#include <qstring.h>
+#include <QString>
 
 #include "TPGDescriptorCollection.h"
 #include "TPGPython.h"
