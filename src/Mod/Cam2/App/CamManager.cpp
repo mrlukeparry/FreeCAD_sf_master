@@ -61,4 +61,5 @@ void CamManagerInst::updateProgress(QString tpgid, TPG::State state, int progres
 
 } /* namespace Cam */
 
-#include "moc_CamManager.cpp"
+#include <Mod/Cam2/App/moc_CamManager.cpp>
+

@@ -48,7 +48,7 @@ public:
    * Simplified getter for the descriptors
    */
   Cam::TPGDescriptor *get(int i) {
-    if (tpgs != NULL && i >= 0 && i < tpgs->size())
+    if (tpgs != NULL && i >= 0 && i < int(tpgs->size()))
       return tpgs->at(i);
     return NULL;
   }

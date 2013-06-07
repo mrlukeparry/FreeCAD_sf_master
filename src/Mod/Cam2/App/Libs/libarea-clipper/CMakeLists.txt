@@ -13,7 +13,6 @@ include_directories(
 )
 
 set(AreaClipper_LIBS
-    boost_python
     ${PYTHON_LIBRARIES}
     ${Boost_LIBRARIES})
 #

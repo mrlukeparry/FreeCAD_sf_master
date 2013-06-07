@@ -48,10 +48,10 @@ int TPGListModel::rowCount(const QModelIndex& parent) const {
 QVariant TPGListModel::data(const QModelIndex& index, int role) const {
   if (!index.isValid())
     return QVariant();
-  if (index.row() >= tpgs->size())
+  if (index.row() >= int(tpgs->size()))
     return QVariant();
   if (role == Qt::DisplayRole) {
-    if (tpgs != NULL && tpgs->size() > index.row()) {
+    if (tpgs != NULL && int(tpgs->size()) > index.row()) {
       Cam::TPGDescriptor* tpg = tpgs->at(index.row());
       return QVariant(tpg->name);
     }

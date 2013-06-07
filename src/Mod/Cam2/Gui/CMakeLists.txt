@@ -45,6 +45,11 @@ set(CamGui_MOC_HDRS
     UIManager.h
     TPGListModel.h
 )
+
+set (CamGui_MOC_SRCS
+	../App/CamManager.cpp
+)
+
 fc_wrap_cpp(CamGui_MOC_SRCS ${CamGui_MOC_HDRS})
 
 set(CamGui_UIC_SRCS
@@ -96,6 +101,13 @@ SET(CamGui_SRCS
     UIManager.h
     TPGListModel.cpp
     TPGListModel.h
+
+    ../App/CamManager.h
+    ../App/CamManager.cpp
+    ../App/TPG/TPGDescriptor.cpp
+    ../App/TPG/TPGDescriptor.h
+    ../App/TPG/TPGDescriptorCollection.cpp
+    ../App/TPG/TPGDescriptorCollection.h
 )
 
 add_library(CamGui SHARED ${CamGui_SRCS})

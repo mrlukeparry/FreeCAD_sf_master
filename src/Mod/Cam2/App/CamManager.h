@@ -23,7 +23,7 @@
 #ifndef CAMMANAGER_H_
 #define CAMMANAGER_H_
 
-#include <qobject.h>
+#include <QObject>
 #include "TPG/TPG.h"
 
 namespace Cam {

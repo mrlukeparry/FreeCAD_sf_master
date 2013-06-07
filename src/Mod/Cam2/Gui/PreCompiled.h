@@ -34,7 +34,6 @@
 # define MeshExport    __declspec(dllimport)
 # define PartExport    __declspec(dllimport)
 # define PartGuiExport __declspec(dllimport)
-# define CamExport     __declspec(dllimport)
 # define CamGuiExport  __declspec(dllexport)
 #else // for Linux
 # define MeshExport

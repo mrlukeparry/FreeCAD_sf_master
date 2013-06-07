@@ -43,7 +43,7 @@
 
 
 // C++ TPG Plugins
-#include "Plugins/MyPlugin.h"
+// #include "Plugins/MyPlugin.h"
 
 extern struct PyMethodDef Cam_methods[];
 

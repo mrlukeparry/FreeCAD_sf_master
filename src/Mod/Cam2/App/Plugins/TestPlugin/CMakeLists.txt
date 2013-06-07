@@ -7,6 +7,16 @@ SET(TPG_TARGET TestPlugin)
 SET(Tpg_SRCS
 	CppExampleTPG.cpp
 	CppExampleTPG.h
+	../../TPG/CppTPGPlugin.cpp
+	../../TPG/CppTPGPlugin.h
+	../../TPG/CppTPGDescriptor.cpp
+	../../TPG/CppTPGDescriptor.h
+	../../TPG/CppTPGDescriptorWrapper.cpp
+	../../TPG/CppTPGDescriptorWrapper.h
+	../../TPG/TPGDescriptor.cpp
+	../../TPG/TPGDescriptor.h
+	../../TPG/TPGDescriptorCollection.cpp
+	../../TPG/TPGDescriptorCollection.h
 )
 
 # Add any libs that are needed

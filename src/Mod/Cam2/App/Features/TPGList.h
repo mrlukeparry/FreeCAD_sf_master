@@ -27,6 +27,7 @@
 #include <App/PropertyStandard.h>
 #include <App/PropertyFile.h>
 #include <App/FeaturePython.h>
+#include <Mod/Cam2/App/PreCompiled.h>
 
 #include <Mod/Part/App/PartFeature.h>
 

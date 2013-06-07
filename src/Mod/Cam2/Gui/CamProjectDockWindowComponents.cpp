@@ -176,7 +176,7 @@ bool CamRadioComponent::makeUI(Cam::TPGSetting *tpgsetting, QFormLayout* form) {
                     btn->setChecked(true);
                 btn->setText((*it)->value);
                 layout->addWidget(btn);
-                radios.insert((*it)->id, btn);
+				radios.insert((*it)->id, btn);
             }
 
             // keep reference to widgets for later cleanup
