@@ -40,11 +40,19 @@ CppTPGPlugin::CppTPGPlugin(QString filename) : library(filename)
 
 CppTPGPlugin::~CppTPGPlugin() {
     if (descriptors != NULL)
+	{
         descriptors->release();
+		descriptors = NULL;
+	}
+
     if (library.isLoaded())
 	{
         close();
 	}
+
+	getTPGPtr = NULL;
+	getDescriptorsPtr = NULL;
+	refcnt = 0;
 }
 
 /**
@@ -82,8 +90,9 @@ Cam::TPGDescriptorCollection* CppTPGPlugin::getDescriptors() {
  * implementation once all references are released
  */
 TPG* CppTPGPlugin::getTPG(QString id) {
-    if (isOpen()) {
-        return getTPGPtr(id);
+    if ((isOpen()) && (getTPGPtr != NULL)) {
+		TPG *toolpath_generator_ptr = getTPGPtr(id);
+		return(toolpath_generator_ptr);
     }
     printf("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
     return NULL;
@@ -117,6 +126,9 @@ bool CppTPGPlugin::isOpen() {
             return false;
         }
 
+		getDescriptorsPtr = NULL;
+		getTPGPtr = NULL;
+
         // resolve symbols
 		getDescriptorsPtr = (getDescriptors_t*) library.resolve("getDescriptors");
 		if (getDescriptorsPtr == NULL) {error = library.errorString(); close(); return false;}
@@ -125,6 +137,8 @@ bool CppTPGPlugin::isOpen() {
 		getTPGPtr = (getTPG_t*) library.resolve("getTPG");
 		if (getTPGPtr == NULL) {error = library.errorString(); close(); return false;}
 		printf("Correctly retrieved function pointer for getTPG() from plugin library %s\n", this->filename.toAscii().constData() );	// TODO - remove this when the module is more robust.
+
+		getTPGPtr(QString::fromAscii("95744f1e-360f-11e2-bcd3-08002734b94f"));
     }
     return true;
 }
@@ -139,13 +153,10 @@ void CppTPGPlugin::close() {
 //            delDescriptorsPtr(descriptors);
 
 		library.unload();
-
-        // cleanup
-        getDescriptorsPtr = NULL;
-//        delDescriptorsPtr = NULL;
-        getTPGPtr = NULL;
-//        delTPGPtr = NULL;
     }
+
+	getDescriptorsPtr = NULL;
+	getTPGPtr = NULL;
 }
 
 } /* namespace CamGui */

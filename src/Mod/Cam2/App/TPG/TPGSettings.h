@@ -26,8 +26,8 @@
 
 #include <Mod/Cam2/App/PreCompiled.h>	// we need the __declspec(dllexport) macros for the Windows build
 #include <vector>
-#include <qstring.h>
-#include <qlist.h>
+#include <QString>
+#include <QList>
 
 #include <App/PropertyStandard.h>
 

@@ -25,9 +25,10 @@
 
 #include <vector>
 
-#include <TPG/TPG.h>
-#include <TPG/TPGFactory.h>
+// #include <TPG/TPG.h>
+// #include <TPG/TPGFactory.h>
 #include <TPG/CppTPG.h>
+#include <TPG/TPGSettings.h>
 
 namespace Cam {
 

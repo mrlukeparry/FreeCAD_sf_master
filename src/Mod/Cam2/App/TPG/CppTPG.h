@@ -56,14 +56,14 @@ typedef CppTPG* getTPG_t(QString);
  * TODO: see if its possible to make a nice macro that can handle multiple TPG's at once
  */
 #define CPPTPG_API_SOURCE(_type_, _id_, _name_, _desc_)\
-extern "C" Cam::TPGDescriptorCollection* getDescriptors() {\
+extern "C" Q_DECL_EXPORT Cam::TPGDescriptorCollection* getDescriptors() {\
     Cam::TPGDescriptorCollection* descriptors = new Cam::TPGDescriptorCollection();\
     Cam::TPGDescriptor *descriptor = _TPGDescriptor(_type_, _id_, _name_, _desc_);\
     descriptors->add(descriptor);\
     descriptor->release();\
     return descriptors;\
 }\
-extern "C" Cam::CppTPG* getTPG(QString id) {\
+extern "C" Q_DECL_EXPORT Cam::CppTPG* getTPG(QString id) {\
     _MakeTPG(_type_, _id_, _name_, _desc_)\
     return NULL;\
 }
@@ -86,7 +86,7 @@ protected:
 
 
     CppTPG();
-    virtual ~CppTPG();
+    ~CppTPG();
 
 public:
     /**

@@ -24,12 +24,14 @@
 #define __PRECOMPILED__
 
 #include <FCConfig.h>
+#include <QLibrary>
 
 // Exporting of App classes
 #ifdef FC_OS_WIN32
-# define CamExport     __declspec(dllexport)
-# define PartExport    __declspec(dllimport)
-# define MeshExport    __declspec(dllimport)
+# define CamExport     Q_DECL_EXPORT
+# define CamImport     Q_DECL_IMPORT
+# define PartExport    Q_DECL_IMPORT
+# define MeshExport    Q_DECL_IMPORT
 #else // for Linux
 # define CamExport
 # define PartExport
