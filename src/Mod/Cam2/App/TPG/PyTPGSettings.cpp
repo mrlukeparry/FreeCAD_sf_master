@@ -107,7 +107,7 @@ PyTPGSettings_addSetting (cam_PyTPGSettings* self, PyObject* args) {
         return NULL;
     }
 
-    Cam::TPGSetting *setting = new Cam::TPGSetting(name, label, type, value, unit, helptext);
+    Cam::TPGSettingDefinition *setting = new Cam::TPGSettingDefinition(name, label, type, value, unit, helptext);
     self->settings->addSetting(setting);
 
     // release my copy of setting (TPGSettings object will grab its own copy)

@@ -42,8 +42,8 @@ CamProjectDockWindow::CamProjectDockWindow(Gui::Document* pcDocument,
 
 	currentSettings = NULL;
 
-	QObject::connect(&UIManager(), SIGNAL(updatedTPGSelection(Cam::TPG*)), this,
-			SLOT(updatedTPGSelection(Cam::TPG*)));
+	QObject::connect(&UIManager(), SIGNAL(updatedTPGSelection(Cam::TPGFeature*)), this,
+			SLOT(updatedTPGSelection(Cam::TPGFeature*)));
 
 	// receive tpg running state changes from Cam layer.
 	QObject::connect(&CamGui::UIManager(), SIGNAL(updatedTPGStateSig(QString, Cam::TPG::State, int)),
@@ -66,6 +66,13 @@ bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool save
     // save old settings
     if (saveOld && ! saveSettings()) {
         //TODO: tell the user saving settings failed
+    	Base::Console().Warning("Failed to update settings store!\n");
+
+        // clear old form components
+        QList<CamComponent*>::iterator it = components.begin();
+        for (; it != components.end(); ++it)
+            delete *it;
+        components.clear();
         return false;
     }
 
@@ -81,13 +88,13 @@ bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool save
         currentSettings = newSettings->grab();
         CamComponent *comp = NULL;
         bool failure = false;
-        std::vector<Cam::TPGSetting*> settings = newSettings->getSettings();
-        std::vector<Cam::TPGSetting*>::iterator it = settings.begin();
+        std::vector<Cam::TPGSettingDefinition*> settings = newSettings->getSettings();
+        std::vector<Cam::TPGSettingDefinition*>::iterator it = settings.begin();
         QString camTextBox = "Cam::TextBox";
         QString camRadio = "Cam::Radio";
         for (; it != settings.end(); ++it)
         {
-            Cam::TPGSetting* setting = *it;
+            Cam::TPGSettingDefinition* setting = *it;
             if (setting != NULL)
             {
                 if (camTextBox.compare(setting->type) == 0)
@@ -97,11 +104,13 @@ bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool save
                 else
                     continue;
                 components.append(comp);
-                if (!comp->makeUI(setting,(QFormLayout*)ui->SettingsWidget->layout()))
+                if (!comp->makeUI(setting,(QFormLayout*)ui->SettingsWidget->layout())) {
+                    Base::Console().Warning("CamProjectDockWindow::editSettings(): Failed to make UI Component '%s'!\n", setting->name.toStdString().c_str());
                     failure = true;
+                }
             }
             else
-                Base::Console().Log("Warning: NULL setting provided");
+                Base::Console().Log("Warning: NULL setting provided\n");
         }
         return !failure;
     }
@@ -120,21 +129,22 @@ bool CamProjectDockWindow::saveSettings()
     bool failure = false;
     QList<CamComponent*>::iterator it = components.begin();
     for (; it != components.end(); ++it)
-        if (!(*it)->save())
+        if (!(*it)->close()) {
+        	Base::Console().Warning("Failed to save '%s'\n", (*it)->name());
             failure = true;
+        }
     return !failure;
 }
 
 /**
  * Slot that is called from the UIManager when the selection is changed.
  */
-void CamProjectDockWindow::updatedTPGSelection(Cam::TPG* tpg) {
+void CamProjectDockWindow::updatedTPGSelection(Cam::TPGFeature* tpgFeature) {
 
-    if (tpg != NULL) {
-        QString action = "default";
-		Cam::TPGSettings *settings = tpg->getSettings(action);
+    if (tpgFeature != NULL) {
+		Cam::TPGSettings *settings = tpgFeature->getTPGSettings();
 		if (!this->editSettings(settings))
-			Base::Console().Error("Failed to edit settings for '%s'\n", tpg->getName().toAscii().constData());
+			Base::Console().Error("Failed to edit settings for '%s'\n", tpgFeature->Label.getValue());
     }
     else
     	this->editSettings(NULL);

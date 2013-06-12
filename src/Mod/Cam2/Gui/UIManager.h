@@ -33,6 +33,7 @@
 #include <Gui/ViewProviderDocumentObject.h>
 
 #include "../App/Features/CamFeature.h"
+#include "../App/Features/TPGFeature.h"
 #include "../App/TPG/TPGFactory.h"
 #include "../App/TPG/TPG.h"
 #include "TPGListModel.h"
@@ -122,7 +123,7 @@ public Q_SLOTS:
 Q_SIGNALS:
   void updatedTPGList(TPGListModel *model);
 
-  void updatedTPGSelection(Cam::TPG* tpg);
+  void updatedTPGSelection(Cam::TPGFeature* tpg);
 
   void updatedTPGStateSig(QString tpgid, Cam::TPG::State state, int progress);
 };

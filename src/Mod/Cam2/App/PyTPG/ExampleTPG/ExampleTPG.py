@@ -82,17 +82,13 @@ class ExampleTPG(PyTPGBase):
         
         return self.settings.keys()
 
-    def getSettings(self, action=None):
-        '''Returns a list of settings that the TPG 'Action' will take.  If 
-        action is None, then this will return a dictionary of all actions 
-        settings.  Each setting will be in format of (<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>)
-        NOTE: the resulting dictionary or list should be considered read-only!'''
-        if action == 'default':
-            action = 'rough'
-        if action:
-            if action in self.settings:
-                return self.settings[action]
-            raise UnimplementedTPError(action)
+    def getSettingDefinitions(self):
+        '''Returns a list of settings that the TPG uses for each 'Action'.
+        
+        Return value must use the following format:
+        {<actionname>: [(<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>), ...], ...}
+        '''
+
         return self.settings
         
     def run(self, action, settings=[]):

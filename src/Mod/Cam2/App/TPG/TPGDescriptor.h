@@ -23,6 +23,9 @@
 #ifndef TPGDESCRIPTOR2_H_
 #define TPGDESCRIPTOR2_H_
 
+namespace Cam {
+class CamExport TPGDescriptor;
+}
 #include <qstring.h>
 
 #include "TPG.h"
@@ -33,7 +36,7 @@ namespace Cam {
  * A superclass for TPG Descriptors.  These describe the basic information
  * about a TPG and contain a method to create a new instance of this TPG.
  */
-class TPGDescriptor {
+class CamExport TPGDescriptor {
 
 protected:
     int refcnt;

@@ -24,14 +24,19 @@
 #ifndef CAM_TPGFEATURE_H
 #define CAM_TPGFEATURE_H
 
+namespace Cam {
+class CamExport TPGFeature;
+}
+
 #include <App/DocumentObject.h>
 #include <App/PropertyLinks.h>
 #include <App/PropertyStandard.h>
 #include <Mod/Part/App/PartFeature.h>
 #include <Base/BoundBox.h>
 
-#include "../TPG/TPGFactory.h"
 #include "../TPG/TPG.h"
+#include "../TPG/TPGSettings.h"
+#include "../TPG/TPGFactory.h"
 
 /**
   * TPGFeature is the document object that provides the user interface to control an individual ToolPathGenerator

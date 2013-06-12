@@ -54,9 +54,9 @@ std::vector<QString> &CppTPGWrapper::getActions()
 /**
  * Get the settings for a given action
  */
-TPGSettings *CppTPGWrapper::getSettings(QString &action)
+TPGSettings *CppTPGWrapper::getSettingDefinitions(QString &action)
 {
-    return impl->getSettings(action);
+    return impl->getSettingDefinitions(action);
 }
 
 /**

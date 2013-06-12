@@ -25,6 +25,7 @@
 
 #include <qstring.h>
 
+#include "TPG.h"
 #include "TPGDescriptorCollection.h"
 
 // Forward declarations

@@ -51,9 +51,9 @@ public:
     virtual std::vector<QString> &getActions();
 
     /**
-     * Get the settings for a given action
+     * Get the settings for the TPG
      */
-    virtual TPGSettings *getSettings(QString &action);
+    virtual TPGSettings *getSettingDefinitions();
 
     /**
      * Run the TPG to generate the ToolPath code.

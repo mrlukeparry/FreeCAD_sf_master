@@ -117,7 +117,7 @@ public:
     /**
      * Get the settings for a given action
      */
-    virtual TPGSettings *getSettings(QString &action);
+    virtual TPGSettings *getSettingDefinitions();
 
     /**
      * Run the TPG to generate the ToolPath code.
@@ -213,7 +213,8 @@ protected:
     QString description;
 
     std::vector<QString> actions; ///< e.g ['action','action2',...]
-    std::map<QString, TPGSettings*> settings; ///< e.g. settings[<action>]
+//    std::map<QString, TPGSettings*> settings; ///< e.g. settings[<action>] // Action has been moved into TPGSettings object
+    TPGSettings* settings; ///< the setting definitions for this TPG
 
     int refcnt; ///< reference counter
 

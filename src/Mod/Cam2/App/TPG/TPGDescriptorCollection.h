@@ -23,6 +23,10 @@
 #ifndef TPGDESCRIPTORCOLLECTION_H_
 #define TPGDESCRIPTORCOLLECTION_H_
 
+namespace Cam {
+class TPGDescriptorCollection;
+}
+
 #include <vector>
 
 #include "TPG.h"

@@ -30,6 +30,8 @@
 #include <cstdio>
 #include <qlist.h>
 
+#include <Base/Console.h>
+
 namespace Cam {
 
 const char* ts(QString str)
@@ -46,7 +48,7 @@ const char* ts(QString *str)
 
 ////////// TPGSetting //////////
 
-TPGSetting::TPGSetting(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext)
+TPGSettingDefinition::TPGSettingDefinition(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext)
 {
 	this->name = QString::fromAscii(name);
 	this->label = QString::fromAscii(label);
@@ -54,9 +56,8 @@ TPGSetting::TPGSetting(const char *name, const char *label, const char *type, co
 	this->defaultvalue = QString::fromAscii(defaultvalue);
 	this->units = QString::fromAscii(units);
 	this->helptext = QString::fromAscii(helptext);
-	this->value = QString::fromAscii("test");
 }
-TPGSetting::TPGSetting(QString &name, QString &label, QString &type, QString &defaultvalue, QString &units, QString &helptext)
+TPGSettingDefinition::TPGSettingDefinition(QString &name, QString &label, QString &type, QString &defaultvalue, QString &units, QString &helptext)
 {
 	this->name = name;
 	this->label = label;
@@ -64,13 +65,12 @@ TPGSetting::TPGSetting(QString &name, QString &label, QString &type, QString &de
 	this->defaultvalue = defaultvalue;
 	this->units = units;
 	this->helptext = helptext;
-    this->value = QString::fromAscii("test");
 }
-TPGSetting::TPGSetting() {
+TPGSettingDefinition::TPGSettingDefinition() {
 
 }
 
-TPGSetting::~TPGSetting() {
+TPGSettingDefinition::~TPGSettingDefinition() {
     QList<TPGSettingOption*>::iterator it = this->options.begin();
     for (; it != this->options.end(); ++it)
         delete *it;
@@ -80,29 +80,33 @@ TPGSetting::~TPGSetting() {
 /**
  * Perform a deep copy of this class
  */
-TPGSetting* TPGSetting::clone()
+TPGSettingDefinition* TPGSettingDefinition::clone()
 {
-    TPGSetting* clone = new TPGSetting(name, label, type, defaultvalue, units, helptext);
-    clone->value = value;
+    TPGSettingDefinition* clone = new TPGSettingDefinition(name, label, type, defaultvalue, units, helptext);
     QList<TPGSettingOption*>::iterator it = this->options.begin();
 
     for (; it != this->options.end(); ++it)
-        clone->addOption((*it)->id, (*it)->value);
+        clone->addOption((*it)->id, (*it)->label);
 
     return clone;
 }
 
-
-void TPGSetting::addOption(QString id, QString value) {
-    this->options.append(new TPGSettingOption(id, value));
+/**
+ * add an option for the value of this setting
+ */
+void TPGSettingDefinition::addOption(QString id, QString label) {
+    this->options.append(new TPGSettingOption(id, label));
 }
 
-void TPGSetting::addOption(const char *id, const char *value) {
-    this->options.append(new TPGSettingOption(id, value));
+/**
+ * add an option for the value of this setting
+ */
+void TPGSettingDefinition::addOption(const char *id, const char *label) {
+    this->options.append(new TPGSettingOption(id, label));
 }
 
 
-void TPGSetting::print()
+void TPGSettingDefinition::print()
 {
 	printf("  - (%s, %s, %s, %s, %s, %s)\n",
 			name.toAscii().constData(),
@@ -112,11 +116,52 @@ void TPGSetting::print()
 			units.toAscii().constData(),
 			helptext.toAscii().constData());
 }
-void TPGSetting::setDefault()
-{
-    value = defaultvalue;
-//    printf("Setting: '%s' to default value (%s) '%s'\n", name.toAscii().constData(), defaultvalue.toAscii().constData(), value.toAscii().constData());
+
+/**
+ * Increases reference count
+ * Note: it returns a pointer to 'this' for convenience.
+ */
+TPGSettingDefinition *TPGSettingDefinition::grab() {
+    refcnt++;
+    return this;
 }
+
+/**
+ * Decreases reference count and deletes self if no other references
+ */
+void TPGSettingDefinition::release() {
+    refcnt--;
+    if (refcnt == 0)
+        delete this;
+}
+
+/**
+ * Get the value associated with this setting
+ */
+QString TPGSettingDefinition::getValue() {
+	if (this->parent != NULL)
+		return this->parent->getValue(action, name);
+	return QString::null;
+}
+
+/**
+ * Set the value associated with this setting
+ */
+bool TPGSettingDefinition::setValue(QString &value) {
+	if (this->parent != NULL) {
+		return parent->setValue(action, name, value);
+	}
+	Base::Console().Warning("Setting doesn't have parent!\n");
+	return false;
+}
+
+/**
+ * Get the namespaced name <action>::<name>
+ */
+QString TPGSettingDefinition::getFullname() {
+	return action + QString::fromAscii("::") + name;
+}
+
 // ----- TPGSettings ----------------------------------------------------------
 
 TPGSettings::TPGSettings()
@@ -134,10 +179,10 @@ TPGSettings* TPGSettings::clone()
 {
 	TPGSettings* settings = new TPGSettings();
 
-	std::vector<TPGSetting*>::iterator it = this->settings.begin();
-	while (it != this->settings.end())
+	std::vector<TPGSettingDefinition*>::iterator it = this->settingDefs.begin();
+	while (it != this->settingDefs.end())
 	{
-		settings->addSetting((*it)->clone());
+		settings->addSettingDefinition((*it)->action, (*it)->clone());
 		++it;
 	}
 
@@ -147,51 +192,172 @@ TPGSettings* TPGSettings::clone()
 /**
  * Adds the setting to this setting group
  */
-TPGSetting* TPGSettings::addSetting(TPGSetting* setting)
-{
-	this->settings.push_back(setting->grab());
+TPGSettingDefinition* TPGSettings::addSettingDefinition(QString &action, TPGSettingDefinition* setting) {
+
+	QString qname = action + QString::fromAscii("::") + setting->name;
+
+	// store reference to setting
+	settingDefs.push_back(setting->grab());
+	settingDefsMap.insert(std::pair<QString, TPGSettingDefinition*>(qname, setting));
+
+	// take ownership of setting
+	setting->action = action;
+	setting->parent = this;
+
+	// return setting for convenience
 	return setting;
+}
+
+///**
+// * Get the value of a given setting (by name)
+// */
+//const QString TPGSettings::getValue(const char *name, const char *action /*= NULL*/) {
+//
+//	QString qname = QString::fromAscii(name);
+//	if (action == NULL)
+//		return getValue(qname);
+//	else {
+//		QString qaction = QString::fromAscii(action);
+//		return getValue(qname, qaction);
+//	}
+//}
+
+/**
+ * Get the value of a given setting (by name)
+ */
+const QString TPGSettings::getValue(QString &name) {
+	if (action.isNull() || action.isEmpty())
+		return QString::null;
+	return getValue(name, action);
 }
 
 /**
  * Get the value of a given setting (by name)
  */
-QString *TPGSettings::getSetting(const char *name) {
+const QString TPGSettings::getValue(QString &action, QString &name) {
 
-    QString qname = QString::fromAscii(name);
+	if (action.isNull() || action.isEmpty()) {
+		Base::Console().Message("action not set\n");
+		return QString::null;
+	}
 
-    std::vector<TPGSetting*>::iterator it = this->settings.begin();
-    while (it != this->settings.end()) {
-        if ((*it)->name == qname)
-            return &((*it)->value);
-        ++it;
-    }
-    return NULL;
+	// compute full setting name (<action>::<name>)
+	QString qname = makeName(action, name);
+
+    // get setting value
+	if (tpgFeature != NULL) {
+		if (settingDefsMap.find(qname) != settingDefsMap.end()) {
+			const std::map<std::string,std::string> vals = tpgFeature->PropTPGSettings.getValues();
+			std::map<std::string,std::string>::const_iterator val = vals.find(qname.toStdString());
+			if (val != vals.end()) {
+				return QString::fromStdString(val->second);
+			}
+		}
+	}
+	Base::Console().Message("Can't find setting!\n");
+    return QString::null;
+}
+
+/**
+ * Set the value for the named setting
+ */
+bool TPGSettings::setValue(QString &action, QString &name, QString &value) {
+
+	if (action.isNull() || action.isEmpty())
+		return false;
+
+	// compute full setting name (<action>::<name>)
+	QString qname = makeName(action, name);
+
+	if (tpgFeature != NULL) {
+		if (settingDefsMap.find(qname) != settingDefsMap.end()) {
+			std::string strname = qname.toStdString();
+			std::string strvalue = value.toStdString();
+			tpgFeature->PropTPGSettings.setValue(strname, strvalue);
+			return true;
+		}
+	}
+	Base::Console().Message("Can't find setting!\n");
+	return false;
+}
+
+/**
+ * Set the value for the named setting
+ */
+bool TPGSettings::setValue(QString &name, QString &value) {
+	return setValue(action, name, value);
 }
 
 void TPGSettings::print()
 {
-	std::vector<TPGSetting*>::iterator it = this->settings.begin();
-	while (it != this->settings.end())
+	std::vector<TPGSettingDefinition*>::iterator it = this->settingDefs.begin();
+	while (it != this->settingDefs.end())
 	{
 		(*it)->print();
 		++it;
 	}
 }
 
+/**
+ * Sets the default value for any settings that are missing from the TPGFeature
+ */
+void TPGSettings::addDefaults() {
 
+	if (tpgFeature != NULL) {
+		const std::map<std::string,std::string> currentValues = tpgFeature->PropTPGSettings.getValues();
+
+		// add action
+		if (currentValues.find("action") == currentValues.end())
+			tpgFeature->PropTPGSettings.setValue("action", "default");
+
+		// add all settings for each available action
+		std::vector<TPGSettingDefinition*>::iterator it = this->settingDefs.begin();
+		while (it != this->settingDefs.end()) {
+			QString nsName = makeName((*it)->action, (*it)->name);
+			if (currentValues.find(nsName.toStdString()) == currentValues.end())
+				tpgFeature->PropTPGSettings.setValue(nsName.toStdString(),(*it)->defaultvalue.toStdString());
+			++it;
+		}
+	}
+}
 
 /**
- * Sets the default value for every setting in Settings collection
+ * Sets the TPGFeature that the value will be saved-to/read-from.
+ *
+ * This will set the default values for any missing settings
  */
-void TPGSettings::setDefaults()
-{
-    std::vector<TPGSetting*>::iterator it = this->settings.begin();
-    while (it != this->settings.end())
-    {
-        (*it)->setDefault();
-        ++it;
-    }
+void TPGSettings::setTPGFeature(TPGFeature *tpgFeature) {
+	this->tpgFeature = tpgFeature;
+
+	addDefaults();
+}
+
+/**
+ * Increases reference count
+ * Note: it returns a pointer to this for convenience.
+ */
+TPGSettings *TPGSettings::grab() {
+    refcnt++;
+    return this;
+}
+
+/**
+ * Decreases reference count and deletes self if no other references
+ */
+void TPGSettings::release() {
+    refcnt--;
+    if (refcnt == 0)
+        delete this;
+}
+
+/**
+ * Make a namespaced name (from <action>::<name>)
+ */
+QString TPGSettings::makeName(QString &action, QString &name) const {
+	QString result = action;
+	result.append(QString::fromAscii("::"));
+	result.append(name);
+	return result;
 }
 
 } // end namespace Cam

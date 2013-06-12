@@ -141,28 +141,36 @@ TPG* TPGFeature::getTPG() {
  * Get the current TPG settings object
  */
 TPGSettings* TPGFeature::getTPGSettings() {
+
 	if (tpgSettings == NULL) {
-		getTPG();
-		QString def = QString::fromAscii("default");
-		tpgSettings = tpg->getSettings(def);
+		getTPG(); // make sure TPG has been loaded already.
+
+		// get a description of settings that TPG expects
+		tpgSettings = tpg->getSettingDefinitions();
+		if (tpgSettings == NULL)
+			return NULL;
+
+		// tell the settings object about myself so it can save values here.
+		tpgSettings->setTPGFeature(this);
 	}
 
-	return tpgSettings; //TODO: get my settings out of storage
+	return tpgSettings;
 }
 
 void TPGFeature::Save(Base::Writer &writer) const
 {
-	// save the settings into the property before saving
-	if (tpgSettings != NULL) {
-		std::map<std::string,std::string> newVals;
-		std::vector<TPGSetting*> settings = tpgSettings->getSettings();
-		for (std::vector<TPGSetting*>::iterator it = settings.begin(); it != settings.end(); ++it) {
-			std::string name = (*it)->name.toStdString();
-			std::string value = (*it)->value.toStdString();
-			newVals[name] = value;
-		}
-//		PropTPGSettings.setValues(newVals);
-	}
+	//NOTE: this isn't need anymore as the setting values are placed directly into the PropTPGSettings object
+//	// save the settings into the property before saving
+//	if (tpgSettings != NULL) {
+//		std::map<std::string,std::string> newVals;
+//		std::vector<TPGSettingDefinition*> settings = tpgSettings->getSettings();
+//		for (std::vector<TPGSettingDefinition*>::iterator it = settings.begin(); it != settings.end(); ++it) {
+//			std::string name = (*it)->name.toStdString();
+//			std::string value = (*it)->value.toStdString();
+//			newVals[name] = value;
+//		}
+////		PropTPGSettings.setValues(newVals);
+//	}
 
     //save the father classes
     App::DocumentObject::Save(writer);

@@ -259,8 +259,8 @@ void UIManagerInst::updateCamProjectSelection(const char* pDocName) {
     	{
 			Cam::TPGFeature *tpgFeature = dynamic_cast<Cam::TPGFeature *>(docObj);
 			if (tpgFeature) {
-				Cam::TPG *tpg = tpgFeature->getTPG();
-				Q_EMIT updatedTPGSelection(tpg);
+//				Cam::TPG *tpg = tpgFeature->getTPG();
+				Q_EMIT updatedTPGSelection(tpgFeature);
 			}
             else
             	Q_EMIT updatedTPGSelection(NULL);

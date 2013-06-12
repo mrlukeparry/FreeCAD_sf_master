@@ -24,7 +24,15 @@
 #ifndef CAM_TPGSETTINGS_H
 #define CAM_TPGSETTINGS_H
 
+namespace Cam {
+class CamExport TPGSettingOption;
+class CamExport TPGSettingDefinition;
+class CamExport TPGSettings;
+}
+
 #include "../../App/PreCompiled.h"	// we need the __declspec(dllexport) macros for the Windows build
+#include "../Features/TPGFeature.h"
+
 #include <vector>
 #include <qstring.h>
 #include <qlist.h>
@@ -34,37 +42,46 @@
 
 namespace Cam
 {
-class TPGSettingOption;
+
 
 class CamExport TPGSettingOption
 {
 public:
     QString id;
-    QString value;
+    QString label;
 
-    TPGSettingOption(QString id, QString value)
+    TPGSettingOption(QString id, QString label)
     {
         this->id = id;
-        this->value = value;
+        this->label = label;
     }
 
-    TPGSettingOption(const char *id, const char *value)
+    TPGSettingOption(const char *id, const char *label)
     {
         this->id = QString::fromUtf8(id);
-        this->value = QString::fromUtf8(value);
+        this->label = QString::fromUtf8(label);
     }
 };
 
 /**
  * A Class object to store the details of a single setting
  */
-class CamExport TPGSetting
+class CamExport TPGSettingDefinition
 {
 protected:
 
+	/// reference counter
     int refcnt;
 
+    /// reference to the settings object that this setting belongs too
+    TPGSettings *parent;
+
+    /// the action that this setting belongs to
+    QString action;
+
 public:
+    friend class TPGSettings;
+
 	//(<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>)
 	QString name;
 	QString label;
@@ -74,43 +91,45 @@ public:
 	QString helptext;
 	QList<TPGSettingOption*> options;
 
-	QString value;
+//	QString value; // deprecated: now uses FreeCAD data structure which is contained in TPGSettings.tpgFeature
 
-	TPGSetting(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext);
-	TPGSetting(QString &name, QString &label, QString &type, QString &defaultvalue, QString &units, QString &helptext);
-	TPGSetting();
+	TPGSettingDefinition(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext);
+	TPGSettingDefinition(QString &name, QString &label, QString &type, QString &defaultvalue, QString &units, QString &helptext);
+	TPGSettingDefinition();
 
-	~TPGSetting();
+	~TPGSettingDefinition();
 
 	/**
 	 * Perform a deep copy of this class
 	 */
-    TPGSetting* clone();
+    TPGSettingDefinition* clone();
 
     void print();
-
-    void setDefault();
 
     /**
      * Increases reference count
      * Note: it returns a pointer to this for convenience.
      */
-    TPGSetting *grab() {
-        refcnt++;
-        return this;
-    }
+    TPGSettingDefinition *grab();
 
     /**
      * Decreases reference count and deletes self if no other references
      */
-    void release() {
-        refcnt--;
-        if (refcnt == 0)
-            delete this;
-    }
+    void release();
 
-    void addOption(QString id, QString value);
-    void addOption(const char *id, const char *value);
+    /// add an option for the value of this setting
+    void addOption(QString id, QString label);
+    /// add an option for the value of this setting
+    void addOption(const char *id, const char *label);
+
+    /// get the value associated with this setting
+    QString getValue();
+
+    /// set the value associated with this setting
+    bool setValue(QString &value);
+
+    /// get the namespaced name <action>::<name>
+    QString getFullname();
 };
 
   // Class stores hash of settings for managing each independant TPG
@@ -132,48 +151,77 @@ public:
     /**
      * Add a setting to this Settings collection
      */
-    TPGSetting* addSetting(TPGSetting* setting);
+    TPGSettingDefinition* addSettingDefinition(QString &action, TPGSettingDefinition* setting);
+
+//    /**
+//     * Get the value of a given setting (by name)
+//     */
+//    const QString getValue(const char *name, const char *action = NULL);
 
     /**
      * Get the value of a given setting (by name)
      */
-    QString *getSetting(const char *name);
+    const QString getValue(QString &name);
+
+    /**
+     * Get the value of a given setting (by name)
+     */
+    const QString getValue(QString &action, QString &name);
 
     /**
      * Print the settings to stdout
      */
     void print();
 
-    std::vector<TPGSetting*> getSettings() {
-        return this->settings;
+    std::vector<TPGSettingDefinition*> getSettings() {
+        return this->settingDefs;
     }
 
     /**
      * Sets the default value for every setting in Settings collection
      */
-    void setDefaults();
+    void addDefaults();
+
+    /**
+     * Set the value for the named setting
+     */
+    bool setValue(QString &action, QString &name, QString &value);
+
+    /**
+     * Set the value for the named setting
+     */
+    bool setValue(QString &name, QString &value);
+
+    /**
+     * Sets the TPGFeature that the value will be saved-to/read-from.
+     */
+    void setTPGFeature(TPGFeature *tpgFeature);
 
     /**
      * Increases reference count
      * Note: it returns a pointer to this for convenience.
      */
-    TPGSettings *grab() {
-        refcnt++;
-        return this;
-    }
+    TPGSettings *grab();
 
     /**
      * Decreases reference count and deletes self if no other references
      */
-    void release() {
-        refcnt--;
-        if (refcnt == 0)
-            delete this;
-    }
+    void release();
 protected:
 
-    std::vector<TPGSetting*> settings;
+    /// the action that is selected (i.e. algorithm and group of settings to use)
+    QString action;
+    /// the settings in the order that the TPG developer wants them to display
+    std::vector<TPGSettingDefinition*> settingDefs;
+    /// the same settings but in map data structure for random access (key: <action>::<name>)
+    std::map<QString, TPGSettingDefinition*> settingDefsMap;
+    /// reference counter
     int refcnt;
+    /// the tpgFeature to which these settings belong
+    TPGFeature *tpgFeature;
+
+    /// make a namespaced name (from <action>::<name>)
+    QString makeName(QString &action, QString &name) const;
 };
 
 } //namespace Cam
