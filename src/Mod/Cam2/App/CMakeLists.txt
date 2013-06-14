@@ -76,6 +76,8 @@ SET(TPG_SRCS
     TPG/PyTPGFactory.h
     TPG/PyTPGDescriptor.cpp
     TPG/PyTPGDescriptor.h
+    TPG/PyTPGSettings.cpp
+    TPG/PyTPGSettings.h
     TPG/PyToolPath.cpp
     TPG/PyToolPath.h
     

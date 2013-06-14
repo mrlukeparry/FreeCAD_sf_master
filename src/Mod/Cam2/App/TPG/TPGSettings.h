@@ -153,10 +153,15 @@ public:
      */
     TPGSettingDefinition* addSettingDefinition(QString &action, TPGSettingDefinition* setting);
 
-//    /**
-//     * Get the value of a given setting (by name)
-//     */
-//    const QString getValue(const char *name, const char *action = NULL);
+    /**
+     * Get the currently selected action.
+     */
+    const QString &getAction() const;
+
+    /**
+     * Change the currently selected action.
+     */
+    bool setAction(QString &action);
 
     /**
      * Get the value of a given setting (by name)
