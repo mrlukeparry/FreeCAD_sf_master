@@ -221,7 +221,11 @@ const QString &TPGSettings::getAction() const {
 bool TPGSettings::setAction(QString &action) {
 	this->action = action;
 	if (tpgFeature != NULL)
+	{
 		tpgFeature->PropTPGSettings.setValue("action", action.toAscii().constData());
+		return(true);
+	}
+	return(false);
 }
 
 /**

@@ -27,7 +27,7 @@
 
 #include <queue>
 
-#include <qobject.h>
+#include <QObject>
 
 #include <App/Document.h>
 
