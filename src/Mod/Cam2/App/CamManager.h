@@ -26,9 +26,7 @@
 #include <boost/thread.hpp>
 
 #include <queue>
-
-#include <qobject.h>
-
+#include <QObject>
 #include <App/Document.h>
 
 #include "TPG/TPG.h"

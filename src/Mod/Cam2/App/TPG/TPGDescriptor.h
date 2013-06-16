@@ -26,7 +26,7 @@
 namespace Cam {
 class CamExport TPGDescriptor;
 }
-#include <qstring.h>
+#include <QString>
 
 #include "TPG.h"
 
