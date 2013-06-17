@@ -27,4 +27,22 @@
 
 namespace Cam {
 
+	    /**
+     * Increases reference count
+     */
+    TPGDescriptor *TPGDescriptor::grab() {
+        refcnt++;
+
+        return this;
+    }
+
+    /**
+     * Decreases reference count and deletes self if no other references
+     */
+	void TPGDescriptor::release() {
+        refcnt--;
+        if (refcnt == 0)
+            delete this;
+    }
+
 } /* namespace Cam */
