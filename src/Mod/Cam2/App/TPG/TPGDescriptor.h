@@ -23,6 +23,8 @@
 #ifndef TPGDESCRIPTOR2_H_
 #define TPGDESCRIPTOR2_H_
 
+#include "PreCompiled.h"
+
 namespace Cam {
 class CamExport TPGDescriptor;
 }
@@ -86,20 +88,12 @@ public:
     /**
      * Increases reference count
      */
-    TPGDescriptor *grab() {
-        refcnt++;
-
-        return this;
-    }
+    TPGDescriptor *grab();
 
     /**
      * Decreases reference count and deletes self if no other references
      */
-    void release() {
-        refcnt--;
-        if (refcnt == 0)
-            delete this;
-    }
+    void release();
 
     /**
      * Creates a new instance of this TPG.  Sub-classes need to implement this

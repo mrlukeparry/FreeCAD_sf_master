@@ -141,3 +141,21 @@ void TPG::release() {
         delete this;
 }
 
+
+/* static */ QString TPG::stateToStr(State state) {
+	if (state == RUNNING)
+		return QString::fromAscii("Running");
+	else if (state == STARTED)
+		return QString::fromAscii("Started");
+	else if (state == ERROR)
+		return QString::fromAscii("Error");
+	else if (state == FINISHED)
+		return QString::fromAscii("Finished");
+	else if (state == INITIALISED)
+		return QString::fromAscii("Initialised");
+	else if (state == UNDEFINED)
+		return QString::fromAscii("Undefined");
+	else if (state == LOADED)
+		return QString::fromAscii("Loaded");
+	return QString::fromAscii("Undefined");
+}

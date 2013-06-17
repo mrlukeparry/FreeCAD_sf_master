@@ -19,12 +19,27 @@
  *   Suite 330, Boston, MA  02111-1307, USA                                *
  *                                                                         *
  ***************************************************************************/
-#include "PreCompiled.h"
+
 #ifndef _PreComp_
 #endif
 
 #include "TPGDescriptor.h"
 
 namespace Cam {
+
+	    TPGDescriptor *TPGDescriptor::grab() {
+        refcnt++;
+
+        return this;
+    }
+
+    /**
+     * Decreases reference count and deletes self if no other references
+     */
+	void TPGDescriptor::release() {
+        refcnt--;
+        if (refcnt == 0)
+            delete this;
+    }
 
 } /* namespace Cam */
