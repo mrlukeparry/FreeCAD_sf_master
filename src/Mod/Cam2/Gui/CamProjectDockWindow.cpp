@@ -23,7 +23,7 @@
 #include "PreCompiled.h"
 #ifndef _PreComp_
 #endif
-#include <qlist.h>
+#include <QList>
 
 #include <Base/Console.h>
 

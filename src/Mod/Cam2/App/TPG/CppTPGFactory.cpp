@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include "PreCompiled.h"
 #ifndef _PreComp_
 #endif
 
@@ -70,7 +70,7 @@ void CppTPGFactoryInst::scanPlugins()
     }
     plugins.clear();
 
-    printf("Scanning: %s\n", path.toAscii().constData()); //TODO: delete this once the workbench is more stable
+	qDebug("Scanning: %s\n", path.toAscii().constData());
 
 	QDir dir(path);
 	dir.setFilter(QDir::Files | QDir::Executable);
@@ -82,7 +82,7 @@ void CppTPGFactoryInst::scanPlugins()
 			 // make library pointer
             QString lib = itFileInfo->absoluteFilePath();
             plugins.push_back(new CppTPGPlugin(lib));
-            printf("CppPlugin: %s\n", lib.toAscii().constData()); //TODO: delete this once the workbench is more stable
+            qDebug("CppPlugin: %s\n", lib.toAscii().constData()); //TODO: delete this once the workbench is more stable
 		} // End if - then
 
 	} // End for
@@ -104,7 +104,7 @@ TPGDescriptorCollection* CppTPGFactoryInst::getDescriptors()
         }
     }
 
-    printf("Found %i CppTPGs\n", int(descriptors->size())); //TODO: delete this once the workbench is more stable
+    qDebug("Found %i CppTPGs\n", int(descriptors->size())); //TODO: delete this once the workbench is more stable
 
     // copy the tpg collection cache
     return descriptors->clone();

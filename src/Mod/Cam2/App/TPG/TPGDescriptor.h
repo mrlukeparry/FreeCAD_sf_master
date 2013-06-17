@@ -26,7 +26,7 @@
 namespace Cam {
 class CamExport TPGDescriptor;
 }
-#include <qstring.h>
+#include <QString>
 
 #include "TPG.h"
 
@@ -42,7 +42,7 @@ protected:
     int refcnt;
 
     virtual ~TPGDescriptor() {
-        printf("Deleted TPGDescriptor: %p\n", this);
+        qDebug("Deleted TPGDescriptor: %p\n", this);
     }
 
 public:
@@ -106,7 +106,7 @@ public:
      */
     virtual Cam::TPG* make() = 0;
     virtual void print() {
-        printf("- ('%s', '%s', '%s', '%s')\n", id.toAscii().constData(),
+        qDebug("- ('%s', '%s', '%s', '%s')\n", id.toAscii().constData(),
                 name.toAscii().constData(), description.toAscii().constData(),
                 type.toAscii().constData());
     }

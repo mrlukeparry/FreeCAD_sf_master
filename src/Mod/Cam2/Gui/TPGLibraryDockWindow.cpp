@@ -22,8 +22,8 @@
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
-# include <qobject.h>
-# include <qmessagebox.h>
+# include <QObject>
+# include <QMessageBox>
 
 #endif
 # include <Gui/MainWindow.h>

@@ -5,6 +5,7 @@ else(MSVC)
 endif(MSVC)
 
 include_directories(
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/Gui
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_BINARY_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -102,6 +103,7 @@ SET(CamGui_SRCS
     ../App/TPG/TPGDescriptor.h
     ../App/TPG/TPGDescriptorCollection.cpp
     ../App/TPG/TPGDescriptorCollection.h
+    ../App/TPG/TPGSettings.h
 
     ../App/CamManager.cpp
     ../App/CamManager.h

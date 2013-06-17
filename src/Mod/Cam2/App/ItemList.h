@@ -25,7 +25,7 @@
 
 #include <vector>
 
-#include <qstring.h>
+#include <QString>
 
 namespace Cam {
 

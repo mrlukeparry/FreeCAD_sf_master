@@ -23,7 +23,7 @@
 #ifndef CPPTPG_H_
 #define CPPTPG_H_
 
-#include <qstring.h>
+#include <QString>
 
 #include "TPG.h"
 #include "TPGDescriptorCollection.h"

@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include "PreCompiled.h"
 #ifndef _PreComp_
 #endif
 
@@ -71,7 +71,7 @@ Cam::TPGDescriptorCollection* CppTPGPlugin::getDescriptors() {
             return result;
         }
     }
-    printf("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
+    qWarning("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
     return NULL;
 }
 
@@ -85,7 +85,7 @@ TPG* CppTPGPlugin::getTPG(QString id) {
     if (isOpen()) {
         return getTPGPtr(id);
     }
-    printf("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
+    qWarning("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
     return NULL;
 }
 
@@ -120,11 +120,11 @@ bool CppTPGPlugin::isOpen() {
         // resolve symbols
 		getDescriptorsPtr = (getDescriptors_t*) library.resolve("getDescriptors");
 		if (getDescriptorsPtr == NULL) {error = library.errorString(); close(); return false;}
-		printf("Correctly retrieved function pointers for getDescriptors() from plugin library %s\n", this->filename.toAscii().constData() );	// TODO - remove this when the module is more robust.
+		qDebug("Correctly retrieved function pointers for getDescriptors() from plugin library %s\n", this->filename.toAscii().constData() );	// TODO - remove this when the module is more robust.
 
 		getTPGPtr = (getTPG_t*) library.resolve("getTPG");
 		if (getTPGPtr == NULL) {error = library.errorString(); close(); return false;}
-		printf("Correctly retrieved function pointer for getTPG() from plugin library %s\n", this->filename.toAscii().constData() );	// TODO - remove this when the module is more robust.
+		qDebug("Correctly retrieved function pointer for getTPG() from plugin library %s\n", this->filename.toAscii().constData() );	// TODO - remove this when the module is more robust.
     }
     return true;
 }

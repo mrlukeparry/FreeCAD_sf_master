@@ -25,11 +25,11 @@
 
 #include <Gui/DockWindow.h>
 
-#include <qlabel.h>
-#include <qlist.h>
-#include <qmap.h>
-#include <qobject.h>
-#include <qprogressbar.h>
+#include <QLabel>
+#include <QList>
+#include <QMap>
+#include <QObject>
+#include <QProgressBar>
 
 #include "ui_CamProjectDockWindow.h"
 

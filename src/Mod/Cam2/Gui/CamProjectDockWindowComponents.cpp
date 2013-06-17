@@ -25,7 +25,7 @@
 #endif
 
 #include <cstdlib>
-#include <qlabel.h>
+#include <QLabel>
 
 #include <Base/Console.h>
 

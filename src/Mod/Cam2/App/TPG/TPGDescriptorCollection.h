@@ -89,7 +89,7 @@ public:
     void onEach(void*func(TPGDescriptor*, void*), void *param);
 
     void print() {
-        printf("TPGDescriptorCollection: (refs: %i)\n", refcnt);
+        qDebug("TPGDescriptorCollection: (refs: %i)\n", refcnt);
     }
 
 protected:
