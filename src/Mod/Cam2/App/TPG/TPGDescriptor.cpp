@@ -19,7 +19,7 @@
  *   Suite 330, Boston, MA  02111-1307, USA                                *
  *                                                                         *
  ***************************************************************************/
-#include "PreCompiled.h"
+
 #ifndef _PreComp_
 #endif
 
@@ -27,7 +27,7 @@
 
 namespace Cam {
 
-	    /**
+    /**
      * Increases reference count
      */
     TPGDescriptor *TPGDescriptor::grab() {

@@ -23,6 +23,8 @@
 #ifndef TPGDESCRIPTOR2_H_
 #define TPGDESCRIPTOR2_H_
 
+#include "PreCompiled.h"
+
 namespace Cam {
 class CamExport TPGDescriptor;
 }
