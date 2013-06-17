@@ -97,6 +97,13 @@ SET(TPG_SRCS
 )
 SOURCE_GROUP("TPG" FILES ${TPG_SRCS})
 
+SET(PLUGINS_SRCS
+	Plugins/MyPlugin.cpp
+	Plugins/MyPlugin.h
+)
+
+SOURCE_GROUP("Plugins" FILES ${PLUGINS_SRCS})
+
 # SET(Python_SRCS
 # )
 # SOURCE_GROUP("Python" FILES ${Python_SRCS})
@@ -128,6 +135,7 @@ SET(Cam_SRCS
     ${CamModule_SRCS}
     ${Features_SRCS}
     ${Python_SRCS}
+    ${PLUGINS_SRCS}
 )
 
 SET(Cam_Scripts
