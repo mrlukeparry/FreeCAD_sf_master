@@ -97,6 +97,14 @@ SET(CamGui_SRCS
     UIManager.h
     TPGListModel.cpp
     TPGListModel.h
+
+    ../App/TPG/TPGDescriptor.cpp
+    ../App/TPG/TPGDescriptor.h
+    ../App/TPG/TPGDescriptorCollection.cpp
+    ../App/TPG/TPGDescriptorCollection.h
+
+    ../App/CamManager.cpp
+    ../App/CamManager.h
 )
 
 add_library(CamGui SHARED ${CamGui_SRCS})

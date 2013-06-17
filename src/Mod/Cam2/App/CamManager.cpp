@@ -144,7 +144,11 @@ void CamManagerInst::tpgRunnerThreadMain() {
 			Base::Console().Message("Finished TPG: %s\n", tpgRun->tpg->getName().toAscii().constData());
 		}
 		else {
-			sleep(1); //TODO: make this a bit smarter so it can be interupted to stop quickly.
+			#ifdef WIN32
+				Sleep(1 * 1000);
+			#else
+				sleep(1); //TODO: make this a bit smarter so it can be interupted to stop quickly.
+			#endif
 		}
 	}
 	Base::Console().Message("TPG Runner thread stopping\n");
@@ -160,4 +164,4 @@ void CamManagerInst::updateProgress(QString tpgid, TPG::State state, int progres
 
 } /* namespace Cam */
 
-#include "moc_CamManager.cpp"
+#include <Mod/Cam2/App/moc_CamManager.cpp>

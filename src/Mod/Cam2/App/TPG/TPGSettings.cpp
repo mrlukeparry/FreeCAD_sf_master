@@ -208,19 +208,25 @@ TPGSettingDefinition* TPGSettings::addSettingDefinition(QString &action, TPGSett
 	return setting;
 }
 
-///**
-// * Get the value of a given setting (by name)
-// */
-//const QString TPGSettings::getValue(const char *name, const char *action /*= NULL*/) {
-//
-//	QString qname = QString::fromAscii(name);
-//	if (action == NULL)
-//		return getValue(qname);
-//	else {
-//		QString qaction = QString::fromAscii(action);
-//		return getValue(qname, qaction);
-//	}
-//}
+/**
+ * Get the currently selected action.
+ */
+const QString &TPGSettings::getAction() const {
+	return action;
+}
+
+/**
+ * Change the currently selected action.
+ */
+bool TPGSettings::setAction(QString &action) {
+	this->action = action;
+	if (tpgFeature != NULL)
+	{
+		tpgFeature->PropTPGSettings.setValue("action", action.toAscii().constData());
+		return(true);
+	}
+	return(false);
+}
 
 /**
  * Get the value of a given setting (by name)
@@ -328,6 +334,9 @@ void TPGSettings::addDefaults() {
  */
 void TPGSettings::setTPGFeature(TPGFeature *tpgFeature) {
 	this->tpgFeature = tpgFeature;
+
+	// load the TPG's action
+	tpgFeature->PropTPGSettings.getValues();
 
 	addDefaults();
 }

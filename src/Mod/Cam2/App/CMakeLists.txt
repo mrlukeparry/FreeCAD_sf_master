@@ -12,6 +12,7 @@ include_directories(
     ${ZLIB_INCLUDE_DIR}
     ${PYTHON_INCLUDE_PATH}
     ${XERCESC_INCLUDE_DIR}
+    ${QT_INCLUDE_DIR}
 )
 link_directories(${OCC_LIBRARY_DIR})
 
@@ -76,6 +77,8 @@ SET(TPG_SRCS
     TPG/PyTPGFactory.h
     TPG/PyTPGDescriptor.cpp
     TPG/PyTPGDescriptor.h
+    TPG/PyTPGSettings.cpp
+    TPG/PyTPGSettings.h
     TPG/PyToolPath.cpp
     TPG/PyToolPath.h
     
@@ -93,6 +96,13 @@ SET(TPG_SRCS
     # TPG/CppTPGWrapper.h
 )
 SOURCE_GROUP("TPG" FILES ${TPG_SRCS})
+
+SET(PLUGINS_SRCS
+	Plugins/MyPlugin.cpp
+	Plugins/MyPlugin.h
+)
+
+SOURCE_GROUP("Plugins" FILES ${PLUGINS_SRCS})
 
 # SET(Python_SRCS
 # )
@@ -125,6 +135,7 @@ SET(Cam_SRCS
     ${CamModule_SRCS}
     ${Features_SRCS}
     ${Python_SRCS}
+    ${PLUGINS_SRCS}
 )
 
 SET(Cam_Scripts

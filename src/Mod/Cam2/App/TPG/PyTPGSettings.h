@@ -32,17 +32,26 @@
 #define QStringPtr_toPyString(__str__) PyString_FromString(((const char*)(__str__))->toStdString().c_str());
 
 
+#define PyCamTPGSettings_Check(__obj__) PyObject_TypeCheck((__obj__), &PyTPGSettingsType)
+#define PyTPGSettingDefinition_Check(__obj__) PyObject_TypeCheck((__obj__), &PyTPGSettingDefinitionType)
+
+
 /**
- * A wrapper for the TPGSetting class to allow access from PyTPGs
+ * A wrapper for the TPGSettingDefinition class to allow access from PyTPGs
  */
-//typedef struct  {
-//    PyObject_HEAD
-//    Cam::TPGSetting *ts;
-//} cam_PyTPGSetting;
+typedef struct  {
+    PyObject_HEAD
+    Cam::TPGSettingDefinition *settings;
+} cam_PyTPGSettingDefinition;
 
+
+
+// ----------------------------------------------------------------------------
+// ----- TPGSettings ----------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 /**
- * A wrapper for the TPGSetting class to allow access from PyTPGs
+ * A wrapper for the TPGSettings class to allow access from PyTPGs
  */
 typedef struct  {
     PyObject_HEAD
