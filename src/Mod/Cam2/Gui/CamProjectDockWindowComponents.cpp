@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -110,7 +110,7 @@ bool CamTextBoxComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLay
 
             // make the label
             QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
-            labelWidget->setObjectName(qname + "Label");
+			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
             form->setWidget(row, QFormLayout::LabelRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
 
@@ -173,7 +173,7 @@ bool CamRadioComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayou
 
             // make the label
             QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
-            labelWidget->setObjectName(qname + "Label");
+			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
             form->setWidget(row, QFormLayout::SpanningRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
 

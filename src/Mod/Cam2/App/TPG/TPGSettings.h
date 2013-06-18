@@ -24,7 +24,7 @@
 #ifndef CAM_TPGSETTINGS_H
 #define CAM_TPGSETTINGS_H
 
-#include "PreCompiled.h"	// we need the __declspec(dllexport) macros for the Windows build
+#include <PreCompiled.h>	// we need the __declspec(dllexport) macros for the Windows build
 
 namespace Cam {
 class CamExport TPGSettingOption;

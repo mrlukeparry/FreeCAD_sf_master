@@ -7,15 +7,10 @@ SET(TPG_TARGET TestPlugin)
 SET(Tpg_SRCS
 	CppExampleTPG.cpp
 	CppExampleTPG.h
-	../../TPG/CppTPGDescriptor.cpp
 	../../TPG/CppTPGDescriptor.h
-	../../TPG/CppTPGDescriptorWrapper.cpp
 	../../TPG/CppTPGDescriptorWrapper.h
-	../../TPG/CppTPGPlugin.cpp
 	../../TPG/CppTPGPlugin.h
-	../../TPG/TPGDescriptor.cpp
 	../../TPG/TPGDescriptor.h
-	../../TPG/TPGDescriptorCollection.cpp
 	../../TPG/TPGDescriptorCollection.h
 	../MyPlugin.cpp
 	../MyPlugin.h
@@ -31,5 +26,10 @@ SOURCE_GROUP("TPG" FILES ${Tpg_SRCS})
 ADD_LIBRARY(${TPG_TARGET} SHARED ${Tpg_SRCS})
 TARGET_LINK_LIBRARIES(${TPG_TARGET} ${Tpg_LIBS})
 
-set_target_properties(${TPG_TARGET} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam/CppTPG)
+if(MSVC)
+	set_target_properties(${TPG_TARGET} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}../../../../../../../Mod/Cam/CppTPG)
+else(MSVC)
+	set_target_properties(${TPG_TARGET} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam/CppTPG)
+endif(MSVC)
+
 INSTALL(TARGETS ${TPG_TARGET} DESTINATION lib)

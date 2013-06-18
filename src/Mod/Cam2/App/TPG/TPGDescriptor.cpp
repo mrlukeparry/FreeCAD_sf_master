@@ -27,6 +27,52 @@
 
 namespace Cam {
 
+	 TPGDescriptor::TPGDescriptor(QString id, QString name, QString description, QString type) {
+        this->id = id;
+        this->name = name;
+        this->description = description;
+        this->type = type;
+        refcnt = 1;
+    }
+    /// Convenience method for using plain ascii string
+    TPGDescriptor::TPGDescriptor(const char *id, const char * name, const char * description,
+            const char * type) {
+        this->id = QString::fromAscii(id);
+        this->name = QString::fromAscii(name);
+        this->description = QString::fromAscii(description);
+        this->type = QString::fromAscii(type);
+        refcnt = 1;
+    }
+    TPGDescriptor::TPGDescriptor(const TPGDescriptor &copy) {
+        this->id = copy.id;
+        this->name = copy.name;
+        this->description = copy.description;
+        this->type = copy.type;
+        refcnt = 1;
+    }
+	TPGDescriptor::TPGDescriptor(const TPGDescriptor *copy) {
+        this->id = copy->id;
+        this->name = copy->name;
+        this->description = copy->description;
+        this->type = copy->type;
+        refcnt = 1;
+    }
+
+	/* virtual */ TPGDescriptor::~TPGDescriptor() {
+        qDebug("Deleted TPGDescriptor: %p\n", this);
+    }
+
+	/* virtual */ void TPGDescriptor::print() {
+        qDebug("- ('%s', '%s', '%s', '%s')\n", id.toAscii().constData(),
+                name.toAscii().constData(), description.toAscii().constData(),
+                type.toAscii().constData());
+    }
+
+
+
+
+
+
     /**
      * Increases reference count
      */

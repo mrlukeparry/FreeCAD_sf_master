@@ -24,7 +24,7 @@
 #define CAM_GCODE_H
 
 #include <App/PropertyStandard.h>
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 
 /// Base class
 namespace Cam

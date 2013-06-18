@@ -23,6 +23,7 @@
 #ifndef CPPTPGPLUGIN_H_
 #define CPPTPGPLUGIN_H_
 
+#include <PreCompiled.h>
 #include <vector>
 #include <QLibrary>
 
@@ -41,7 +42,7 @@ namespace Cam {
  * is one instance of this class per library file.  The library is only loaded
  * when it is needed.
  */
-class CppTPGPlugin {
+class CamExport CppTPGPlugin {
 public:
     int refcnt; ///< reference counter
 protected:

@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #include <Python.h>
 #endif
@@ -453,7 +453,7 @@ Cam::CamFeature *UIManagerInst::makeCamFeature(App::Document* Doc)
 	// create the object
 	App::DocumentObject *camFeat =  Doc->addObject("Cam::CamFeature", FeatName.c_str());
 	if(camFeat && camFeat->isDerivedFrom(Cam::CamFeature::getClassTypeId())) {
-		Cam::CamFeature *camFeature = dynamic_cast<Cam::CamFeature *>(camFeature);
+		Cam::CamFeature *camFeature = dynamic_cast<Cam::CamFeature *>(camFeat);
 		camFeature->initialise();
 
 	    Gui::Command::commitCommand();

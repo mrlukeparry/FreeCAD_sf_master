@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 #include <QList>
@@ -90,8 +90,8 @@ bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool save
         bool failure = false;
         std::vector<Cam::TPGSettingDefinition*> settings = newSettings->getSettings();
         std::vector<Cam::TPGSettingDefinition*>::iterator it = settings.begin();
-        QString camTextBox = "Cam::TextBox";
-        QString camRadio = "Cam::Radio";
+        QString camTextBox = QString::fromUtf8("Cam::TextBox");
+        QString camRadio = QString::fromUtf8("Cam::Radio");
         for (; it != settings.end(); ++it)
         {
             Cam::TPGSettingDefinition* setting = *it;

@@ -1,5 +1,5 @@
 if(MSVC)
-    add_definitions(-DFCAppCam -DHAVE_ACOSH -DHAVE_ASINH -DHAVE_ATANH)
+    add_definitions(-DHAVE_ACOSH -DHAVE_ASINH -DHAVE_ATANH)
 else(MSVC)
     add_definitions(-DHAVE_LIMITS_H -DHAVE_CONFIG_H)
 endif(MSVC)
@@ -99,13 +99,9 @@ SET(CamGui_SRCS
     TPGListModel.cpp
     TPGListModel.h
 
-    ../App/TPG/TPGDescriptor.cpp
     ../App/TPG/TPGDescriptor.h
-    ../App/TPG/TPGDescriptorCollection.cpp
     ../App/TPG/TPGDescriptorCollection.h
     ../App/TPG/TPGSettings.h
-
-    ../App/CamManager.cpp
     ../App/CamManager.h
 )
 

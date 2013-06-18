@@ -80,11 +80,11 @@ protected:
 			this->name = name;
 
 			progressLabel = new QLabel(parent);
-			progressLabel->setObjectName("label" + name);
+			progressLabel->setObjectName(QString::fromUtf8("label") + name);
 			progressLabel->setText(name); //TODO: get the name of the TPG
 
 			progressBar = new QProgressBar(parent);
-			progressBar->setObjectName("progressBar" + name);
+			progressBar->setObjectName(QString::fromUtf8("progressBar") + name);
 			progressBar->setValue(0);
 			progressBar->setTextVisible(true);
 			progressBar->setRange(0, 100);
@@ -107,7 +107,7 @@ protected:
 		 * Updates the TPG Status progressbar
 		 */
 		void updateState(Cam::TPG::State state, int progress) {
-			progressLabel->setText(name + ": " + Cam::TPG::stateToStr(state));
+			progressLabel->setText(name + QString::fromUtf8(": ") + Cam::TPG::stateToStr(state));
 			if (progress >= 0 && progress <= 100)
 				progressBar->setValue(progress);
 		}
