@@ -71,7 +71,7 @@ public:
     CppTPGPlugin(QString filename);
     virtual ~CppTPGPlugin();
 
-    QString error; ///< if there is a library error the result of dlerror() is stored here.
+    QString library_error; ///< if there is a library error the result of dlerror() is stored here.
 
     /**
      * Returns a collection of TPG's (descriptors) that this plugin provides

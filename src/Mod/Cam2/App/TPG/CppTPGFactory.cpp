@@ -49,6 +49,7 @@ CppTPGFactoryInst::CppTPGFactoryInst() {
 }
 
 CppTPGFactoryInst::~CppTPGFactoryInst() {
+	int i=3;
 }
 
 /**

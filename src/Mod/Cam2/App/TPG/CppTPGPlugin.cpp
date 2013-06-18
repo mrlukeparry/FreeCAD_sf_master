@@ -40,11 +40,19 @@ CppTPGPlugin::CppTPGPlugin(QString filename) : library(filename)
 
 CppTPGPlugin::~CppTPGPlugin() {
     if (descriptors != NULL)
+	{
         descriptors->release();
+		descriptors = NULL;
+	}
+
     if (library.isLoaded())
 	{
         close();
 	}
+
+	getDescriptorsPtr = NULL;
+    getTPGPtr = NULL;
+	refcnt = 0;
 }
 
 /**
@@ -71,7 +79,7 @@ Cam::TPGDescriptorCollection* CppTPGPlugin::getDescriptors() {
             return result;
         }
     }
-    qWarning("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
+    qWarning("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->library_error.toAscii().constData());
     return NULL;
 }
 
@@ -82,10 +90,10 @@ Cam::TPGDescriptorCollection* CppTPGPlugin::getDescriptors() {
  * implementation once all references are released
  */
 TPG* CppTPGPlugin::getTPG(QString id) {
-    if (isOpen()) {
+    if ((isOpen()) && (getTPGPtr != NULL)) {
         return getTPGPtr(id);
     }
-    qWarning("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
+    qWarning("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->library_error.toAscii().constData());
     return NULL;
 }
 
@@ -103,7 +111,9 @@ CppTPGPlugin* CppTPGPlugin::grab() {
 void CppTPGPlugin::release() {
     refcnt--;
     if (refcnt <= 0)
+	{
         delete this;
+	}
 }
 
 /**
@@ -112,18 +122,18 @@ void CppTPGPlugin::release() {
 bool CppTPGPlugin::isOpen() {
 	if (! library.isLoaded()) {
         library.load();
-		if (!library.isLoaded()) {
-			error = library.errorString();
+		if (! library.isLoaded()) {
+			library_error = library.errorString();
             return false;
         }
 
         // resolve symbols
 		getDescriptorsPtr = (getDescriptors_t*) library.resolve("getDescriptors");
-		if (getDescriptorsPtr == NULL) {error = library.errorString(); close(); return false;}
+		if (getDescriptorsPtr == NULL) {library_error = library.errorString(); close(); return false;}
 		qDebug("Correctly retrieved function pointers for getDescriptors() from plugin library %s\n", this->filename.toAscii().constData() );	// TODO - remove this when the module is more robust.
 
 		getTPGPtr = (getTPG_t*) library.resolve("getTPG");
-		if (getTPGPtr == NULL) {error = library.errorString(); close(); return false;}
+		if (getTPGPtr == NULL) {library_error = library.errorString(); close(); return false;}
 		qDebug("Correctly retrieved function pointer for getTPG() from plugin library %s\n", this->filename.toAscii().constData() );	// TODO - remove this when the module is more robust.
     }
     return true;
