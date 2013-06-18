@@ -64,7 +64,7 @@ void CppTPGFactoryInst::scanPlugins()
 
 	/*
 	// NOTE: We cannot delete the plugins here because pointers to them are still held by
-	// parent objects.  As an alternative, we're going to check each file by name and only
+	// parent objects (CppTPGDescriptorWrapper).  As an alternative, we're going to check each file by name and only
 	// load those that we have not previously seen.
 
     // cleanout old plugins
