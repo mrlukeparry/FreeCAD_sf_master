@@ -49,7 +49,11 @@ CppTPGFactoryInst::CppTPGFactoryInst() {
 }
 
 CppTPGFactoryInst::~CppTPGFactoryInst() {
-	int i=3;
+	for (Plugins_t::iterator itPlugin = plugins.begin(); itPlugin != plugins.end(); itPlugin++)
+	{
+		(*itPlugin)->release();
+	}
+	plugins.clear();
 }
 
 /**
