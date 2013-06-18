@@ -107,6 +107,33 @@ bool CmdCamTPGFeature::isActive(void)
 //===========================================================================
 // CmdCamTPGFeature
 //===========================================================================
+DEF_STD_CMD_A(CmdCamRunTPG);
+
+CmdCamRunTPG::CmdCamRunTPG()
+  :Command("Cam_RunTPG")
+{
+    sAppModule    = "Cam";
+    sGroup        = QT_TR_NOOP("Cam");
+    sMenuText     = QT_TR_NOOP("Run TPG");
+    sToolTipText  = QT_TR_NOOP("Executes the selected TPG to (re)produce its Tool Path");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Cam_RunTPG";
+}
+
+void CmdCamRunTPG::activated(int iMsg)
+{
+    CamGui::UIManager().RunTPG();
+}
+
+bool CmdCamRunTPG::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+//===========================================================================
+// CmdCamWatchHighlight
+//===========================================================================
 DEF_STD_CMD_A(CmdCamWatchHighlight);
 
 CmdCamWatchHighlight::CmdCamWatchHighlight()
@@ -142,5 +169,6 @@ void CreateCamCommands()
     Gui::CommandManager &rcCmdMgr = Gui::Application::Instance->commandManager();
     rcCmdMgr.addCommand(new CmdCamFeature());
     rcCmdMgr.addCommand(new CmdCamTPGFeature());
+    rcCmdMgr.addCommand(new CmdCamRunTPG());
     rcCmdMgr.addCommand(new CmdCamWatchHighlight());
 }

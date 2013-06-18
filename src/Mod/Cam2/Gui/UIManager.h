@@ -33,6 +33,7 @@
 #include <Gui/ViewProviderDocumentObject.h>
 
 #include "../App/Features/CamFeature.h"
+#include "../App/Features/TPGFeature.h"
 #include "../App/TPG/TPGFactory.h"
 #include "../App/TPG/TPG.h"
 #include "TPGListModel.h"
@@ -91,6 +92,14 @@ public:
    * Used by the CamTPGFeature GUI Command to do the work required to add a TPGFeature
    */
   bool TPGFeature();
+  /**
+   * Executes the selected TPG(s) to (re)produce its Tool Path.
+   */
+  bool RunTPG();
+  /**
+   * Debugging Command for testing.
+   * TODO: remove this Command when no long needed
+   */
   bool WatchHighlight();
 
   /**
@@ -114,7 +123,7 @@ public Q_SLOTS:
 Q_SIGNALS:
   void updatedTPGList(TPGListModel *model);
 
-  void updatedTPGSelection(Cam::TPG* tpg);
+  void updatedTPGSelection(Cam::TPGFeature* tpg);
 
   void updatedTPGStateSig(QString tpgid, Cam::TPG::State state, int progress);
 };

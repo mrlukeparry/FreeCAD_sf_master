@@ -122,7 +122,7 @@ public Q_SLOTS:
 	/**
 	 * Receive messages to update the settings area for a tpg
 	 */
-	void updatedTPGSelection(Cam::TPG* tpg);
+	void updatedTPGSelection(Cam::TPGFeature* tpgFeature);
 
 	/**
 	 * Receive messages to update a progress bar

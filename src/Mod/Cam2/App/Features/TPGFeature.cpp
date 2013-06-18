@@ -25,7 +25,11 @@
 #ifndef _PreComp_
 #endif
 
+#include <App/PropertyContainer.h>
+
 #include <Base/Console.h>
+#include <Base/Reader.h>
+#include <Base/Writer.h>
 
 #include "TPGFeature.h"
 #include "../TPG/TPGFactory.h"
@@ -34,12 +38,14 @@ using namespace Cam;
 
 PROPERTY_SOURCE(Cam::TPGFeature, App::DocumentObject)
 
-TPGFeature::TPGFeature()// : tpg(NULL)
-{
-//    ADD_PROPERTY_TYPE(ExternalGeometry,(0, 0), "TPG Feature", (App::PropertyType)(App::Prop_None) , "External geometry");
+TPGFeature::TPGFeature() {
+
+	//ADD_PROPERTY_TYPE(_prop_, _defaultval_, _group_,_type_,_Docu_)
     ADD_PROPERTY_TYPE(PluginId,        (""),   "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
+    ADD_PROPERTY_TYPE(PropTPGSettings,(), "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
 
     tpg = NULL;
+    tpgSettings = NULL; //new TPGSettings();
 }
 
 //// TODO not sure if this is actually needed anymore.
@@ -125,11 +131,56 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
  * Get a reference to the TPG the implements this TPG Feature.
  * Will load the TPG instance if not set already.
  */
-TPG * TPGFeature::getTPG() {
+TPG* TPGFeature::getTPG() {
 	if (tpg == NULL)
 		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()));
 	return tpg;
 }
+
+/**
+ * Get the current TPG settings object
+ */
+TPGSettings* TPGFeature::getTPGSettings() {
+
+	if (tpgSettings == NULL) {
+		getTPG(); // make sure TPG has been loaded already.
+
+		// get a description of settings that TPG expects
+		tpgSettings = tpg->getSettingDefinitions();
+		if (tpgSettings == NULL)
+			return NULL;
+
+		// tell the settings object about myself so it can save values here.
+		tpgSettings->setTPGFeature(this);
+	}
+
+	return tpgSettings;
+}
+
+void TPGFeature::Save(Base::Writer &writer) const
+{
+	//NOTE: this isn't need anymore as the setting values are placed directly into the PropTPGSettings object
+//	// save the settings into the property before saving
+//	if (tpgSettings != NULL) {
+//		std::map<std::string,std::string> newVals;
+//		std::vector<TPGSettingDefinition*> settings = tpgSettings->getSettings();
+//		for (std::vector<TPGSettingDefinition*>::iterator it = settings.begin(); it != settings.end(); ++it) {
+//			std::string name = (*it)->name.toStdString();
+//			std::string value = (*it)->value.toStdString();
+//			newVals[name] = value;
+//		}
+////		PropTPGSettings.setValues(newVals);
+//	}
+
+    //save the father classes
+    App::DocumentObject::Save(writer);
+}
+
+//void TPGFeature::Restore(Base::XMLReader &reader)
+//{
+//    //read the father classes
+//    App::DocumentObject::Restore(reader);
+//}
 
 void TPGFeature::onDocumentRestored()
 {

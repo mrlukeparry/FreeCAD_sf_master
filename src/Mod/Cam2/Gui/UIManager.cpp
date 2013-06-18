@@ -163,6 +163,40 @@ bool UIManagerInst::TPGFeature() {
 	return true;
 }
 
+
+/**
+ * Executes the selected TPG(s) to (re)produce its Tool Path.
+ * TODO: make non-TPG selection a warning only
+ * TODO: allow CamFeature selection to run all TPG's within
+ * TODO: allow (and ask for) parallel TPG execution.
+ */
+bool UIManagerInst::RunTPG() {
+
+    // make unique list of selected objects
+    std::vector<Gui::SelectionSingleton::SelObj> objs = Gui::Selection().getSelection(App::GetApplication().getActiveDocument()->getName());
+    std::set<App::DocumentObject*> selDocObjs;
+    for (std::vector<Gui::SelectionSingleton::SelObj>::iterator it = objs.begin(); it != objs.end(); ++it)
+    	selDocObjs.insert(it->pObject);
+
+    // check all objects are TPG's
+    for (std::set<App::DocumentObject*>::const_iterator it = selDocObjs.begin(); it != selDocObjs.end(); ++it) {
+    	if (!(*it)->isDerivedFrom(Cam::TPGFeature::getClassTypeId())) {
+    		QMessageBox msgBox;
+			msgBox.setText(QObject::tr("Your selection contains more than just TPG's"));
+			msgBox.setInformativeText(QObject::tr("Please only select TPG's"));
+			msgBox.setStandardButtons(QMessageBox::Ok);
+			int ret = msgBox.exec();
+			return false;
+    	}
+    }
+
+    // run TPG's
+    for (std::set<App::DocumentObject*>::const_iterator it = selDocObjs.begin(); it != selDocObjs.end(); ++it) {
+		Cam::CamManager().runTPGByName((*it)->getNameInDocument());
+    }
+	return true;
+}
+
 bool UIManagerInst::WatchHighlight() {
 
 //	Base::Console().Message("WatchHighlight: start\n");
@@ -225,8 +259,8 @@ void UIManagerInst::updateCamProjectSelection(const char* pDocName) {
     	{
 			Cam::TPGFeature *tpgFeature = dynamic_cast<Cam::TPGFeature *>(docObj);
 			if (tpgFeature) {
-				Cam::TPG *tpg = tpgFeature->getTPG();
-				Q_EMIT updatedTPGSelection(tpg);
+//				Cam::TPG *tpg = tpgFeature->getTPG();
+				Q_EMIT updatedTPGSelection(tpgFeature);
 			}
             else
             	Q_EMIT updatedTPGSelection(NULL);
@@ -284,7 +318,6 @@ void UIManagerInst::addTPG(Cam::TPGDescriptor *tpgDescriptor)
     	// else do nothing
 
     /////// END PSEUDO ///////
-
     // get the Active document
 	App::Document* activeDoc = App::GetApplication().getActiveDocument();
 	if (!activeDoc) {
@@ -297,9 +330,8 @@ void UIManagerInst::addTPG(Cam::TPGDescriptor *tpgDescriptor)
     if (CamFeatureFilter.match()) {
     	Cam::CamFeature *CamFeature = static_cast<Cam::CamFeature*>(CamFeatureFilter.Result[0][0].getObject());
 
-
 		// create the feature (for Document Tree)
-	    std::string tpgFeatName = activeDoc->getUniqueObjectName(tpgDescriptor->name.toStdString().c_str());
+	    std::string tpgFeatName = activeDoc->getUniqueObjectName(tpgDescriptor->name.toAscii().constData());
 	    App::DocumentObject *tpgFeat =  activeDoc->addObject("Cam::TPGFeature", tpgFeatName.c_str());
 	    if(tpgFeat && tpgFeat->isDerivedFrom(Cam::TPGFeature::getClassTypeId())) {
 			Cam::TPGFeature *tpgFeature = dynamic_cast<Cam::TPGFeature *>(tpgFeat);
@@ -315,6 +347,7 @@ void UIManagerInst::addTPG(Cam::TPGDescriptor *tpgDescriptor)
 			activeDoc->recompute();
 	    }
 	    else {
+
 	    	if (tpgFeat)
 		    	Base::Console().Error("Object not TPG Feature\n");
 	    	else

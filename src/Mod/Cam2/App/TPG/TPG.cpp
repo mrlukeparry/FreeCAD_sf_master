@@ -45,6 +45,7 @@ TPG::TPG()
 //    cache->initialise();
 
     refcnt = 1;
+    settings = NULL;
 }
 
 TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription)
@@ -105,14 +106,12 @@ std::vector<QString> &TPG::getActions()
 }
 
 /**
- * Get the settings for a given action
+ * Get the settings for this TPG.  Note: value returned is a deep copy of object.
  */
-TPGSettings *TPG::getSettings(QString &action)
+TPGSettings *TPG::getSettingDefinitions()
 {
-	std::map<QString, TPGSettings*>::iterator it;
-	it = this->settings.find(action);
-	if (it != this->settings.end())
-		return it->second->clone();
+	if (settings != NULL)
+		return settings->clone();
 	return NULL;
 }
 

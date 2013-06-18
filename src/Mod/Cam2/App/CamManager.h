@@ -23,7 +23,14 @@
 #ifndef CAMMANAGER_H_
 #define CAMMANAGER_H_
 
+#include <boost/thread.hpp>
+
+#include <queue>
+
 #include <QObject>
+
+#include <App/Document.h>
+
 #include "TPG/TPG.h"
 
 namespace Cam {
@@ -34,6 +41,7 @@ namespace Cam {
  * It provides a single point of communication with all aspects of the
  * workbench.  It provides signals and slots so that the UI (though the
  * UIManager) can interact with the data.
+ * TODO: remove QObject super-class (i.e. use boost signals instead of QT ones)
  */
 class CamExport CamManagerInst : public QObject {
 
@@ -41,6 +49,27 @@ class CamExport CamManagerInst : public QObject {
 
 protected:
 	static CamManagerInst* _pcSingleton;
+
+	// TPG Running Thread //
+	/// Storage class for TPG's to run
+	class TPGRunnerItem {
+	public:
+		TPGRunnerItem(TPG* tpg, TPGSettings* settings) {this->tpg = tpg; this->settings = settings;}
+		TPG* tpg;
+		TPGSettings* settings;
+	};
+	/// the thread that processes tpg run requests
+	boost::thread* tpgRunnerThread;
+	/// queue to store TPG's before they are run
+	std::queue<TPGRunnerItem*> tpgRunnerQueue;
+	/// mutex to protect access to tpgRunnerQueue
+	boost::mutex tpgRunnerQueueMutex;
+	/// flag to tell thread to stay alive
+	bool tpgRunnerKeepAlive;
+	/// method to add a TPG to the TPG Runner Queue
+	bool queueTPGRun(TPG* tpg, TPGSettings* settings);
+	/// the main function used for the tpgRunnerThread
+	void tpgRunnerThreadMain();
 
 public:
 
@@ -50,6 +79,14 @@ public:
 	// singleton manipators
 	static CamManagerInst& instance(void);
 	static void destruct (void);
+
+	// External API (for GUI)
+	//TODO: make these functions available to Python
+	/**
+	 * Adds a TPG to the processing queue given its name.  If document is NULL
+	 * then the active document will be used.
+	 */
+	bool runTPGByName(const char *FeatName, App::Document* document = NULL);
 
 	// CLI Internal API (i.e. Non-GUI)
 	/**

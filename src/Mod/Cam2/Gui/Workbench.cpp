@@ -80,10 +80,13 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     Gui::MenuItem* root = StdWorkbench::setupMenuBar();
     Gui::MenuItem* item = root->findItem("&Windows");
 
-    Gui::MenuItem* part = new Gui::MenuItem();
-    root->insertItem(item, part);
-    part->setCommand("Cam");
-    *part << "Cam_CamFeature";
+    Gui::MenuItem* cam = new Gui::MenuItem();
+    root->insertItem(item, cam);
+    cam->setCommand("Cam");
+    *cam << "Cam_CamFeature";
+	*cam << "Cam_TPGFeature";
+	*cam << "Separator";
+	*cam << "Cam_RunTPG";
 
     return root;
 }
@@ -92,9 +95,12 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
 {
     Gui::ToolBarItem* root = StdWorkbench::setupToolBars();
 
-    Gui::ToolBarItem * part = new Gui::ToolBarItem(root);
-    part->setCommand("Cam");
-    *part << "Cam_CamFeature";
+    Gui::ToolBarItem * cam = new Gui::ToolBarItem(root);
+    cam->setCommand("Cam");
+    *cam << "Cam_CamFeature";
+	*cam << "Cam_TPGFeature";
+	*cam << "Separator";
+	*cam << "Cam_RunTPG";
 
     return root;
 }

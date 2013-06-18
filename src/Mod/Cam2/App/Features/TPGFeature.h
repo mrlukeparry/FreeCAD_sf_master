@@ -24,14 +24,19 @@
 #ifndef CAM_TPGFEATURE_H
 #define CAM_TPGFEATURE_H
 
+namespace Cam {
+class CamExport TPGFeature;
+}
+
 #include <App/DocumentObject.h>
 #include <App/PropertyLinks.h>
 #include <App/PropertyStandard.h>
 #include <Mod/Part/App/PartFeature.h>
 #include <Base/BoundBox.h>
 
-#include "../TPG/TPGFactory.h"
 #include "../TPG/TPG.h"
+#include "../TPG/TPGSettings.h"
+#include "../TPG/TPGFactory.h"
 
 /**
   * TPGFeature is the document object that provides the user interface to control an individual ToolPathGenerator
@@ -51,6 +56,7 @@ public:
     ///App properties stores (saves and restores references used by the TPG)
 //    App::PropertyLinkSubList   ExternalGeometry;
     App::PropertyString        PluginId;
+    App::PropertyMap           PropTPGSettings;
 
     /// Methods for creating external interface to attach input to each TPG
     // [TODO] eventually this could be an APP::Property link list but doesn't make sens
@@ -72,17 +78,24 @@ public:
 //    void run();
 //    void stop();
 
-    /// Methods for handling the TPG
+    // ** Methods for handling the TPG ** //
 //    bool loadTPG(TPGDescriptor *tpgDescriptor);
-    TPG * getTPG();
+    /// gets the TPG Instance.  Loads it from Factory if needed.
+    TPG* getTPG();
+    /// Get the current TPG settings
+    TPGSettings* getTPGSettings();
 
     /// Convenience method for get the current TPG Status (Undefined if TPG not loaded)
 //    TPG::State getTPGStatus();
     bool hasTPG() const { return (tpg != NULL); }
 //    bool hasRunningTPG();
 
+    virtual void Save(Base::Writer &/*writer*/) const;
+//    virtual void Restore(Base::XMLReader &/*reader*/);
+
 protected:
     TPG *tpg;
+    TPGSettings *tpgSettings;
 //    Base::BoundBox3d inputBBox;
 //    std::vector<Part::Feature *> inputGeometry;
     

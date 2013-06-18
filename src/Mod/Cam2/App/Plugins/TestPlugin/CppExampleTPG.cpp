@@ -61,16 +61,15 @@ CppExampleTPG::CppExampleTPG()
     name = QS(myName);
     description = QS(myDesc);
 
-    actions.push_back(QS("default"));
-    TPGSettings *defaultSettings = new TPGSettings();
-    defaultSettings->addSetting(new TPGSetting("geometry", "Geometry", "Cam::TextBox", "Box01", "", "The input geometry that should be cut"));
-    defaultSettings->addSetting(new TPGSetting("tool", "Tool", "Cam::TextBox", "Tool01", "", "The tool to use for cutting"));
-    TPGSetting* speed = defaultSettings->addSetting(new TPGSetting("speed", "Speed", "Cam::Radio", "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
+    QString qaction = QS("default");
+    actions.push_back(qaction);
+    settings = new TPGSettings();
+    settings->addSettingDefinition(qaction, new TPGSettingDefinition("geometry", "Geometry", "Cam::TextBox", "Box01", "", "The input geometry that should be cut"));
+    settings->addSettingDefinition(qaction, new TPGSettingDefinition("tool", "Tool", "Cam::TextBox", "Tool01", "", "The tool to use for cutting"));
+    TPGSettingDefinition* speed = settings->addSettingDefinition(qaction, new TPGSettingDefinition("speed", "Speed", "Cam::Radio", "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
     speed->addOption("fast", "Fast");
     speed->addOption("normal", "Normal");
     speed->addOption("slow", "Slow");
-    defaultSettings->setDefaults();
-    settings.insert(std::pair<QString, TPGSettings*>(QS("default"), defaultSettings));
 }
 
 CppExampleTPG::~CppExampleTPG() {

@@ -167,13 +167,13 @@ def getType(obj):
         return "Sketch"
     if obj.isDerivedFrom("Part::Feature"):
         return "Part"
-    if (obj.Type == "App::Annotation"):
+    if (obj.TypeId == "App::Annotation"):
         return "Annotation"
     if obj.isDerivedFrom("Mesh::Feature"):
         return "Mesh"
     if obj.isDerivedFrom("Points::Feature"):
         return "Points"
-    if (obj.Type == "App::DocumentObjectGroup"):
+    if (obj.TypeId == "App::DocumentObjectGroup"):
         return "Group"
     return "Unknown"
 
@@ -1699,13 +1699,6 @@ def makeShapeString(String,FontFile,Size = 100,Tracking = 0):
     into a Compound Shape'''
     
     # temporary code
-    import platform
-    if not (platform.system() == 'Linux'):
-#    if (platform.system() == 'Linux'):
-        FreeCAD.Console.PrintWarning("Sorry, ShapeString is not yet implemented for your platform.\n")
-        return (None)
-    # temporary code
-    
     obj = FreeCAD.ActiveDocument.addObject("Part::Part2DObjectPython","ShapeString")
     _ShapeString(obj)
     obj.String = String
@@ -3734,7 +3727,7 @@ class _ShapeString(_DraftObject):
     def __init__(self, obj):
         _DraftObject.__init__(self,obj,"ShapeString")
         obj.addProperty("App::PropertyString","String","Base","Text string")
-        obj.addProperty("App::PropertyString","FontFile","Base","Font file name")
+        obj.addProperty("App::PropertyFile","FontFile","Base","Font file name")
         obj.addProperty("App::PropertyFloat","Size","Base","Height of text")
         obj.addProperty("App::PropertyInteger","Tracking","Base",
                         "Inter-character spacing")
