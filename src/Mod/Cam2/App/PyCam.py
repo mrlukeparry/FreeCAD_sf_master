@@ -78,11 +78,10 @@ class PyTPGBase(object):
     def getSettingDefinitions(self):
         '''Returns a list of settings that the TPG uses for each 'Action'.
         
-        Return value must use the following format:
-        {<actionname>: [(<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>), ...], ...}
+        @return: Cam.TPGSettings instance containing the settings
         '''
 
-        return {}
+        return Cam.TPGSettings()
         
     def run(self, action, settings=[]):
         '''Runs the selected action and returns the resulting TP'''

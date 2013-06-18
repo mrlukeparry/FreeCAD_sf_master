@@ -21,7 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 
 #include <App/DocumentObjectGroup.h>
 #include <Gui/Command.h>

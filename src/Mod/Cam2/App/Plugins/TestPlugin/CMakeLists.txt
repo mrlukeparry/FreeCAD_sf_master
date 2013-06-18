@@ -10,18 +10,14 @@ add_definitions(-DCAM_TPG_PLUGIN)
 SET(Tpg_SRCS
 	CppExampleTPG.cpp
 	CppExampleTPG.h
-	../../TPG/CppTPG.cpp
-	../../TPG/CppTPG.h
-	../../TPG/CppTPGDescriptor.cpp
+
 	../../TPG/CppTPGDescriptor.h
-	../../TPG/CppTPGDescriptorWrapper.cpp
 	../../TPG/CppTPGDescriptorWrapper.h
-	../../TPG/TPGDescriptor.cpp
-	../../TPG/TPGDescriptor.h
-	../../TPG/TPGDescriptorCollection.cpp
-	../../TPG/TPGDescriptorCollection.h
-	../../TPG/CppTPGPlugin.cpp
 	../../TPG/CppTPGPlugin.h
+	../../TPG/TPGDescriptor.h
+	../../TPG/TPGDescriptorCollection.h
+	../MyPlugin.cpp
+	../MyPlugin.h
 )
 
 # Add any libs that are needed
@@ -34,10 +30,9 @@ SOURCE_GROUP("TPG" FILES ${Tpg_SRCS})
 ADD_LIBRARY(${TPG_TARGET} SHARED ${Tpg_SRCS})
 TARGET_LINK_LIBRARIES(${TPG_TARGET} ${Tpg_LIBS})
 
-if (MSVC)
-	# Copy 'hack' from src/Main/CMakeLists.txt to send the DLL to the place where
-	# the CppTPGPlugin::isOpen() method looks for it.
-	set_target_properties(${TPG_TARGET} PROPERTIES PREFIX "../../../../../../../Mod/Cam/CppTPG/")
+if(MSVC)
+	set_target_properties(${TPG_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam/CppTPG)
+	set_target_properties(${TPG_TARGET} PROPERTIES PREFIX "../")	# Workaround the Debug/ and Release/ systems for Visual Studio
 endif(MSVC)
 
 set_target_properties(${TPG_TARGET} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam/CppTPG)

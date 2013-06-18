@@ -24,19 +24,31 @@
 #define __PRECOMPILED__
 
 #include <FCConfig.h>
-#include <QLibrary>
 
-// Exporting of App classes
+#include <QLibrary>
+#include <QtCore>	// For the Q_DECL_IMPORT/EXPORT macros.
+
+
 #ifdef FC_OS_WIN32
-# define CamExport     Q_DECL_EXPORT
-# define CamImport     Q_DECL_IMPORT
-# define PartExport    Q_DECL_IMPORT
-# define MeshExport    Q_DECL_IMPORT
+	#ifdef FCAppCam
+		// We're in the 'Cam' application module so we want to export the various classes.
+		// Exporting of App classes
+		# define CamExport    Q_DECL_EXPORT
+		# define PartExport   Q_DECL_IMPORT
+		# define MeshExport   Q_DECL_IMPORT
+	#else
+		// We're inside either a plugin or the GUI modules.  We want to import the CAM classes instead.
+		# define CamExport    Q_DECL_IMPORT
+		# define PartExport   Q_DECL_IMPORT
+		# define MeshExport   Q_DECL_IMPORT
+	#endif // FCAppCam
 #else // for Linux
-# define CamExport
-# define PartExport
-# define MeshExport
+	# define CamExport
+	# define PartExport
+	# define MeshExport
 #endif
+
+
 
 #ifdef _PreComp_
 

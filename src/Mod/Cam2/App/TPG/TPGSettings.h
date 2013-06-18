@@ -24,13 +24,14 @@
 #ifndef CAM_TPGSETTINGS_H
 #define CAM_TPGSETTINGS_H
 
+#include <PreCompiled.h>	// we need the __declspec(dllexport) macros for the Windows build
+
 namespace Cam {
 class CamExport TPGSettingOption;
 class CamExport TPGSettingDefinition;
 class CamExport TPGSettings;
 }
 
-#include <Mod/Cam2/App/PreCompiled.h>	// we need the __declspec(dllexport) macros for the Windows build
 #include "../Features/TPGFeature.h"
 
 #include <vector>
@@ -153,10 +154,15 @@ public:
      */
     TPGSettingDefinition* addSettingDefinition(QString &action, TPGSettingDefinition* setting);
 
-//    /**
-//     * Get the value of a given setting (by name)
-//     */
-//    const QString getValue(const char *name, const char *action = NULL);
+    /**
+     * Get the currently selected action.
+     */
+    const QString &getAction() const;
+
+    /**
+     * Change the currently selected action.
+     */
+    bool setAction(QString &action);
 
     /**
      * Get the value of a given setting (by name)
@@ -173,9 +179,7 @@ public:
      */
     void print();
 
-    std::vector<TPGSettingDefinition*> getSettings() {
-        return this->settingDefs;
-    }
+    std::vector<TPGSettingDefinition*> getSettings();
 
     /**
      * Sets the default value for every setting in Settings collection

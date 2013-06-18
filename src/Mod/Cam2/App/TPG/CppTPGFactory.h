@@ -40,7 +40,8 @@ class CppTPGFactoryInst {
 protected:
     static CppTPGFactoryInst* _pcSingleton;
 
-    std::vector<CppTPGPlugin*> plugins;
+	typedef std::vector<CppTPGPlugin*> Plugins_t;
+	Plugins_t plugins;
     TPGDescriptorCollection* descriptors;
 
     CppTPGFactoryInst();

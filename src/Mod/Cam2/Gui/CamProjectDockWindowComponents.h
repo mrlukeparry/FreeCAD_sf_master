@@ -23,6 +23,8 @@
 #ifndef CAMPROJECTDOCKWINDOWCOMPONENTS_H_
 #define CAMPROJECTDOCKWINDOWCOMPONENTS_H_
 
+#include <PreCompiled.h>
+
 #include <QLineEdit>
 #include <QFormLayout>
 #include <QList>

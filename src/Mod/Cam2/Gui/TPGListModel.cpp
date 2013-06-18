@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -48,10 +48,11 @@ int TPGListModel::rowCount(const QModelIndex& parent) const {
 QVariant TPGListModel::data(const QModelIndex& index, int role) const {
   if (!index.isValid())
     return QVariant();
-  if (index.row() >= int(tpgs->size()))
+
+  if (size_t(index.row()) >= tpgs->size())
     return QVariant();
   if (role == Qt::DisplayRole) {
-    if (tpgs != NULL && int(tpgs->size()) > index.row()) {
+    if (tpgs != NULL && tpgs->size() > size_t(index.row())) {
       Cam::TPGDescriptor* tpg = tpgs->at(index.row());
       return QVariant(tpg->name);
     }
@@ -62,7 +63,7 @@ QVariant TPGListModel::data(const QModelIndex& index, int role) const {
 QVariant TPGListModel::headerData(int section, Qt::Orientation orientation,
     int role) const {
   if (role == Qt::DisplayRole && section == 0) {
-    return QVariant("TPG Name");
+	  return QVariant(QString::fromUtf8("TPG Name"));
   }
   return QVariant();
 }

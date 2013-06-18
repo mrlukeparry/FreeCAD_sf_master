@@ -23,7 +23,10 @@
 #ifndef TPGLISTMODEL_H_
 #define TPGLISTMODEL_H_
 
-#include <qabstractitemmodel.h>
+#include <QAbstractItemModel>
+#include <QModelIndex>
+#include <QVariant>
+
 #include <vector>
 
 #include "../App/TPG/TPGFactory.h"
@@ -48,7 +51,7 @@ public:
    * Simplified getter for the descriptors
    */
   Cam::TPGDescriptor *get(int i) {
-    if (tpgs != NULL && i >= 0 && i < int(tpgs->size()))
+    if (tpgs != NULL && i >= 0 && size_t(i) < tpgs->size())
       return tpgs->at(i);
     return NULL;
   }

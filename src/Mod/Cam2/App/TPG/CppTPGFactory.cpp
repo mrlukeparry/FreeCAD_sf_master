@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -49,6 +49,11 @@ CppTPGFactoryInst::CppTPGFactoryInst() {
 }
 
 CppTPGFactoryInst::~CppTPGFactoryInst() {
+	for (Plugins_t::iterator itPlugin = plugins.begin(); itPlugin != plugins.end(); itPlugin++)
+	{
+		(*itPlugin)->release();
+	}
+	plugins.clear();
 }
 
 /**
@@ -61,6 +66,11 @@ void CppTPGFactoryInst::scanPlugins()
 	QString path = QString::fromAscii(App::GetApplication().Config()["AppHomePath"].c_str());
 	path.append(QString::fromAscii("Mod/Cam/CppTPG/"));
 
+	/*
+	// NOTE: We cannot delete the plugins here because pointers to them are still held by
+	// parent objects (CppTPGDescriptorWrapper).  As an alternative, we're going to check each file by name and only
+	// load those that we have not previously seen.
+
     // cleanout old plugins
     // printf("Releasing old Plugins:\n");
     for (size_t i = 0; i < plugins.size(); i++) {
@@ -69,8 +79,9 @@ void CppTPGFactoryInst::scanPlugins()
         plugin->release();
     }
     plugins.clear();
+	*/
 
-    printf("Scanning: %s\n", path.toAscii().constData()); //TODO: delete this once the workbench is more stable
+	qDebug("Scanning: %s\n", path.toAscii().constData());
 
 	QDir dir(path);
 	dir.setFilter(QDir::Files);
@@ -79,12 +90,25 @@ void CppTPGFactoryInst::scanPlugins()
 	{
 		if (QLibrary::isLibrary(itFileInfo->fileName()))
 		{
-			 // make library pointer
-            QString lib = itFileInfo->absoluteFilePath();
-            plugins.push_back(new CppTPGPlugin(lib));
-            printf("CppPlugin: %s\n", lib.toAscii().constData()); //TODO: delete this once the workbench is more stable
-		} // End if - then
+			// Look to see if we already have this plugin loaded.  If so, skip it.
+			bool found = false;
+			for (Plugins_t::const_iterator itPlugin = plugins.begin(); (! found) && (itPlugin != plugins.end()); itPlugin++)
+			{
+				if ((*itPlugin)->FileName() == itFileInfo->fileName()) found = true;
+			}
 
+			if (! found)
+			{
+				 // make library pointer
+				QString lib = itFileInfo->absoluteFilePath();
+				plugins.push_back(new CppTPGPlugin(lib));
+				qDebug("CppPlugin: %s\n", lib.toAscii().constData()); //TODO: delete this once the workbench is more stable
+			}
+			else
+			{
+				qDebug("CppPlugin::scanPlugins() Skipping over %s as we already have it loaded\n", itFileInfo->fileName().toAscii().constData());
+			}
+		} // End if - then
 	} // End for
 }
 
@@ -104,7 +128,7 @@ TPGDescriptorCollection* CppTPGFactoryInst::getDescriptors()
         }
     }
 
-    printf("Found %i CppTPGs\n", int(descriptors->size())); //TODO: delete this once the workbench is more stable
+    qDebug("Found %i CppTPGs\n", int(descriptors->size())); //TODO: delete this once the workbench is more stable
 
     // copy the tpg collection cache
     return descriptors->clone();

@@ -12,9 +12,20 @@ include_directories(
     ${PYTHON_INCLUDE_PATH}
 )
 
-set(AreaClipper_LIBS
-    ${PYTHON_LIBRARIES}
-    ${Boost_LIBRARIES})
+if(MSVC)
+	# We must exclude 'boost_python' for the windows build due to the naming
+	# of the library.  The boost python library gets linked anyway but
+	# it has the correct filename used.
+	set(AreaClipper_LIBS
+	    ${PYTHON_LIBRARIES}
+	    ${Boost_LIBRARIES})
+else(MSVC)
+	set(AreaClipper_LIBS
+	    boost_python
+	    ${PYTHON_LIBRARIES}
+	    ${Boost_LIBRARIES})
+endif(MSVC)
+
 #
 # # Turn compiler warnings up to 11, at least with gcc.
 # if (CMAKE_BUILD_TOOL MATCHES "make")
