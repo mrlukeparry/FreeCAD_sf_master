@@ -27,9 +27,10 @@ ADD_LIBRARY(${TPG_TARGET} SHARED ${Tpg_SRCS})
 TARGET_LINK_LIBRARIES(${TPG_TARGET} ${Tpg_LIBS})
 
 if(MSVC)
-	set_target_properties(${TPG_TARGET} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}../../../../../../../Mod/Cam/CppTPG)
-else(MSVC)
-	set_target_properties(${TPG_TARGET} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam/CppTPG)
+	set_target_properties(${TPG_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam/CppTPG)
+	set_target_properties(${TPG_TARGET} PROPERTIES PREFIX "../")	# Workaround the Debug/ and Release/ systems for Visual Studio
 endif(MSVC)
+
+set_target_properties(${TPG_TARGET} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam/CppTPG)
 
 INSTALL(TARGETS ${TPG_TARGET} DESTINATION lib)

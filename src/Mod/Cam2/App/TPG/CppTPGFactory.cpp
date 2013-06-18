@@ -73,18 +73,17 @@ void CppTPGFactoryInst::scanPlugins()
 	qDebug("Scanning: %s\n", path.toAscii().constData());
 
 	QDir dir(path);
-	dir.setFilter(QDir::Files | QDir::Executable);
+	dir.setFilter(QDir::Files);
 	QFileInfoList file_info_list = dir.entryInfoList();
 	for (QFileInfoList::ConstIterator itFileInfo = file_info_list.begin(); itFileInfo != file_info_list.end(); itFileInfo++)
 	{
-		if (itFileInfo->fileName().endsWith(QString::fromAscii(".so"), Qt::CaseInsensitive))
+		if (QLibrary::isLibrary(itFileInfo->fileName()))
 		{
 			 // make library pointer
             QString lib = itFileInfo->absoluteFilePath();
             plugins.push_back(new CppTPGPlugin(lib));
             qDebug("CppPlugin: %s\n", lib.toAscii().constData()); //TODO: delete this once the workbench is more stable
 		} // End if - then
-
 	} // End for
 }
 
