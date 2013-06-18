@@ -26,6 +26,7 @@
 #include <PreCompiled.h>
 #include <vector>
 #include <QLibrary>
+#include <QString>
 
 namespace Cam {
 class CppTPGPlugin;
@@ -70,6 +71,8 @@ protected:
 public:
     CppTPGPlugin(QString filename);
     virtual ~CppTPGPlugin();
+
+	QString FileName() const { return(this->filename); }
 
     QString library_error; ///< if there is a library error the result of dlerror() is stored here.
 
