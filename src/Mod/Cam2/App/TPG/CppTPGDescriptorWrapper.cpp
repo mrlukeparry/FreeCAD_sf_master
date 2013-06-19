@@ -32,9 +32,23 @@ CppTPGDescriptorWrapper::CppTPGDescriptorWrapper(TPGDescriptor *descriptor, CppT
 : TPGDescriptor(descriptor) {
 
     if (descriptor == NULL)
+	{
         qWarning("Warning: CppTPGDescriptorWrapper is wrapping NULL\n");
-    this->descriptor = descriptor;
-    this->plugin = plugin->grab();	// increment the reference counter
+		this->descriptor = NULL;
+	}
+	else
+	{
+		this->descriptor = descriptor->grab();
+	}
+
+	if (plugin != NULL)
+	{
+		this->plugin = plugin->grab();	// increment the reference counter
+	}
+	else
+	{
+		this->plugin = NULL;
+	}
 }
 
 CppTPGDescriptorWrapper::~CppTPGDescriptorWrapper() {
