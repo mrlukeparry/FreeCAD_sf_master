@@ -41,13 +41,13 @@ CppTPGDescriptorWrapper::CppTPGDescriptorWrapper(TPGDescriptor *descriptor, CppT
 		this->descriptor = descriptor->grab();
 	}
 
-	if (plugin != NULL)
+	if (plugin == NULL)
 	{
-		this->plugin = plugin->grab();	// increment the reference counter
+		this->plugin = NULL;
 	}
 	else
 	{
-		this->plugin = NULL;
+		this->plugin = plugin->grab();	// increment the reference counter
 	}
 }
 
