@@ -23,7 +23,7 @@
 #ifndef MACHINEPROGRAM_H_
 #define MACHINEPROGRAM_H_
 
-#include <qstringlist.h>
+#include <QStringList>
 
 
 namespace Cam {

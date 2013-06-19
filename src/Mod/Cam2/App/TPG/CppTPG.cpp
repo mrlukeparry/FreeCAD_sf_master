@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -34,7 +34,10 @@ CppTPG::CppTPG() : TPG() {
 }
 CppTPG::~CppTPG() {
     if (plugin != NULL)
+	{
         plugin->release();
+		plugin = NULL;
+	}
 }
 
 /**

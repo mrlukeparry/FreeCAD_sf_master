@@ -21,14 +21,14 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
 #include "TPGSettings.h"
 
 #include <cstdio>
-#include <qlist.h>
+#include <QList>
 
 #include <Base/Console.h>
 
@@ -108,7 +108,7 @@ void TPGSettingDefinition::addOption(const char *id, const char *label) {
 
 void TPGSettingDefinition::print()
 {
-	printf("  - (%s, %s, %s, %s, %s, %s)\n",
+	qDebug("  - (%s, %s, %s, %s, %s, %s)\n",
 			name.toAscii().constData(),
 			label.toAscii().constData(),
 			type.toAscii().constData(),
@@ -208,19 +208,25 @@ TPGSettingDefinition* TPGSettings::addSettingDefinition(QString &action, TPGSett
 	return setting;
 }
 
-///**
-// * Get the value of a given setting (by name)
-// */
-//const QString TPGSettings::getValue(const char *name, const char *action /*= NULL*/) {
-//
-//	QString qname = QString::fromAscii(name);
-//	if (action == NULL)
-//		return getValue(qname);
-//	else {
-//		QString qaction = QString::fromAscii(action);
-//		return getValue(qname, qaction);
-//	}
-//}
+/**
+ * Get the currently selected action.
+ */
+const QString &TPGSettings::getAction() const {
+	return action;
+}
+
+/**
+ * Change the currently selected action.
+ */
+bool TPGSettings::setAction(QString &action) {
+	this->action = action;
+	if (tpgFeature != NULL)
+	{
+		tpgFeature->PropTPGSettings.setValue("action", action.toAscii().constData());
+		return(true);
+	}
+	return(false);
+}
 
 /**
  * Get the value of a given setting (by name)
@@ -298,6 +304,12 @@ void TPGSettings::print()
 	}
 }
 
+
+std::vector<TPGSettingDefinition*> TPGSettings::getSettings() 
+{
+	return this->settingDefs;
+}
+
 /**
  * Sets the default value for any settings that are missing from the TPGFeature
  */
@@ -328,6 +340,9 @@ void TPGSettings::addDefaults() {
  */
 void TPGSettings::setTPGFeature(TPGFeature *tpgFeature) {
 	this->tpgFeature = tpgFeature;
+
+	// load the TPG's action
+	tpgFeature->PropTPGSettings.getValues();
 
 	addDefaults();
 }

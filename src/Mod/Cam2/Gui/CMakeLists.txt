@@ -1,10 +1,11 @@
 if(MSVC)
-    add_definitions(-DFCAppCam -DHAVE_ACOSH -DHAVE_ASINH -DHAVE_ATANH)
+    add_definitions(-DHAVE_ACOSH -DHAVE_ASINH -DHAVE_ATANH)
 else(MSVC)
     add_definitions(-DHAVE_LIMITS_H -DHAVE_CONFIG_H)
 endif(MSVC)
 
 include_directories(
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/Gui
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_BINARY_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -103,12 +104,10 @@ SET(CamGui_SRCS
     TPGListModel.cpp
     TPGListModel.h
 
-    ../App/CamManager.h
-    ../App/CamManager.cpp
-    ../App/TPG/TPGDescriptor.cpp
     ../App/TPG/TPGDescriptor.h
-    ../App/TPG/TPGDescriptorCollection.cpp
     ../App/TPG/TPGDescriptorCollection.h
+    ../App/TPG/TPGSettings.h
+    ../App/CamManager.h
 )
 
 add_library(CamGui SHARED ${CamGui_SRCS})

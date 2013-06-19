@@ -21,7 +21,7 @@
  ***************************************************************************/
 
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 # include <BRepPrimAPI_MakeBox.hxx>
 # include <TopoDS_Face.hxx>

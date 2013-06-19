@@ -5,6 +5,7 @@ else(MSVC)
 endif(MSVC)
 
 include_directories(
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
     ${Boost_INCLUDE_DIRS}
@@ -77,6 +78,8 @@ SET(TPG_SRCS
     TPG/PyTPGFactory.h
     TPG/PyTPGDescriptor.cpp
     TPG/PyTPGDescriptor.h
+    TPG/PyTPGSettings.cpp
+    TPG/PyTPGSettings.h
     TPG/PyToolPath.cpp
     TPG/PyToolPath.h
     
@@ -94,6 +97,13 @@ SET(TPG_SRCS
     # TPG/CppTPGWrapper.h
 )
 SOURCE_GROUP("TPG" FILES ${TPG_SRCS})
+
+SET(PLUGINS_SRCS
+	Plugins/MyPlugin.cpp
+	Plugins/MyPlugin.h
+)
+
+SOURCE_GROUP("Plugins" FILES ${PLUGINS_SRCS})
 
 # SET(Python_SRCS
 # )
@@ -126,6 +136,7 @@ SET(Cam_SRCS
     ${CamModule_SRCS}
     ${Features_SRCS}
     ${Python_SRCS}
+    ${PLUGINS_SRCS}
 )
 
 SET(Cam_Scripts

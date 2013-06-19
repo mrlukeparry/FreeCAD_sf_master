@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -32,14 +32,18 @@ CppTPGDescriptorWrapper::CppTPGDescriptorWrapper(TPGDescriptor *descriptor, CppT
 : TPGDescriptor(descriptor) {
 
     if (descriptor == NULL)
-        printf("Warning: CppTPGDescriptorWrapper is wrapping NULL\n");
+        qWarning("Warning: CppTPGDescriptorWrapper is wrapping NULL\n");
     this->descriptor = descriptor;
     this->plugin = plugin;
 }
 
 CppTPGDescriptorWrapper::~CppTPGDescriptorWrapper() {
     if (descriptor != NULL)
+	{
         descriptor->release();
+		descriptor = NULL;
+	}
+	plugin = NULL;
 }
 
 /**

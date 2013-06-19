@@ -21,7 +21,7 @@
  ***************************************************************************/
 
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -40,6 +40,15 @@ CppTPGDescriptor::~CppTPGDescriptor() {
 
 TPG* CppTPGDescriptor::make() {
     return NULL; // NOTE: this shouldn't be called. Just implemented to make it not abstract.
+}
+
+void CppTPGDescriptor::incref() {
+    refcount++;
+}
+void CppTPGDescriptor::decref() {
+    refcount--;
+    if (refcount < 1)
+        delete this;
 }
 
 } /* namespace Cam */

@@ -1,9 +1,9 @@
 
 # You need to import the package that contains your PyTPGBase sub-type
-import ExampleTPG
+#import ExampleTPG
 
 
-
+__all__ = ['ExampleTPG']
 
 # TODO: fix this auto-add method
 #__all__ = ['ExampleTPG']

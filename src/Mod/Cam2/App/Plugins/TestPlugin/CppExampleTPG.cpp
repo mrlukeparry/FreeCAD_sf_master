@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include <PreCompiled.h>
+#include "PreCompiled.h"
 #ifndef _PreComp_
 #endif
 
@@ -83,7 +83,7 @@ CppExampleTPG::~CppExampleTPG() {
  */
 void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAscii(""))
 {
-    printf("This is where the TPG would generate the tool-path! \n");
+    qDebug("This is where the TPG would generate the tool-path! \n");
     return;
 }
 
