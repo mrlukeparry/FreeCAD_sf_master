@@ -46,6 +46,7 @@ class CamExport ToolPath {
 protected:
     TPG *source;
     QStringList *toolpath;
+	QString line_buffer;		// an accumulation of multiple operator<< calls for a single line until we find a newline character at the end.
 
     int refcnt;
     virtual ~ToolPath();
@@ -91,29 +92,35 @@ public:
             delete this;
     }
 
-
-	QString PythonString( const QString value ) const;
-	QString PythonString( const double value ) const;
-	
-
 public:
+	QString PythonString( const QString value ) const;
+	QString PythonString( const char * value ) const;
+	QString PythonString( const double value ) const;
+
+	// The operator<< methods all allow the accumulation of parts of a single line
+	// of Python script.  Each one will look to see if the accumulated line ends
+	// with a newline character ('\n').  If it does then the line will be
+	// added to the list of lines (this->toolpath) and the buffer (this->line_buffer)
+	// will be cleared ready to start accumulating the next line.  They're just
+	// utility methods to help make the construction of the Python program
+	// a little easier to read.
+
 	ToolPath & operator<< ( const ToolPath & value );
 	ToolPath & operator<< ( const double value );
 	ToolPath & operator<< ( const float value );
 	ToolPath & operator<< ( const QString value );
+	ToolPath & operator<< ( const char *value );
 	ToolPath & operator<< ( const int value );
 
-	static void RequiredDecimalPlaces( const unsigned int value ) 
-	{ 
-		required_decimal_places = value;
-		area::CArea::m_accuracy = 1.0 / pow(10, double(value));
-	}
-	static const unsigned int RequiredDecimalPlaces() { return(required_decimal_places); }
+	const unsigned int RequiredDecimalPlaces() const;
 
 private:
-	static unsigned int required_decimal_places;
 	double Round(double number,int place) const;
 	double ToolPath::round(double r) const;
+	unsigned int Precision( const double value ) const;
+
+public:
+	friend QString CamExport operator<< ( QString & buf, const ToolPath & tool_path );
 
 };
 

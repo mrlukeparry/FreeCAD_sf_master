@@ -31,7 +31,6 @@
 
 namespace Cam {
 
-/* static */ unsigned int ToolPath::required_decimal_places = 5;
 
 ToolPath::ToolPath(TPG* source) {
     this->source = source;
@@ -112,10 +111,28 @@ QString ToolPath::PythonString( const QString value ) const
 	_value.replace(QString::fromAscii("\\"), QString::fromAscii("\\\\") );
 	_value.replace(QString::fromAscii("\'"), QString::fromAscii("\\\'") );
 	_value.replace(QString::fromAscii("\""), QString::fromAscii("\\\"") );
+	_value.replace(QString::fromAscii("\("), QString::fromAscii("\{") );
+	_value.replace(QString::fromAscii("\)"), QString::fromAscii("\}") );
 
 	result = QString::fromAscii("\'") + _value + QString::fromAscii("\'");
 	return(result);
 }
+
+QString ToolPath::PythonString( const char *value ) const
+{
+	return(PythonString(QString::fromUtf8(value)));
+}
+
+QString ToolPath::PythonString( const double value ) const
+{
+	double rounded_value = Round(value,RequiredDecimalPlaces());
+	int field_width = 0;
+	char format = 'g';
+	int precision = Precision(rounded_value);
+
+	return(QString(QString::fromAscii("%1")).arg(rounded_value, field_width, format, precision));
+}
+
 
 double ToolPath::round(double r) const {
     return (r > 0.0) ? floor(r + 0.5) : ceil(r - 0.5);
@@ -144,22 +161,42 @@ double ToolPath::Round(double number,int place) const
 	return(number);
 }
 
+// How many characters required for both the digits left of the decimal point, the decimal
+// point, the +/- sign character and those digits required after the decimal point.
+// It's used for rounding floating point numbers during the conversion to string format.
 
-QString ToolPath::PythonString( const double value ) const
+unsigned int ToolPath::Precision( const double value ) const
 {
-	double rounded_value = Round(value,ToolPath::RequiredDecimalPlaces());
-	int field_width = 0;
-	char format = 'g';
-	int precision = ToolPath::required_decimal_places;
+    unsigned int lhs = 0;
+    unsigned int one_for_plus_minus_sign = 1;
 
-	return(QString().arg(rounded_value, field_width, format, precision));
+    lhs = 0;
+    double temp(value);
+    while (temp >= 1.0)
+    {
+        lhs++;
+        temp /= 10.0;
+    }
+
+    return( lhs + RequiredDecimalPlaces() + one_for_plus_minus_sign );
 }
+
+
+
+
 
 ToolPath & ToolPath::operator<<( const double value )
 {
-	if (this->toolpath == NULL)
-        this->toolpath = new QStringList();
-	this->toolpath->push_back(PythonString(value));
+	this->line_buffer.append(PythonString(value));
+	if (this->line_buffer.endsWith(QString::fromAscii("\n")))
+	{
+		if (this->toolpath == NULL)
+			this->toolpath = new QStringList();
+
+		this->toolpath->push_back(this->line_buffer);
+		this->line_buffer.clear();
+	}
+
 	return(*this);
 }
 
@@ -179,25 +216,62 @@ ToolPath & ToolPath::operator<< ( const ToolPath & value )
 
 ToolPath & ToolPath::operator<< ( const QString value )
 {
-	if (this->toolpath == NULL)
-        this->toolpath = new QStringList();
-	this->toolpath->push_back(value);
+	this->line_buffer.append(value);
+	if (this->line_buffer.endsWith(QString::fromAscii("\n")))
+	{
+		if (this->toolpath == NULL)
+			this->toolpath = new QStringList();
+
+		this->toolpath->push_back(this->line_buffer);
+		this->line_buffer.clear();
+	}
 	return(*this);
+}
+
+ToolPath & ToolPath::operator<< ( const char *value )
+{
+	return( (*this) << QString::fromAscii(value) );
 }
 
 
 ToolPath & ToolPath::operator<< ( const int value )
 {
-	if (this->toolpath == NULL)
-        this->toolpath = new QStringList();
-	this->toolpath->push_back(QString().arg(value));
+	this->line_buffer.append(QString::fromAscii("%1").arg(value));
+	if (this->line_buffer.endsWith(QString::fromAscii("\n")))
+	{
+		if (this->toolpath == NULL)
+			this->toolpath = new QStringList();
 
+		this->toolpath->push_back(this->line_buffer);
+		this->line_buffer.clear();
+	}
 	return(*this);
-
 }
 
 
+/* friend */ QString operator<< ( QString & buf, const ToolPath & tool_path )
+{
+	if (tool_path.toolpath)
+	{
+		for (QStringList::const_iterator itString = tool_path.toolpath->begin(); itString != tool_path.toolpath->end(); itString++)
+		{
+			buf.append(*itString);
+			buf.append(QString::fromAscii("\n"));
+		}
+	}
+	return(buf);
+}
 
+
+const unsigned int ToolPath::RequiredDecimalPlaces() const
+{
+	// Look for this as one of the TPG settings.  If it's not
+	// found then look for the units used by this TPG.  Finally, just
+	// assume metric and use 3+1 decimal places.
+	// TODO - implement this functionality.
+
+	return(3+1);	// Assume metric (3) plus 1 to make sure we're within the magic 3 places of accuracy.
+}
 
 
 
