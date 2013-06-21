@@ -97,7 +97,7 @@ include_directories(
 )
 
 # this makes the Python module
-add_library(AreaClipper MODULE ${AREA_SRC})
+add_library(AreaClipper SHARED ${AREA_SRC})
 target_link_libraries(AreaClipper ${AreaClipper_LIBS} )
 # set_target_properties(libarea-clipper PROPERTIES PREFIX "")
 

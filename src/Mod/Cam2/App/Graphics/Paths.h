@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <QString>
+
 #include <TopoDS_Edge.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
@@ -12,6 +14,9 @@
 #include <BRepBuilderAPI_Copy.hxx>
 #include <TopoDS.hxx>
 #include <Bnd_Box.hxx>
+
+#include <set>
+#include <string>
 
 #include "Area.h"
 
@@ -397,16 +402,16 @@ namespace Cam
 	public:
 		friend QString & operator<< ( QString & str, const Path & path )
 		{
-			str += QString::fromUtf8("<Path ");
+			str.append(QString::fromUtf8("<Path "));
 
 			switch(path.Curve().GetType())
 			{
 			case GeomAbs_Line:
-				str += QString::fromUtf8("type=\"GeomAbs_Line\"");
+				str.append(QString::fromUtf8("type=\"GeomAbs_Line\""));
 				break;
 
 			case GeomAbs_Circle:
-				str += QString::fromUtf8("type=\"GeomAbs_Circle\"");
+				str.append(QString::fromUtf8("type=\"GeomAbs_Circle\""));
 				break;
 
 			case GeomAbs_Ellipse:
@@ -434,12 +439,12 @@ namespace Cam
 				break;
 			}
 
-			str += _T(", direction=\"") << (wxChar *) (path.m_is_forwards?_T("FORWARDS"):_T("BACKWARDS")) << _T("\"");
-			str += _T(", start_parameter=\"") << path.StartParameter() << _T("\"");
-			str += _T(", end_parameter=\"") << path.EndParameter() << _T("\"");
+			str += QString::fromUtf8(", direction=\"") + QString(path.m_is_forwards?QString::fromUtf8("FORWARDS"):QString::fromUtf8("BACKWARDS")) + QString::fromUtf8("\"");
+			str += QString::fromUtf8(", start_parameter=\"") + QString().arg(path.StartParameter()) + QString::fromUtf8("\"");
+			str += QString::fromUtf8(", end_parameter=\"") + QString().arg(path.EndParameter()) + QString::fromUtf8("\"");
 
-			str += _T(", start_point=\"") << path.StartPoint().X() << _T(",") << path.StartPoint().Y() << _T(",") << path.StartPoint().Z() << _T("\"");
-			str += _T(", end_point=\"") << path.EndPoint().X() << _T(",") << path.EndPoint().Y() << _T(",") << path.EndPoint().Z() << _T("\"/>\n");
+			str += QString::fromUtf8(", start_point=\"") + QString().arg(path.StartPoint().X()) + QString::fromUtf8(",") + QString().arg(path.StartPoint().Y()) + QString::fromUtf8(",") + QString().arg(path.StartPoint().Z()) + QString::fromUtf8("\"");
+			str += QString::fromUtf8(", end_point=\"") + QString().arg(path.EndPoint().X()) + QString::fromUtf8(",") + QString().arg(path.EndPoint().Y()) + QString::fromUtf8(",") + QString().arg(path.EndPoint().Z()) + QString::fromUtf8("\"/>\n");
 			return(str);
 		}
 
@@ -490,7 +495,7 @@ namespace Cam
 
 		std::vector<Path>::iterator SetStartPoint( Cam::Point location );
 
-		HeeksObj *Sketch(HeeksObj *sketch = NULL);
+		// HeeksObj *Sketch(HeeksObj *sketch = NULL);
 		void Reset();
 
 		Bnd_Box BoundingBox() const;
@@ -539,15 +544,15 @@ namespace Cam
 	public:
 		friend QString & operator<< ( QString & str, const ContiguousPath & path )
 		{
-			str << QString::fromUtf8("<ContiguousPath ") << _T(" num_paths=\"") << path.m_paths.size() << _T("\"");
-			str << _T(", direction=\"") << (wxChar *) (path.m_is_forwards?_T("FORWARDS"):_T("BACKWARDS")) << _T("\"") << _T(">\n");
+			str += QString::fromUtf8("<ContiguousPath ") + QString::fromUtf8(" num_paths=\"") + QString().arg(path.m_paths.size()) + QString::fromUtf8("\"");
+			str += QString::fromUtf8(", direction=\"") + QString(path.m_is_forwards?QString::fromUtf8("FORWARDS"):QString::fromUtf8("BACKWARDS")) + QString::fromUtf8("\"") + QString::fromUtf8(">\n");
 
 			for (std::vector<Path>::const_iterator itPath = path.m_paths.begin(); itPath != path.m_paths.end(); itPath++)
 			{
 				str << *itPath;
 			}
 
-			str << QString::fromUtf8("</ContiguousPath>\n");
+			str += QString::fromUtf8("</ContiguousPath>\n");
 
 			return(str);
 		}
@@ -557,7 +562,7 @@ namespace Cam
 	{
 	public:
 		Paths() { }
-		Paths(HeeksObj *object);
+		// Paths(HeeksObj *object);
 		Paths(const TopoDS_Shape shape);
 		Paths(ContiguousPath contiguous_path);
 		Paths(area::CArea &area);
@@ -584,14 +589,14 @@ namespace Cam
 		void Add(const TopoDS_Edge edge);
 		void Add(const TopoDS_Wire wire, const gp_Pln reference_plane, const double maximum_distance);
 		void Add(area::CArea &area);
-		void Add(HeeksObj *object);
+		// void Add(HeeksObj *object);
 		bool Join( std::vector<ContiguousPath>::iterator lhs, std::vector<ContiguousPath>::iterator rhs );
 		bool Offset(const double distance);
 		#ifdef HEEKSCNC
 			void Align( CFixture fixture );
 		#endif // HEEKSCNC
 
-        HeeksObj *Sketch();
+        // HeeksObj *Sketch();
 		void Sort(const bool force = false);
 
 		area::CArea Area();

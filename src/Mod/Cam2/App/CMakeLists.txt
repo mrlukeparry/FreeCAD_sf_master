@@ -20,6 +20,7 @@ link_directories(${OCC_LIBRARY_DIR})
 
 set(Cam_LIBS
     Part
+    AreaClipper
     ${OCC_LIBRARIES}
     FreeCADApp
 )

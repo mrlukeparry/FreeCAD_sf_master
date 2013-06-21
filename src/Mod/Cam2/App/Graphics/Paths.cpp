@@ -20,6 +20,8 @@
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepTools_WireExplorer.hxx>
 #include <BRepBndLib.hxx>
+#include <Geom_Plane.hxx>
+#include <Handle_Geom_Plane.hxx>
 
 #include <BRepOffsetAPI_MakeOffset.hxx>
 #include <TopoDS.hxx>
@@ -665,10 +667,12 @@ Cam::Paths::Paths(const TopoDS_Shape shape)
 	Add(shape);
 }
 
+/*
 Cam::Paths::Paths(HeeksObj *object)
 {
 	Add(object);
 }
+*/
 
 Cam::Paths::Paths(area::CArea & area)
 {
@@ -721,116 +725,6 @@ void Cam::Paths::Add(area::CArea & area)
 }
 
 
-
-/**
-	Convert all the child sketches (and any other valid linear elements) to wires
-	before adding them to this Paths object.
- */
-void Cam::Paths::Add(HeeksObj *object)
-{
-	bool added_as_parent = false;
-
-	/*
-	#ifdef HEEKSCNC
-	if (object->GetType() == PocketingType)
-	{
-		CPocketing *pPocketing = dynamic_cast<CPocketing *>(object);
-		if (pPocketing)
-		{
-			Cam::Paths unmachined_paths = pPocketing->UnmachinedPaths();
-			for (::size_t i=0; i<unmachined_paths.size(); i++)
-			{
-				Add( unmachined_paths[i].Wire() );
-			} // End for
-			added_as_parent = true;
-		}
-	}
-
-	if (object->GetType() == PocketType)
-	{
-		CPocket *pPocket = dynamic_cast<CPocket *>(object);
-		if (pPocket)
-		{
-			Cam::Paths unmachined_paths = pPocket->UnmachinedPaths();
-			for (::size_t i=0; i<unmachined_paths.size(); i++)
-			{
-				Add( unmachined_paths[i].Wire() );
-			} // End for
-			added_as_parent = true;
-		}
-	}
-	#endif // HEEKSCNC
-	*/
-
-	{
-		std::list<TopoDS_Shape> wires;
-		#ifdef HEEKSCAD
-			if (heekscad_interface.ConvertSketchToFaceOrWire( object, wires, false))
-		#else
-			if (heeksCAD->ConvertSketchToFaceOrWire( object, wires, false))
-		#endif // HEEKSCAD
-		{
-			for (std::list<TopoDS_Shape>::iterator itWire = wires.begin(); itWire != wires.end(); itWire++)
-			{
-				Add( TopoDS::Wire(*itWire) );
-				added_as_parent = true;
-			}
-		} // End if - then
-	}
-
-	if (! added_as_parent)
-	{
-		ObjList *objlist = dynamic_cast<ObjList *>(object);
-		if (objlist)
-		{
-			for (HeeksObj *child = objlist->GetFirstChild(); child != NULL; child = objlist->GetNextChild())
-			{
-				#ifdef HEEKSCNC
-					if (child->GetType() == PocketingType)
-					{
-						CPocketing *pPocketing = dynamic_cast<CPocketing *>(child);
-						if (pPocketing)
-						{
-							Cam::Paths unmachined_paths = pPocketing->UnmachinedPaths();
-							for (::size_t i=0; i<unmachined_paths.size(); i++)
-							{
-								Add( unmachined_paths[i].Wire() );
-							} // End for
-						}
-						continue;
-					}
-
-					if (child->GetType() == PocketType)
-					{
-						CPocket *pPocket = dynamic_cast<CPocket *>(object);
-						if (pPocket)
-						{
-							Cam::Paths unmachined_paths = pPocket->UnmachinedPaths();
-							for (::size_t i=0; i<unmachined_paths.size(); i++)
-							{
-								Add( unmachined_paths[i].Wire() );
-							} // End for
-						}
-						continue;
-					}
-				#endif // HEEKSCNC
-
-				std::list<TopoDS_Shape> wires;
-				#ifdef HEEKSCAD
-					if (heekscad_interface.ConvertSketchToFaceOrWire( child, wires, false))
-				#else
-					if (heeksCAD->ConvertSketchToFaceOrWire( child, wires, false))
-				#endif // HEEKSCAD
-				{
-					for (std::list<TopoDS_Shape>::iterator itWire = wires.begin(); itWire != wires.end(); itWire++)
-					{
-						Add( TopoDS::Wire(*itWire) );
-					}
-				} // End if - then
-			}
-		}
-	}
-}
 
 bool Cam::ContiguousPath::operator< (const Cam::ContiguousPath & rhs ) const
 {
@@ -1165,109 +1059,6 @@ Cam::ContiguousPath & Cam::ContiguousPath::operator+=( ContiguousPath &rhs )
 }
 
 
-/**
-	Generate a Sketch object representing all the ContiguousPath objects we contain.
- */
-HeeksObj *Cam::Paths::Sketch()
-{
-	#ifdef HEEKSCAD
-		HeeksObj *parent_sketch = heekscad_interface.NewSketch();
-	#else
-		HeeksObj *parent_sketch = heeksCAD->NewSketch();
-	#endif
-
-	for (std::vector<ContiguousPath>::iterator itPath = m_contiguous_paths.begin(); itPath != m_contiguous_paths.end(); itPath++)
-	{
-		#ifdef HEEKSCAD
-			HeeksObj *child_sketch = heekscad_interface.NewSketch();
-		#else
-			HeeksObj *child_sketch = heeksCAD->NewSketch();
-		#endif
-		parent_sketch->Add(itPath->Sketch( child_sketch ), NULL);
-	}
-
-	return(parent_sketch);
-}
-
-
-/**
-	Generate a Sketch representing all the Path objects we contain.
- */
-HeeksObj *Cam::ContiguousPath::Sketch(HeeksObj *parent_sketch)
-{
-	HeeksObj *sketch;
-	CHeeksCADInterface *pInterface = NULL;
-
-	#ifdef HEEKSCAD
-		pInterface = &heekscad_interface;
-	#else
-		pInterface = heeksCAD;
-	#endif
-
-
-	if (parent_sketch == NULL)
-	{
-		#ifdef HEEKSCAD
-			sketch = heekscad_interface.NewSketch();
-		#else
-			sketch = heeksCAD->NewSketch();
-		#endif
-	}
-	else
-	{
-		sketch = parent_sketch;
-	}
-
-	std::vector<Path>::iterator itPath = m_paths.begin();
-	do
-	{
-        HeeksObj *object = itPath->Sketch();
-        if (object)
-		{
-			for (HeeksObj *child = object->GetFirstChild(); child != NULL; child = object->GetNextChild())
-			{
-				sketch->Add( child, NULL );
-			}
-		}
-		itPath = Next(itPath);
-    } while (itPath != m_paths.begin());
-
-	if (Periodic())
-	{
-		if ((Concentricity() % 2) == 0)
-		{
-			if (pInterface->GetSketchOrder(sketch) != SketchOrderTypeCloseCW)
-			{
-				pInterface->ReOrderSketch(sketch, SketchOrderTypeCloseCW );
-			}
-		}
-		else
-		{
-			if (pInterface->GetSketchOrder(sketch) != SketchOrderTypeCloseCCW)
-			{
-				pInterface->ReOrderSketch(sketch, SketchOrderTypeCloseCCW );
-			}
-		}
-	}
-
-    return(sketch);
-}
-
-
-/**
-	Generate a Sketch representing this Path.
- */
-HeeksObj *Cam::Path::Sketch()
-{
-	std::list<TopoDS_Edge> edges;
-	edges.push_back(m_edge);
-	#ifdef HEEKSCAD
-		return(heekscad_interface.ConvertEdgesToSketch(edges, 0.01));
-	#else
-		return(heeksCAD->ConvertEdgesToSketch(edges, 0.01));
-	#endif // HEEKSCAD
-}
-
 
 /**
 	Aggregate the lengths of all Path objects we contain.
@@ -1599,7 +1390,7 @@ bool Cam::ContiguousPath::Surrounds( const Cam::ContiguousPath & rhs ) const
 			Cam::ContiguousPath temp(*this);
 			HeeksObj *lhsSketch = temp.Sketch();
 			QString lhsTitle;
-			lhsTitle << _T("lhs ") << count;
+			lhsTitle << QString::fromUtf8("lhs ") << count;
 			lhsSketch->OnEditString(lhsTitle);
 			heeksCAD->Add(lhsSketch,NULL);
 		}
@@ -1607,7 +1398,7 @@ bool Cam::ContiguousPath::Surrounds( const Cam::ContiguousPath & rhs ) const
 			Cam::ContiguousPath temp(rhs);
 			HeeksObj *lhsSketch = temp.Sketch();
 			QString lhsTitle;
-			lhsTitle << _T("rhs ") << count;
+			lhsTitle << QString::fromUtf8("rhs ") << count;
 			lhsSketch->OnEditString(lhsTitle);
 			heeksCAD->Add(lhsSketch,NULL);
 		}
@@ -2213,7 +2004,7 @@ Cam::ContiguousPath Cam::Paths::GetByID( const Cam::ContiguousPath::Id_t id ) co
 		if (itPath->ID() == id) return(*itPath);
 	}
 
-	throw(std::runtime_error(Ttc(_("No contiguous paths found for ID"))));
+	throw(std::runtime_error("No contiguous paths found for ID"));
 }
 
 gp_Pln Cam::ContiguousPath::Plane() const
@@ -3203,7 +2994,7 @@ QString Cam::ContiguousPath::KiCadBoardOutline(const int layer, const int trace_
 
 	for (std::vector<Path>::const_iterator itPath = m_paths.begin(); itPath != m_paths.end(); itPath++)
 	{
-		description << itPath->KiCadBoardOutline(layer, trace_width);
+		description += itPath->KiCadBoardOutline(layer, trace_width);
 	}
 
 	return(description);
@@ -3219,21 +3010,21 @@ QString Cam::Path::KiCadBoardOutline(const int layer, const int trace_width) con
 	case GeomAbs_Line:
 		{
 			QString description;
-			description << _T("$DRAWSEGMENT\n")
-						<< _T("Po 0 ")
-						<< int((StartPoint().Location().X() / 25.4) * 10000.0) << _T(" ")
-						<< int(((-1.0 * StartPoint().Location().Y()) / 25.4) * 10000.0) << _T(" ")
-						<< int((EndPoint().Location().X() / 25.4) * 10000.0) << _T(" ")
-						<< int(((-1.0 * EndPoint().Location().Y() / 25.4)) * 10000.0) << _T(" ")
-						<< trace_width << _T("\n")
-						<< _T("De ") << layer << _T(" 0 900 0 0\n")
-						<< _T("$EndDRAWSEGMENT\n");
+			description = QString::fromUtf8("$DRAWSEGMENT\n")
+						+ QString::fromUtf8("Po 0 ")
+						+ QString().arg(int((StartPoint().Location().X() / 25.4) * 10000.0)) + QString::fromUtf8(" ")
+						+ QString().arg(int(((-1.0 * StartPoint().Location().Y()) / 25.4) * 10000.0)) + QString::fromUtf8(" ")
+						+ QString().arg(int((EndPoint().Location().X() / 25.4) * 10000.0)) + QString::fromUtf8(" ")
+						+ QString().arg(int(((-1.0 * EndPoint().Location().Y() / 25.4)) * 10000.0)) + QString::fromUtf8(" ")
+						+ QString().arg(trace_width) + QString::fromUtf8("\n")
+						+ QString::fromUtf8("De ") + QString().arg(layer) + QString::fromUtf8(" 0 900 0 0\n")
+						+ QString::fromUtf8("$EndDRAWSEGMENT\n");
 			return(description);
 		}
 		break;
 
 default:
-		return(_T(""));	// Should NEVER get here.
+		return(QString::fromUtf8(""));	// Should NEVER get here.
 	}
 }
 

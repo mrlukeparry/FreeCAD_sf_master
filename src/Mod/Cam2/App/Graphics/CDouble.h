@@ -90,12 +90,15 @@ class CDouble
 
 		double Tolerance() const
 		{
+			return(0.000001);	// TODO Setup tolerances properly.
+			/*
 			#ifdef HEEKSCNC
 				return(1.0 / pow(10, double(Python::RequiredDecimalPlaces())));
 			#else
 				extern CHeeksCADInterface heekscad_interface;
 				return(heekscad_interface.GetTolerance());
 			#endif
+			*/
 		}
 
 	private:
