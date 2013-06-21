@@ -196,6 +196,11 @@ namespace Cam
 		SetYDirection(gp_Dir(0.0, 1.0, 0.0));
 	}
 
+	Point::Point(const gp_Ax2 ax2) : gp_Ax2(ax2) { }
+	Point::Point(const Point & rhs) : gp_Ax2(rhs) { }
+	Point & Point::operator= ( const Point & rhs ) { if (this != &rhs) { gp_Ax2::operator=( rhs ); } return(*this); }
+	gp_Pnt Point::Location() const { return(gp_Ax2::Location()); }
+
 	Point::Point(const gp_Pln plane, const double x, const double y, const double z)
 	{
 		SetAxis(plane.Axis());
@@ -285,6 +290,300 @@ namespace Cam
 		SetLocation(location);
 		return(*this);
 	}
+
+
+	double Point::X(const bool in_drawing_units /* = false */) const
+	{
+		if (in_drawing_units == false) return(gp_Ax2::Location().X());
+		else return(gp_Ax2::Location().X() / Units());
+	}
+	double Point::Y(const bool in_drawing_units /* = false */) const
+	{
+		if (in_drawing_units == false) return(gp_Ax2::Location().Y());
+		else return(gp_Ax2::Location().Y() / Units());
+	}
+	double Point::Z(const bool in_drawing_units /* = false */) const
+	{
+		if (in_drawing_units == false) return(gp_Ax2::Location().Z());
+		else return(gp_Ax2::Location().Z() / Units());
+	}
+
+	double Point::Units() const
+	{
+		return(1.0);	// TODO Handle metric or imperial units (25.4 for inches)
+	}
+
+	double Point::Tolerance() const
+	{
+		if (s_tolerance <= 0.0)
+		{
+			s_tolerance = Cam::GetTolerance();
+		}
+		return(s_tolerance);
+	}
+
+	bool Point::operator==( const Point & rhs ) const
+	{
+		// We use the sum of both point's tolerance values.
+		return(gp_Ax2::Location().Distance(rhs.Location()) <= (Tolerance() + rhs.Tolerance()));
+	} // End equivalence operator
+
+	bool Point::operator!=( const Point & rhs ) const
+	{
+		return(! (*this == rhs));
+	} // End not-equal operator
+
+	bool Point::operator<( const Point & rhs ) const
+	{
+		if (*this == rhs) return(false);
+
+		if (fabs(X() - rhs.X()) > (Tolerance() + rhs.Tolerance()))
+		{
+			if (X() > rhs.X()) return(false);
+			if (X() < rhs.X()) return(true);
+		}
+
+		if (fabs(Y() - rhs.Y()) > (Tolerance() + rhs.Tolerance()))
+		{
+			if (Y() > rhs.Y()) return(false);
+			if (Y() < rhs.Y()) return(true);
+		}
+
+		if (fabs(Z() - rhs.Z()) > (Tolerance() + rhs.Tolerance()))
+		{
+			if (Z() > rhs.Z()) return(false);
+			if (Z() < rhs.Z()) return(true);
+		}
+
+		return(false);	// They're equal
+	} // End equivalence operator
+
+	void Point::ToDoubleArray( double *pArrayOfThree ) const
+	{
+		pArrayOfThree[0] = X();
+		pArrayOfThree[1] = Y();
+		pArrayOfThree[2] = Z();
+	} // End ToDoubleArray() method
+
+
+	double Point::XYDistance( const Point & rhs ) const
+	{
+		gp_Pnt _lhs(this->Location());
+		gp_Pnt _rhs(rhs.Location());
+		_lhs.SetZ(0.0);
+		_rhs.SetZ(0.0);
+		return(_lhs.Distance(_rhs));
+	}
+
+	double Point::XZDistance( const Point & rhs ) const
+	{
+		gp_Pnt _lhs(this->Location());
+		gp_Pnt _rhs(rhs.Location());
+		_lhs.SetY(0.0);
+		_rhs.SetY(0.0);
+		return(_lhs.Distance(_rhs));
+	}
+
+	double Point::YZDistance( const Point & rhs ) const
+	{
+		gp_Pnt _lhs(this->Location());
+		gp_Pnt _rhs(rhs.Location());
+		_lhs.SetX(0.0);
+		_rhs.SetX(0.0);
+		return(_lhs.Distance(_rhs));
+	}
+
+
+
+	Ax3::Ax3( const gp_Ax3 & rhs ) : gp_Ax3(rhs) {}
+
+
+
+	Path::Path(const TopoDS_Edge edge): m_edge(edge), m_is_forwards(true), m_length(-1), m_tolerance(-1) { }
+
+	Path & Path::operator= ( const Path & rhs )
+	{
+		if (this != &rhs)
+		{
+			BRepBuilderAPI_Copy duplicate;
+			duplicate.Perform(rhs.m_edge);
+			m_edge = TopoDS::Edge(duplicate.Shape());
+			m_length = rhs.m_length;
+			m_is_forwards = rhs.m_is_forwards;
+			m_tolerance = rhs.m_tolerance;
+			m_pCurve.reset(NULL);
+		}
+
+		return(*this);
+	}
+
+	Path::Path( const Path & rhs )
+	{
+		*this = rhs;	// call the assignment operator.
+	}
+
+	TopoDS_Edge Path::Edge() const 
+	{ 
+		BRepBuilderAPI_Copy duplicate;
+		duplicate.Perform(m_edge);
+		return(TopoDS::Edge(duplicate.Shape())); 
+	}
+
+	Cam::Point Path::PointAt(const Standard_Real U) const
+	{
+		gp_Pnt point;
+		Curve().D0(U,point);
+		return(point);
+	}
+
+	Cam::Point Path::PointAtDistance(const Standard_Real distance) const
+	{
+		Standard_Real U = Proportion(distance/Length());
+		return(PointAt(U));
+	}
+
+	void Path::D0( const Standard_Real U, gp_Pnt &P) const
+	{
+		Curve().D0(U,P);
+	}
+
+	void Path::D1( const Standard_Real U, gp_Pnt &P, gp_Vec &V ) const
+	{
+		Curve().D1(U,P,V);
+	}
+
+	Cam::Point Path::StartPoint() const
+	{
+		gp_Pnt point;
+		Curve().D0(StartParameter(),point);
+		return(point);
+	}
+
+	Cam::Point Path::MidPoint() const
+	{
+		gp_Pnt point;
+		Curve().D0(Proportion(0.5),point);
+		return(point);
+	}
+
+	Cam::Point Path::EndPoint() const
+	{
+		gp_Pnt point;
+		Curve().D0(EndParameter(),point);
+		return(point);
+	}
+
+	gp_Vec Path::StartVector() const
+	{
+		gp_Vec vec;
+		gp_Pnt point;
+		Curve().D1(StartParameter(), point, vec);
+		if (! m_is_forwards) vec.Reverse();
+		return(vec);
+	}
+
+	gp_Vec Path::EndVector() const
+	{
+		gp_Vec vec;
+		gp_Pnt point;
+		Curve().D1(EndParameter(), point, vec);
+		if (! m_is_forwards) vec.Reverse();
+		return(vec);
+	}
+
+	Standard_Real Path::Length() const
+	{
+		if (m_length < 0)
+		{
+			m_length = GCPnts_AbscissaPoint::Length( Curve() );
+		}
+
+		return(m_length);
+    }
+
+	bool Path::IsForwards() const { return(m_is_forwards); }
+
+	void Path::Reverse()
+	{
+		m_is_forwards = ! m_is_forwards;
+	}
+
+	Standard_Real Path::Tolerance() const
+	{
+		if (m_tolerance < 0)
+		{
+			m_tolerance = Cam::GetTolerance();
+		}
+
+		return(m_tolerance); 
+	}
+
+	BRepAdaptor_Curve & Path::Curve() const
+	{
+		if (m_pCurve.get() == NULL)
+		{
+			m_pCurve = std::auto_ptr<BRepAdaptor_Curve>(new BRepAdaptor_Curve(m_edge));
+		}
+
+		return(*m_pCurve); 
+	}
+
+
+	QString & operator<< ( QString & str, const Path & path )
+	{
+		str.append(QString::fromUtf8("<Path "));
+
+		switch(path.Curve().GetType())
+		{
+		case GeomAbs_Line:
+			str.append(QString::fromUtf8("type=\"GeomAbs_Line\""));
+			break;
+
+		case GeomAbs_Circle:
+			str.append(QString::fromUtf8("type=\"GeomAbs_Circle\""));
+			break;
+
+		case GeomAbs_Ellipse:
+			str += QString::fromUtf8("type=\"GeomAbs_Ellipse\"");
+			break;
+
+		case GeomAbs_Hyperbola:
+			str += QString::fromUtf8("type=\"GeomAbs_Hyperbola\"");
+			break;
+
+		case GeomAbs_Parabola:
+			str += QString::fromUtf8("type=\"GeomAbs_Parabola\"");
+			break;
+
+		case GeomAbs_BezierCurve:
+			str += QString::fromUtf8("type=\"GeomAbs_BezierCurve\"");
+			break;
+
+		case GeomAbs_BSplineCurve:
+			str += QString::fromUtf8("type=\"GeomAbs_BSplineCurve\"");
+			break;
+
+		case GeomAbs_OtherCurve:
+			str += QString::fromUtf8("type=\"GeomAbs_OtherCurve\"");
+			break;
+		}
+
+		str += QString::fromUtf8(", direction=\"") + QString(path.m_is_forwards?QString::fromUtf8("FORWARDS"):QString::fromUtf8("BACKWARDS")) + QString::fromUtf8("\"");
+		str += QString::fromUtf8(", start_parameter=\"") + QString().arg(path.StartParameter()) + QString::fromUtf8("\"");
+		str += QString::fromUtf8(", end_parameter=\"") + QString().arg(path.EndParameter()) + QString::fromUtf8("\"");
+
+		str += QString::fromUtf8(", start_point=\"") + QString().arg(path.StartPoint().X()) + QString::fromUtf8(",") + QString().arg(path.StartPoint().Y()) + QString::fromUtf8(",") + QString().arg(path.StartPoint().Z()) + QString::fromUtf8("\"");
+		str += QString::fromUtf8(", end_point=\"") + QString().arg(path.EndPoint().X()) + QString::fromUtf8(",") + QString().arg(path.EndPoint().Y()) + QString::fromUtf8(",") + QString().arg(path.EndPoint().Z()) + QString::fromUtf8("\"/>\n");
+		return(str);
+	}
+
+
+
+
+
+
+
+
 
 
 	std::list<TopoDS_Face> IntersectFaces( const TopoDS_Face lhs, const TopoDS_Face rhs )
@@ -592,6 +891,55 @@ Standard_Boolean Cam::Path::operator==( const Path & rhs ) const
 
 	return(true);
 }
+
+
+ContiguousPath::ContiguousPath()
+{ 
+	m_is_forwards = true; m_concentricity = -1; m_id = s_next_available_id++; 
+}
+
+
+int ContiguousPath::Concentricity() const { return(m_concentricity); }
+void ContiguousPath::Concentricity(const int value) { m_concentricity = value; }
+
+ContiguousPath::Id_t	ContiguousPath::ID() const { return(m_id); }
+ContiguousPath::Ids_t ContiguousPath::PathsThatSurroundUs() const { return(m_paths_that_surround_us); }
+
+
+ContiguousPath::Ids_t ContiguousPath::PathsThatWeSurround() const { return(m_paths_that_we_surround); }
+
+
+QString & operator<< ( QString & str, const ContiguousPath & path )
+{
+	str += QString::fromUtf8("<ContiguousPath ") + QString::fromUtf8(" num_paths=\"") + QString().arg(path.m_paths.size()) + QString::fromUtf8("\"");
+	str += QString::fromUtf8(", direction=\"") + QString(path.m_is_forwards?QString::fromUtf8("FORWARDS"):QString::fromUtf8("BACKWARDS")) + QString::fromUtf8("\"") + QString::fromUtf8(">\n");
+
+	for (std::vector<Path>::const_iterator itPath = path.m_paths.begin(); itPath != path.m_paths.end(); itPath++)
+	{
+		str << *itPath;
+	}
+
+	str += QString::fromUtf8("</ContiguousPath>\n");
+
+	return(str);
+}
+
+
+Paths::Paths() { }
+
+
+void Paths::Reverse()
+{
+	m_is_forwards = ! m_is_forwards;
+	for (std::vector<ContiguousPath>::iterator itPath = m_contiguous_paths.begin(); itPath != m_contiguous_paths.end(); itPath++)
+	{
+		itPath->Reverse();
+	}
+}
+
+::size_t Paths::size() const { return(m_contiguous_paths.size()); }
+ContiguousPath Paths::operator[]( const int offset ) const { return(m_contiguous_paths[offset]); }
+
 
 
 /**

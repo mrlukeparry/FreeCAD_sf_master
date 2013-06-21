@@ -6,6 +6,7 @@ endif(MSVC)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/Gui
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App/Graphics
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_BINARY_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}

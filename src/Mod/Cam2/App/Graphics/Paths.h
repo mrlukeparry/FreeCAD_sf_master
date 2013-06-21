@@ -59,17 +59,17 @@ namespace Cam
 										// X,Y or Z values based on the rotation of ax2.
 			gp_Pnt final_location( point.Location() );
 	 */
-	class Point : public gp_Ax2
+	class CamExport Point : public gp_Ax2
 	{
 	public:
-		Point(const gp_Ax2 ax2) : gp_Ax2(ax2) { }
+		Point(const gp_Ax2 ax2);
 		Point(const gp_Pnt p);
 		Point(const double x, const double y, const double z);
 		Point(const gp_Pln plane, const double x, const double y, const double z);
 		Point(const gp_Pln plane);
-		Point(const Point & rhs) : gp_Ax2(rhs) { }
-		Point & operator= ( const Point & rhs ) { if (this != &rhs) { gp_Ax2::operator=( rhs ); } return(*this); }
-		gp_Pnt Location() const { return(gp_Ax2::Location()); }
+		Point(const Point & rhs);
+		Point & operator= ( const Point & rhs );
+		gp_Pnt Location() const;
 		Point & Location( const gp_Pnt p );
 
 	public:
@@ -86,106 +86,22 @@ namespace Cam
 		Point & SetZ( const double value );
 
 	public:
-		double X(const bool in_drawing_units = false) const
-		{
-			if (in_drawing_units == false) return(gp_Ax2::Location().X());
-			else return(gp_Ax2::Location().X() / Units());
-		}
-		double Y(const bool in_drawing_units = false) const
-		{
-			if (in_drawing_units == false) return(gp_Ax2::Location().Y());
-			else return(gp_Ax2::Location().Y() / Units());
-		}
-		double Z(const bool in_drawing_units = false) const
-		{
-			if (in_drawing_units == false) return(gp_Ax2::Location().Z());
-			else return(gp_Ax2::Location().Z() / Units());
-		}
+		double X(const bool in_drawing_units = false) const;
+		double Y(const bool in_drawing_units = false) const;
+		double Z(const bool in_drawing_units = false) const;
 
-		double Units() const
-		{
-			return(1.0);	// TODO Handle metric or imperial units (25.4 for inches)
-		}
+		double Units() const;
+		double Tolerance() const;
 
-		double Tolerance() const
-		{
-			if (s_tolerance <= 0.0)
-			{
-				s_tolerance = Cam::GetTolerance();
-			}
-			return(s_tolerance);
-		}
+		bool operator==( const Point & rhs ) const;
+		bool operator!=( const Point & rhs ) const;
+		bool operator<( const Point & rhs ) const;
 
-		bool operator==( const Point & rhs ) const
-		{
-			// We use the sum of both point's tolerance values.
-			return(gp_Ax2::Location().Distance(rhs.Location()) <= (Tolerance() + rhs.Tolerance()));
-		} // End equivalence operator
+		void ToDoubleArray( double *pArrayOfThree ) const;
 
-		bool operator!=( const Point & rhs ) const
-		{
-			return(! (*this == rhs));
-		} // End not-equal operator
-
-		bool operator<( const Point & rhs ) const
-		{
-			if (*this == rhs) return(false);
-
-			if (fabs(X() - rhs.X()) > (Tolerance() + rhs.Tolerance()))
-			{
-				if (X() > rhs.X()) return(false);
-				if (X() < rhs.X()) return(true);
-			}
-
-			if (fabs(Y() - rhs.Y()) > (Tolerance() + rhs.Tolerance()))
-			{
-				if (Y() > rhs.Y()) return(false);
-				if (Y() < rhs.Y()) return(true);
-			}
-
-			if (fabs(Z() - rhs.Z()) > (Tolerance() + rhs.Tolerance()))
-			{
-				if (Z() > rhs.Z()) return(false);
-				if (Z() < rhs.Z()) return(true);
-			}
-
-			return(false);	// They're equal
-		} // End equivalence operator
-
-		void ToDoubleArray( double *pArrayOfThree ) const
-		{
-			pArrayOfThree[0] = X();
-			pArrayOfThree[1] = Y();
-			pArrayOfThree[2] = Z();
-		} // End ToDoubleArray() method
-
-
-		double XYDistance( const Point & rhs ) const
-		{
-			gp_Pnt _lhs(this->Location());
-			gp_Pnt _rhs(rhs.Location());
-			_lhs.SetZ(0.0);
-			_rhs.SetZ(0.0);
-			return(_lhs.Distance(_rhs));
-		}
-
-		double XZDistance( const Point & rhs ) const
-		{
-			gp_Pnt _lhs(this->Location());
-			gp_Pnt _rhs(rhs.Location());
-			_lhs.SetY(0.0);
-			_rhs.SetY(0.0);
-			return(_lhs.Distance(_rhs));
-		}
-
-		double YZDistance( const Point & rhs ) const
-		{
-			gp_Pnt _lhs(this->Location());
-			gp_Pnt _rhs(rhs.Location());
-			_lhs.SetX(0.0);
-			_rhs.SetX(0.0);
-			return(_lhs.Distance(_rhs));
-		}
+		double XYDistance( const Point & rhs ) const;
+		double XZDistance( const Point & rhs ) const;
+		double YZDistance( const Point & rhs ) const;
 
 	private:
 		static double s_tolerance;
@@ -203,10 +119,10 @@ namespace Cam
 		expensive in terms of CPU time to do so.  If the path's plane
 		is the same as the XY plane anyway then there's no need to adjust it.
 	 */
-	class Ax3 : public gp_Ax3
+	class CamExport Ax3 : public gp_Ax3
 	{
 	public:
-		Ax3( const gp_Ax3 & rhs ) : gp_Ax3(rhs) {}
+		Ax3( const gp_Ax3 & rhs );
 		bool operator== ( const Ax3 & rhs ) const;
 		bool operator!= ( const Ax3 & rhs ) const;
 	};
@@ -234,137 +150,40 @@ namespace Cam
 		part of it comes from OpenCascade and the other part just makes sense in terms
 		of tool path progression.
 	 */
-	class Path
+	class CamExport Path
 	{
 	public:
-		Path(const TopoDS_Edge edge): m_edge(edge), m_is_forwards(true), m_length(-1), m_tolerance(-1)
-		{
-			
-		}
+		Path(const TopoDS_Edge edge);
 
-		Path & operator= ( const Path & rhs )
-		{
-			if (this != &rhs)
-			{
-				BRepBuilderAPI_Copy duplicate;
-				duplicate.Perform(rhs.m_edge);
-				m_edge = TopoDS::Edge(duplicate.Shape());
-				m_length = rhs.m_length;
-				m_is_forwards = rhs.m_is_forwards;
-				m_tolerance = rhs.m_tolerance;
-				m_pCurve.reset(NULL);
-			}
-
-			return(*this);
-		}
-
-		Path( const Path & rhs )
-		{
-			*this = rhs;	// call the assignment operator.
-		}
-
-		TopoDS_Edge Edge() const 
-		{ 
-			BRepBuilderAPI_Copy duplicate;
-			duplicate.Perform(m_edge);
-			return(TopoDS::Edge(duplicate.Shape())); 
-		}
+		Path & operator= ( const Path & rhs );
+		Path( const Path & rhs );
+		
+		TopoDS_Edge Edge() const;
 
 		Standard_Real StartParameter() const;
 		Standard_Real EndParameter() const;
 
 		Standard_Real Proportion( const double proportion ) const;
 
-		Cam::Point PointAt(const Standard_Real U) const
-		{
-			gp_Pnt point;
-			Curve().D0(U,point);
-			return(point);
-		}
+		Cam::Point PointAt(const Standard_Real U) const;
+		Cam::Point PointAtDistance(const Standard_Real distance) const;
+		void D0( const Standard_Real U, gp_Pnt &P) const;
+		void D1( const Standard_Real U, gp_Pnt &P, gp_Vec &V ) const;
 
-		Cam::Point PointAtDistance(const Standard_Real distance) const
-		{
-			Standard_Real U = Proportion(distance/Length());
-			return(PointAt(U));
-		}
+		Cam::Point StartPoint() const;
+		Cam::Point MidPoint() const;
+		Cam::Point EndPoint() const;
 
-		void D0( const Standard_Real U, gp_Pnt &P) const
-		{
-			Curve().D0(U,P);
-		}
+		gp_Vec StartVector() const;
+		gp_Vec EndVector() const;
 
-		void D1( const Standard_Real U, gp_Pnt &P, gp_Vec &V ) const
-		{
-			Curve().D1(U,P,V);
-		}
+		Standard_Real Length() const;
+		bool IsForwards() const;
+		void Reverse();
 
-		Cam::Point StartPoint() const
-		{
-			gp_Pnt point;
-			Curve().D0(StartParameter(),point);
-			return(point);
-		}
-
-		Cam::Point MidPoint() const
-		{
-			gp_Pnt point;
-			Curve().D0(Proportion(0.5),point);
-			return(point);
-		}
-
-		Cam::Point EndPoint() const
-		{
-			gp_Pnt point;
-			Curve().D0(EndParameter(),point);
-			return(point);
-		}
-
-		gp_Vec StartVector() const
-		{
-			gp_Vec vec;
-			gp_Pnt point;
-			Curve().D1(StartParameter(), point, vec);
-			if (! m_is_forwards) vec.Reverse();
-			return(vec);
-		}
-
-		gp_Vec EndVector() const
-		{
-			gp_Vec vec;
-			gp_Pnt point;
-			Curve().D1(EndParameter(), point, vec);
-			if (! m_is_forwards) vec.Reverse();
-			return(vec);
-		}
-
-		Standard_Real Length() const
-		{
-			if (m_length < 0)
-			{
-				m_length = GCPnts_AbscissaPoint::Length( Curve() );
-			}
-
-			return(m_length);
-        }
-
-		bool IsForwards() const { return(m_is_forwards); }
-		void Reverse()
-		{
-			m_is_forwards = ! m_is_forwards;
-		}
-
-		// HeeksObj *Sketch();
 		std::list<Cam::Point> Intersect( const Path & rhs, const bool stop_after_first_point = false ) const;
 		
-		Standard_Real Tolerance() const
-		{
-			if (m_tolerance < 0)
-			{
-				m_tolerance = Cam::GetTolerance();
-			}
-
-			return(m_tolerance); 
-		}
+		Standard_Real Tolerance() const;
 
 		Standard_Boolean operator==( const Path & rhs ) const;
 		std::pair<gp_Pnt, gp_Vec> Nearest(const gp_Pnt reference_location, Standard_Real *pParameter = NULL, const bool snap_to_nearest_curve_endpoint = true ) const;
@@ -373,15 +192,7 @@ namespace Cam
 		#endif // HEEKSCNC
 
 		Path Section( const Standard_Real start_distance, const Standard_Real end_distance ) const;
-		BRepAdaptor_Curve & Curve() const
-		{
-			if (m_pCurve.get() == NULL)
-			{
-				m_pCurve = std::auto_ptr<BRepAdaptor_Curve>(new BRepAdaptor_Curve(m_edge));
-			}
-
-			return(*m_pCurve); 
-		}
+		BRepAdaptor_Curve & Curve() const;
 
 		// libArea interface
 		std::list<area::CVertex> Vertices() const;
@@ -400,54 +211,7 @@ namespace Cam
 		mutable Standard_Real m_tolerance;
 
 	public:
-		friend QString & operator<< ( QString & str, const Path & path )
-		{
-			str.append(QString::fromUtf8("<Path "));
-
-			switch(path.Curve().GetType())
-			{
-			case GeomAbs_Line:
-				str.append(QString::fromUtf8("type=\"GeomAbs_Line\""));
-				break;
-
-			case GeomAbs_Circle:
-				str.append(QString::fromUtf8("type=\"GeomAbs_Circle\""));
-				break;
-
-			case GeomAbs_Ellipse:
-				str += QString::fromUtf8("type=\"GeomAbs_Ellipse\"");
-				break;
-
-			case GeomAbs_Hyperbola:
-				str += QString::fromUtf8("type=\"GeomAbs_Hyperbola\"");
-				break;
-
-			case GeomAbs_Parabola:
-				str += QString::fromUtf8("type=\"GeomAbs_Parabola\"");
-				break;
-
-			case GeomAbs_BezierCurve:
-				str += QString::fromUtf8("type=\"GeomAbs_BezierCurve\"");
-				break;
-
-			case GeomAbs_BSplineCurve:
-				str += QString::fromUtf8("type=\"GeomAbs_BSplineCurve\"");
-				break;
-
-			case GeomAbs_OtherCurve:
-				str += QString::fromUtf8("type=\"GeomAbs_OtherCurve\"");
-				break;
-			}
-
-			str += QString::fromUtf8(", direction=\"") + QString(path.m_is_forwards?QString::fromUtf8("FORWARDS"):QString::fromUtf8("BACKWARDS")) + QString::fromUtf8("\"");
-			str += QString::fromUtf8(", start_parameter=\"") + QString().arg(path.StartParameter()) + QString::fromUtf8("\"");
-			str += QString::fromUtf8(", end_parameter=\"") + QString().arg(path.EndParameter()) + QString::fromUtf8("\"");
-
-			str += QString::fromUtf8(", start_point=\"") + QString().arg(path.StartPoint().X()) + QString::fromUtf8(",") + QString().arg(path.StartPoint().Y()) + QString::fromUtf8(",") + QString().arg(path.StartPoint().Z()) + QString::fromUtf8("\"");
-			str += QString::fromUtf8(", end_point=\"") + QString().arg(path.EndPoint().X()) + QString::fromUtf8(",") + QString().arg(path.EndPoint().Y()) + QString::fromUtf8(",") + QString().arg(path.EndPoint().Z()) + QString::fromUtf8("\"/>\n");
-			return(str);
-		}
-
+		friend QString & operator<< ( QString & str, const Path & path );
 	}; // End Path class definition
 
 	/**
@@ -456,7 +220,7 @@ namespace Cam
 		ContiguousPath objects.  It can also merge ContiguousPath objects if the addition of an edge
 		marries two ContiguousPath objects together.
 	 */
-	class ContiguousPath
+	class CamExport ContiguousPath
 	{
 	private:
 		typedef enum {
@@ -466,7 +230,7 @@ namespace Cam
 		} ePlane_t;
 
 	public:
-		ContiguousPath() { m_is_forwards = true; m_concentricity = -1; m_id = s_next_available_id++; }
+		ContiguousPath();
 		ContiguousPath( const ContiguousPath & rhs );
 		ContiguousPath & operator= ( const ContiguousPath & rhs );
 
@@ -502,17 +266,17 @@ namespace Cam
 		bool IsClockwise();
 		bool operator< (const ContiguousPath & rhs ) const;	// Sort by nesting (i.e. object inside object etc.)
 
-		int Concentricity() const { return(m_concentricity); }
-		void Concentricity(const int value) { m_concentricity = value; }
+		int Concentricity() const;
+		void Concentricity(const int value);
 
 		typedef unsigned int Id_t;
 		typedef std::vector< Id_t > Ids_t;
 
-		Id_t	ID() const { return(m_id); }
-		Ids_t PathsThatSurroundUs() const { return(m_paths_that_surround_us); }
+		Id_t	ID() const;
+		Ids_t PathsThatSurroundUs() const;
 		void PathsThatSurroundUs(const Id_t id) const;
 
-		Ids_t PathsThatWeSurround() const { return(m_paths_that_we_surround); }
+		Ids_t PathsThatWeSurround() const;
 		void PathsThatWeSurround( const Id_t id ) const;
 		Cam::Point MidpointForSurroundsCheck() const;
 
@@ -542,27 +306,13 @@ namespace Cam
 		mutable std::auto_ptr<Bnd_Box> m_pBoundingBox;
 
 	public:
-		friend QString & operator<< ( QString & str, const ContiguousPath & path )
-		{
-			str += QString::fromUtf8("<ContiguousPath ") + QString::fromUtf8(" num_paths=\"") + QString().arg(path.m_paths.size()) + QString::fromUtf8("\"");
-			str += QString::fromUtf8(", direction=\"") + QString(path.m_is_forwards?QString::fromUtf8("FORWARDS"):QString::fromUtf8("BACKWARDS")) + QString::fromUtf8("\"") + QString::fromUtf8(">\n");
-
-			for (std::vector<Path>::const_iterator itPath = path.m_paths.begin(); itPath != path.m_paths.end(); itPath++)
-			{
-				str << *itPath;
-			}
-
-			str += QString::fromUtf8("</ContiguousPath>\n");
-
-			return(str);
-		}
+		friend QString & operator<< ( QString & str, const ContiguousPath & path );
 	}; // End of ContiguousPath class definition.
 
-	class Paths
+	class CamExport Paths
 	{
 	public:
-		Paths() { }
-		// Paths(HeeksObj *object);
+		Paths();
 		Paths(const TopoDS_Shape shape);
 		Paths(ContiguousPath contiguous_path);
 		Paths(area::CArea &area);
@@ -570,17 +320,10 @@ namespace Cam
 		Paths & operator= ( const Paths & rhs );
 		Paths & operator-= ( const Paths & rhs );
 
-		void Reverse()
-		{
-			m_is_forwards = ! m_is_forwards;
-			for (std::vector<ContiguousPath>::iterator itPath = m_contiguous_paths.begin(); itPath != m_contiguous_paths.end(); itPath++)
-			{
-				itPath->Reverse();
-			}
-		}
+		void Reverse();
 
-		::size_t size() const { return(m_contiguous_paths.size()); }
-		ContiguousPath operator[]( const int offset ) const { return(m_contiguous_paths[offset]); }
+		::size_t size() const;
+		ContiguousPath operator[]( const int offset ) const;
 		ContiguousPath GetByID( const ContiguousPath::Id_t id ) const;
 
 		Path Next() const;
@@ -589,14 +332,12 @@ namespace Cam
 		void Add(const TopoDS_Edge edge);
 		void Add(const TopoDS_Wire wire, const gp_Pln reference_plane, const double maximum_distance);
 		void Add(area::CArea &area);
-		// void Add(HeeksObj *object);
 		bool Join( std::vector<ContiguousPath>::iterator lhs, std::vector<ContiguousPath>::iterator rhs );
 		bool Offset(const double distance);
 		#ifdef HEEKSCNC
 			void Align( CFixture fixture );
 		#endif // HEEKSCNC
 
-        // HeeksObj *Sketch();
 		void Sort(const bool force = false);
 
 		area::CArea Area();

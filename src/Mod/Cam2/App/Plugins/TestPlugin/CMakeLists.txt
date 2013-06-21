@@ -6,6 +6,11 @@ SET(TPG_TARGET TestPlugin)
 # Add a CAM TOOL PATH GENERATOR PLUGIN macro so that we can set the dllimport/dllexport linkages correctly.
 add_definitions(-DCAM_TPG_PLUGIN)
 
+include_directories(
+	${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App
+	${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App/Graphics
+	)
+
 # Add your .h and .cpp files here
 SET(Tpg_SRCS
 	CppExampleTPG.cpp

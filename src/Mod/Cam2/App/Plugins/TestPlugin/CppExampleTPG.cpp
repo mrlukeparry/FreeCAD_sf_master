@@ -27,6 +27,7 @@
 #include <TPG/CppTPGDescriptor.h>
 
 #include "CppExampleTPG.h"
+#include "Graphics/Paths.h"
 
 #define myID   "95744f1e-360f-11e2-bcd3-08002734b94f"
 #define myName "Example CPP TPG"
@@ -60,6 +61,8 @@ CppExampleTPG::CppExampleTPG()
     id = QS(myID);
     name = QS(myName);
     description = QS(myDesc);
+
+	Cam::Paths paths;
 
     QString qaction = QS("default");
     actions.push_back(qaction);
