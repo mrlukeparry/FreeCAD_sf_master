@@ -5,9 +5,11 @@
 #include "AreaOrderer.h"
 #include "Area.h"
 
+using namespace area;
+
 CAreaOrderer* CInnerCurves::area_orderer = NULL;
 
-CInnerCurves::CInnerCurves(CInnerCurves* pOuter, const CCurve* curve)
+CInnerCurves::CInnerCurves(CInnerCurves* pOuter, const area::CCurve* curve)
 {
 	m_pOuter = pOuter;
 	m_curve = curve;
@@ -19,7 +21,7 @@ CInnerCurves::~CInnerCurves()
 	delete m_unite_area;
 }
 
-void CInnerCurves::Insert(const CCurve* pcurve)
+void CInnerCurves::Insert(const area::CCurve* pcurve)
 {
 	std::list<CInnerCurves*> outside_of_these;
 	std::list<CInnerCurves*> crossing_these;
@@ -111,9 +113,9 @@ void CInnerCurves::Unite(const CInnerCurves* c)
 
 	m_unite_area->Union(a2);
 	m_unite_area->Reorder();
-	for(std::list<CCurve>::iterator It = m_unite_area->m_curves.begin(); It != m_unite_area->m_curves.end(); It++)
+	for(std::list<area::CCurve>::iterator It = m_unite_area->m_curves.begin(); It != m_unite_area->m_curves.end(); It++)
 	{
-		CCurve &curve = *It;
+		area::CCurve &curve = *It;
 		if(It == m_unite_area->m_curves.begin())
 			m_curve = &curve;
 		else
@@ -129,7 +131,7 @@ CAreaOrderer::CAreaOrderer()
 	m_top_level = new CInnerCurves(NULL, NULL);
 }
 
-void CAreaOrderer::Insert(CCurve* pcurve)
+void CAreaOrderer::Insert(area::CCurve* pcurve)
 {
 	CInnerCurves::area_orderer = this;
 

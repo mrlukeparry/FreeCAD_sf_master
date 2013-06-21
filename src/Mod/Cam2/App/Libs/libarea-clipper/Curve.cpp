@@ -8,7 +8,9 @@
 #include "Area.h"
 #include "kurve/geometry.h"
 
-const Point operator*(const double &d, const Point &p){ return p * d;}
+using namespace area;
+
+// const area::Point operator*(const double &d, const area::Point &p){ return p * d;}
 double Point::tolerance = 0.001;
 
 //static const double PI = 3.1415926535897932; duplicated in kurve/geometry.h
@@ -49,12 +51,12 @@ CVertex::CVertex(const Point& p, int user_data):m_type(0), m_p(p), m_c(0.0, 0.0)
 {
 }
 
-void CCurve::append(const CVertex& vertex)
+void area::CCurve::append(const CVertex& vertex)
 {
 	m_vertices.push_back(vertex);
 }
 
-bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, Arc &arc_returned)
+bool area::CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, Arc &arc_returned)
 {
 	// this examines the vertices in might_be_an_arc
 	// if they do fit an arc, set arc to be the arc that they fit and return true
@@ -136,7 +138,7 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	return true;
 }
 
-void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, Arc &arc, bool &arc_found, bool &arc_added)
+void area::CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, Arc &arc, bool &arc_found, bool &arc_added)
 {
 	if(check_for_arc && CheckForArc(new_vertices.back(), might_be_an_arc, arc))
 	{
@@ -179,7 +181,7 @@ void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices,
 	}
 }
 
-void CCurve::FitArcs()
+void area::CCurve::FitArcs()
 {
 	std::list<CVertex> new_vertices;
 
@@ -218,7 +220,7 @@ void CCurve::FitArcs()
 	}
 }
 
-void CCurve::UnFitArcs()
+void area::CCurve::UnFitArcs()
 {
 	std::list<Point> new_pts;
 
@@ -313,7 +315,7 @@ void CCurve::UnFitArcs()
 	}
 }
 
-Point CCurve::NearestPoint(const Point& p)const
+Point area::CCurve::NearestPoint(const Point& p)const
 {
 	double best_dist = 0.0;
 	Point best_point = Point(0, 0);
@@ -342,7 +344,7 @@ Point CCurve::NearestPoint(const Point& p)const
 	return best_point;
 }
 
-Point CCurve::NearestPoint(const CCurve& c, double *d)const
+Point area::CCurve::NearestPoint(const area::CCurve& c, double *d)const
 {
 	double best_dist = 0.0;
 	Point best_point = Point(0, 0);
@@ -372,7 +374,7 @@ Point CCurve::NearestPoint(const CCurve& c, double *d)const
 	return best_point;
 }
 
-void CCurve::GetBox(CBox &box)
+void area::CCurve::GetBox(CBox &box)
 {
 	Point prev_p = Point(0, 0);
 	bool prev_p_valid = false;
@@ -388,7 +390,7 @@ void CCurve::GetBox(CBox &box)
 	}
 }
 
-void CCurve::Reverse()
+void area::CCurve::Reverse()
 {
 	std::list<CVertex> new_vertices;
 
@@ -412,7 +414,7 @@ void CCurve::Reverse()
 	m_vertices = new_vertices;
 }
 
-double CCurve::GetArea()const
+double area::CCurve::GetArea()const
 {
 	double area = 0.0;
 	Point prev_p = Point(0, 0);
@@ -430,14 +432,14 @@ double CCurve::GetArea()const
 	return area;
 }
 
-bool CCurve::IsClosed()const
+bool area::CCurve::IsClosed()const
 {
 	if(m_vertices.size() == 0)return false;
 	return m_vertices.front().m_p == m_vertices.back().m_p;
 }
 
-void CCurve::ChangeStart(const Point &p) {
-	CCurve new_curve;
+void area::CCurve::ChangeStart(const Point &p) {
+	area::CCurve new_curve;
 
 	bool started = false;
 	bool finished = false;
@@ -502,7 +504,7 @@ void CCurve::ChangeStart(const Point &p) {
 	}
 }
 
-void CCurve::Break(const Point &p) {
+void area::CCurve::Break(const Point &p) {
 	// inserts a point, if it lies on the curve
 	const Point *prev_p = NULL;
 
@@ -527,8 +529,8 @@ void CCurve::Break(const Point &p) {
 	}
 }
 
-void CCurve::RemoveTinySpans() {
-	CCurve new_curve;
+void area::CCurve::RemoveTinySpans() {
+	area::CCurve new_curve;
 
 	std::list<CVertex>::const_iterator VIt = m_vertices.begin(); 
 	new_curve.m_vertices.push_back(*VIt);
@@ -546,9 +548,9 @@ void CCurve::RemoveTinySpans() {
 	*this = new_curve;
 }
 
-void CCurve::ChangeEnd(const Point &p) {
+void area::CCurve::ChangeEnd(const Point &p) {
 	// changes the end position of the Kurve, doesn't keep closed kurves closed
-	CCurve new_curve;
+	area::CCurve new_curve;
 
 	const Point *prev_p = NULL;
 
@@ -581,7 +583,7 @@ void CCurve::ChangeEnd(const Point &p) {
 	*this = new_curve;
 }
 
-Point CCurve::NearestPoint(const Span& p, double *d)const
+Point area::CCurve::NearestPoint(const Span& p, double *d)const
 {
 	double best_dist = 0.0;
 	Point best_point = Point(0, 0);
@@ -611,7 +613,7 @@ Point CCurve::NearestPoint(const Span& p, double *d)const
 	return best_point;
 }
 
-static geoff_geometry::Kurve MakeKurve(const CCurve& curve)
+static geoff_geometry::Kurve MakeKurve(const area::CCurve& curve)
 {
 	geoff_geometry::Kurve k;
 	for(std::list<CVertex>::const_iterator It = curve.m_vertices.begin(); It != curve.m_vertices.end(); It++)
@@ -622,9 +624,9 @@ static geoff_geometry::Kurve MakeKurve(const CCurve& curve)
 	return k;
 }
 
-static CCurve MakeCCurve(const geoff_geometry::Kurve& k)
+static area::CCurve MakeCCurve(const geoff_geometry::Kurve& k)
 {
-	CCurve c;
+	area::CCurve c;
 	int n = k.nSpans();
 	for(int i = 0; i<= n; i++)
 	{
@@ -635,7 +637,7 @@ static CCurve MakeCCurve(const geoff_geometry::Kurve& k)
 	return c;
 }
 
-bool CCurve::Offset(double leftwards_value)
+bool area::CCurve::Offset(double leftwards_value)
 {
 	// use the kurve code donated by Geoff Hawkesford, to offset the curve as an open curve
 	// returns true for success, false for failure
@@ -658,7 +660,7 @@ bool CCurve::Offset(double leftwards_value)
 	return success;
 }
 
-void CCurve::GetSpans(std::list<Span> &spans)const
+void area::CCurve::GetSpans(std::list<Span> &spans)const
 {
 	const Point *prev_p = NULL;
 	for(std::list<CVertex>::const_iterator It = m_vertices.begin(); It != m_vertices.end(); It++)
@@ -672,7 +674,7 @@ void CCurve::GetSpans(std::list<Span> &spans)const
 	}
 }
 
-void CCurve::OffsetForward(double forwards_value, bool refit_arcs)
+void area::CCurve::OffsetForward(double forwards_value, bool refit_arcs)
 {
 	// for drag-knife compensation
 
@@ -731,7 +733,7 @@ void CCurve::OffsetForward(double forwards_value, bool refit_arcs)
 		UnFitArcs(); // convert those little arcs added to lines
 }
 
-double CCurve::Perim()const
+double area::CCurve::Perim()const
 {
 	const Point *prev_p = NULL;
 	double perim = 0.0;
@@ -749,7 +751,7 @@ double CCurve::Perim()const
 	return perim;
 }
 
-Point CCurve::PerimToPoint(double perim)const
+Point area::CCurve::PerimToPoint(double perim)const
 {
 	if(m_vertices.size() == 0)return Point(0, 0);
 
@@ -775,7 +777,7 @@ Point CCurve::PerimToPoint(double perim)const
 	return m_vertices.back().m_p;
 }
 
-double CCurve::PointToPerim(const Point& p)const
+double area::CCurve::PointToPerim(const Point& p)const
 {
 	double best_dist = 0.0;
 	double perim_at_best_dist = 0.0;
@@ -809,7 +811,7 @@ double CCurve::PointToPerim(const Point& p)const
 	return perim_at_best_dist;
 }
 
-void CCurve::operator+=(const CCurve& curve)
+void area::CCurve::operator+=(const area::CCurve& curve)
 {
 	for(std::list<CVertex>::const_iterator It = curve.m_vertices.begin(); It != curve.m_vertices.end(); It++)
 	{
@@ -1110,7 +1112,7 @@ Point Span::GetVector(double fraction)const
 	}
 }
 
-void tangential_arc(const Point &p0, const Point &p1, const Point &v0, Point &c, int &dir)
+void area::tangential_arc(const Point &p0, const Point &p1, const Point &v0, Point &c, int &dir)
 {
 	geoff_geometry::Point gp0(p0.x, p0.y);
 	geoff_geometry::Point gp1(p1.x, p1.y);

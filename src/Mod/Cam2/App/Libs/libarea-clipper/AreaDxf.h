@@ -6,6 +6,9 @@
 
 #include "dxf.h"
 
+namespace area
+{
+
 class CSketch;
 class CArea;
 class CCurve;
@@ -21,3 +24,6 @@ public:
 	void OnReadLine(const double* s, const double* e);
 	void OnReadArc(const double* s, const double* e, const double* c, bool dir);
 };
+
+} // End namespace area
+

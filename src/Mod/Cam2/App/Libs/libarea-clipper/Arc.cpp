@@ -6,6 +6,9 @@
 #include "Arc.h"
 #include "Curve.h"
 
+using namespace area;
+
+
 void Arc::SetDirWithPoint(const Point& p)
 {
 	double angs = atan2(m_s.y - m_c.y, m_s.x - m_c.x);

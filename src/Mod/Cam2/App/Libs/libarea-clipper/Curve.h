@@ -10,6 +10,9 @@
 #include "Point.h"
 #include "Box.h"
 
+namespace area 
+{
+
 class Line{
 public:
 	Point p0;
@@ -78,7 +81,7 @@ public:
 	void FitArcs();
 	void UnFitArcs();
 	Point NearestPoint(const Point& p)const;
-	Point NearestPoint(const CCurve& p, double *d = NULL)const;
+	Point NearestPoint(const area::CCurve& p, double *d = NULL)const;
 	Point NearestPoint(const Span& p, double *d = NULL)const;
 	void GetBox(CBox &box);
 	void Reverse();
@@ -95,7 +98,9 @@ public:
 	double PointToPerim(const Point& p)const;
 	void GetSpans(std::list<Span> &spans)const;
 	void RemoveTinySpans();
-	void operator+=(const CCurve& p);
+	void operator+=(const area::CCurve& p);
 };
 
 void tangential_arc(const Point &p0, const Point &p1, const Point &v0, Point &c, int &dir);
+
+} // End namespace area
