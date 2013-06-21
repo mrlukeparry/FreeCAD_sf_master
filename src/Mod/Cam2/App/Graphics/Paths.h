@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <PreCompiled.h>
+
 #include <QString>
 
 #include <TopoDS_Edge.hxx>

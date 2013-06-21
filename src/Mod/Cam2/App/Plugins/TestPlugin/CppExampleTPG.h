@@ -52,7 +52,7 @@ public:
     /**
      * Returns the toolpath from the last
      */
-    virtual ToolPath *getToolPath() {return NULL;}
+    virtual ToolPath *getToolPath();
 };
 
 } /* namespace Cam */

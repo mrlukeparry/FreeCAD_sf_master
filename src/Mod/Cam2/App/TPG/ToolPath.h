@@ -23,8 +23,12 @@
 #ifndef TOOLPATH_H_
 #define TOOLPATH_H_
 
+#include <PreCompiled.h>
+
 #include <QStringList>
 #include <QString>
+
+#include <Area.h>
 
 namespace Cam {
 class ToolPath;
@@ -37,7 +41,7 @@ namespace Cam {
 /**
  * Stores the Tool Path output from a single TPG.
  */
-class ToolPath {
+class CamExport ToolPath {
 
 protected:
     TPG *source;
@@ -86,6 +90,31 @@ public:
         if (refcnt == 0)
             delete this;
     }
+
+
+	QString PythonString( const QString value ) const;
+	QString PythonString( const double value ) const;
+	
+
+public:
+	ToolPath & operator<< ( const ToolPath & value );
+	ToolPath & operator<< ( const double value );
+	ToolPath & operator<< ( const float value );
+	ToolPath & operator<< ( const QString value );
+	ToolPath & operator<< ( const int value );
+
+	static void RequiredDecimalPlaces( const unsigned int value ) 
+	{ 
+		required_decimal_places = value;
+		area::CArea::m_accuracy = 1.0 / pow(10, double(value));
+	}
+	static const unsigned int RequiredDecimalPlaces() { return(required_decimal_places); }
+
+private:
+	static unsigned int required_decimal_places;
+	double Round(double number,int place) const;
+	double ToolPath::round(double r) const;
+
 };
 
 } /* namespace Cam */

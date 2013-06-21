@@ -62,8 +62,6 @@ CppExampleTPG::CppExampleTPG()
     name = QS(myName);
     description = QS(myDesc);
 
-	Cam::Paths paths;
-
     QString qaction = QS("default");
     actions.push_back(qaction);
     settings = new TPGSettings();
@@ -89,5 +87,16 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
     qDebug("This is where the TPG would generate the tool-path! \n");
     return;
 }
+
+
+/* virtual */ ToolPath *CppExampleTPG::getToolPath()
+{
+	ToolPath *pPython = new ToolPath(this);
+
+	*pPython << QString::fromAscii("rapid(x=") << 1.0 << QString::fromAscii(")\n");
+
+	return(pPython);
+}
+
 
 } /* namespace Cam */
