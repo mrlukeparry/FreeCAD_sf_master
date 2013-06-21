@@ -14,6 +14,7 @@ include_directories(
     ${PYTHON_INCLUDE_PATH}
     ${XERCESC_INCLUDE_DIR}
     ${QT_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App/Libs/libarea-clipper
 )
 link_directories(${OCC_LIBRARY_DIR})
 
@@ -32,6 +33,13 @@ add_subdirectory(Libs)
 add_subdirectory(Plugins)
 
 # generate_from_xml(CamPy)
+
+SET(Graphics_SRCS
+    Graphics/CDouble.h
+    Graphics/Paths.h
+    Graphics/Paths.cpp
+)
+SOURCE_GROUP("Graphics" FILES ${Graphics_SRCS})
 
 SET(Features_SRCS
     Features/CamFeature.cpp
@@ -135,6 +143,7 @@ SET(Cam_SRCS
     ${TPG_SRCS}
     ${CamModule_SRCS}
     ${Features_SRCS}
+    ${Graphics_SRCS}
     ${Python_SRCS}
     ${PLUGINS_SRCS}
 )
