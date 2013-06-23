@@ -3018,7 +3018,7 @@ std::list<area::CVertex> Path::Vertices() const
 	GeomAbs_CurveType curve_type = oc_curve.GetType();
 	bool sense = (Edge().Orientation() == TopAbs_FORWARD);
 
-	if(! m_is_forwards) sense = !sense;
+	// if(! m_is_forwards) sense = !sense;
 
 	switch(curve_type)
 	{
