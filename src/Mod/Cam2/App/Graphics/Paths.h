@@ -21,6 +21,8 @@
 #include <string>
 
 #include "Area.h"
+#include "Feature.h"
+#include "TPGFeature.h"
 
 namespace Cam
 {
@@ -330,6 +332,8 @@ namespace Cam
 
 		Path Next() const;
 		void Add(const Path path);
+		void Add(const Part::Feature *pFeature);
+		void Add(const TPGFeature::InputGeometry_t input_geometry);
 		void Add(const TopoDS_Shape shape);
 		void Add(const TopoDS_Edge edge);
 		void Add(const TopoDS_Wire wire, const gp_Pln reference_plane, const double maximum_distance);

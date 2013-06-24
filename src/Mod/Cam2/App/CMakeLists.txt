@@ -6,6 +6,7 @@ endif(MSVC)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App/Features
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
     ${Boost_INCLUDE_DIRS}

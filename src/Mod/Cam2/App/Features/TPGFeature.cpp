@@ -137,6 +137,15 @@ TPG* TPGFeature::getTPG() {
 	return tpg;
 }
 
+/*
+void TPGFeature::setInputGeometry(const std::vector<Part::Feature *> & vals)
+{
+	inputGeometry.clear();
+	std::copy( vals.begin(), vals.end(), std::inserter( inputGeometry, inputGeometry.begin() ) );
+}
+*/
+
+
 /**
  * Get the current TPG settings object
  */

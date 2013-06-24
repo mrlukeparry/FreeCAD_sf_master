@@ -1242,6 +1242,29 @@ bool Cam::ContiguousPath::Add(Cam::Path path)
 	}
 }
 
+
+void Cam::Paths::Add(const TPGFeature::InputGeometry_t input_geometry)
+{
+	for (TPGFeature::InputGeometry_t::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
+	{
+		Add( (*itGeometry) );
+	}
+}
+
+/**
+	This is the conversion from a Cam::Feature into a series of TopoDS_Edge objects.  If
+	the TopoDS_Shape returned represents a solid or some other feature that we're not 
+	interested in then it will be quietly discarded.
+ */
+void Cam::Paths::Add( const Part::Feature *link )
+{
+	if (!link) return;
+    if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) return;
+    const TopoDS_Shape& shape = static_cast<const Part::Feature*>(link)->Shape.getShape()._Shape;
+    if (shape.IsNull()) return;
+	Add(shape);
+}
+
 void Cam::Paths::Add(const TopoDS_Shape shape)
 {
 	if (! shape.IsNull())
@@ -1941,9 +1964,10 @@ std::list<Cam::Point> Cam::Path::Intersect( const Cam::Path & rhs, const bool st
 }
 
 
-// Project the wire(s) onto a plane and intersect the resultant wires.  For each of those intersections, project the point
-// back up perpendicular to that plane and find the intersection points on 'this' object (only).
-
+/**
+	Project the wire(s) onto a plane and intersect the resultant wires.  For each of those intersections, project the point
+	back up perpendicular to that plane and find the intersection points on 'this' object (only).
+ */
 std::list<Cam::Point> Cam::ContiguousPath::Intersect( const Cam::ContiguousPath & rhs, const bool stop_after_first_point /* = false */ ) const
 {
 	std::list<Cam::Point> results;
