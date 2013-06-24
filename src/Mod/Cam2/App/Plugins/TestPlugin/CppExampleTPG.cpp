@@ -85,12 +85,15 @@ CppExampleTPG::~CppExampleTPG() {
 void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAscii(""))
 {
     qDebug("This is where the TPG would generate the tool-path! \n");
+
+	/*
+	// just for testing the getToolPath() method.
 	ToolPath *pToolPath = getToolPath();
 	QString tool_path;
 	tool_path << *pToolPath;
 	qDebug(tool_path.toAscii().constData());
 	pToolPath->release();
-    return;
+	*/
 }
 
 
@@ -98,6 +101,7 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 {
 	ToolPath *pPython = new ToolPath(this);
 
+	pPython->RequiredDecimalPlaces(3);	// assume metric.
 	*pPython << "rapid(x=" << 12.3456789 << ")\n";
 	*pPython << "feed(x=" << 4 << ")\n";
 
