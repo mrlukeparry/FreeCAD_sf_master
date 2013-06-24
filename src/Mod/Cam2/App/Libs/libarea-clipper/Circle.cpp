@@ -4,6 +4,8 @@
 
 #include "Circle.h"
 
+using namespace area;
+
 Circle::Circle(const Point& p0, const Point& p1, const Point& p2)
 {
 	// from TangentCircles in http://code.google.com/p/heekscad/source/browse/trunk/src/Geom.cpp

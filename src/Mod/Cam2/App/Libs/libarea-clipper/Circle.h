@@ -6,6 +6,9 @@
 
 #include "Point.h"
 
+namespace area
+{
+
 class Circle{
 public:
 	Point m_c;
@@ -17,3 +20,6 @@ public:
 	bool PointIsOn(const Point& p, double accuracy);
 	bool LineIsOn(const Point& p0, const Point& p1, double accuracy);
 };
+
+} // End namespace area
+

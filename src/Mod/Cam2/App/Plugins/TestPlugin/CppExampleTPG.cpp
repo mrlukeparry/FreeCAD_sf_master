@@ -27,6 +27,7 @@
 #include <TPG/CppTPGDescriptor.h>
 
 #include "CppExampleTPG.h"
+#include "Graphics/Paths.h"
 
 #define myID   "95744f1e-360f-11e2-bcd3-08002734b94f"
 #define myName "Example CPP TPG"
@@ -84,7 +85,32 @@ CppExampleTPG::~CppExampleTPG() {
 void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAscii(""))
 {
     qDebug("This is where the TPG would generate the tool-path! \n");
+	ToolPath *pToolPath = getToolPath();
+	QString tool_path;
+	tool_path << *pToolPath;
+	qDebug(tool_path.toAscii().constData());
+	pToolPath->release();
     return;
 }
+
+
+/* virtual */ ToolPath *CppExampleTPG::getToolPath()
+{
+	ToolPath *pPython = new ToolPath(this);
+
+	*pPython << "rapid(x=" << 12.3456789 << ")\n";
+	*pPython << "feed(x=" << 4 << ")\n";
+
+	QString some_setting(QString::fromUtf8("'Something (that) needs cleaning up befor it's included in a python comment() call'"));
+	*pPython << "comment(" << pPython->PythonString(some_setting) << ")\n";
+
+	*pPython << "comment(" << pPython->PythonString("the cat's mat has a single quote in it") << ")\n";
+	*pPython << "comment(" << pPython->PythonString("this one has (something in brackets) within it.") << ")\n";
+	*pPython << "comment(" << pPython->PythonString("'this one already has single quotes bounding it'") << ")\n";
+	*pPython << "comment(" << pPython->PythonString("\"this one already has double quotes bounding it\"") << ")\n";
+
+	return(pPython);
+}
+
 
 } /* namespace Cam */

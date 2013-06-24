@@ -6,6 +6,8 @@
 #include "Area.h"
 #include "AreaOrderer.h"
 
+using namespace area;
+
 double CArea::m_accuracy = 0.01;
 double CArea::m_units = 1.0;
 bool CArea::m_fit_arcs = true;
@@ -18,15 +20,15 @@ bool CArea::m_set_processing_length_in_split = false;
 double CArea::m_after_MakeOffsets_length = 0.0;
 static const double PI = 3.1415926535897932;
 
-void CArea::append(const CCurve& curve)
+void CArea::append(const area::CCurve& curve)
 {
 	m_curves.push_back(curve);
 }
 
 void CArea::FitArcs(){
-	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	for(std::list<area::CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
 	{
-		CCurve& curve = *It;
+		area::CCurve& curve = *It;
 		curve.FitArcs();
 	}
 }
@@ -35,9 +37,9 @@ Point CArea::NearestPoint(const Point& p)const
 {
 	double best_dist = 0.0;
 	Point best_point = Point(0, 0);
-	for(std::list<CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	for(std::list<area::CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
 	{
-		const CCurve& curve = *It;
+		const area::CCurve& curve = *It;
 		Point near_point = curve.NearestPoint(p);
 		double dist = near_point.dist(p);
 		if(It == m_curves.begin() || dist < best_dist)
@@ -51,9 +53,9 @@ Point CArea::NearestPoint(const Point& p)const
 
 void CArea::GetBox(CBox &box)
 {
-	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	for(std::list<area::CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
 	{
-		CCurve& curve = *It;
+		area::CCurve& curve = *It;
 		curve.GetBox(box);
 	}
 }
@@ -68,9 +70,9 @@ void CArea::Reorder()
 	// returns 1, if the curves are overlapping
 
 	CAreaOrderer ao;
-	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	for(std::list<area::CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
 	{
-		CCurve& curve = *It;
+		area::CCurve& curve = *It;
 		ao.Insert(&curve);
 		if(m_set_processing_length_in_split)
 		{
@@ -84,14 +86,14 @@ void CArea::Reorder()
 class ZigZag
 {
 public:
-	CCurve zig;
-	CCurve zag;
-	ZigZag(const CCurve& Zig, const CCurve& Zag):zig(Zig), zag(Zag){}
+	area::CCurve zig;
+	area::CCurve zag;
+	ZigZag(const area::CCurve& Zig, const area::CCurve& Zag):zig(Zig), zag(Zag){}
 };
 
 static double stepover_for_pocket = 0.0;
 static std::list<ZigZag> zigzag_list_for_zigs;
-static std::list<CCurve> *curve_list_for_zigs = NULL;
+static std::list<area::CCurve> *curve_list_for_zigs = NULL;
 static bool rightward_for_zigs = true;
 static double sin_angle_for_zigs = 0.0;
 static double cos_angle_for_zigs = 0.0;
@@ -129,9 +131,9 @@ static CVertex unrotated_vertex(const CVertex &v)
 
 static void rotate_area(CArea &a)
 {
-	for(std::list<CCurve>::iterator It = a.m_curves.begin(); It != a.m_curves.end(); It++)
+	for(std::list<area::CCurve>::iterator It = a.m_curves.begin(); It != a.m_curves.end(); It++)
 	{
-		CCurve& curve = *It;
+		area::CCurve& curve = *It;
 		for(std::list<CVertex>::iterator CIt = curve.m_vertices.begin(); CIt != curve.m_vertices.end(); CIt++)
 		{
 			CVertex& vt = *CIt;
@@ -176,9 +178,9 @@ void test_y_point(int i, const Point& p, Point& best_p, bool &found, int &best_i
 	}
 }
 
-static void make_zig_curve(const CCurve& input_curve, double y0, double y)
+static void make_zig_curve(const area::CCurve& input_curve, double y0, double y)
 {
-	CCurve curve(input_curve);
+	area::CCurve curve(input_curve);
 
 	if(rightward_for_zigs)
 	{
@@ -232,7 +234,7 @@ static void make_zig_curve(const CCurve& input_curve, double y0, double y)
 	if(end_index <= start_index)end_index += (i-1);
 	if(zag_end_index <= start_index)zag_end_index += (i-1);
 
-    CCurve zig, zag;
+    area::CCurve zig, zag;
     
     bool zig_started = false;
     bool zig_finished = false;
@@ -294,9 +296,9 @@ static void make_zig_curve(const CCurve& input_curve, double y0, double y)
 
 void make_zig(const CArea &a, double y0, double y)
 {
-	for(std::list<CCurve>::const_iterator It = a.m_curves.begin(); It != a.m_curves.end(); It++)
+	for(std::list<area::CCurve>::const_iterator It = a.m_curves.begin(); It != a.m_curves.end(); It++)
 	{
-		const CCurve &curve = *It;
+		const area::CCurve &curve = *It;
 		make_zig_curve(curve, y0, y);
 	}
 }
@@ -367,7 +369,7 @@ void reorder_zigs()
 		std::list<ZigZag> &zigzag_list = *It;
 		if(zigzag_list.size() == 0)continue;
 
-		curve_list_for_zigs->push_back(CCurve());
+		curve_list_for_zigs->push_back(area::CCurve());
 		for(std::list<ZigZag>::const_iterator It = zigzag_list.begin(); It != zigzag_list.end();)
 		{
 			const ZigZag &zigzag = *It;
@@ -430,7 +432,7 @@ static void zigzag(const CArea &input_a)
 		Point p1(x0, y);
 		Point p2(x1, y);
 		Point p3(x1, y0);
-		CCurve c;
+		area::CCurve c;
 		c.m_vertices.push_back(CVertex(0, p0, null_point, 0));
 		c.m_vertices.push_back(CVertex(0, p1, null_point, 0));
 		c.m_vertices.push_back(CVertex(0, p2, null_point, 1));
@@ -449,7 +451,7 @@ static void zigzag(const CArea &input_a)
 	CArea::m_processing_done += 0.2 * CArea::m_single_area_processing_length;
 }
 
-void CArea::SplitAndMakePocketToolpath(std::list<CCurve> &curve_list, const CAreaPocketParams &params)const
+void CArea::SplitAndMakePocketToolpath(std::list<area::CCurve> &curve_list, const CAreaPocketParams &params)const
 {
 	CArea::m_processing_done = 0.0;
 
@@ -475,7 +477,7 @@ void CArea::SplitAndMakePocketToolpath(std::list<CCurve> &curve_list, const CAre
 	}
 }
 
-void CArea::MakePocketToolpath(std::list<CCurve> &curve_list, const CAreaPocketParams &params)const
+void CArea::MakePocketToolpath(std::list<area::CCurve> &curve_list, const CAreaPocketParams &params)const
 {
 	double radians_angle = params.zig_angle * PI / 180;
 	sin_angle_for_zigs = sin(-radians_angle);
@@ -517,9 +519,9 @@ void CArea::MakePocketToolpath(std::list<CCurve> &curve_list, const CAreaPocketP
 	if(params.mode == SingleOffsetPocketMode || params.mode == ZigZagThenSingleOffsetPocketMode)
 	{
 		// add the single offset too
-		for(std::list<CCurve>::iterator It = a_offset.m_curves.begin(); It != a_offset.m_curves.end(); It++)
+		for(std::list<area::CCurve>::iterator It = a_offset.m_curves.begin(); It != a_offset.m_curves.end(); It++)
 		{
-			CCurve& curve = *It;
+			area::CCurve& curve = *It;
 			curve_list.push_back(curve);
 		}
 	}
@@ -529,9 +531,9 @@ void CArea::Split(std::list<CArea> &m_areas)const
 {
 	if(HolesLinked())
 	{
-		for(std::list<CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
+		for(std::list<area::CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
 		{
-			const CCurve& curve = *It;
+			const area::CCurve& curve = *It;
 			m_areas.push_back(CArea());
 			m_areas.back().m_curves.push_back(curve);
 		}
@@ -543,9 +545,9 @@ void CArea::Split(std::list<CArea> &m_areas)const
 
 		if(CArea::m_please_abort)return;
 
-		for(std::list<CCurve>::const_iterator It = a.m_curves.begin(); It != a.m_curves.end(); It++)
+		for(std::list<area::CCurve>::const_iterator It = a.m_curves.begin(); It != a.m_curves.end(); It++)
 		{
-			const CCurve& curve = *It;
+			const area::CCurve& curve = *It;
 			if(curve.IsClockwise())
 			{
 				if(m_areas.size() > 0)
@@ -564,9 +566,9 @@ double CArea::GetArea(bool always_add)const
 {
 	// returns the area of the area
 	double area = 0.0;
-	for(std::list<CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	for(std::list<area::CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
 	{
-		const CCurve& curve = *It;
+		const area::CCurve& curve = *It;
 		double a = curve.GetArea();
 		if(always_add)area += fabs(a);
 		else area += a;
@@ -574,7 +576,7 @@ double CArea::GetArea(bool always_add)const
 	return area;
 }
 
-eOverlapType GetOverlapType(const CCurve& c1, const CCurve& c2)
+eOverlapType area::GetOverlapType(const area::CCurve& c1, const area::CCurve& c2)
 {
 	CArea a1;
 	a1.m_curves.push_back(c1);
@@ -584,7 +586,7 @@ eOverlapType GetOverlapType(const CCurve& c1, const CCurve& c2)
 	return GetOverlapType(a1, a2);
 }
 
-eOverlapType GetOverlapType(const CArea& a1, const CArea& a2)
+eOverlapType area::GetOverlapType(const CArea& a1, const CArea& a2)
 {
 	CArea A1(a1);
 
@@ -611,17 +613,17 @@ eOverlapType GetOverlapType(const CArea& a1, const CArea& a2)
 	return eCrossing;
 }
 
-bool IsInside(const Point& p, const CCurve& c)
+bool area::IsInside(const Point& p, const area::CCurve& c)
 {
 	CArea a;
 	a.m_curves.push_back(c);
 	return IsInside(p, a);
 }
 
-bool IsInside(const Point& p, const CArea& a)
+bool area::IsInside(const Point& p, const CArea& a)
 {
 	CArea a2;
-	CCurve c;
+	area::CCurve c;
 	c.m_vertices.push_back(CVertex(Point(p.x - 0.01, p.y - 0.01)));
 	c.m_vertices.push_back(CVertex(Point(p.x + 0.01, p.y - 0.01)));
 	c.m_vertices.push_back(CVertex(Point(p.x + 0.01, p.y + 0.01)));
