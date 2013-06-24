@@ -172,7 +172,7 @@ unsigned int ToolPath::Precision( const double value ) const
     unsigned int one_for_plus_minus_sign = 1;
 
     lhs = 0;
-    double temp(value);
+    double temp = fabs(value);
     while (temp >= 1.0)
     {
         lhs++;
