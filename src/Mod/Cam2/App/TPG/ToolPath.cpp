@@ -36,6 +36,7 @@ ToolPath::ToolPath(TPG* source) {
     this->source = source;
     this->toolpath = new QStringList();
     refcnt = 1;
+	required_decimal_places = 3;	// TODO: Implement this properly.  Assume metric for now.
 }
 
 ToolPath::~ToolPath() {
@@ -111,8 +112,8 @@ QString ToolPath::PythonString( const QString value ) const
 	_value.replace(QString::fromAscii("\\"), QString::fromAscii("\\\\") );
 	_value.replace(QString::fromAscii("\'"), QString::fromAscii("\\\'") );
 	_value.replace(QString::fromAscii("\""), QString::fromAscii("\\\"") );
-	_value.replace(QString::fromAscii("\("), QString::fromAscii("\{") );
-	_value.replace(QString::fromAscii("\)"), QString::fromAscii("\}") );
+	_value.replace(QString::fromAscii("("), QString::fromAscii("{") );
+	_value.replace(QString::fromAscii(")"), QString::fromAscii("}") );
 
 	result = QString::fromAscii("\'") + _value + QString::fromAscii("\'");
 	return(result);
@@ -270,9 +271,15 @@ const unsigned int ToolPath::RequiredDecimalPlaces() const
 	// assume metric and use 3+1 decimal places.
 	// TODO - implement this functionality.
 
-	return(3+1);	// Assume metric (3) plus 1 to make sure we're within the magic 3 places of accuracy.
+	return(required_decimal_places);
 }
 
+void ToolPath::RequiredDecimalPlaces(const unsigned int value)
+{
+	this->required_decimal_places = value;
+	area::CArea::m_accuracy = 1.0 / pow(10.0, double(value));
+	area::Point::tolerance = 1.0 / pow(10.0, double(value));
+}
 
 
 } /* namespace Cam */
