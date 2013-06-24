@@ -21,7 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 # include <Python.h>
 #endif
@@ -43,7 +43,7 @@
 
 
 // C++ TPG Plugins
-#include "Plugins/MyPlugin.h"
+// #include "Plugins/MyPlugin.h"
 
 extern struct PyMethodDef Cam_methods[];
 

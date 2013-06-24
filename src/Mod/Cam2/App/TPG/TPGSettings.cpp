@@ -21,14 +21,14 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
 #include "TPGSettings.h"
 
 #include <cstdio>
-#include <qlist.h>
+#include <QList>
 
 #include <Base/Console.h>
 
@@ -108,7 +108,7 @@ void TPGSettingDefinition::addOption(const char *id, const char *label) {
 
 void TPGSettingDefinition::print()
 {
-	printf("  - (%s, %s, %s, %s, %s, %s)\n",
+	qDebug("  - (%s, %s, %s, %s, %s, %s)\n",
 			name.toAscii().constData(),
 			label.toAscii().constData(),
 			type.toAscii().constData(),
@@ -302,6 +302,12 @@ void TPGSettings::print()
 		(*it)->print();
 		++it;
 	}
+}
+
+
+std::vector<TPGSettingDefinition*> TPGSettings::getSettings() 
+{
+	return this->settingDefs;
 }
 
 /**

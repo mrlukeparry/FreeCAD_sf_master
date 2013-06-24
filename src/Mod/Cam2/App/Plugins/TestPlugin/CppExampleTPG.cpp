@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include <PreCompiled.h>
+#include "PreCompiled.h"
 #ifndef _PreComp_
 #endif
 
@@ -39,15 +39,15 @@
 //CPPTPG_API_SOURCE(Cam::CppExampleTPG, myID, myName, myDesc)
 
 //TODO: put this back once the memory corruption in getTPG() is located.
-extern "C" Cam::TPGDescriptorCollection* getDescriptors() {
+extern "C" Q_DECL_EXPORT Cam::TPGDescriptorCollection* getDescriptors() {
     Cam::TPGDescriptorCollection* descriptors = new Cam::TPGDescriptorCollection();
     Cam::TPGDescriptor *descriptor = new Cam::CppTPGDescriptor(QString::fromAscii("95744f1e-360f-11e2-bcd3-08002734b94f"), QString::fromAscii("Example CPP TPG"), QString::fromAscii("A simple example CPP TPG to demonstrating how to create one. "));
     descriptors->add(descriptor);
     descriptor->release();
     return descriptors;
 }
-extern "C" Cam::CppTPG* getTPG(QString id) {
-    if (id.compare(QString::fromAscii("95744f1e-360f-11e2-bcd3-08002734b94f")) == 0)
+extern "C" Q_DECL_EXPORT Cam::CppTPG* getTPG(QString id) {
+    if (id.compare(QString::fromAscii(myID)) == 0)
         return new Cam::CppExampleTPG();
     return 0;
 }
@@ -73,9 +73,7 @@ CppExampleTPG::CppExampleTPG()
 }
 
 CppExampleTPG::~CppExampleTPG() {
-    // Allow the plugin to close (if not needed anymore)
-    if (plugin != NULL)
-        plugin->release();
+    
 }
 
 /**
@@ -85,7 +83,7 @@ CppExampleTPG::~CppExampleTPG() {
  */
 void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAscii(""))
 {
-    printf("This is where the TPG would generate the tool-path! \n");
+    qDebug("This is where the TPG would generate the tool-path! \n");
     return;
 }
 

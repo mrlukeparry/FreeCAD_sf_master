@@ -12,7 +12,6 @@ include_directories(
     ${PYTHON_INCLUDE_PATH}
 )
 
-
 if(MSVC)
 	# We must exclude 'boost_python' for the windows build due to the naming
 	# of the library.  The boost python library gets linked anyway but

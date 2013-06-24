@@ -21,7 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 
 #ifndef CAMGUI_VIEWPROVIDERCAMFEATURE_H
 #define CAMGUI_VIEWPROVIDERCAMFEATURE_H

@@ -24,6 +24,8 @@
 #ifndef CAM_TPGFEATURE_H
 #define CAM_TPGFEATURE_H
 
+#include <PreCompiled.h>
+
 namespace Cam {
 class CamExport TPGFeature;
 }

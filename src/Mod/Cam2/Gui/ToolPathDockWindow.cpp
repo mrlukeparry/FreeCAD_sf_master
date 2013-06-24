@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 # include <QGridLayout>
 #endif
@@ -32,7 +32,7 @@ namespace CamGui {
 ToolPathDockWindow::ToolPathDockWindow(Gui::Document*  pcDocument, QWidget *parent)
   : DockWindow(pcDocument,parent)
 {
-  setWindowTitle("Tool Path");
+	setWindowTitle(QString::fromUtf8("Tool Path"));
 
   textedit = new QTextEdit(this);
   textedit->setReadOnly(true);
@@ -45,7 +45,7 @@ ToolPathDockWindow::ToolPathDockWindow(Gui::Document*  pcDocument, QWidget *pare
 
   resize( 600, 400 );
 
-  setToolPath("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"\
+  setToolPath(QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"\
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"\
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:'Cantarell'; font-size:11pt; font-weight:400; font-style:normal;\">\n"\
@@ -76,7 +76,7 @@ ToolPathDockWindow::ToolPathDockWindow(Gui::Document*  pcDocument, QWidget *pare
 "'Courier'; font-size:9pt; font-weight:600; color:#666666;\"># Box - Finish</span><span style=\" font-family:'Courier'; "\
 "font-size:9pt;\"><br /></span><span style=\" font-family:'Courier'; font-size:9pt; color:#0d8f94;\">SetTool</span><span "\
 "style=\" font-family:'Courier'; font-size:9pt;\">(</span><span style=\" font-family:'Courier'; font-size:9pt; color:#9b0000;\">"\
-"'3.175mm Ball'</span><span style=\" font-family:'Courier'; font-size:9pt;\">)</span></p></body></html>");
+"'3.175mm Ball'</span><span style=\" font-family:'Courier'; font-size:9pt;\">)</span></p></body></html>"));
 }
 
 ToolPathDockWindow::~ToolPathDockWindow() {

@@ -26,6 +26,7 @@
 #include "TPGFactory.h"
 #include "TPG.h"
 #include "CppTPGPlugin.h"
+#include "TPGDescriptor.h"
 
 namespace Cam {
 

@@ -24,6 +24,8 @@
 #ifndef _CAM_TPGFACTORYINST_h_
 #define _CAM_TPGFACTORYINST_h_
 
+#include <PreCompiled.h>
+
 #include <Base/Factory.h>
 #include <Base/Exception.h>
 //#include <QStringList>

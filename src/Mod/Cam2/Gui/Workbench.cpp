@@ -21,7 +21,7 @@
  ***************************************************************************/
 
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 
 #ifndef _PreComp_
 # include <qobject.h>
@@ -51,19 +51,19 @@ Workbench::Workbench()
 
   // Add CamSettings Dock Window
   CamProjectDockWindow* pcCamProjectView = new CamProjectDockWindow(0, pMainWindow);
-  pcCamProjectView->setObjectName("Cam Project");
+  pcCamProjectView->setObjectName(QString::fromUtf8("Cam Project"));
   pcCamProjectView->setMinimumWidth(150);
   pDockMgr->registerDockWindow("Cam_CamSettingsDockWindow", pcCamProjectView);
 
   // Add Toolpath Dock Window
   ToolPathDockWindow* pcTPView = new ToolPathDockWindow(0, pMainWindow);
-  pcTPView->setObjectName("Tool Path");
+  pcTPView->setObjectName(QString::fromUtf8("Tool Path"));
   pcTPView->setMinimumWidth(150);
   pDockMgr->registerDockWindow("Cam_ToolPathDockWindow", pcTPView);
 
   // Add TPGLibrary Dock Window
   TPGLibraryDockWindow* pcTPGLibView = new TPGLibraryDockWindow(0, pMainWindow);
-  pcTPGLibView->setObjectName("TPG Library");
+  pcTPGLibView->setObjectName(QString::fromUtf8("TPG Library"));
   pcTPGLibView->setMinimumWidth(150);
   pDockMgr->registerDockWindow("Cam_TPGLibraryDockWindow", pcTPGLibView);
 

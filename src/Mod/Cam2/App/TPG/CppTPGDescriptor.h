@@ -23,11 +23,12 @@
 #ifndef CPPTPGDESCRIPTOR_H_
 #define CPPTPGDESCRIPTOR_H_
 
+#include <PreCompiled.h>
 #include "TPGFactory.h"
 
 namespace Cam {
 
-class CppTPGDescriptor: public Cam::TPGDescriptor {
+class CamExport CppTPGDescriptor: public Cam::TPGDescriptor {
 protected:
     int refcount;
 
@@ -37,14 +38,8 @@ public:
 
     TPG* make();
 
-    void incref() {
-        refcount++;
-    }
-    void decref() {
-        refcount--;
-        if (refcount < 1)
-            delete this;
-    }
+    void incref();
+    void decref();
 };
 
 } /* namespace Cam */
