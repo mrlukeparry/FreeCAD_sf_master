@@ -2387,6 +2387,7 @@ gp_Pln Cam::ContiguousPath::Plane() const
 	if (!findPlane.Found())
 	{
 		m_plane = std::auto_ptr<gp_Pln>(new gp_Pln(gp_Ax3(gp::XOY())));	// Default to XY plane
+		m_plane->Translate(gp_Vec(m_plane->Location(), StartPoint().Location())); // But at the same height as the linear element.
 		return(*m_plane);
 	}
 	else
