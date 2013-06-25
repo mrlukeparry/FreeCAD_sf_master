@@ -3167,7 +3167,11 @@ area::CCurve ContiguousPath::AreaCurve()
 			std::list<area::CVertex> vertices = itPath->Vertices();
 			for (std::list<area::CVertex>::iterator itVertex = vertices.begin(); itVertex != vertices.end(); itVertex++)
 			{
-				curve.append(*itVertex);
+				if ((curve.m_vertices.size() == 0) ||
+					(gp_Pnt(curve.m_vertices.rbegin()->m_p.x, curve.m_vertices.rbegin()->m_p.y, 0.0).Distance( gp_Pnt( itVertex->m_p.x, itVertex->m_p.y, 0.0) ) > itVertex->m_p.tolerance))
+				{
+					curve.append(*itVertex);
+				}
 			} // End for
 			processed_paths.insert( itPath );
 		} // End if -then
