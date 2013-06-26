@@ -91,7 +91,7 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	ToolPath *pToolPath = getToolPath();
 	QString tool_path;
 	tool_path << *pToolPath;
-	qDebug(tool_path.toAscii().constData());
+	qDebug("%s\n", tool_path.toAscii().constData());
 	pToolPath->release();
 	*/
 }

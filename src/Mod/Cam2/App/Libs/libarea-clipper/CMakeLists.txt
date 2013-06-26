@@ -1,7 +1,7 @@
 if(MSVC)
     add_definitions(-DFCAppCam -DHAVE_ACOSH -DHAVE_ASINH -DHAVE_ATANH)
 else(MSVC)
-    add_definitions(-DHAVE_LIMITS_H -DHAVE_CONFIG_H)
+    add_definitions(-DHAVE_LIMITS_H -DHAVE_CONFIG_H -fPIC)
 endif(MSVC)
 
 include_directories(
