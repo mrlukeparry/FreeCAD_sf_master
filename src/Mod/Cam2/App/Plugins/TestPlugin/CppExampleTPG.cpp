@@ -86,14 +86,12 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 {
     qDebug("This is where the TPG would generate the tool-path! \n");
 
-	/*
 	// just for testing the getToolPath() method.
 	ToolPath *pToolPath = getToolPath();
 	QString tool_path;
 	tool_path << *pToolPath;
 	qDebug("%s\n", tool_path.toAscii().constData());
 	pToolPath->release();
-	*/
 }
 
 

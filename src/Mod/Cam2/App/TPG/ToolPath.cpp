@@ -194,6 +194,7 @@ ToolPath & ToolPath::operator<<( const double value )
 		if (this->toolpath == NULL)
 			this->toolpath = new QStringList();
 
+		this->line_buffer.remove(this->line_buffer.size()-1, 1);	// Remove newline character.
 		this->toolpath->push_back(this->line_buffer);
 		this->line_buffer.clear();
 	}
@@ -223,6 +224,7 @@ ToolPath & ToolPath::operator<< ( const QString value )
 		if (this->toolpath == NULL)
 			this->toolpath = new QStringList();
 
+		this->line_buffer.remove(this->line_buffer.size()-1, 1);	// Remove newline character.
 		this->toolpath->push_back(this->line_buffer);
 		this->line_buffer.clear();
 	}
@@ -243,6 +245,7 @@ ToolPath & ToolPath::operator<< ( const int value )
 		if (this->toolpath == NULL)
 			this->toolpath = new QStringList();
 
+		this->line_buffer.remove(this->line_buffer.size()-1, 1);	// Remove newline character.
 		this->toolpath->push_back(this->line_buffer);
 		this->line_buffer.clear();
 	}
