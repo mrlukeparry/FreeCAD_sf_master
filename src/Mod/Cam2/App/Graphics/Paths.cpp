@@ -1293,7 +1293,7 @@ void Cam::Paths::Add(const TopoDS_Shape shape)
 	}
 }
 
-void Cam::Paths::Add(const TopoDS_Edge edge)
+void Paths::Add(const TopoDS_Edge edge)
 {
 	if (IsValid(edge))
 	{
@@ -1302,7 +1302,7 @@ void Cam::Paths::Add(const TopoDS_Edge edge)
 }
 
 
-void Cam::Paths::Add(const TopoDS_Wire wire, const gp_Pln reference_plane, const double maximum_distance)
+void Paths::Add(const TopoDS_Wire wire, const gp_Pln reference_plane, const double maximum_distance)
 {
 	CDouble allowable_distance = fabs(maximum_distance);
 	if (IsValid(wire))
@@ -1616,7 +1616,7 @@ Standard_Real Cam::Path::EndParameter() const
 }
 
 
-Bnd_Box Cam::ContiguousPath::BoundingBox() const
+Bnd_Box ContiguousPath::BoundingBox() const
 {
 	if (m_pBoundingBox.get() == NULL)
 	{
@@ -1635,7 +1635,7 @@ Bnd_Box Cam::ContiguousPath::BoundingBox() const
 	return(*m_pBoundingBox);
 }
 
-Bnd_Box Cam::Paths::BoundingBox() const
+Bnd_Box Paths::BoundingBox() const
 {
 	Bnd_Box box;
 	for (std::vector<ContiguousPath>::const_iterator itPath = m_contiguous_paths.begin(); itPath != m_contiguous_paths.end(); itPath++)
@@ -1647,7 +1647,7 @@ Bnd_Box Cam::Paths::BoundingBox() const
 }
 
 
-std::list<Cam::Point> Cam::Corners(Bnd_Box box)
+std::list<Point> Corners(Bnd_Box box)
 {
 	std::list<Cam::Point> corners;
 	Standard_Real aXmin, aYmin, aZmin, aXmax, aYmax, aZmax;
@@ -2486,7 +2486,7 @@ TopoDS_Shape TopoShape::makeOffsetShape(double offset, double tol, bool intersec
 	returns 'true' if all edges represented by the shape (whatever it is) have length
 	and are non-null.
  */
-bool Cam::IsValid(const TopoDS_Shape shape)
+bool IsValid(const TopoDS_Shape shape)
 {
 	if (shape.IsNull()) return(false);
 
@@ -2526,7 +2526,7 @@ bool Cam::IsValid(const TopoDS_Shape shape)
 
 
 
-bool Cam::Paths::Offset(const double distance)
+bool Paths::Offset(const double distance)
 {
 	// Pick the plane of the first contiguous path and assume the rest align with that.
 	// The libArea offset code only works in 2D so we need to rotate to the XY plane
@@ -2599,7 +2599,7 @@ bool Cam::Paths::Offset(const double distance)
 	return(m_contiguous_paths.size() > 0);
 }
 
-bool Cam::Ax3::operator== ( const Cam::Ax3 & rhs ) const
+bool Ax3::operator== ( const Cam::Ax3 & rhs ) const
 {
 	if (this != &rhs)
 	{
@@ -2623,7 +2623,7 @@ bool Cam::Ax3::operator== ( const Cam::Ax3 & rhs ) const
 	}
 }
 
-bool Cam::Ax3::operator!= ( const Cam::Ax3 & rhs ) const
+bool Ax3::operator!= ( const Cam::Ax3 & rhs ) const
 {
 	if (this != &rhs)
 	{
@@ -2662,7 +2662,7 @@ void Path::Align( CFixture fixture )
 #endif // HEEKSCNC
 
 
-Cam::Path Cam::Path::Section( const Standard_Real start_distance, const Standard_Real end_distance ) const
+Path Path::Section( const Standard_Real start_distance, const Standard_Real end_distance ) const
 {
 	Standard_Real start_u = Proportion(start_distance / Length());
 	Standard_Real end_u   = Proportion(end_distance / Length());
@@ -2670,7 +2670,7 @@ Cam::Path Cam::Path::Section( const Standard_Real start_distance, const Standard
 	return(Path(Cam::Edge( Edge(), start_u, end_u )));
 }
 
-TopoDS_Edge Cam::Edge( const TopoDS_Edge original_edge, const Standard_Real start_u, const Standard_Real end_u )
+TopoDS_Edge Edge( const TopoDS_Edge original_edge, const Standard_Real start_u, const Standard_Real end_u )
 {
 	TopoDS_Edge empty;
 	try
@@ -2740,7 +2740,7 @@ TopoDS_Edge Cam::Edge( const TopoDS_Edge original_edge, const Standard_Real star
 	} // End catch
 }
 
-Cam::ContiguousPath Cam::ContiguousPath::Section( const Standard_Real start_distance, const Standard_Real end_distance )
+ContiguousPath ContiguousPath::Section( const Standard_Real start_distance, const Standard_Real end_distance )
 {
 	ContiguousPath new_contiguous_path;
 
@@ -2787,7 +2787,7 @@ Cam::ContiguousPath Cam::ContiguousPath::Section( const Standard_Real start_dist
 }
 
 
-double Cam::deflection( const Cam::Point start, const Cam::Point middle, const Cam::Point end )
+double deflection( const Cam::Point start, const Cam::Point middle, const Cam::Point end )
 {
 	if ((start == middle) && (middle == end))
 	{
@@ -2813,7 +2813,7 @@ double Cam::deflection( const Cam::Point start, const Cam::Point middle, const C
 // Recursively calculate the start, middle and end points for the curve.  If the distance from the middle point to the
 // line joining the start and end points is too large then recursively call this routine for each of the two
 // halves of the curve.
-std::list<Cam::Point> Cam::InterpolateCurve( BRepAdaptor_Curve curve, const Standard_Real start_u, const Standard_Real end_u, const double max_deviation )
+std::list<Point> InterpolateCurve( BRepAdaptor_Curve curve, const Standard_Real start_u, const Standard_Real end_u, const double max_deviation )
 {
 	std::list<Cam::Point> points;
 	
@@ -2876,7 +2876,7 @@ std::list<Cam::Point> Cam::InterpolateCurve( BRepAdaptor_Curve curve, const Stan
 	more complex children into a series of lines that are no more than 'max_deviation' from the original
 	object's path.
  */
-Cam::ContiguousPath Cam::ContiguousPath::InterpolateLines(const double max_deviation, const bool retain_simple_curve_types /* = false */ ) const
+ContiguousPath ContiguousPath::InterpolateLines(const double max_deviation, const bool retain_simple_curve_types /* = false */ ) const
 {
 	ContiguousPath new_path;
 

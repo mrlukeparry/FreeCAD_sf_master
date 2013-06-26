@@ -118,7 +118,7 @@ public:
 
 private:
 	double Round(double number,int place) const;
-	double ToolPath::round(double r) const;
+	double round(double r) const;
 	unsigned int Precision( const double value ) const;
 
 public:
