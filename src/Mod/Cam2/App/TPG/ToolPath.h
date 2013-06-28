@@ -118,13 +118,33 @@ public:
 
 private:
 	double Round(double number,int place) const;
-	double round(double r) const;
 	unsigned int Precision( const double value ) const;
 
 public:
 	friend QString CamExport operator<< ( QString & buf, const ToolPath & tool_path );
 
+public:
+	#ifdef FC_DEBUG
+		/**
+			Define a class that contains some basic unit testing for the ToolPath
+			class.
+		 */
+		class CamExport Test
+		{
+		public:
+			Test(ToolPath * tool_path);
+			~Test();
+
+			bool Run();
+			bool Rounding();
+			bool StringHandling();
+
+		private:
+			ToolPath *pToolPath;
+		}; // End TestToolPath class definition.
+	#endif // FC_DEBUG
 };
+
 
 } /* namespace Cam */
 #endif /* TOOLPATH_H_ */

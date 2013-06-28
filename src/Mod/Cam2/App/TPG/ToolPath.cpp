@@ -124,6 +124,12 @@ QString ToolPath::PythonString( const char *value ) const
 	return(PythonString(QString::fromUtf8(value)));
 }
 
+
+/**
+	Round the floating point number based on the number of decimal
+	places currently configured and return the QString representation
+	of that.
+ */
 QString ToolPath::PythonString( const double value ) const
 {
 	double rounded_value = Round(value,RequiredDecimalPlaces());
@@ -135,37 +141,67 @@ QString ToolPath::PythonString( const double value ) const
 }
 
 
-double ToolPath::round(double r) const {
-    return (r > 0.0) ? floor(r + 0.5) : ceil(r - 0.5);
-}
-
+/**
+	Round to the nearest floating point number for the number of decimal places specified.
+ */
 double ToolPath::Round(double number,int place) const
 {
 	/*place = decimal point. putting in 0 will make it round to whole number. putting in 1 will round to the tenths digit.*/
 
+	double sign = (number < 0)?-1:+1;
 	number *= pow(double(10.0),place);
-	int istack = (int)floor(number);
-	double out = number-istack;
-
-	if (out < 0.5)
+	int istack = 0;
+	if (sign < 0.0)
 	{
-		number = floor(number);
-		number /= pow(double(10.0),place);
-		return number;
+		istack = (int)ceil(number);
 	}
-	if (out > 0.4) 
+	else
 	{
-		number = ceil(number);
-		number /= pow(double(10.0),place);
-		return number;
+		istack = (int)floor(number);
+	}
+
+	double out = fabs(number-istack);
+
+	if (sign < 0.0)
+	{
+		// Negative number.
+		if (out < 0.5)
+		{
+			number = ceil(number);
+			number /= pow(double(10.0),place);
+			return number;
+		}
+		if (out > 0.4) 
+		{
+			number = floor(number);
+			number /= pow(double(10.0),place);
+			return number;
+		}
+	}
+	else
+	{
+		// Positive number.
+		if (out < 0.5)
+		{
+			number = floor(number);
+			number /= pow(double(10.0),place);
+			return number;
+		}
+		if (out > 0.4) 
+		{
+			number = ceil(number);
+			number /= pow(double(10.0),place);
+			return number;
+		}
 	}
 	return(number);
 }
 
-// How many characters required for both the digits left of the decimal point, the decimal
-// point, the +/- sign character and those digits required after the decimal point.
-// It's used for rounding floating point numbers during the conversion to string format.
-
+/**
+	How many characters required for both the digits left of the decimal point, the decimal
+	point, the +/- sign character and those digits required after the decimal point.
+	It's used for rounding floating point numbers during the conversion to string format.
+ */
 unsigned int ToolPath::Precision( const double value ) const
 {
     unsigned int lhs = 0;
@@ -189,27 +225,20 @@ unsigned int ToolPath::Precision( const double value ) const
 ToolPath & ToolPath::operator<<( const double value )
 {
 	this->line_buffer.append(PythonString(value));
-	if (this->line_buffer.endsWith(QString::fromAscii("\n")))
-	{
-		if (this->toolpath == NULL)
-			this->toolpath = new QStringList();
-
-		this->line_buffer.remove(this->line_buffer.size()-1, 1);	// Remove newline character.
-		this->toolpath->push_back(this->line_buffer);
-		this->line_buffer.clear();
-	}
-
 	return(*this);
 }
 
 ToolPath & ToolPath::operator<< ( const ToolPath & value )
 {
-	if (this->toolpath == NULL)
-        this->toolpath = new QStringList();
-
-	if (value.toolpath)
+	if (this != &value)
 	{
-		std::copy( value.toolpath->begin(), value.toolpath->end(), std::inserter( *(this->toolpath), this->toolpath->begin() ) );
+		if (this->toolpath == NULL)
+			this->toolpath = new QStringList();
+
+		if (value.toolpath)
+		{
+			std::copy( value.toolpath->begin(), value.toolpath->end(), std::inserter( *(this->toolpath), this->toolpath->begin() ) );
+		}
 	}
 
 	return(*this);
@@ -240,15 +269,6 @@ ToolPath & ToolPath::operator<< ( const char *value )
 ToolPath & ToolPath::operator<< ( const int value )
 {
 	this->line_buffer.append(QString::fromAscii("%1").arg(value));
-	if (this->line_buffer.endsWith(QString::fromAscii("\n")))
-	{
-		if (this->toolpath == NULL)
-			this->toolpath = new QStringList();
-
-		this->line_buffer.remove(this->line_buffer.size()-1, 1);	// Remove newline character.
-		this->toolpath->push_back(this->line_buffer);
-		this->line_buffer.clear();
-	}
 	return(*this);
 }
 
@@ -277,12 +297,132 @@ const unsigned int ToolPath::RequiredDecimalPlaces() const
 	return(required_decimal_places);
 }
 
+/**
+	If the operator changes units from one setting to another, we need
+	to change the number of decimal places used both for the generation of
+	the Python/GCode and within the libArea module.  The LinuxCNC machine
+	controller (and I assume others are similar) will look at arc definitions
+	to see if the distance from the start to the centre is the same as
+	the distance from the centre to the end of the arc.  If these values differ
+	then an error is generated.  We need to ensure that the values we generate
+	are correct for this.  If the GCode is in metric mode (G21) then
+	the arc's distances must be accurate to the third decimal place.  If it's
+	in imperial mode (G20) then it must be correct to the fourth decimal place.
+	These accuracies are implicit in LinuxCNC.
+
+	It's also important to itterate through input graphics at this resolution
+	so we don't end up generating lines and arcs that are smaller than this
+	resolution.  i.e. their start and end locations are effectively zero
+	when viewed with these implicit accuracy by the CNC controlling software.
+
+	Finally, it's important that we set the accuracy values used in the libArea
+	module.  These accuracy values are used when deciding if one point matches
+	another.  When the libArea code performs an 'offset' function, it converts
+	all the input graphics into line segments.  i.e. it interpolates line segments
+	from the arc definitions.  It then performs the offset using those.  It then
+	attempts to re-interpret the resultant points as arcs.  This is an important
+	step as a single arc can be used to accurately represent quite a large number
+	of small line segments.  The accuracy value set by this method affects whether
+	these small line segments will correctly be interpreted as arcs by the
+	libArea code.
+
+	We expect the 'value' specified here to be 3 for metric and 4 for imperial
+	based on the implicit accuracies used by LinuxCNC.  If anyone knows of a better
+	way to define the number of decimal places based on the units setting then
+	we should use it.
+ */
 void ToolPath::RequiredDecimalPlaces(const unsigned int value)
 {
 	this->required_decimal_places = value;
 	area::CArea::m_accuracy = 1.0 / pow(10.0, double(value));
 	area::Point::tolerance = 1.0 / pow(10.0, double(value));
 }
+
+
+#ifdef FC_DEBUG
+	ToolPath::Test::Test(ToolPath * tool_path)
+	{
+		pToolPath = tool_path;
+		if (pToolPath)
+		{
+			pToolPath->grab();	// we want our own copy
+		}
+	}
+
+	ToolPath::Test::~Test()
+	{
+		if (pToolPath)
+		{
+			pToolPath->release();	// Fly - be free!
+		}
+	}
+
+	bool ToolPath::Test::Run()
+	{
+		if (! Rounding()) return(false);
+		if (! StringHandling()) return(false);
+
+		return(true);	// All tests passed.
+	}
+
+	bool ToolPath::Test::Rounding()
+	{
+		if (pToolPath == NULL) return(false);
+
+		if (pToolPath->Round( 1.23456789, 3 ) != 1.235) return(false);
+		if (pToolPath->Round( 1.2355, 3 ) != 1.236) return(false);
+		if (pToolPath->Round( 1.2354, 3 ) != 1.235) return(false);
+
+		if (pToolPath->Round( -1.2355, 3 ) != -1.236) return(false);
+		if (pToolPath->Round( -1.2354, 3 ) != -1.235) return(false);
+
+		pToolPath->RequiredDecimalPlaces(3);
+		if (pToolPath->PythonString( 1.2355 ) != QString::fromAscii("1.236")) return(false);
+		if (pToolPath->PythonString( 1.2354 ) != QString::fromAscii("1.235")) return(false);
+
+		if (pToolPath->PythonString( -1.2355 ) != QString::fromAscii("-1.236")) return(false);
+		if (pToolPath->PythonString( -1.2354 ) != QString::fromAscii("-1.235")) return(false);
+
+		return(true);
+	}
+
+	bool ToolPath::Test::StringHandling()
+	{
+		if (pToolPath == NULL) return(false);
+
+		{
+			QString lhs(pToolPath->PythonString(QString::fromUtf8("'Something (that) needs cleaning up befor it's included in a python comment() call'")));
+			QString rhs(QString::fromUtf8("'Something {that} needs cleaning up befor it\\'s included in a python comment{} call'"));
+			if (lhs != rhs) return(false);
+		}
+
+		{
+			QString lhs(pToolPath->PythonString(QString::fromUtf8("the cat's mat has a single quote in it")));
+			QString rhs(QString::fromUtf8("'the cat\\'s mat has a single quote in it'"));
+			if (lhs != rhs) return(false);
+		}
+
+		{
+			QString lhs(pToolPath->PythonString(QString::fromUtf8("this one has (something in brackets) within it.")));
+			QString rhs(QString::fromUtf8("'this one has {something in brackets} within it.'"));
+			if (lhs != rhs) return(false);
+		}
+
+		{
+			QString lhs(pToolPath->PythonString(QString::fromUtf8("this one already has single quotes bounding it")));
+			QString rhs(QString::fromUtf8("'this one already has single quotes bounding it'"));
+			if (lhs != rhs) return(false);
+		}
+
+		{
+			QString lhs(pToolPath->PythonString(QString::fromUtf8("\"this one already has double quotes bounding it\"")));
+			QString rhs(QString::fromUtf8("'this one already has double quotes bounding it'"));
+			if (lhs != rhs) return(false);
+		}
+
+		return(true);	// All passed
+	}
+#endif // FC_DEBUG
 
 
 } /* namespace Cam */

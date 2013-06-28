@@ -98,10 +98,51 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 /* virtual */ ToolPath *CppExampleTPG::getToolPath()
 {
 	ToolPath *pPython = new ToolPath(this);
+	ToolPath &python = *pPython;	// for readability only.
+
+	// TODO: Understand how 'units' are handled in FreeCAD.
+	// In HeeksCNC, we always store values in millimeters (mm) and convert to whatever external
+	// units are configured at the last moment.  We store a 'units' value as 1.0 for mm and
+	// 25.4 for inches.  This way, we always divide the internal representation by the
+	// units value to produce a number suitable for the 'external' world.
+	// When I say 'external world' I mean either presentation as a 'setting' so the operator
+	// can change it or as a value being written to the Python program for GCode generation
+	// (i.e. a ToolPath in the Cam workbench)
+	// When the operator changes the units from one value to another, we need to change
+	// the ToolPath::RequiredDecimalPlaces() value to either 3 (for metric) or 4 (for
+	// imperial) so that the Python/GCode is generated using the correct resolution.
 
 	pPython->RequiredDecimalPlaces(3);	// assume metric.
 	*pPython << "rapid(x=" << 12.3456789 << ")\n";
 	*pPython << "feed(x=" << 4 << ")\n";
+
+	#ifdef FC_DEBUG
+		// Run the unit tests for the ToolPath class.  This is for debug only.
+		ToolPath::Test test(pPython);
+		if (test.Run())
+		{
+			python << "comment(" << python.PythonString("Tests for ToolPath succeeded") << ")\n";
+		}
+		else
+		{
+			python << "comment(" << python.PythonString("Tests for ToolPath failed") << ")\n";
+		}
+	#endif // FC_DEBUG
+
+	python << "feed(x=" << 1.23456789 << ")\n";
+	python << "comment(" << python.PythonString("we should be at x=1.235") << ")\n";
+
+	python << "feed(x=" << 1.2355 << ")\n";
+	python << "comment(" << python.PythonString("we should be at x=1.236") << ")\n";
+
+	python << "feed(x=" << 1.2354 << ")\n";
+	python << "comment(" << python.PythonString("we should be at x=1.235") << ")\n";
+
+	python << "feed(x=" << -1.2355 << ")\n";
+	python << "comment(" << python.PythonString("we should be at x=-1.236") << ")\n";
+
+	python << "feed(x=" << -1.2354 << ")\n";
+	python << "comment(" << python.PythonString("we should be at x=-1.235") << ")\n";
 
 	QString some_setting(QString::fromUtf8("'Something (that) needs cleaning up befor it's included in a python comment() call'"));
 	*pPython << "comment(" << pPython->PythonString(some_setting) << ")\n";
