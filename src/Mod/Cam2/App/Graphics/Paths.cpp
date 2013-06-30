@@ -1078,8 +1078,8 @@ bool Cam::ContiguousPath::operator< (const Cam::ContiguousPath & rhs ) const
 {
 	Ids_t ids_we_surround = PathsThatWeSurround();
 	Ids_t ids_that_surround_us = rhs.PathsThatSurroundUs();
-	if (std::find(ids_we_surround.begin(), ids_we_surround.end(), rhs.ID()) != ids_we_surround.end()) return(true);	// We'v already figured this out.
-	if (std::find(ids_that_surround_us.begin(), ids_that_surround_us.end(), ID()) != ids_that_surround_us.end()) return(true);	// We'v already figured this out.
+	if (ids_we_surround.find(rhs.ID()) != ids_we_surround.end()) return(true);	// We'v already figured this out.
+	if (ids_that_surround_us.find(ID()) != ids_that_surround_us.end()) return(true);	// We'v already figured this out.
 
 	if (this->Surrounds(rhs))
 	{
@@ -1647,9 +1647,9 @@ Bnd_Box Paths::BoundingBox() const
 }
 
 
-std::list<Point> Corners(Bnd_Box box)
+std::set<Point> Corners(Bnd_Box box)
 {
-	std::list<Cam::Point> corners;
+	std::set<Cam::Point> corners;
 	Standard_Real aXmin, aYmin, aZmin, aXmax, aYmax, aZmax;
 	box.Get( aXmin, aYmin, aZmin, aXmax, aYmax, aZmax);
 	std::list<Standard_Real> x, y, z;
@@ -1666,7 +1666,7 @@ std::list<Point> Corners(Bnd_Box box)
 		{
 			for (std::list<Standard_Real>::iterator itZ = z.begin(); itZ != z.end(); itZ++)
 			{
-				corners.push_back( Cam::Point(*itX, *itY, *itZ) );
+				corners.insert( Cam::Point(*itX, *itY, *itZ) );
 			}
 		}
 	}
@@ -1677,10 +1677,10 @@ std::list<Point> Corners(Bnd_Box box)
 Standard_Real LargestBoxDimension(Bnd_Box box)
 {
 	Standard_Real largest_box_dimension = 0.0;
-	std::list<Cam::Point> corners = Cam::Corners(box);
-	for (std::list<Cam::Point>::iterator itOne = corners.begin(); itOne != corners.end(); itOne++)
+	std::set<Cam::Point> corners = Cam::Corners(box);
+	for (std::set<Cam::Point>::iterator itOne = corners.begin(); itOne != corners.end(); itOne++)
 	{
-		for (std::list<Cam::Point>::iterator itTwo = corners.begin(); itTwo != corners.end(); itTwo++)
+		for (std::set<Cam::Point>::iterator itTwo = corners.begin(); itTwo != corners.end(); itTwo++)
 		{
 			Standard_Real distance = itOne->Location().Distance( itTwo->Location() );
 			if (distance > largest_box_dimension) largest_box_dimension = distance;
@@ -1703,12 +1703,12 @@ Standard_Real LargestBoxDimension(Bnd_Box box)
 Cam::Point Cam::ContiguousPath::MidpointForSurroundsCheck() const
 {
 	Bnd_Box box = BoundingBox();
-	std::list<Cam::Point> corners = Cam::Corners(box);
+	std::set<Cam::Point> corners = Cam::Corners(box);
 
 	for (std::vector<Path>::const_iterator itPath = m_paths.begin(); itPath != m_paths.end(); itPath++)
 	{
 		Cam::Point midpoint = itPath->MidPoint();
-		if (std::find( corners.begin(), corners.end(), midpoint ) == corners.end())
+		if (corners.find( midpoint ) == corners.end())
 		{
 			return(midpoint);
 		}
@@ -1726,8 +1726,8 @@ bool Cam::ContiguousPath::Surrounds( const Cam::ContiguousPath & rhs ) const
 {
 	Ids_t ids_we_surround = PathsThatWeSurround();
 	Ids_t ids_that_surround_us = rhs.PathsThatSurroundUs();
-	if (std::find(ids_we_surround.begin(), ids_we_surround.end(), rhs.ID()) != ids_we_surround.end()) return(true);	// We'v already figured this out.
-	if (std::find(ids_that_surround_us.begin(), ids_that_surround_us.end(), ID()) != ids_that_surround_us.end()) return(true);	// We'v already figured this out.
+	if (ids_we_surround.find(rhs.ID()) != ids_we_surround.end()) return(true);	// We'v already figured this out.
+	if (ids_that_surround_us.find(ID()) != ids_that_surround_us.end()) return(true);	// We'v already figured this out.
 
 	if (BoundingBox().IsOut(rhs.BoundingBox())) return(false);
 
@@ -3320,18 +3320,12 @@ void Cam::Path::Split( const Cam::Paths &area, Cam::Paths *pInside, Cam::Paths *
 
 void Cam::ContiguousPath::PathsThatSurroundUs(const Cam::ContiguousPath::Id_t id) const
 {
-	if (std::find(m_paths_that_surround_us.begin(), m_paths_that_surround_us.end(), id) == m_paths_that_surround_us.end())
-	{
-		m_paths_that_surround_us.push_back(id);
-	}
+	m_paths_that_surround_us.insert(id);
 }
 
 void Cam::ContiguousPath::PathsThatWeSurround( const Cam::ContiguousPath::Id_t id ) const
 {
-	if (std::find(m_paths_that_we_surround.begin(), m_paths_that_we_surround.end(), id) == m_paths_that_we_surround.end())
-	{
-		m_paths_that_we_surround.push_back(id);
-	}
+	m_paths_that_we_surround.insert(id);
 }
 
 std::set<int> Cam::Paths::GetConcentricities() const

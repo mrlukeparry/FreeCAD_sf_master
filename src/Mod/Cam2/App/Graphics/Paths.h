@@ -112,7 +112,7 @@ namespace Cam
 	}; // End Point class definition
 
 
-	std::list<Cam::Point> Corners(Bnd_Box box);
+	std::set<Cam::Point> Corners(Bnd_Box box);
 	Standard_Real LargestBoxDimension(Bnd_Box box);
 
 
@@ -274,7 +274,7 @@ namespace Cam
 		void Concentricity(const int value);
 
 		typedef unsigned int Id_t;
-		typedef std::vector< Id_t > Ids_t;
+		typedef std::set< Id_t > Ids_t;
 
 		Id_t	ID() const;
 		Ids_t PathsThatSurroundUs() const;
