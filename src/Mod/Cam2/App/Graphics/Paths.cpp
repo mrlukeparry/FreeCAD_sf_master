@@ -3237,9 +3237,11 @@ void Cam::ContiguousPath::Split( const Cam::Paths &area, Cam::Paths *pInside, Ca
 	bool handled = false;
 	for (::size_t i=0; i<area.size(); i++)
 	{
-		if (! area[i].Periodic()) continue;
+		ContiguousPath cpath(area[i]);
 
-		if ((! handled) && (area[i].Surrounds( *this )))
+		if (! cpath.Periodic()) continue;
+
+		if ((! handled) && (cpath.Surrounds( *this )))
 		{
 			std::vector<Cam::Path> paths = copy.Paths();
 			for (std::vector<Cam::Path>::iterator itPath = paths.begin(); itPath != paths.end(); itPath++)
@@ -3252,6 +3254,7 @@ void Cam::ContiguousPath::Split( const Cam::Paths &area, Cam::Paths *pInside, Ca
 
 	if (! handled)
 	{
+		// It's possible that this contiguous path cross one or more of the areas passed in.  Look for that now.
 		std::vector<Cam::Path> paths = copy.Paths();
 		for (std::vector<Cam::Path>::iterator itPath = paths.begin(); itPath != paths.end(); itPath++)
 		{
@@ -3265,27 +3268,71 @@ void Cam::Path::Split( const Cam::Paths &area, Cam::Paths *pInside, Cam::Paths *
 {
 	for (::size_t i=0; i<area.size(); i++)
 	{
-		if (! area[i].Periodic()) continue;
+		ContiguousPath cpath = area[i];
+
+		if (! cpath.Periodic()) continue;
 
 		Cam::ContiguousPath test_path;
 		test_path.Add(*this);
-		if (area[i].Surrounds( test_path ))
+		if (cpath.Surrounds( test_path ))
 		{
 			pInside->Add( *this );
-			return;
 		}
 		else
 		{
-			std::set<Point> points = area[i].Intersect(test_path);
+			std::set<Point> points = cpath.Intersect(test_path, false);
 			if (points.size() > 0)
 			{
-				Standard_Real u = -1;
-				Nearest( points.begin()->Location(), &u, false );
+				// Add the start and end points so we're sure to have a complete
+				// set for use when breaking it up.
+				points.insert( StartPoint() );
+				points.insert( EndPoint() );
+
+				// We now need to get a list of start/end U pairs between these
+				// points.
+				std::map< Standard_Real, Cam::Point > sections;
+				for (std::set<Point>::iterator itPoint = points.begin(); itPoint != points.end(); itPoint++)
+				{
+					Standard_Real u = -1;
+					Nearest( itPoint->Location(), &u, false );
+					sections.insert( std::make_pair( u, *itPoint ) );
+				}
+
+				std::vector< Standard_Real > u_values;
+				for (std::map< Standard_Real, Cam::Point >::iterator itSection = sections.begin(); itSection != sections.end(); itSection++)
+				{
+					u_values.push_back( itSection->first );
+				}
+				
+				// Now we have an ordered list of U/Point pairs that define the sections of the
+				// path.  We now need to assign those sections to the 'inside' and 'outside' paths
+				// as appropriate.
+
+				for (std::vector<Standard_Real>::size_type i=0; i<u_values.size()-1; i++)
+				{
+					if (u_values[i] == u_values[i+1]) continue;
+					TopoDS_Edge edge = Cam::Edge( Edge(), u_values[i], u_values[i+1] );
+					if (Cam::IsValid(edge))
+					{
+						Path section = Path(edge);
+						if (cpath.Surrounds( section.MidPoint() ))
+						{
+							pInside->Add( section );
+						}
+						else
+						{
+							pOutside->Add( section );
+						}
+					}
+				}
+			}
+			else
+			{
+				// It's not inside and it doesn't intersect.
+				pOutside->Add( *this );
 			}
 		}
 	}
-
-	pOutside->Add( *this );
 }
 
 
