@@ -1873,11 +1873,7 @@ bool Cam::ContiguousPath::Surrounds(const Cam::Point point) const
 					*/
 
 					// Now accumulate all the intersection points.
-					std::list<Cam::Point> intersections = temp[0].Intersect(line[0], false);
-
-					// Remove any duplicates that are already adjacent to each other.
-					intersections.sort();
-					intersections.unique();
+					std::set<Cam::Point> intersections = temp[0].Intersect(line[0], false);
 
 					/*
 					for (std::list<Cam::Point>::iterator itPoint = intersections.begin(); itPoint != intersections.end(); itPoint++)
@@ -1915,10 +1911,10 @@ bool Cam::ContiguousPath::Surrounds(const Cam::Point point) const
 /**
 	Return a list of distinct intersection points between this and the rhs path.
  */
-std::list<Cam::Point> Cam::Path::Intersect( const Cam::Path & rhs, const bool stop_after_first_point /* = false */ ) const
+std::set<Cam::Point> Cam::Path::Intersect( const Cam::Path & rhs, const bool stop_after_first_point /* = false */ ) const
 {
 	// Return all intersections points between this and the rhs path objects.
-	std::list<Cam::Point> intersections;
+	std::set<Cam::Point> intersections;
 
 	try
 	{
@@ -1937,20 +1933,8 @@ std::list<Cam::Point> Cam::Path::Intersect( const Cam::Path & rhs, const bool st
 				{
 					BRepAdaptor_Curve curve(this->Edge());
 					gp_Pnt point = curve.Value(ranges(index).First());
-					
-					bool found = false;
-					for (std::list<Cam::Point>::iterator itPoint = intersections.begin(); itPoint != intersections.end(); itPoint++)
-					{
-						if (point.IsEqual(itPoint->Location(), Cam::GetTolerance() * 2.0))
-						{
-							found = true;
-						}
-					} // End for
-					if (! found)
-					{
-						intersections.push_back(point);
-						if (stop_after_first_point) return(intersections);
-					}
+					intersections.insert( point );
+					if (stop_after_first_point) return(intersections);
 				}
 			}
 		}
@@ -1968,9 +1952,9 @@ std::list<Cam::Point> Cam::Path::Intersect( const Cam::Path & rhs, const bool st
 	Project the wire(s) onto a plane and intersect the resultant wires.  For each of those intersections, project the point
 	back up perpendicular to that plane and find the intersection points on 'this' object (only).
  */
-std::list<Cam::Point> Cam::ContiguousPath::Intersect( const Cam::ContiguousPath & rhs, const bool stop_after_first_point /* = false */ ) const
+std::set<Cam::Point> Cam::ContiguousPath::Intersect( const Cam::ContiguousPath & rhs, const bool stop_after_first_point /* = false */ ) const
 {
-	std::list<Cam::Point> results;
+	std::set<Cam::Point> results;
 
 	// We need to project onto a face that is large enough to hold the whole wire and we need to
 	// extend a line from that face to the wire.  Use the bounding boxes to get the largest of
@@ -2021,8 +2005,8 @@ std::list<Cam::Point> Cam::ContiguousPath::Intersect( const Cam::ContiguousPath 
 
 					for (::size_t i=0; i<temp.size(); i++)
 					{
-						std::list<Cam::Point> points = Intersect(temp[i], stop_after_first_point);
-						for (std::list<Cam::Point>::iterator itPoint = points.begin(); itPoint != points.end(); itPoint++)
+						std::set<Cam::Point> points = Intersect(temp[i], stop_after_first_point);
+						for (std::set<Cam::Point>::iterator itPoint = points.begin(); itPoint != points.end(); itPoint++)
 						{
 							// Project these points back perpendicular to this Plane() and find where such lines intersect
 							// this object.
@@ -2035,15 +2019,9 @@ std::list<Cam::Point> Cam::ContiguousPath::Intersect( const Cam::ContiguousPath 
 							Cam::Path projection_line(Cam::Edge( start.Location(), end.Location() ));
 							for (std::vector<Path>::const_iterator itPath = m_paths.begin(); itPath != m_paths.end(); itPath++)
 							{
-								std::list<Cam::Point> pts = itPath->Intersect(projection_line, stop_after_first_point);
-								for (std::list<Cam::Point>::iterator itPnt = pts.begin(); itPnt != pts.end(); itPnt++)
-								{
-									if (std::find(results.begin(), results.end(), *itPnt) == results.end())
-									{
-										results.push_back(*itPnt);
-										if (stop_after_first_point) return(results);
-									}
-								}
+								std::set<Cam::Point> pts = itPath->Intersect(projection_line, stop_after_first_point);
+								std::copy( pts.begin(), pts.end(), std::inserter( results, results.end() ));
+								if (stop_after_first_point) return(results);
 							}
 						}
 					}
@@ -2065,16 +2043,9 @@ std::list<Cam::Point> Cam::ContiguousPath::Intersect( const Cam::ContiguousPath 
 		{
 			for (std::vector<Path>::const_iterator itRhsPath = rhs.m_paths.begin(); itRhsPath != rhs.m_paths.end(); itRhsPath++)
 			{
-				std::list<Cam::Point> pts = itPath->Intersect( *itRhsPath );
-
-				for (std::list<Cam::Point>::iterator itPnt = pts.begin(); itPnt != pts.end(); itPnt++)
-				{
-					if (std::find(results.begin(), results.end(), *itPnt) == results.end())
-					{
-						results.push_back(*itPnt);
-						if (stop_after_first_point) return(results);
-					}
-				}
+				std::set<Cam::Point> pts = itPath->Intersect( *itRhsPath );
+				std::copy( pts.begin(), pts.end(), std::inserter( results, results.end() ));
+				if (stop_after_first_point) return(results);
 			}
 		}
 	}
@@ -3305,7 +3276,7 @@ void Cam::Path::Split( const Cam::Paths &area, Cam::Paths *pInside, Cam::Paths *
 		}
 		else
 		{
-			std::list<Point> points = area[i].Intersect(test_path);
+			std::set<Point> points = area[i].Intersect(test_path);
 			if (points.size() > 0)
 			{
 				Standard_Real u = -1;

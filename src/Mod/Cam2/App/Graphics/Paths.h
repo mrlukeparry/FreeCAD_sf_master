@@ -185,7 +185,7 @@ namespace Cam
 		bool IsForwards() const;
 		void Reverse();
 
-		std::list<Cam::Point> Intersect( const Path & rhs, const bool stop_after_first_point = false ) const;
+		std::set<Cam::Point> Intersect( const Path & rhs, const bool stop_after_first_point = false ) const;
 		
 		Standard_Real Tolerance() const;
 
@@ -257,7 +257,7 @@ namespace Cam
 		ContiguousPath Section( const Standard_Real start_distance, const Standard_Real end_distance );
 		ContiguousPath InterpolateLines(const double max_deviation, const bool retain_simple_curve_types = false) const;
 		gp_Pnt Centroid() const;
-		std::list<Cam::Point> Intersect( const ContiguousPath & rhs, const bool stop_after_first_point = false ) const;
+		std::set<Cam::Point> Intersect( const ContiguousPath & rhs, const bool stop_after_first_point = false ) const;
 
 		ContiguousPath & operator+=( ContiguousPath &rhs );
 
