@@ -2021,7 +2021,7 @@ std::set<Cam::Point> Cam::ContiguousPath::Intersect( const Cam::ContiguousPath &
 							{
 								std::set<Cam::Point> pts = itPath->Intersect(projection_line, stop_after_first_point);
 								std::copy( pts.begin(), pts.end(), std::inserter( results, results.end() ));
-								if (stop_after_first_point) return(results);
+								if ((pts.size() > 0) && (stop_after_first_point)) return(results);
 							}
 						}
 					}
@@ -2045,7 +2045,7 @@ std::set<Cam::Point> Cam::ContiguousPath::Intersect( const Cam::ContiguousPath &
 			{
 				std::set<Cam::Point> pts = itPath->Intersect( *itRhsPath );
 				std::copy( pts.begin(), pts.end(), std::inserter( results, results.end() ));
-				if (stop_after_first_point) return(results);
+				if ((pts.size() > 0) && (stop_after_first_point)) return(results);
 			}
 		}
 	}
