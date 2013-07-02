@@ -26,23 +26,6 @@
 
 namespace Cam
 {
-	TopoDS_Edge Edge( const gp_Pnt start, const gp_Pnt end, const gp_Circ circle );
-	TopoDS_Edge Edge( const gp_Pnt start, const gp_Pnt end );
-	TopoDS_Edge Edge( const TopoDS_Edge original_edge, const Standard_Real start_u, const Standard_Real end_u );
-
-	double AngleBetweenVectors(
-			const gp_Pnt & vector_1_start_point,
-			const gp_Pnt & vector_1_end_point,
-			const gp_Pnt & vector_2_start_point,
-			const gp_Pnt & vector_2_end_point,
-			const double minimum_angle );
-
-	double AngleBetweenVectors(
-			const gp_Vec & vector_1,
-			const gp_Vec & vector_2,
-			const gp_Vec & reference,
-			const double minimum_angle );
-
 	double GetTolerance();
 
 	typedef std::list<TopoDS_Wire> Wires_t;
@@ -138,6 +121,26 @@ namespace Cam
 	Faces_t UnionFaces( const TopoDS_Face lhs, const TopoDS_Face rhs );
 	Faces_t UnionFaces( Faces_t faces );
 	bool FacesIntersect( const TopoDS_Face lhs, const TopoDS_Face rhs );
+
+	TopoDS_Edge Edge( const Point start, const Point end, const gp_Circ circle );
+	TopoDS_Edge Edge( const Point start, const Point end );
+
+	TopoDS_Edge Edge( const gp_Pnt start, const gp_Pnt end, const gp_Circ circle );
+	TopoDS_Edge Edge( const gp_Pnt start, const gp_Pnt end );
+	TopoDS_Edge Edge( const TopoDS_Edge original_edge, const Standard_Real start_u, const Standard_Real end_u );
+
+	double AngleBetweenVectors(
+			const gp_Pnt & vector_1_start_point,
+			const gp_Pnt & vector_1_end_point,
+			const gp_Pnt & vector_2_start_point,
+			const gp_Pnt & vector_2_end_point,
+			const double minimum_angle );
+
+	double AngleBetweenVectors(
+			const gp_Vec & vector_1,
+			const gp_Vec & vector_2,
+			const gp_Vec & reference,
+			const double minimum_angle );
 
 	class Paths;	// Forward declaration.
 

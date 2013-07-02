@@ -91,6 +91,11 @@ namespace Cam
 		return(0.00001);	// TODO Setup tolerances properly
 	}
 
+	TopoDS_Edge Edge( const Point start, const Point end, const gp_Circ circle )
+	{
+		return(Edge( start.Location(), end.Location(), circle ));
+	}
+
 	TopoDS_Edge Edge( const gp_Pnt start, const gp_Pnt end, const gp_Circ circle )
 	{
 		double tolerance = Cam::GetTolerance();
@@ -121,6 +126,11 @@ namespace Cam
 		TopoDS_Edge empty;
 		return(empty);
 
+	}
+
+	TopoDS_Edge Edge( const Point start, const Point end )
+	{
+		return(Edge( start.Location(), end.Location() ));
 	}
 
 	TopoDS_Edge Edge( const gp_Pnt start, const gp_Pnt end )
