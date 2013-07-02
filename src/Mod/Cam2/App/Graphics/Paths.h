@@ -354,6 +354,8 @@ namespace Cam
 		std::set<int> GetConcentricities() const;
 		QString KiCadBoardOutline(const int layer = 28, const int trace_width = 150) const;
 
+		Faces_t Faces(const bool subtract_nested_faces = true ) const;
+
 	protected:
 		std::vector<ContiguousPath> m_contiguous_paths;
 		bool		m_is_forwards;

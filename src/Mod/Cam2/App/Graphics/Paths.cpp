@@ -3414,4 +3414,111 @@ default:
 }
 
 
+/**
+	Return a list of faces for all closed shapes in this object.
+	If the 'subtract_nested_faces' flag is true then those closed
+	shapes that are 'inside' other shapes will be subtracted from
+	those 'outer' shapes so that the faces effectively have holes
+	in them.
+ */
+Cam::Faces_t Cam::Paths::Faces(const bool subtract_nested_faces /* = true */ ) const
+{
+	Paths closed;
+	for (::size_t i=0; i<size(); i++)
+	{
+		Cam::ContiguousPath cpath(this->m_contiguous_paths[i]);
+		if (cpath.Periodic())
+		{
+			closed.Add( cpath.Wire() );
+		}
+	}
+
+	// Now accumulate all the closed shapes into a distinct list of faces (with internal shapes
+	// cutting holes in the faces)
+	closed.Sort();
+
+	std::set<int> concentricities;
+	for (::size_t i=0; i<closed.size(); i++)
+	{
+		Cam::ContiguousPath cpath(closed[i]);
+		concentricities.insert( cpath.Concentricity() );
+	} // End for
+
+	std::list<TopoDS_Face> faces;
+	for (std::set<int>::iterator itConcentricity = concentricities.begin(); itConcentricity != concentricities.end(); itConcentricity++)
+	{
+		for (::size_t i=0; i<closed.size(); i++)
+		{
+			Cam::ContiguousPath cpath(closed[i]);
+			if (cpath.Concentricity() != *itConcentricity) continue;
+
+			BRepBuilderAPI_MakeFace face_maker(cpath.Wire());
+			face_maker.Build();
+			if (face_maker.IsDone())
+			{
+				TopoDS_Face face(TopoDS::Face(face_maker.Shape()));
+
+				if (((cpath.Concentricity() % 2) == 0) || (subtract_nested_faces == false))
+				{
+					// It's an outer one.  Add it to the faces we already have.
+					if ((faces.size() == 0) || (subtract_nested_faces == false))
+					{
+						faces.push_back(face);
+					}
+					else
+					{
+						for (std::list<TopoDS_Face>::iterator itFace = faces.begin(); itFace != faces.end(); itFace++)
+						{
+							try
+							{
+								TopoDS_Shape result = BRepAlgoAPI_Fuse(*itFace, face );
+								if (result.IsNull() == false)
+								{
+									*itFace = TopoDS::Face(result);
+								}
+							}
+							catch (Standard_Failure) 
+							{
+								// Ignore the failure here.
+								Handle_Standard_Failure e = Standard_Failure::Caught();
+							}
+						}
+					}
+				}
+				else
+				{
+					// It's an inner one.  Subtract it from the faces we already have.
+					for (std::list<TopoDS_Face>::iterator itFace = faces.begin(); itFace != faces.end(); itFace++)
+					{
+						BRepAlgoAPI_Cut cut( *itFace, face );
+						cut.Build();
+						if (cut.IsDone())
+						{
+							try
+							{
+								TopoDS_Shape shape = cut.Shape();
+
+								for (TopExp_Explorer expFace(shape, TopAbs_FACE); expFace.More(); expFace.Next())
+								{
+									TopoDS_Face aFace = TopoDS::Face(expFace.Current());
+									*itFace = aFace;
+								}
+							}
+							catch (Standard_Failure) 
+							{
+								// Ignore the failure here.
+								Handle_Standard_Failure e = Standard_Failure::Caught();
+							}
+						} // End if - then
+					}
+				}
+			} // End if - then
+		} // End for
+	} // End for
+
+	return(faces);
+
+} // End Faces() method
+
+
 } // End namespace Cam
