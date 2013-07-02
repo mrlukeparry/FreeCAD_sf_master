@@ -3531,4 +3531,84 @@ Cam::Faces_t Cam::Paths::Faces(const bool subtract_nested_faces /* = true */ ) c
 } // End Faces() method
 
 
+/**
+	This method returns a vector of Points that represent point locations from the
+	Paths held internally.  These locations come from;
+		- the intersections of one ContiguousPath with another
+		- the centre-point of a ContiguousPath that does NOT intersect any others and
+		  contains a single circle/arc path child.  In this case, the centre of the
+		  arc/circle is used as the location.
+
+	This method is used to find individual locations for Drilling, Positioning,
+	Tapping or Counterbore operations. (and any other machining operations that
+	act around a single location)
+
+	The idea is that drilling locations (etc.) can be defined by placing lines, circles
+	and other graphical elements such that the locations for drilling are defined by
+	the intersections of these graphical elements.
+ */
+Paths::Locations_t Paths::PointLocationData() const
+{
+	std::set<Cam::Point> distinct_locations;
+	std::set<::size_t> intersecting_paths;
+
+	for (::size_t lhs=0; lhs<size(); lhs++)
+	{
+		for (::size_t rhs=lhs; rhs<size(); rhs++)
+		{
+			if (lhs == rhs) continue;
+			if (intersecting_paths.find(lhs) != intersecting_paths.end()) continue;
+			if (intersecting_paths.find(rhs) != intersecting_paths.end()) continue;
+
+			// See if these two contiguous path objects intersect each other.
+			std::set<Cam::Point> intersections = m_contiguous_paths[lhs].Intersect(m_contiguous_paths[rhs]);
+			if (intersections.size() > 0)
+			{
+				intersecting_paths.insert(lhs);
+				intersecting_paths.insert(rhs);
+				std::copy( intersections.begin(), intersections.end(), std::inserter(distinct_locations, distinct_locations.end()));
+			}
+		} // End for
+	} // End for
+
+	// Now go through all the contiugous paths that do not intersect any of the other paths.
+	// We want to know if these hold just a single circle or arc path.  If so, use the
+	// centre of the circle/arc as another location.
+	for (::size_t i=0; i<size(); i++)
+	{
+		if (intersecting_paths.find(i) != intersecting_paths.end()) continue;
+
+		Cam::ContiguousPath cpath(m_contiguous_paths[i]);	// Get our own (mutable) copy.
+
+		// This contiguous path has NOT been involved in an intersection.
+		std::vector<Cam::Path> individual_paths = cpath.Paths();
+		bool non_arc_found = false;
+		std::set<Cam::Point> points_for_this_path;
+		for (std::vector<Cam::Path>::iterator itPath = individual_paths.begin(); itPath != individual_paths.end(); itPath++)
+		{
+			if (itPath->Curve().GetType() == GeomAbs_Circle)
+			{
+				gp_Circ circle = itPath->Curve().Circle();
+				points_for_this_path.insert( circle.Position() );
+			}
+			else
+			{
+				non_arc_found = true;
+			}
+		}
+
+		// We only want to include it if we end up with a single point and all
+		// path elements are arcs/circles.
+		if ((! non_arc_found) && (points_for_this_path.size() == 1))
+		{
+			distinct_locations.insert( *(points_for_this_path.begin()) );
+		}
+	}
+
+	Paths::Locations_t locations;
+	std::copy( distinct_locations.begin(), distinct_locations.end(), std::inserter( locations, locations.begin() ));
+
+	return(locations);
+}
+
 } // End namespace Cam

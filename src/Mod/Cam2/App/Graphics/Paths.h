@@ -359,6 +359,9 @@ namespace Cam
 
 		Faces_t Faces(const bool subtract_nested_faces = true ) const;
 
+		typedef std::vector<Point> Locations_t;
+		Locations_t PointLocationData() const;
+
 	protected:
 		std::vector<ContiguousPath> m_contiguous_paths;
 		bool		m_is_forwards;
