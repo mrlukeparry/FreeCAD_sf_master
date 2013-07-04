@@ -25,6 +25,7 @@
 #endif
 
 #include "PostProcessor.h"
+#include <Base/Interpreter.h>	// for the Python runtime
 
 namespace Cam {
 
@@ -45,5 +46,28 @@ PostProcessorInst::PostProcessorInst() {
 
 PostProcessorInst::~PostProcessorInst() {
 }
+
+/**
+	This method accepts a ToolPath object (i.e. a Python program) and executes
+	it as such.  The output from this Python program is expected to be GCode
+	which is returned within the MachineProgram object.
+ */
+MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postprocessor)
+{
+	MachineProgram *machine_program = new MachineProgram;
+
+	QStringList *lines = toolpath->getToolPath();
+	if (lines != NULL)
+	{
+		for (QStringList::size_type i=0; i<lines->size(); i++)
+		{
+			const char *line = lines->at(i).toAscii().constData();
+			int result = Base::Interpreter().runCommandLine( lines->at(i).toAscii().constData() );
+		} // End for
+	} // End if - then
+
+	return(machine_program);
+}
+
 
 } /* namespace Cam */

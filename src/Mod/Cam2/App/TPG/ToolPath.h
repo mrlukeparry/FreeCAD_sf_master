@@ -40,6 +40,21 @@ namespace Cam {
 
 /**
  * Stores the Tool Path output from a single TPG.
+ *
+ * A ToolPath, in this context, is really a Python program that, when executed, will produce
+ * a GCode file.  The PostProcessor layer is responsible for executing this Python program.  This
+ * allows a set of Python scripts to implement the various methods called by this Python
+ * program.  eg: rapid(x=1.0, y=2.0, z=3.0)
+ *
+ * One instance of the rapid() method might produce "G00X1.0Y2.0Z3.0" while another
+ * might produce "N1000 G00 X 1.0 Y 2.0 Z 3.0".  In any case, the implementation of the rapid()
+ * method can be done in a way that suits an individual CNC controller.
+ * The class inheritance mechanism available within Python allows the easy replacement of
+ * methods such as rapid() if a particular CNC controller requires the GCode presented in
+ * a particular manner.
+ *
+ * The 'toolpath' member is a QStringList.  Each string in this list represents a single
+ * row of Python code.
  */
 class CamExport ToolPath {
 
