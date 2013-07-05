@@ -30,13 +30,13 @@
 #include "MachineProgram.h"
 
 #include <CXX/Extensions.hxx>
-// #include <CXX/Python2/Extensions.hxx>
+
 
 namespace Cam {
 
 	/**
 	 * Python class for redirection of stdout to the MachineProgram
-	 * object.  This was copied from the App/Gui/PythonConolePy.h file
+	 * object.  This was copied from the App/Gui/PythonConsolePy.h file
 	 * @see PythonStderr
 	 * @see PythonConsole
 	 * @author Werner Mayer
