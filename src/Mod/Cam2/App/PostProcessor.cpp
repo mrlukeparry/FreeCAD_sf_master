@@ -25,7 +25,13 @@
 #endif
 
 #include "PostProcessor.h"
-#include <Base/Interpreter.h>	// for the Python runtime
+#include <Base/Interpreter.h>
+
+#include <Base/PyTools.h>
+#include <Base/Exception.h>
+#include <Base/PyObjectBase.h>
+
+
 
 namespace Cam {
 
@@ -41,33 +47,188 @@ PostProcessorInst& PostProcessorInst::instance(void)
 }
 
 PostProcessorInst::PostProcessorInst() {
+	// Register the callback functions for stdout and stderr in the
+	// global Python interpreter.  We must do this only once or
+	// an execption is thrown.  That's why we do it within the
+	// constructor of this singleton class.
 
+	PythonStdout::init_type();
+	PythonStderr::init_type();
 }
 
 PostProcessorInst::~PostProcessorInst() {
 }
 
+
 /**
-	This method accepts a ToolPath object (i.e. a Python program) and executes
-	it as such.  The output from this Python program is expected to be GCode
-	which is returned within the MachineProgram object.
+	Use the global Python interpreter to execute the lines of Python code
+	in the ToolPath and capture both stdout and stderr into the MachineProgram
+	object returned.  The stdout is expected to be the actual GCode.  The
+	stderr, if any is seen, will indicate whether errors and/or execeptions
+	were seen.
+
+	NOTE: We MUST use the Global Interpreter Lock (Base::PyGILStateLocker) to
+	ensure that toolpaths that are calculated in parallel, are not also executed
+	in parallel here.  We MUST capture the stdout and stderr streams JUST for this
+	instance of execution so that the output from this toolpath doesn't interfere
+	with that from another toolpath.
  */
 MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postprocessor)
 {
+	// Define a new MachineProgram object to contain the GCode (stdout from the Python program)
 	MachineProgram *machine_program = new MachineProgram;
 
-	QStringList *lines = toolpath->getToolPath();
-	if (lines != NULL)
+	// Lock the 'Global Interpreter Lock' so that we're not interrupted during our execution.
+	Base::PyGILStateLocker locker;	
+
+	// Redirect stdout and stderr from the Python interpreter so that it ends up
+	// within the MachineProgram object.
+	PythonStdout* out = new PythonStdout(machine_program);
+    PySys_SetObject("stdout", out);
+
+	PythonStderr *err = new PythonStderr(machine_program);
+    PySys_SetObject("stderr", err);
+
+	// For debug only.  Should remove this eventually.
+	QString tool_path;
+	tool_path << *toolpath;
+	qDebug("%s\n", tool_path.toAscii().constData());
+
+	// Execute the Python code line-by-line...
+	try
 	{
+		QStringList *lines = toolpath->getToolPath();
 		for (QStringList::size_type i=0; i<lines->size(); i++)
 		{
-			const char *line = lines->at(i).toAscii().constData();
-			int result = Base::Interpreter().runCommandLine( lines->at(i).toAscii().constData() );
-		} // End for
-	} // End if - then
+			Base::Interpreter().runString(lines->at(i).toAscii().constData());
+		}
+	}
+	catch(Base::PyException & error)
+	{
+		qCritical("%s\n", error.what());	// send the exception message to the build environment's output
+		machine_program->addErrorString(QString::fromAscii(error.what()));	// as well as to the machine program to indicate a failure has occured.
+	}
 
+	// Always return the machine_program which includes both gcode and any errors that were seen.  It's up
+	// to the calling routine to look to see if any errors occured by looking at this machine_program object.
 	return(machine_program);
 }
 
+/**
+	This method gets called when a line of Python code attempts to write to stdout.
+	We capture the string they were going to write and re-direct it to the
+	machine_program->error_string QStringList.
+ */
+Py::Object PythonStdout::write(const Py::Tuple& args)
+{
+    try {
+        Py::Object output(args[0]);
+        if (PyUnicode_Check(output.ptr())) {
+            PyObject* unicode = PyUnicode_AsEncodedObject(output.ptr(), "utf-8", "strict");
+            if (unicode) {
+                const char* string = PyString_AsString(unicode);
+				this->machine_program->addMachineCommand(QString::fromUtf8(string));
+                Py_DECREF(unicode);
+            }
+        }
+        else {
+            Py::String text(args[0]);
+            std::string string = (std::string)text;
+            this->machine_program->addMachineCommand(QString::fromUtf8(string.c_str()));
+        }
+    }
+    catch (Py::Exception& e) {
+        // Do not provoke error messages 
+        e.clear();
+    }
+
+    return Py::None();
+}
+
+Py::Object PythonStdout::flush(const Py::Tuple&)
+{
+    return Py::None();
+}
+
+Py::Object PythonStdout::repr()
+{
+    std::string s;
+    std::ostringstream s_out;
+    s_out << "PythonStdout";
+    return Py::String(s_out.str());
+}
+
+
+/**
+	WARNING: This MUST be done ONLY ONCE.  That's why we call it from
+	the PostProcessorInst object's constructor.  i.e. it's a singleton.
+ */
+void PythonStdout::init_type()
+{
+    behaviors().name("PythonStdout");
+    behaviors().doc("Redirection of stdout to the MachineProgram object.");
+    // you must have overwritten the virtual functions
+    behaviors().supportRepr();
+    add_varargs_method("write",&PythonStdout::write,"write()");
+    add_varargs_method("flush",&PythonStdout::flush,"flush()");
+}
+
+/**
+	This method gets called when a line of Python code attempts to write to stderr.
+	We capture the string they were going to write and re-direct it to the
+	machine_program->error_string QStringList.
+ */
+Py::Object PythonStderr::write(const Py::Tuple& args)
+{
+    try {
+        Py::Object output(args[0]);
+        if (PyUnicode_Check(output.ptr())) {
+            PyObject* unicode = PyUnicode_AsEncodedObject(output.ptr(), "utf-8", "strict");
+            if (unicode) {
+                const char* string = PyString_AsString(unicode);
+				this->machine_program->addErrorString(QString::fromUtf8(string));
+                Py_DECREF(unicode);
+            }
+        }
+        else {
+            Py::String text(args[0]);
+            std::string string = (std::string)text;
+            this->machine_program->addErrorString(QString::fromUtf8(string.c_str()));
+        }
+    }
+    catch (Py::Exception& e) {
+        // Do not provoke error messages 
+        e.clear();
+    }
+
+    return Py::None();
+}
+
+Py::Object PythonStderr::flush(const Py::Tuple&)
+{
+    return Py::None();
+}
+
+Py::Object PythonStderr::repr()
+{
+    std::string s;
+    std::ostringstream s_out;
+    s_out << "PythonStderr";
+    return Py::String(s_out.str());
+}
+
+/**
+	WARNING: This MUST be done ONLY ONCE.  That's why we call it from
+	the PostProcessorInst object's constructor.  i.e. it's a singleton.
+ */
+void PythonStderr::init_type()
+{
+    behaviors().name("PythonStderr");
+    behaviors().doc("Redirection of stdout to the MachineProgram object.");
+    // you must have overwritten the virtual functions
+    behaviors().supportRepr();
+    add_varargs_method("write",&PythonStderr::write,"write()");
+    add_varargs_method("flush",&PythonStderr::flush,"flush()");
+}
 
 } /* namespace Cam */

@@ -33,6 +33,7 @@
 #include "CamManager.h"
 
 #include "Features/CamFeature.h"
+#include "PostProcessor.h"
 
 namespace Cam {
 CamManagerInst* CamManagerInst::_pcSingleton = NULL;
@@ -139,9 +140,67 @@ void CamManagerInst::tpgRunnerThreadMain() {
 
 		// run the next TPG
 		if (tpgRun != NULL) {
+			updatedTPGState(tpgRun->tpg->getName(), Cam::TPG::RUNNING, 0);
+
 			Base::Console().Message("Running TPG: %s\n", tpgRun->tpg->getName().toAscii().constData());
 			tpgRun->tpg->run(tpgRun->settings, QString::fromAscii("default"));
 			Base::Console().Message("Finished TPG: %s\n", tpgRun->tpg->getName().toAscii().constData());
+
+			updatedTPGState(tpgRun->tpg->getName(), Cam::TPG::FINISHED, 100);
+
+			// Just playing.  This part needs to go away later on.
+			// I would expect that all the tpgRun->tpg->run() threads will return before any of their
+			// ToolPath objects are executed by the Python interpreter.  I'm just doing it here
+			// for now because I don't know how to work around the user interface stuff well enough
+			// to actually do this.
+
+			ToolPath *toolpath = tpgRun->tpg->getToolPath();	// copy (and add reference counter to) the ToolPath object.
+
+			// Just log the whole program here for interest sake.  Not for real use.
+			QString python_program;
+			python_program << *toolpath;
+			qDebug("%s\n", python_program.toAscii().constData());
+
+			// Execute the Python program contained in the ToolPath object to produce GCode.
+			Cam::MachineProgram *machine_program = Cam::PostProcessor().postProcess(toolpath, (Cam::Item *) NULL);
+
+			// The only indication as to whether errors occured is if the getErrors() method returns
+			// a QStringList that is not empty.
+			if ((machine_program->getErrors()) && (machine_program->getErrors()->size() > 0))
+			{
+				// Something went wrong.  Present the errors to the operator.
+				// TODO - This needs to appear in a popup dialog or similar so the operator knows
+				// someting went wrong.
+				for (QStringList::size_type i=0; i<machine_program->getErrors()->size(); i++)
+				{
+					qCritical("%s\n", machine_program->getErrors()->at(i).toAscii().constData());
+				}
+			}
+			else
+			{
+				// There were no errors so the GCode must have been generated OK.
+				// Log it here for now but it will really need to go somewhere more useful at some point.
+
+				QString gcode;
+				gcode << *machine_program;
+				qDebug("%s\n", gcode);
+			}
+
+			// And release both the toolpath and the machine_program objects now.  The toolpath probably
+			// won't go away at this point but it's important that we let it know that we're finished with
+			// it.  The machine_program, on the other hand, probably will go away as we allocated space for it
+			// during the Cam::PostProcessor().postProcess() method so we're probably the only ones who
+			// know it exists.
+
+			toolpath->release();
+			machine_program->release();
+
+			// The tpgRun object was created by us and holds just enough information to allow the
+			// toolpath to be generated.  We must release this memory here.
+			delete tpgRun;
+			tpgRun = NULL;
+			// TODO Signal the main instance that we've completed the toolpath generation. Only when
+			// this is done can we post process them into actual GCode.
 		}
 		else {
 			#ifdef WIN32

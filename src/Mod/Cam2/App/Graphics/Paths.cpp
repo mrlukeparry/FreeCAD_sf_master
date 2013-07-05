@@ -3550,7 +3550,7 @@ Cam::Faces_t Cam::Paths::Faces(const bool subtract_nested_faces /* = true */ ) c
 Paths::Locations_t Paths::PointLocationData() const
 {
 	std::set<Cam::Point> distinct_locations;
-	std::set<::size_t> intersecting_paths;
+	std::set< ::size_t > intersecting_paths;
 
 	for (::size_t lhs=0; lhs<size(); lhs++)
 	{
