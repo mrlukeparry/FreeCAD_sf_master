@@ -31,6 +31,7 @@ namespace Cam {
 class MachineProgram {
 protected:
     QStringList *machineProgram;
+	QStringList *errors;
 
     int refcnt;
     virtual ~MachineProgram();
@@ -42,6 +43,8 @@ public:
      */
     void addMachineCommand(QString mc);
 
+	void addErrorString(QString error_string);
+
     /**
      * Clear out the toolpath.
      */
@@ -51,6 +54,8 @@ public:
      * Get the Machine Program as a list of strings
      */
     QStringList *getMachineProgram();
+
+	QStringList *getErrors();
 
     /**
      * Increases reference count
@@ -69,6 +74,9 @@ public:
         if (refcnt == 0)
             delete this;
     }
+
+public:
+	friend QString CamExport operator<< ( QString & buf, const MachineProgram & machine_program );
 };
 
 } /* namespace Cam */

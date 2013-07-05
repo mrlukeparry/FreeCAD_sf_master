@@ -53,6 +53,9 @@ public:
      * Returns the toolpath from the last
      */
     virtual ToolPath *getToolPath();
+
+private:
+	ToolPath *toolpath;	// cache of toolpath from last call of the run() method.
 };
 
 } /* namespace Cam */

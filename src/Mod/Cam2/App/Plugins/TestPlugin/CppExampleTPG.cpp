@@ -24,6 +24,7 @@
 #ifndef _PreComp_
 #endif
 
+#include <Base/Interpreter.h>		// For Python runtime
 #include <TPG/CppTPGDescriptor.h>
 
 #include "CppExampleTPG.h"
@@ -77,6 +78,9 @@ CppExampleTPG::~CppExampleTPG() {
     
 }
 
+
+
+
 /**
  * Run the TPG to generate the ToolPath code.
  *
@@ -85,20 +89,15 @@ CppExampleTPG::~CppExampleTPG() {
 void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAscii(""))
 {
     qDebug("This is where the TPG would generate the tool-path! \n");
+	if (this->toolpath == NULL)
+	{
+		qDebug("Releasing previously generated toolpath\n");
+		this->toolpath->release();	// release the previous copy and generate a new one.
+	}
 
-	// just for testing the getToolPath() method.
-	ToolPath *pToolPath = getToolPath();
-	QString tool_path;
-	tool_path << *pToolPath;
-	qDebug("%s\n", tool_path.toAscii().constData());
-	pToolPath->release();
-}
-
-
-/* virtual */ ToolPath *CppExampleTPG::getToolPath()
-{
-	ToolPath *pPython = new ToolPath(this);
-	ToolPath &python = *pPython;	// for readability only.
+	// Now generate a new toolpath.
+	this->toolpath = new ToolPath(this);
+	ToolPath &python = *(this->toolpath);	// for readability only.
 
 	// TODO: Understand how 'units' are handled in FreeCAD.
 	// In HeeksCNC, we always store values in millimeters (mm) and convert to whatever external
@@ -112,13 +111,13 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	// the ToolPath::RequiredDecimalPlaces() value to either 3 (for metric) or 4 (for
 	// imperial) so that the Python/GCode is generated using the correct resolution.
 
-	pPython->RequiredDecimalPlaces(3);	// assume metric.
-	*pPython << "rapid(x=" << 12.3456789 << ")\n";
-	*pPython << "feed(x=" << 4 << ")\n";
+	python.RequiredDecimalPlaces(3);	// assume metric.
+	python << "rapid(x=" << 12.3456789 << ")\n";
+	python << "feed(x=" << 4 << ")\n";
 
 	#ifdef FC_DEBUG
 		// Run the unit tests for the ToolPath class.  This is for debug only.
-		ToolPath::Test test(pPython);
+		ToolPath::Test test(this->toolpath);
 		if (test.Run())
 		{
 			python << "comment(" << python.PythonString("Tests for ToolPath succeeded") << ")\n";
@@ -145,14 +144,25 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	python << "comment(" << python.PythonString("we should be at x=-1.235") << ")\n";
 
 	QString some_setting(QString::fromUtf8("'Something (that) needs cleaning up befor it's included in a python comment() call'"));
-	*pPython << "comment(" << pPython->PythonString(some_setting) << ")\n";
+	python << "comment(" << python.PythonString(some_setting) << ")\n";
 
-	*pPython << "comment(" << pPython->PythonString("the cat's mat has a single quote in it") << ")\n";
-	*pPython << "comment(" << pPython->PythonString("this one has (something in brackets) within it.") << ")\n";
-	*pPython << "comment(" << pPython->PythonString("'this one already has single quotes bounding it'") << ")\n";
-	*pPython << "comment(" << pPython->PythonString("\"this one already has double quotes bounding it\"") << ")\n";
+	python << "comment(" << python.PythonString("the cat's mat has a single quote in it") << ")\n";
+	python << "comment(" << python.PythonString("this one has (something in brackets) within it.") << ")\n";
+	python << "comment(" << python.PythonString("'this one already has single quotes bounding it'") << ")\n";
+	python << "comment(" << python.PythonString("\"this one already has double quotes bounding it\"") << ")\n";
+}
 
-	return(pPython);
+
+/* virtual */ ToolPath *CppExampleTPG::getToolPath()
+{
+	if (this->toolpath)
+	{
+		return(this->toolpath->grab());
+	}
+	else
+	{
+		return(NULL);
+	}
 }
 
 

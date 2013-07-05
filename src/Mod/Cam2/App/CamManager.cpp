@@ -33,6 +33,7 @@
 #include "CamManager.h"
 
 #include "Features/CamFeature.h"
+#include "PostProcessor.h"
 
 namespace Cam {
 CamManagerInst* CamManagerInst::_pcSingleton = NULL;
@@ -142,6 +143,38 @@ void CamManagerInst::tpgRunnerThreadMain() {
 			Base::Console().Message("Running TPG: %s\n", tpgRun->tpg->getName().toAscii().constData());
 			tpgRun->tpg->run(tpgRun->settings, QString::fromAscii("default"));
 			Base::Console().Message("Finished TPG: %s\n", tpgRun->tpg->getName().toAscii().constData());
+
+			// Just playing.  This part needs to go away later on.
+			ToolPath *toolpath = tpgRun->tpg->getToolPath();
+			QString python_program;
+			python_program << *toolpath;
+			qDebug("%s\n", python_program.toAscii().constData());
+
+			// Execute the Python program contained in the ToolPath object to produce GCode.
+			Cam::MachineProgram *machine_program = Cam::PostProcessor().postProcess(toolpath, (Cam::Item *) NULL);
+
+			if ((machine_program->getErrors()) && (machine_program->getErrors()->size() > 0))
+			{
+				for (QStringList::size_type i=0; i<machine_program->getErrors()->size(); i++)
+				{
+					qCritical("%s\n", machine_program->getErrors()->at(i).toAscii().constData());
+				}
+			}
+			else
+			{
+				QString gcode;
+				gcode << *machine_program;
+				qDebug("%s\n", gcode);
+			}
+
+			toolpath->release();
+			machine_program->release();
+
+
+			delete tpgRun;
+			tpgRun = NULL;
+			// TODO Signal the main instance that we've completed the toolpath generation. Only when
+			// this is done can we post process them into actual GCode.
 		}
 		else {
 			#ifdef WIN32

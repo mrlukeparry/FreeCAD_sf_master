@@ -25,6 +25,13 @@
 #endif
 
 #include "PostProcessor.h"
+#include <Base/Interpreter.h>
+
+#include <Base/PyTools.h>
+#include <Base/Exception.h>
+#include <Base/PyObjectBase.h>
+
+
 
 namespace Cam {
 
@@ -40,10 +47,145 @@ PostProcessorInst& PostProcessorInst::instance(void)
 }
 
 PostProcessorInst::PostProcessorInst() {
-
+	PythonStdout::init_type();
+	PythonStderr::init_type();
 }
 
 PostProcessorInst::~PostProcessorInst() {
+}
+
+MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postprocessor)
+{
+	// Define a new MachineProgram object to contain the GCode (stdout from the Python program)
+	MachineProgram *machine_program = new MachineProgram;
+
+	// Redirect stdout and stderr from the Python interpreter so that it ends up
+	// within the MachineProgram object.
+	Base::PyGILStateLocker locker;
+	PythonStdout* out = new PythonStdout(machine_program);
+    PySys_SetObject("stdout", out);
+
+	PythonStderr *err = new PythonStderr(machine_program);
+    PySys_SetObject("stderr", err);
+
+	QString tool_path;
+	tool_path << *toolpath;
+	qDebug("%s\n", tool_path.toAscii().constData());
+
+	try
+	{
+		QStringList *lines = toolpath->getToolPath();
+		for (QStringList::size_type i=0; i<lines->size(); i++)
+		{
+			Base::Interpreter().runString(lines->at(i).toAscii().constData());
+		}
+	}
+	catch(Base::PyException & error)
+	{
+		qCritical("%s\n", error.what());
+		machine_program->addErrorString(QString::fromAscii(error.what()));
+	}
+
+	return(machine_program);
+}
+
+
+Py::Object PythonStdout::write(const Py::Tuple& args)
+{
+    try {
+        Py::Object output(args[0]);
+        if (PyUnicode_Check(output.ptr())) {
+            PyObject* unicode = PyUnicode_AsEncodedObject(output.ptr(), "utf-8", "strict");
+            if (unicode) {
+                const char* string = PyString_AsString(unicode);
+				this->machine_program->addMachineCommand(QString::fromUtf8(string));
+                Py_DECREF(unicode);
+            }
+        }
+        else {
+            Py::String text(args[0]);
+            std::string string = (std::string)text;
+            this->machine_program->addMachineCommand(QString::fromUtf8(string.c_str()));
+        }
+    }
+    catch (Py::Exception& e) {
+        // Do not provoke error messages 
+        e.clear();
+    }
+
+    return Py::None();
+}
+
+Py::Object PythonStdout::flush(const Py::Tuple&)
+{
+    return Py::None();
+}
+
+Py::Object PythonStdout::repr()
+{
+    std::string s;
+    std::ostringstream s_out;
+    s_out << "PythonStdout";
+    return Py::String(s_out.str());
+}
+
+void PythonStdout::init_type()
+{
+    behaviors().name("PythonStdout");
+    behaviors().doc("Redirection of stdout to the MachineProgram object.");
+    // you must have overwritten the virtual functions
+    behaviors().supportRepr();
+    add_varargs_method("write",&PythonStdout::write,"write()");
+    add_varargs_method("flush",&PythonStdout::flush,"flush()");
+}
+
+Py::Object PythonStderr::write(const Py::Tuple& args)
+{
+    try {
+        Py::Object output(args[0]);
+        if (PyUnicode_Check(output.ptr())) {
+            PyObject* unicode = PyUnicode_AsEncodedObject(output.ptr(), "utf-8", "strict");
+            if (unicode) {
+                const char* string = PyString_AsString(unicode);
+				this->machine_program->addErrorString(QString::fromUtf8(string));
+                Py_DECREF(unicode);
+            }
+        }
+        else {
+            Py::String text(args[0]);
+            std::string string = (std::string)text;
+            this->machine_program->addErrorString(QString::fromUtf8(string.c_str()));
+        }
+    }
+    catch (Py::Exception& e) {
+        // Do not provoke error messages 
+        e.clear();
+    }
+
+    return Py::None();
+}
+
+Py::Object PythonStderr::flush(const Py::Tuple&)
+{
+    return Py::None();
+}
+
+Py::Object PythonStderr::repr()
+{
+    std::string s;
+    std::ostringstream s_out;
+    s_out << "PythonStderr";
+    return Py::String(s_out.str());
+}
+
+void PythonStderr::init_type()
+{
+    behaviors().name("PythonStderr");
+    behaviors().doc("Redirection of stdout to the MachineProgram object.");
+    // you must have overwritten the virtual functions
+    behaviors().supportRepr();
+    add_varargs_method("write",&PythonStderr::write,"write()");
+    add_varargs_method("flush",&PythonStderr::flush,"flush()");
 }
 
 } /* namespace Cam */
