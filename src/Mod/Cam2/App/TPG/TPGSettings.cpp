@@ -166,6 +166,7 @@ QString TPGSettingDefinition::getFullname() {
 
 TPGSettings::TPGSettings()
 {
+	this->refcnt = 1;
 }
 
 TPGSettings::~TPGSettings()

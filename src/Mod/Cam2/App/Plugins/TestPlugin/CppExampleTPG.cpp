@@ -99,6 +99,11 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	this->toolpath = new ToolPath(this);
 	ToolPath &python = *(this->toolpath);	// for readability only.
 
+	// TODO We really need to define which machine post processor is used at the CamFeature
+	// level (or above would be better)  We DO NOT want this import to remain in the TPG itself.
+	python << "from nc import *" << "\n";
+	python << "import hm50" << "\n";
+	
 	// TODO: Understand how 'units' are handled in FreeCAD.
 	// In HeeksCNC, we always store values in millimeters (mm) and convert to whatever external
 	// units are configured at the last moment.  We store a 'units' value as 1.0 for mm and
@@ -112,6 +117,8 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	// imperial) so that the Python/GCode is generated using the correct resolution.
 
 	python.RequiredDecimalPlaces(3);	// assume metric.
+	python << "print 'hello world\\n'\n";
+
 	python << "rapid(x=" << 12.3456789 << ")\n";
 	python << "feed(x=" << 4 << ")\n";
 

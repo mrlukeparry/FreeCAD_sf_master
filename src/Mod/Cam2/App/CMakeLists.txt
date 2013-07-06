@@ -179,6 +179,12 @@ SET(PostProc_Scripts
     PyPostProcessor/PostProcessorAPI.py
     PyPostProcessor/TestPostProcessor.py
     PyPostProcessor/PostProcessor/__init__.py
+    PyPostProcessor/PostProcessor/nc.py
+    PyPostProcessor/PostProcessor/format.py
+    PyPostProcessor/PostProcessor/iso.py
+    PyPostProcessor/PostProcessor/linuxcnc.py
+    PyPostProcessor/PostProcessor/mach3.py
+    PyPostProcessor/PostProcessor/hm50.py
 
 	## TODO: add core postprocessor files
 
@@ -224,5 +230,7 @@ else(MSVC)
     set_target_properties(Cam PROPERTIES PREFIX "")
     set_target_properties(Cam PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
 endif(MSVC)
+
+add_definitions(-DCAM_BINARY_DIR="${CMAKE_BINARY_DIR}")
 
 INSTALL(TARGETS Cam DESTINATION lib)

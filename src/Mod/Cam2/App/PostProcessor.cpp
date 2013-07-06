@@ -127,14 +127,28 @@ Py::Object PythonStdout::write(const Py::Tuple& args)
             PyObject* unicode = PyUnicode_AsEncodedObject(output.ptr(), "utf-8", "strict");
             if (unicode) {
                 const char* string = PyString_AsString(unicode);
-				this->machine_program->addMachineCommand(QString::fromUtf8(string));
+				buffer += QString::fromUtf8(string);
+				if (buffer.endsWith(QString::fromAscii("\n")))
+				{
+					this->machine_program->addMachineCommand(buffer);
+					buffer.clear();
+				}
                 Py_DECREF(unicode);
             }
         }
         else {
             Py::String text(args[0]);
             std::string string = (std::string)text;
-            this->machine_program->addMachineCommand(QString::fromUtf8(string.c_str()));
+			buffer += QString::fromStdString(string);
+
+			// Only add it to the machine_program list if it ends with a newline character.  Otherwise
+			// we're implicitly adding a newline.  Until that time, just accumulate the characters for
+			// a single line in buffer.
+			if (buffer.endsWith(QString::fromAscii("\n")))
+			{
+				this->machine_program->addMachineCommand(buffer);
+				buffer.clear();
+			}
         }
     }
     catch (Py::Exception& e) {
@@ -186,14 +200,23 @@ Py::Object PythonStderr::write(const Py::Tuple& args)
             PyObject* unicode = PyUnicode_AsEncodedObject(output.ptr(), "utf-8", "strict");
             if (unicode) {
                 const char* string = PyString_AsString(unicode);
-				this->machine_program->addErrorString(QString::fromUtf8(string));
+				if (buffer.endsWith(QString::fromAscii("\n")))
+				{
+					this->machine_program->addMachineCommand(buffer);
+					buffer.clear();
+				}
                 Py_DECREF(unicode);
             }
         }
         else {
             Py::String text(args[0]);
             std::string string = (std::string)text;
-            this->machine_program->addErrorString(QString::fromUtf8(string.c_str()));
+			buffer += QString::fromStdString(string);
+            if (buffer.endsWith(QString::fromAscii("\n")))
+			{
+				this->machine_program->addMachineCommand(buffer);
+				buffer.clear();
+			}
         }
     }
     catch (Py::Exception& e) {

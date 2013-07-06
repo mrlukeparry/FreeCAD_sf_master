@@ -59,6 +59,21 @@ PyDoc_STRVAR(module_Cam_doc,
 extern "C" {
 void CamExport initCam()
 {
+	#ifdef CAM_BINARY_DIR
+		try {
+			QString cam_binary_dir = QString::fromAscii(CAM_BINARY_DIR);
+			if (cam_binary_dir.endsWith(QString::fromAscii("\\\""))) cam_binary_dir.remove(cam_binary_dir.size()-2, 2);
+			if (cam_binary_dir.startsWith(QString::fromAscii("\\\""))) cam_binary_dir.remove(0, 2);
+
+			QString path = cam_binary_dir + QString::fromAscii("/Mod/PyCam/PyPostProcessor/PostProcessor");
+			Base::Interpreter().addPythonPath(path.toAscii().constData());
+		}
+		catch(const Base::Exception& e) {
+			PyErr_SetString(PyExc_ImportError, e.what());
+			return;
+		}
+	#endif
+
     // load dependent module
     try {
         Base::Interpreter().runString("import Part");
