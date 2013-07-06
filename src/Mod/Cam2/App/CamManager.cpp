@@ -183,7 +183,7 @@ void CamManagerInst::tpgRunnerThreadMain() {
 
 				QString gcode;
 				gcode << *machine_program;
-				qDebug("%s\n", gcode);
+				qDebug("%s\n", gcode.toAscii().constData());
 			}
 
 			// And release both the toolpath and the machine_program objects now.  The toolpath probably
