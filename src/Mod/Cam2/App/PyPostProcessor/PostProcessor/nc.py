@@ -36,6 +36,55 @@
 #    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 #    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ################################################################################
+#
+#	This file contains TWO distinct features.  The first is to define
+#	a Creator class that forms the basis of all conversion from the
+#	ToolPath language (i.e. rapid(), feed() etc.) to the GCode (G00, G01 etc.)
+#
+#	The second is to define the COMPLETE series of global functions available
+#	to all ToolPath generating modules.  These global functions simply
+#	call their counterpart methods in the Creator class.
+#
+#	The implementation of this Creator class is by way of a base class
+#	available for other scripts to override.  We have four main levels
+#	available for overriding.  
+#
+#	The base class version of Creator, found in this nc.py file, holds 
+#	methods that simply raise a 'not implemented' exception.  By having
+#	this mechanism at the base, we can ensure that the various combinations
+#	of overriding classes that follow will either result in all necessary
+#	methods being implemented or that the operator will be warned if our
+#	ToolPath generator is issuing a command that our machine controller
+#	does not support.  eg: NURBS definitions for toolpaths.
+#
+#	The next is contained in iso.py.  This holds a basic implementation 
+#	of only those methods that are likely to be available in all machine 
+#	processors (i.e. LinuxCNC, Mach3 etc.)  
+#
+#	The next layer is based on the machine controllers themselves.  eg:
+#	linuxcnc.py, mach3.py etc.  These files override those methods in
+#	the iso/nc layers with implementations that are specific to their
+#	corresponding machine controller. (eg: the WORK_OFFSET() method
+#	produces G10 L2 for Mach3 but G10 L20 for LinuxCNC)
+#
+#	Finally, we have machine-specific implementations. These are the
+#	places where most user configuration must go.  These implementations
+#	base their definition of the Creator class on the corresponding
+#	machine controller and then override those methods where they want
+#	some particular function to occur differently for their machine.
+#
+#	An example of all of this layering is for a Hafco HM50 model milling
+# 	machine that is controlled using LinuxCNC.  This implementation
+#	defines an hm50.py file that defines a Creator class that inherits
+#	from that defined in the linuxcnc.py file.  The Creator class
+#	found within linuxcnc.py is based on that found in the iso.py file.
+#	The Creator class defined in iso.py is based on that found in
+#	nc.py.  The global functions in nc.py call the Creator class methods
+#	which, through our layering of inheritance, ends up calling
+#	the most appropriate version of each method at any of the layers
+#	of inheritance.
+#
+################################################################################
 
 import sys
 import os
