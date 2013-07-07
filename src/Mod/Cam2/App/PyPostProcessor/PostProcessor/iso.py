@@ -93,7 +93,7 @@ class Creator(nc.Creator):
     ##  Codes
 
     def SPACE(self): return(' ')
-    def FEEDRATE(self): return('F') 
+    def FEEDRATE(self): return((self.SPACE() + 'F')) 
     def FORMAT_FEEDRATE(self): return('%.2f') 
     def FORMAT_ANG(self): return('%.1f')
     def FORMAT_TIME(self): return('%.2f')
@@ -159,6 +159,9 @@ class Creator(nc.Creator):
     def END_CANNED_CYCLE(self): return('G80')
     def TAP(self): return('G84')
     def TAP_DEPTH(self, format, depth): return(self.SPACE() + 'K' + (format.string(depth)))
+    def BORE_FEED_OUT(self): return('G85')
+    def BORE_SPINDLE_STOP_RAPID_OUT(self): return('G86')
+    def BORE_DWELL_FEED_OUT(self, format, dwell): return('G89') + self.SPACE() + (format % dwell)
 
     def X(self): return('X')
     def Y(self): return('Y')
@@ -210,6 +213,15 @@ class Creator(nc.Creator):
     ############################################################################
     ##  Programs
 
+    def program_begin(self, id, comment):
+        self.write( ('(' + comment + ')' + '\n') )
+        self.write_blocknum()
+        self.write( self.DISABLE_TOOL_LENGTH_COMPENSATION() + '\t(Ensure tool length compensation is OFF)\n' )
+        self.tool_length_compenstation_enabled = False
+        self.remove_temporary_origin()
+        for _coordinate_system_number in range(1,10):
+            self.work_offset(workplane=_coordinate_system_number, xy_plane_rotation=0.0)
+
     def program_begin(self, id, name=''):
 	if len(name) > 0:
         	self.write((self.PROGRAM() % id) + self.SPACE() + (self.COMMENT(name)))
@@ -217,6 +229,7 @@ class Creator(nc.Creator):
 
 	for _coordinate_system_number in range(1,10):
 		self.work_offset(workplane=_coordinate_system_number, xy_plane_rotation=0.0)
+
 
     def program_stop(self, optional=False):
         self.write_blocknum()
@@ -285,8 +298,12 @@ class Creator(nc.Creator):
         self.write( self.ABSOLUTE() + '\t (Absolute Coordinates)\n')
 
     def polar(self, on=True):
-        if (on) : self.g_list.append(self.POLAR_ON())
-        else : self.g_list.append(self.POLAR_OFF())
+        if (on) : 
+            self.write_blocknum()
+	    self.write(self.POLAR_ON() + '\t(Plar ON)\n' )
+        else :
+            self.write_blocknum()
+	    self.write(self.POLAR_OFF() + '\t(Plar OFF)\n' )
 
     def set_plane(self, plane):
         if (plane == 0) : 
@@ -351,26 +368,10 @@ class Creator(nc.Creator):
 
         self.write('\n')
 
-    def offset_radius(self, id, radius=None):
-        pass
-
-    def offset_length(self, id, length=None):
-        pass
-
-    def measure_and_offset_tool(self, distance=None, switch_offset_variable_name=None, fixture_offset_variable_name=None, feed_rate=None ):
-	"""Only implemented within EMC2 at the moment"""
-        pass
-
 
     ############################################################################
     ##  Datums
     
-    def datum_shift(self, x=None, y=None, z=None, a=None, b=None, c=None):
-        pass
-
-    def datum_set(self, x=None, y=None, z=None, a=None, b=None, c=None):
-        pass
-
     # This is the coordinate system we're using.  G54->G59, G59.1, G59.2, G59.3
     # These are selected by values from 1 to 9 inclusive.
     def workplane(self, id):
@@ -382,9 +383,6 @@ class Creator(nc.Creator):
             self.write_blocknum()
             self.write( ((self.WORKPLANE() % (6 + self.WORKPLANE_BASE())) + ('.%i' % (id - 6))) + '\t (Select Relative Coordinate System)\n')
         
-    def work_offset(self, workplane, x=None, y=None, z=None, a=None, b=None, c=None, xy_plane_rotation=None ):
-        pass
-
     ############################################################################
     ##  Rates + Modes
 
@@ -497,18 +495,6 @@ class Creator(nc.Creator):
         self.write_spindle()
         self.write_misc()
         self.write('\n')
-
-    def nurbs_begin_definition(self, id, degree=None, x=None, y=None, weight=None):
-	""" This routine has been implemented within emc2.py """
-        pass
-
-    def nurbs_add_pole(self, id, x=None, y=None, weight=None):
-	""" This routine has been implemented within emc2.py """
-        pass
-
-    def nurbs_end_definition(self, id):
-	""" This routine has been implemented within emc2.py """
-        pass
 
     def same_xyz(self, x=None, y=None, z=None):
         if (x != None):
@@ -623,12 +609,6 @@ class Creator(nc.Creator):
         self.write_misc()
         self.write('\n')
 
-    def rapid_home(self, x=None, y=None, z=None, a=None, b=None, c=None):
-        pass
-
-    def rapid_unhome(self):
-        pass
-
     def set_machine_coordinates(self):
         self.write(self.SPACE() + self.MACHINE_COORDINATES())
         self.prev_g0123 = ''
@@ -659,15 +639,6 @@ class Creator(nc.Creator):
 
     ############################################################################
     ##  Cycles
-
-    def pattern(self):
-        pass
-
-    def pocket(self):
-        pass
-
-    def profile(self):
-        pass
 
     def boring(self, x=None, y=None, z=None, depth=None, standoff=None, dwell=None, retract_mode=None, spindle_mode=None, clearance_height=None):
     	"""
@@ -943,9 +914,6 @@ class Creator(nc.Creator):
 
         self.z = retract_height	# this cycle returns to the start position, so remember that as z value
         
-    def bore(self, x=None, y=None, z=None, zretract=None, depth=None, standoff=None, dwell_bottom=None, feed_in=None, feed_out=None, stoppos=None, shift_back=None, shift_right=None, backbore=False, stop=False):
-        pass
-
     def end_canned_cycle(self):
         self.write_blocknum()
         self.write(self.END_CANNED_CYCLE() + '\n')
@@ -954,17 +922,13 @@ class Creator(nc.Creator):
         self.prev_z = ''   
         self.prev_f = '' 
         self.prev_retract = ''    
+    
     ############################################################################
     ##  Misc
 
     def comment(self, text):
+        self.write_blocknum()
         self.write((self.COMMENT(text) + '\n'))
-
-    def insert(self, text):
-        pass
-
-    def block_delete(self, on=False):        
-        pass
 
     def variable(self, id):
         return (self.VARIABLE() % id)
@@ -972,47 +936,6 @@ class Creator(nc.Creator):
     def variable_set(self, id, value):
         self.write_blocknum()
         self.write(self.SPACE() + (self.VARIABLE() % id) + self.SPACE() + (self.VARIABLE_SET() % value) + '\n')
-
-    def probe_single_point(self, \
-				point_along_edge_x=None, point_along_edge_y=None, depth=None, \
-				retracted_point_x=None, retracted_point_y=None, \
-				destination_point_x=None, destination_point_y=None, \
-				intersection_variable_x=None, intersection_variable_y=None, \
-				probe_offset_x_component=None, probe_offset_y_component=None ):
-        """
-        	NOTE: Only supported in EMC2 due to the verbose variable names passed in
-        """
-        pass
-
-    def probe_grid(self, x_increment, x_count, y_increment, y_count, z_safety, z_probe, feed_rate, filename):
-	pass
-
-    def probe_downward_point(self, depth=None, intersection_variable_z=None, touch_off_as_z=None, rapid_down_to_height=None, feedrate=None):
-        """
-        	NOTE: Only supported in EMC2 due to the verbose variable names passed in
-        """
-	pass
-
-    def report_probe_results(self, x1=None, y1=None, z1=None, x2=None, y2=None, z2=None, x3=None, y3=None, z3=None, x4=None, y4=None, z4=None, x5=None, y5=None, z5=None, x6=None, y6=None, z6=None, xml_file_name=None ):
-        pass
-
-    def open_log_file(self, xml_file_name=None ):
-        pass
-
-    def log_coordinate(self, x=None, y=None, z=None):
-        pass
-
-    def message(self, text=None):
-        pass
-
-    def debug_message(self, message=None):
-        pass
-
-    def log_message(self, message=None):
-        pass
-
-    def close_log_file(self):
-        pass
 
     # Rapid movement to the midpoint between the two points specified.
     # NOTE: The points are specified either as strings representing numbers or as strings
@@ -1032,98 +955,6 @@ class Creator(nc.Creator):
 
         self.write('\n')
 
-    # Rapid movement to the intersection of two lines (in the XY plane only). This routine
-    # is based on information found in http://local.wasp.uwa.edu.au/~pbourke/geometry/lineline2d/
-    # written by Paul Bourke.  The ua_numerator, ua_denominator, ua and ub parameters
-    # represent variable names (with the preceding '#' included in them) for use as temporary
-    # variables.  They're specified here simply so that HeeksCNC can manage which variables
-    # are used in which GCode calculations.
-    #
-    # As per the notes on the web page, the ua_denominator and ub_denominator formulae are
-    # the same so we don't repeat this.  If the two lines are coincident or parallel then
-    # no movement occurs.
-    #
-    # NOTE: The points are specified either as strings representing numbers or as strings
-    # representing variable names.  This allows the HeeksCNC module to determine which
-    # variable names are used in these various routines.
-    def rapid_to_intersection(self, x1, y1, x2, y2, x3, y3, x4, y4, intersection_x, intersection_y, ua_numerator, ua_denominator, ua, ub_numerator, ub):
-        self.comment('Find the intersection of the two lines made up by the four probed points')
-        self.write_blocknum();
-        self.write(ua_numerator + '=[[[' + x4 + ' - ' + x3 + '] * [' + y1 + ' - ' + y3 + ']] - [[' + y4 + ' - ' + y3 + '] * [' + x1 + ' - ' + x3 + ']]]\n')
-        self.write_blocknum();
-        self.write(ua_denominator + '=[[[' + y4 + ' - ' + y3 + '] * [' + x2 + ' - ' + x1 + ']] - [[' + x4 + ' - ' + x3 + '] * [' + y2 + ' - ' + y1 + ']]]\n')
-        self.write_blocknum();
-        self.write(ub_numerator + '=[[[' + x2 + ' - ' + x1 + '] * [' + y1 + ' - ' + y3 + ']] - [[' + y2 + ' - ' + y1 + '] * [' + x1 + ' - ' + x3 + ']]]\n')
-
-        self.comment('If they are not parallel')
-        self.write('O900 IF [' + ua_denominator + ' NE 0]\n')
-        self.comment('And if they are not coincident')
-        self.write('O901    IF [' + ua_numerator + ' NE 0 ]\n')
-
-        self.write_blocknum();
-        self.write('       ' + ua + '=[' + ua_numerator + ' / ' + ua_denominator + ']\n')
-        self.write_blocknum();
-        self.write('       ' + ub + '=[' + ub_numerator + ' / ' + ua_denominator + ']\n') # NOTE: ub denominator is the same as ua denominator
-        self.write_blocknum();
-        self.write('       ' + intersection_x + '=[' + x1 + ' + [[' + ua + ' * [' + x2 + ' - ' + x1 + ']]]]\n')
-        self.write_blocknum();
-        self.write('       ' + intersection_y + '=[' + y1 + ' + [[' + ua + ' * [' + y2 + ' - ' + y1 + ']]]]\n')
-        self.write_blocknum();
-        self.write('       ' + self.RAPID())
-        self.write(' X ' + intersection_x + ' Y ' + intersection_y + '\n')
-
-        self.write('O901    ENDIF\n')
-        self.write('O900 ENDIF\n')
-
-    # We need to calculate the rotation angle based on the line formed by the
-    # x1,y1 and x2,y2 coordinate pair.  With that angle, we need to move
-    # x_offset and y_offset distance from the current (0,0,0) position.
-    #
-    # The x1,y1,x2 and y2 parameters are all variable names that contain the actual
-    # values.
-    # The x_offset and y_offset are both numeric (floating point) values
-    #
-    # If the coordinate_system_number is positive (and defined) then issue
-    # the commands necessary to set the XY plane rotation value (i.e. around the Z axis).
-    #
-    def rapid_to_rotated_coordinate(self, x1, y1, x2, y2, ref_x, ref_y, x_current, y_current, x_final, y_final, coordinate_system_number ):
-        self.comment('Rapid to rotated coordinate')
-        self.write_blocknum();
-        self.write( '#1 = [atan[' + y2 + ' - ' + y1 + ']/[' + x2 +' - ' + x1 + ']] (nominal_angle)\n')
-        self.write_blocknum();
-        self.write( '#2 = [atan[' + ref_y + ']/[' + ref_x + ']] (reference angle)\n')
-        self.write_blocknum();
-        self.write( '#3 = [#1 - #2] (angle)\n' )
-        self.write_blocknum();
-        self.write( '#4 = [[[' + (self.fmt.string(0)) + ' - ' + (self.fmt.string(x_current)) + '] * COS[ #3 ]] - [[' + (self.fmt.string(0)) + ' - ' + (self.fmt.string(y_current)) + '] * SIN[ #3 ]]]\n' )
-        self.write_blocknum();
-        self.write( '#5 = [[[' + (self.fmt.string(0)) + ' - ' + (self.fmt.string(x_current)) + '] * SIN[ #3 ]] + [[' + (self.fmt.string(0)) + ' - ' + (self.fmt.string(y_current)) + '] * COS[ #3 ]]]\n' )
-
-        self.write_blocknum();
-        self.write( '#6 = [[' + (self.fmt.string(x_final)) + ' * COS[ #3 ]] - [' + (self.fmt.string(y_final)) + ' * SIN[ #3 ]]]\n' )
-        self.write_blocknum();
-        self.write( '#7 = [[' + (self.fmt.string(y_final)) + ' * SIN[ #3 ]] + [' + (self.fmt.string(y_final)) + ' * COS[ #3 ]]]\n' )
-
-        self.write_blocknum();
-        self.write( self.RAPID() + ' X [ #4 + #6 ] Y [ #5 + #7 ]\n' )
-
-	if coordinate_system_number != None and coordinate_system_number > 0:
-		self.write_blocknum();
-		self.write( 'G10 L2 P' + str(coordinate_system_number) + ' R [ #3 ] (set to XY plane rotation based on the probed points)\n' )
-		self.write_blocknum();
-		self.write( '(DEBUG,XY plane is rotated [ #3 ] degrees)\n' )
-
-    def BEST_POSSIBLE_SPEED(self, motion_blending_tolerance, naive_cam_tolerance): 
-	    statement = 'G64'
-
-	    if (motion_blending_tolerance > 0):
-		    statement += ' P ' + str(motion_blending_tolerance)
-
-	    if (naive_cam_tolerance > 0):
-		    statement += ' Q ' + str(naive_cam_tolerance)
-
-	    return(statement)
-            
     def set_path_control_mode(self, mode, motion_blending_tolerance, naive_cam_tolerance ):
         self.write_blocknum()
         if (mode == 0):
