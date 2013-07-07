@@ -46,13 +46,6 @@ class Creator(iso.Creator):
 	def SPACE(self): return(' ')
 	def WORK_OFFSET(self): return('G10 L20' + self.SPACE())
 
-	def COMMENT(self,comment):
-		# Replace any embedded round brackets with curly braces so that the EMC2 GCode
-		# interpreter will not have trouble with the nested comment format.
-		_comment = comment.replace('(','{')
-		_comment = _comment.replace(')','}')
-		return( ('(%s)' % _comment ) )
-
 	def report_probe_results(self, x1=None, y1=None, z1=None, \
 					x2=None, y2=None, z2=None, \
 					x3=None, y3=None, z3=None, \
@@ -428,22 +421,6 @@ class Creator(iso.Creator):
 		_message = _message.replace(')','}')
 		self.write_blocknum()
 		self.write('(MSG,' + _message + ')\n')
-		
-	def start_CRC(self, left = True, radius = 0.0):
-		if self.t == None:
-			raise "No tool specified for start_CRC()"
-		self.write_blocknum()
-		if left:
-			self.write(('G41' + self.SPACE() + 'D%i') % self.t  + '\t(start left cutter radius compensation)\n' )
-		else:
-			self.write(('G42' + self.SPACE() + 'D%i') % self.t  + '\t(start right cutter radius compensation)\n' )
-
-	def end_CRC(self):
-		self.g = 'G40'
-		self.write_blocknum()
-		self.write_preps()
-		self.write_misc()
-		self.write('\t(end cutter radius compensation)\n')
 		
 	def tool_defn(self, id, name='', radius=None, length=None, gradient=None):
 		pass

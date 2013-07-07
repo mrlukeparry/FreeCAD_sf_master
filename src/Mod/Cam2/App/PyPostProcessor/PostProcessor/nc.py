@@ -107,7 +107,7 @@ class Creator:
 	"""
 	We use sys.stdout.write(s) to avoid the implicit space and newline characters
 	added by the print() call.  This ends up calling the PythonStdout::write() method
-	in PostProcessor.cpp anyway.
+	in PostProcessor.cpp.
 	"""
         sys.stdout.write(s)
 

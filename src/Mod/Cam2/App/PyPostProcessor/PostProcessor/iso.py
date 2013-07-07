@@ -100,7 +100,14 @@ class Creator(nc.Creator):
     def FORMAT_DWELL(self): return('P%f')
 
     def BLOCK(self): return('N%i')
-    def COMMENT(self,comment): return( ('(%s)' % comment ) )
+
+    def COMMENT(self,comment):
+	# Replace any embedded round brackets with curly braces so that the GCode
+	# interpreter does not have trouble with nested comments.
+	_comment = comment.replace('(','{')
+	_comment = _comment.replace(')','}')
+        return( ('(%s)' % _comment ) )
+
     def VARIABLE(self): return( '#%i')
     def VARIABLE_SET(self): return( '=%.3f')
 
@@ -280,14 +287,15 @@ class Creator(nc.Creator):
     ##  Settings
     
     def imperial(self):
-        self.g_list.append(self.IMPERIAL())
+        self.write_blocknum()
+	self.write( self.IMPERIAL() + '\t(Imperial Values)\n')
         self.fmt.number_of_decimal_places = 4
 	self.gcode_is_metric = False
 
     def metric(self):
         self.write_blocknum()
-        self.fmt.number_of_decimal_places = 3
         self.write( self.METRIC() + '\t (Metric Values)\n' )
+        self.fmt.number_of_decimal_places = 3
 	self.gcode_is_metric = True
 
     def machine_units_metric(self, is_metric):
@@ -623,19 +631,17 @@ class Creator(nc.Creator):
         return self.useCrcCenterline
 
     def start_CRC(self, left = True, radius = 0.0):
-        # set up prep code, to be output on next line
         if self.t == None:
             raise "No tool specified for start_CRC()"
         self.write_blocknum()
         if left:
-            self.write(self.SPACE() + 'G41')
+            self.write(('G41' + self.SPACE() + 'D%i') % self.t  + '\t(start left cutter radius compensation)\n' )
         else:
-            self.write(self.SPACE() + 'G42')
-        self.write((self.SPACE() + 'D%i\n') % self.t)
+            self.write(('G42' + self.SPACE() + 'D%i') % self.t  + '\t(start right cutter radius compensation)\n' )
 
     def end_CRC(self):
         self.write_blocknum()
-        self.write(self.SPACE() + 'G40\n')
+        self.write(self.SPACE() + 'G40\t(end cutter radius compensation)\n')
 
     ############################################################################
     ##  Cycles
