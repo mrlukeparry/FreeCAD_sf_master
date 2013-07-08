@@ -331,7 +331,7 @@ class Creator:
         """Profile routine"""
         raise RuntimeError( __name__ + ' not implemented' )
 
-    def drill(self, x=None, y=None, z=None, depth=None, standoff=None, dwell=None, peck_depth=None, retract_mode=None, spindle_mode=None):
+    def drill(self, x=None, y=None, z=None, depth=None, standoff=None, dwell=None, peck_depth=None, retract_mode=None, clearance_height=None):
         """Drilling routines"""
         raise RuntimeError( __name__ + ' not implemented' )
 
@@ -663,8 +663,8 @@ def pocket():
 def profile():
     creator.profile()
 
-def drill(x=None, y=None, z=None, depth=None, standoff=None, dwell=None, peck_depth=None, retract_mode=None, spindle_mode=None):
-    creator.drill(x, y, z, depth, standoff, dwell, peck_depth, retract_mode, spindle_mode)
+def drill(x=None, y=None, z=None, depth=None, standoff=None, dwell=None, peck_depth=None, retract_mode=None, clearance_height=None):
+    creator.drill(x, y, z, depth, standoff, dwell, peck_depth, retract_mode, clearance_height)
 
 def tap(x=None, y=None, z=None, zretract=None, depth=None, standoff=None, dwell_bottom=None, pitch=None, stoppos=None, spin_in=None, spin_out=None, tap_mode=None, direction=None):
     creator.tap(x, y, z, zretract, depth, standoff, dwell_bottom, pitch, stoppos, spin_in, spin_out, tap_mode, direction)
