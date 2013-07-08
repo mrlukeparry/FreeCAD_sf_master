@@ -55,6 +55,14 @@ public:
     virtual ToolPath *getToolPath();
 
 private:
+	static QString SettingName_Depth;
+	static QString SettingName_Standoff;
+	static QString SettingName_Dwell;
+	static QString SettingName_PeckDepth;
+	static QString SettingName_RetractMode;
+	static QString SettingName_Clearance;
+
+private:
 	ToolPath *toolpath;	// cache of toolpath from last call of the run() method.
 };
 
