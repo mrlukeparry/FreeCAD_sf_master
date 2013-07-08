@@ -99,13 +99,16 @@ QString ToolPath::PythonString( const QString value ) const
 {
 	QString _value(value);
 	QString result;
-	if (_value.startsWith(QString::fromAscii("\'")) || (_value.startsWith(QString::fromAscii("\""))))
+
+	if (_value.startsWith(QString::fromAscii("\'")) && (_value.endsWith(QString::fromAscii("\'"))))
 	{
 		_value.remove(0, 1);
+		_value.remove(_value.length()-1, 1);
 	}
 
-	if ((_value.endsWith(QString::fromAscii("\'"))) || (_value.endsWith(QString::fromAscii("\""))))
+	if (_value.startsWith(QString::fromAscii("\"")) && (_value.endsWith(QString::fromAscii("\""))))
 	{
+		_value.remove(0, 1);
 		_value.remove(_value.length()-1, 1);
 	}
 
