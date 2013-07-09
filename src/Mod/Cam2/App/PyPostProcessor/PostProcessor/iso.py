@@ -50,15 +50,10 @@ class Creator(nc.Creator):
         self.b = 0
         self.c = 0
         self.f = Address('F', fmt = Format(number_of_decimal_places = 2))
-        self.fh = None
-        self.fv = None
-        self.fhv = False
         self.g_plane = Address('G', fmt = Format(number_of_decimal_places = 0))
-        self.g_list = []
         self.i = 0
         self.j = 0
         self.k = 0
-        self.m = []
         self.n = 10
         self.r = 0
         self.s = AddressPlusMinus('S', fmt = Format(number_of_decimal_places = 2), modal = False)
@@ -66,10 +61,7 @@ class Creator(nc.Creator):
         self.x = 0
         self.y = 0
         self.z = 500
-        self.g0123_modal = False
-        self.drill_modal = False
         self.prev_f = ''
-        self.prev_g0123 = ''
         self.prev_drill = ''
         self.prev_retract = ''
         self.prev_z = ''
@@ -79,9 +71,6 @@ class Creator(nc.Creator):
         self.fmt = Format()
         self.ffmt = Format(number_of_decimal_places = 2)
         self.sfmt = Format(number_of_decimal_places = 1)
-        self.arc_centre_absolute = False
-        self.arc_centre_positive = False
-        self.in_arc_splitting = False
         self.machine_coordinates = False
 	self.tool_length_compenstation_enabled = False
 	self.gcode_is_metric = True
@@ -93,7 +82,7 @@ class Creator(nc.Creator):
     ##  Codes
 
     def SPACE(self): return(' ')
-    def FEEDRATE(self): return((self.SPACE() + 'F')) 
+    def FEEDRATE(self): return('F') 
     def FORMAT_FEEDRATE(self): return('%.2f') 
     def FORMAT_ANG(self): return('%.1f')
     def FORMAT_TIME(self): return('%.2f')
@@ -198,25 +187,10 @@ class Creator(nc.Creator):
     ############################################################################
     ##  Internals
 
-    def write_feedrate(self):
-        self.write(self.f)
-
-    def write_preps(self):
-        self.g_plane.write(self)
-        for g in self.g_list:
-            self.write(self.SPACE() + 'G' + g)
-        self.g_list = []
-
-    def write_misc(self):
-        if (len(self.m)) : self.write(self.m.pop())
-
     def write_blocknum(self):
         self.write((self.BLOCK() % self.n) + self.SPACE())
         self.n += 10
         
-    def write_spindle(self):
-        self.s.write(self)
-
     ############################################################################
     ##  Programs
 
@@ -241,11 +215,9 @@ class Creator(nc.Creator):
     def program_stop(self, optional=False):
         self.write_blocknum()
         if (optional) : 
-            self.write(self.SPACE() + self.STOP_OPTIONAL() + '\n')
-            self.prev_g0123 = ''
+            self.write(self.STOP_OPTIONAL() + '\n')
         else : 
             self.write(self.STOP() + '\n')
-            self.prev_g0123 = ''
 
 
     def program_end(self):
@@ -258,15 +230,8 @@ class Creator(nc.Creator):
 		self.work_offset(workplane=_coordinate_system_number, xy_plane_rotation=0.0)
 
         self.write_blocknum()
-        self.write(self.SPACE() + self.PROGRAM_END() + '\n')
+        self.write(self.PROGRAM_END() + '\n')
 
-
-    def flush_nc(self):
-        if len(self.g_list) == 0 and len(self.m) == 0: return
-        self.write_blocknum()
-        self.write_preps()
-        self.write_misc()
-        self.write('\n')
 
     ############################################################################
     ##  Subprograms
@@ -277,11 +242,11 @@ class Creator(nc.Creator):
 
     def sub_call(self, id):
         self.write_blocknum()
-        self.write(self.SPACE() + (self.SUBPROG_CALL() % id) + '\n')
+        self.write((self.SUBPROG_CALL() % id) + '\n')
 
     def sub_end(self):
         self.write_blocknum()
-        self.write(self.SPACE() + self.SUBPROG_END() + '\n')
+        self.write(self.SUBPROG_END() + '\n')
 
     ############################################################################
     ##  Settings
@@ -395,24 +360,12 @@ class Creator(nc.Creator):
     ##  Rates + Modes
 
     def feedrate(self, f):
-        self.f = self.SPACE() + self.FEEDRATE() + self.ffmt.string(f)
-        self.fhv = False
-
-    def feedrate_hv(self, fh, fv):
-        self.fh = fh
-        self.fv = fv
-        self.fhv = True
-	self.calc_feedrate_hv( fh, fv )
-
-    def calc_feedrate_hv(self, h, v):
-        if math.fabs(v) > math.fabs(h * 2):
-            # some horizontal, so it should be fine to use the horizontal feed rate
-            self.f = self.SPACE() + self.FEEDRATE() + self.ffmt.string(self.fv)
-        else:
-            # not much, if any horizontal component, so use the vertical feed rate
-            self.f = self.SPACE() + self.FEEDRATE() + self.ffmt.string(self.fh)
+        self.write_blocknum()
+	self.write(self.FEEDRATE() + self.ffmt.string(f) + '\n')
+	self.f = f
 
     def spindle(self, s, clockwise):
+	self.s = s
         if s <= 0.0:
             self.write_blocknum()
             self.write(self.SPINDLE_STOPPED() + '\n')
@@ -426,13 +379,23 @@ class Creator(nc.Creator):
 	    self.write( 'S' + str(s) + self.SPACE() + self.SPINDLE_CCW() + '\n')
 
     def coolant(self, mode=0):
-        if (mode <= 0) : self.m.append(self.SPACE() + self.COOLANT_OFF())
-        elif (mode == 1) : self.m.append(self.SPACE() + self.COOLANT_MIST())
-        elif (mode == 2) : self.m.append(self.SPACE() + self.COOLANT_FLOOD())
+        if (mode <= 0) :   
+            self.write_blocknum()
+	    self.write(self.COOLANT_OFF() + '\n')
+        elif (mode == 1) :
+            self.write_blocknum()
+	    self.write(self.COOLANT_MIST() + '\n')
+        elif (mode == 2) : 
+            self.write_blocknum()
+	    self.write(self.COOLANT_FLOOD() + '\n')
 
     def gearrange(self, gear=0):
-        if (gear <= 0) : self.m.append(self.SPACE() + self.GEAR_OFF())
-        elif (gear <= 4) : self.m.append(self.SPACE() + self.GEAR() % (gear + GEAR_BASE()))
+        if (gear <= 0) :
+            self.write_blocknum()
+            self.write(self.GEAR_OFF() + '\n')
+        elif (gear <= 4) :
+            self.write_blocknum()
+	    self.write(self.GEAR() % (gear + GEAR_BASE()) + '\n')
 
     ############################################################################
     ##  Moves
@@ -443,13 +406,7 @@ class Creator(nc.Creator):
         if self.machine_coordinates != False or (machine_coordinates != None and machine_coordinates == True):
             self.write( self.MACHINE_COORDINATES() + self.SPACE() )
 
-        if self.g0123_modal:
-            if self.prev_g0123 != self.RAPID():
-                self.write(self.RAPID())
-                self.prev_g0123 = self.RAPID()
-        else:
-            self.write(self.RAPID())
-        self.write_preps()
+        self.write(self.RAPID())
         if (x != None):
             self.write(self.SPACE() + self.X() + (self.fmt.string(x)))
             self.x = x
@@ -471,20 +428,12 @@ class Creator(nc.Creator):
         if (c != None):
             self.write(self.SPACE() + self.C() + (self.fmt.string(c)))
             self.c = c
-        self.write_spindle()
-        self.write_misc()
         self.write('\n')
 
     def feed(self, x=None, y=None, z=None):
         if self.same_xyz(x, y, z): return
         self.write_blocknum()
-        if self.g0123_modal:
-            if self.prev_g0123 != self.FEED():
-                self.write(self.FEED())
-                self.prev_g0123 = self.FEED()
-        else:
-            self.write(self.FEED())
-        self.write_preps()
+        self.write(self.FEED())
         dx = dy = dz = 0
         if (x != None):
             self.write(self.SPACE() + self.X() + (self.fmt.string(x)))
@@ -498,10 +447,6 @@ class Creator(nc.Creator):
             self.write(self.SPACE() + self.Z() + (self.fmt.string(z)))
 	    dz = z - self.z
             self.z = z
-        if (self.fhv) : self.calc_feedrate_hv(math.sqrt(dx*dx+dy*dy), math.fabs(dz))
-        self.write_feedrate()
-        self.write_spindle()
-        self.write_misc()
         self.write('\n')
 
     def same_xyz(self, x=None, y=None, z=None):
@@ -545,16 +490,9 @@ class Creator(nc.Creator):
     def arc(self, cw, x=None, y=None, z=None, i=None, j=None, k=None, r=None):
         #if self.same_xyz(x, y, z): return
         self.write_blocknum()
-        arc_g_code = ''
-        if cw: arc_g_code = self.ARC_CW()
-        else: arc_g_code = self.ARC_CCW()
-        if self.g0123_modal:
-            if self.prev_g0123 != arc_g_code:
-                self.write(arc_g_code)
-                self.prev_g0123 = arc_g_code
-        else:
-            self.write(arc_g_code)
-        self.write_preps()
+        if cw: self.write(self.ARC_CW())
+        else:  self.write(self.ARC_CCW())
+
         if (x != None):
             self.write(self.SPACE() + self.X() + (self.fmt.string(x)))
         if (y != None):
@@ -562,40 +500,14 @@ class Creator(nc.Creator):
         if (z != None):
             self.write(self.SPACE() + self.Z() + (self.fmt.string(z)))
         if (i != None):
-            if self.arc_centre_absolute == False:
-                i = i - self.x
-            s = self.fmt.string(i)
-            if self.arc_centre_positive == True:
-                if s[0] == '-':
-                    s = s[1:]
-            self.write(self.SPACE() + self.CENTRE_X() + s)
+            self.write(self.SPACE() + self.CENTRE_X() + self.fmt.string(i))
         if (j != None):
-            if self.arc_centre_absolute == False:
-                j = j - self.y
-            s = self.fmt.string(j)
-            if self.arc_centre_positive == True:
-                if s[0] == '-':
-                    s = s[1:]
-            self.write(self.SPACE() + self.CENTRE_Y() + s)
+            self.write(self.SPACE() + self.CENTRE_Y() + self.fmt.string(j))
         if (k != None):
-            if self.arc_centre_absolute == False:
-                k = k - self.z
-            s = self.fmt.string(k)
-            if self.arc_centre_positive == True:
-                if s[0] == '-':
-                    s = s[1:]
-            self.write(self.SPACE() + self.CENTRE_Z() + s)
+            self.write(self.SPACE() + self.CENTRE_Z() + self.fmt.string(k))
         if (r != None):
-            s = self.fmt.string(r)
-            if self.arc_centre_positive == True:
-                if s[0] == '-':
-                    s = s[1:]
-            self.write(self.SPACE() + self.RADIUS() + s)
+            self.write(self.SPACE() + self.RADIUS() + self.fmt.string(r))
 #       use horizontal feed rate
-        if (self.fhv) : self.calc_feedrate_hv(1, 0)
-        self.write_feedrate()
-        self.write_spindle()
-        self.write_misc()
         self.write('\n')
         if (x != None):
             self.x = x
@@ -612,14 +524,8 @@ class Creator(nc.Creator):
 
     def dwell(self, t):
         self.write_blocknum()
-        self.write_preps()
         self.write(self.DWELL() + (self.TIME() % t))
-        self.write_misc()
         self.write('\n')
-
-    def set_machine_coordinates(self):
-        self.write(self.SPACE() + self.MACHINE_COORDINATES())
-        self.prev_g0123 = ''
 
     ############################################################################
     ##  CRC
@@ -685,7 +591,6 @@ class Creator(nc.Creator):
 	self.rapid(x=x,y=y)
 	self.rapid(z=standoff)
 	
-	self.write_preps()
 	self.write_blocknum()
         
 	if (dwell == None) or (dwell == 0):
@@ -743,24 +648,11 @@ class Creator(nc.Creator):
                       
         dz = (z + standoff) - self.z # In the end, we will be standoff distance above the z value passed in.
 
-        if self.drill_modal:
-            if z != self.prev_z:
-                self.write(self.SPACE() + self.Z() + (self.fmt.string(z - depth)))
-                self.prev_z=z
-        else:             
-            self.write(self.SPACE() + self.Z() + (self.fmt.string(z - depth)))    # This is the 'z' value for the bottom of the hole.
-            self.z = (z + standoff)            # We want to remember where z is at the end (at the top of the hole)
+        self.write(self.SPACE() + self.Z() + (self.fmt.string(z - depth)))    # This is the 'z' value for the bottom of the hole.
+        self.z = (z + standoff)            # We want to remember where z is at the end (at the top of the hole)
 
-        if self.drill_modal:
-            if self.prev_retract  != self.RETRACT(self.fmt, retract_height) :
-                self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))               
-                self.prev_retract = self.RETRACT(self.fmt, retract_height)
-        else:              
-            self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))
+        self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))
            
-        self.write_feedrate()
-        self.write_spindle()            
-        self.write_misc()    
         self.write('\n')
        
 	self.rapid(z=clearance_height)
@@ -801,7 +693,6 @@ class Creator(nc.Creator):
 	self.rapid(x=x,y=y)
 	self.rapid(z=standoff)
 	
-        self.write_preps()
         self.write_blocknum()
         
         if (peck_depth != 0):        
@@ -814,42 +705,24 @@ class Creator(nc.Creator):
                 self.write(self.DRILL())  
             else:        
                 # We're drilling with dwell.
-
-                if self.drill_modal:       
-                   self.write(self.DRILL_WITH_DWELL(self.FORMAT_DWELL(),dwell))  
+                self.write(self.DRILL_WITH_DWELL(self.FORMAT_DWELL(),dwell))  
     
     # Set the retraction point to the 'standoff' distance above the starting z height.        
         retract_height = z + standoff        
         if (x != None):        
-            dx = x - self.x        
             self.write(self.SPACE() + self.X() + (self.fmt.string(x)))        
             self.x = x 
        
         if (y != None):        
-            dy = y - self.y        
             self.write(self.SPACE() + self.Y() + (self.fmt.string(y)))        
             self.y = y
                       
         dz = (z + standoff) - self.z # In the end, we will be standoff distance above the z value passed in.
 
-        if self.drill_modal:
-            if z != self.prev_z:
-                self.write(self.SPACE() + self.Z() + (self.fmt.string(z - depth)))
-                self.prev_z=z
-        else:             
-            self.write(self.SPACE() + self.Z() + (self.fmt.string(z - depth)))    # This is the 'z' value for the bottom of the hole.
-            self.z = (z + standoff)            # We want to remember where z is at the end (at the top of the hole)
+        self.write(self.SPACE() + self.Z() + (self.fmt.string(z - depth)))    # This is the 'z' value for the bottom of the hole.
+        self.z = (z + standoff)            # We want to remember where z is at the end (at the top of the hole)
 
-        if self.drill_modal:
-            if self.prev_retract  != self.RETRACT(self.fmt, retract_height) :
-                self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))               
-                self.prev_retract = self.RETRACT(self.fmt, retract_height)
-        else:              
-            self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))
-           
-        self.write_feedrate()
-        self.write_spindle()            
-        self.write_misc()    
+        self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))
         self.write('\n')
        
 	self.rapid(z=clearance_height)
@@ -884,11 +757,6 @@ class Creator(nc.Creator):
 	if (clearance_height == None):
 		clearance_height = standoff
 
-        self.write_preps()
-        self.write_blocknum()				
-        self.write_spindle()
-        self.write('\n')
-
         # rapid to starting point; z first, then x,y iff given
 
         # Set the retraction point to the 'standoff' distance above the starting z height.		
@@ -918,7 +786,6 @@ class Creator(nc.Creator):
         self.write( self.TAP_DEPTH(self.ffmt,pitch) + self.SPACE() )			
         self.write(self.Z() + self.fmt.string(z - depth))	# This is the 'z' value for the bottom of the tap.
         self.write(self.RETRACT( self.ffmt, retract_height))	# This is the 'z' value at the top of the tap.
-        self.write_misc()	
         self.write('\n')
 
         self.z = retract_height	# this cycle returns to the start position, so remember that as z value
@@ -927,10 +794,9 @@ class Creator(nc.Creator):
         self.write_blocknum()
         self.write(self.END_CANNED_CYCLE() + '\n')
         self.prev_drill = ''
-        self.prev_g0123 = ''
         self.prev_z = ''   
         self.prev_f = '' 
-        self.prev_retract = ''    
+        self.prev_retract = ''
     
     ############################################################################
     ##  Misc

@@ -258,10 +258,6 @@ class Creator:
         """Set the feedrate"""
         raise RuntimeError( __name__ + ' not implemented' )
 
-    def feedrate_hv(self, fh, fv):
-        """Set the horizontal and vertical feedrates"""
-        raise RuntimeError( __name__ + ' not implemented' )
-
     def spindle(self, s, clockwise=True):
         """Set the spindle speed"""
         raise RuntimeError( __name__ + ' not implemented' )
@@ -303,10 +299,6 @@ class Creator:
 
     def rapid_unhome(self):
         """Return from rapid home"""
-        raise RuntimeError( __name__ + ' not implemented' )
-
-    def set_machine_coordinates(self):
-        """Set machine coordinates"""
         raise RuntimeError( __name__ + ' not implemented' )
 
     ############################################################################
@@ -597,9 +589,6 @@ def mirror_line(line=None):
 def feedrate(f):
     creator.feedrate(f)
 
-def feedrate_hv(fh, fv):
-    creator.feedrate_hv(fh, fv)
-
 def spindle(s, clockwise=True):
     creator.spindle(s, clockwise)
 
@@ -632,9 +621,6 @@ def rapid_home(x=None, y=None, z=None, a=None, b=None, c=None):
 
 def rapid_unhome():
     creator.rapid_unhome()
-
-def set_machine_coordinates():
-    creator.set_machine_coordinates()
 
 ############################################################################
 ##  Cutter radius compensation

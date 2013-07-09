@@ -61,11 +61,49 @@ namespace Cam {
 
 // Define the names used for this TPG's settings once here to avoid inconsistencies.
 /* static */ QString CppExampleTPG::SettingName_Depth = QString::fromAscii("Relative Depth");
-/* static */ QString CppExampleTPG::SettingName_Standoff = QString::fromAscii("standoff");
-/* static */ QString CppExampleTPG::SettingName_Dwell = QString::fromAscii("dwell");
-/* static */ QString CppExampleTPG::SettingName_PeckDepth = QString::fromAscii("peck_depth");
-/* static */ QString CppExampleTPG::SettingName_RetractMode = QString::fromAscii("retract_mode");
-/* static */ QString CppExampleTPG::SettingName_Clearance = QString::fromAscii("clearance_relative_height");
+/* static */ QString CppExampleTPG::SettingName_Standoff = QString::fromAscii("Standoff");
+/* static */ QString CppExampleTPG::SettingName_Dwell = QString::fromAscii("Dwell");
+/* static */ QString CppExampleTPG::SettingName_PeckDepth = QString::fromAscii("Peck Depth");
+/* static */ QString CppExampleTPG::SettingName_RetractMode = QString::fromAscii("Retract Mode");
+/* static */ QString CppExampleTPG::SettingName_Clearance = QString::fromAscii("Clearance Relative Height");
+/* static */ QString CppExampleTPG::SettingName_SpindleSpeed = QString::fromAscii("Spindle Speed");
+/* static */ QString CppExampleTPG::SettingName_FeedRate = QString::fromAscii("Feed Rate");
+
+
+/* friend */ QString & operator<< ( QString & buf, const CppExampleTPG::RetractMode_t & retract_mode )
+{
+	switch (retract_mode)
+	{
+	case CppExampleTPG::eRapidRetract:
+		buf += QString::fromAscii("Rapid");
+		return(buf);
+
+	case CppExampleTPG::eFeedRetract:
+		buf += QString::fromAscii("At Feed Rate");
+		return(buf);
+	} // End switch
+
+	return(buf);
+}
+
+
+/**
+	Itterate through the various RetractMode_t values and use the operator<<(QString) method
+	to generate the text string for each value in turn.  That way we have a single place in
+	the code that associates the RetractMode_t enumerated value to the QString representation.
+ */
+CppExampleTPG::RetractMode_t CppExampleTPG::toRetractMode( const QString string_representation ) const
+{
+	for (RetractMode_t mode = eRapidRetract; mode <= eFeedRetract; mode = RetractMode_t(int(mode)+1))
+	{
+		QString str;
+		str << mode;
+		if (str == string_representation) return(mode);
+	}
+
+	return(eRapidRetract);	// Should never get here.
+}
+
 
 CppExampleTPG::CppExampleTPG()
         : CppTPG() { // important to call parent constructor
@@ -75,27 +113,77 @@ CppExampleTPG::CppExampleTPG()
 
     QString qaction = QS("default");
     actions.push_back(qaction);
+
     settings = new TPGSettings();
     settings->addSettingDefinition(qaction, new TPGSettingDefinition("geometry", "Geometry", "Cam::TextBox", "Box01", "", "The input geometry that should be cut"));
 
-	// settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), "Geometry", "Cam::TextBox", "Box01", "", "The input geometry that should be cut"));
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition("Relative Depth", "Relative Depth", "Cam::TextBox", "10.0", "", "The input geometry that should be cut"));
-
-	/*	
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition("Relative Depth", 
-																	 "Relative Depth",
+	// TODO - Figure out how to use a 'length' property so that these values can be expressed in whatever units are configured
+	// for use.
+	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), 
+																	 SettingName_Depth.toAscii().constData(),
 																	 "Cam::TextBox", 
 																	 "10.0",
-																	 "",
+																	 "mm",
 																	 "Distance from the current Z location to the bottom of the hole.  Must be positive"));
-	*/
+
+	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Standoff.toAscii().constData(), 
+																	 SettingName_Standoff.toAscii().constData(),
+																	 "Cam::TextBox", 
+																	 "5.0",
+																	 "mm",
+																	 "Distance above the drilling point location to retract to following the drilling cycle."));
+
+	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Dwell.toAscii().constData(), 
+																	 SettingName_Dwell.toAscii().constData(),
+																	 "Cam::TextBox", 
+																	 "0.0",
+																	 "seconds",
+																	 "Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'"));
+
+	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_PeckDepth.toAscii().constData(), 
+																	 SettingName_PeckDepth.toAscii().constData(),
+																	 "Cam::TextBox", 
+																	 "5.0",
+																	 "mm",
+																	 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled."));
+
+	// TODO - Figure out how to express enumerated types as a property.  i.e. convert the
+	// enumeration to a series of strings and present them as a 'combo-box' of drop-down options.
+	QString retract_mode;
+	retract_mode << eRapidRetract;	// Use the conversion method to retrieve the string used for retraction.
+	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_RetractMode.toAscii().constData(), 
+																	 SettingName_RetractMode.toAscii().constData(),
+																	 "Cam::TextBox", 
+																	 retract_mode.toAscii().constData(),
+																	 "mode",
+																	 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate."));
+
+	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Clearance.toAscii().constData(), 
+																	 SettingName_Clearance.toAscii().constData(),
+																	 "Cam::TextBox", 
+																	 "30.0",
+																	 "mm",
+																	 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece."));
+
+	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_SpindleSpeed.toAscii().constData(), 
+																	 SettingName_SpindleSpeed.toAscii().constData(),
+																	 "Cam::TextBox", 
+																	 "700",
+																	 "RPM",
+																	 "Spindle Speed."));
+
+	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_FeedRate.toAscii().constData(), 
+																	 SettingName_FeedRate.toAscii().constData(),
+																	 "Cam::TextBox", 
+																	 "55",
+																	 "mm/min",
+																	 "Feed Rate."));
 
     settings->addSettingDefinition(qaction, new TPGSettingDefinition("tool", "Tool", "Cam::TextBox", "Tool01", "", "The tool to use for cutting"));
     TPGSettingDefinition* speed = settings->addSettingDefinition(qaction, new TPGSettingDefinition("speed", "Speed", "Cam::Radio", "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
     speed->addOption("fast", "Fast");
     speed->addOption("normal", "Normal");
     speed->addOption("slow", "Slow");
-	
 }
 
 CppExampleTPG::~CppExampleTPG() {
@@ -182,6 +270,10 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	python << "comment(" << python.PythonString("'this one already has single quotes bounding it'") << ")\n";
 	python << "comment(" << python.PythonString("\"this one already has double quotes bounding it\"") << ")\n";
 
+	// Define a couple of intersecting lines just to play with the drilling cycle code.  This is
+	// really to test the calling of the Python code held in the ToolPath through to the GCode
+	// held in the MachineProgram.
+
 	Cam::Paths paths;
 	paths.Add( Cam::Edge( Cam::Point(0.0, 0.0, 0.0), Cam::Point(100.0, 0.0, 0.0) ) );
 	paths.Add( Cam::Edge( Cam::Point(50.0, 0.0, 0.0), Cam::Point(50.0, 100.0, 0.0) ) );
@@ -197,23 +289,36 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 		units = 25.4;	// imperial
 	}
 
-	typedef enum
-	{
-		rapid_retract = 0,
-		feed_retract
-	} RetractMode_t;
-
 	// TODO Get these parameters from the settings
 	qDebug("action='%s'\n", action.toAscii().constData());
 	qDebug("name='%s'\n", SettingName_Depth.toAscii().constData());
 
-	QString str_depth = settings->getValue( action, SettingName_Depth );
-	double depth = settings->getValue( action, SettingName_Depth ).toDouble() / units;
-	double standoff = settings->getValue( action, SettingName_Standoff ).toDouble() / units;
-	double dwell = settings->getValue( action, SettingName_Dwell ).toDouble();
-	double peck_depth = settings->getValue( action, SettingName_PeckDepth ).toDouble() / units;
-	int    retract_mode = settings->getValue( action, SettingName_RetractMode ).toInt();
-	double clearance_height = settings->getValue( action, SettingName_Clearance ).toDouble() / units;
+	// These don't work on Windows.  The object that holds the settings is owned by one
+	// DLL and this CppExampleTPG is held within another.  We seem to be able to add
+	// settings alright but the getValue() method throws an 'access denied' exception
+	// when trying to retrieve such values.  I've left them here as this is the type
+	// of thing the TPG will eventually need to be able to do.
+
+	#ifndef WIN32
+		// This code doesn't work on Windows.
+		double depth = settings->getValue( action, SettingName_Depth ).toDouble() / units;
+		double standoff = settings->getValue( action, SettingName_Standoff ).toDouble() / units;
+		double dwell = settings->getValue( action, SettingName_Dwell ).toDouble();
+		double peck_depth = settings->getValue( action, SettingName_PeckDepth ).toDouble() / units;
+		RetractMode_t retract_mode = toRetractMode(settings->getValue( action, SettingName_RetractMode ));
+		double clearance_height = settings->getValue( action, SettingName_Clearance ).toDouble() / units;
+		double spindle_speed = settings->getValue( action, SettingName_SpindleSpeed ).toDouble() / units;
+		double feed_rate = settings->getValue( action, SettingName_FeedRate ).toDouble() / units;
+	#else
+		double depth = 10.0 / units;
+		double standoff = 5.0 / units;
+		double dwell = 0.0;
+		double peck_depth = 2.5;
+		RetractMode_t retract_mode = toRetractMode(QString::fromAscii("Rapid Retract"));
+		double clearance_height = 30.0 / units;
+		double spindle_speed = 750.0 / units;
+		double feed_rate = 55.0 / units;
+	#endif
 
 	// Mark the beginning and end of the GCode generated by this TPG just in case we want to find
 	// it again from the whole GCode program (for highlighting etc.)
@@ -222,12 +327,19 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	tpg_reference += QString::fromAscii(", name='") + this->getName() + QString::fromAscii("'");
 	python << "comment(" << python.PythonString(tpg_reference) << ")\n";
 
+	python << "spindle(s=" << spindle_speed << ", clockwise=True)\n";
+	python << "feedrate(" << feed_rate << ")\n";	
+
 	// Generate the drilling locations from the Paths objects.  i.e. points as well as intersecting sketches etc.
 	Cam::Paths::Locations_t locations = paths.PointLocationData();
 	for (Cam::Paths::Locations_t::iterator itLocation = locations.begin(); itLocation != locations.end(); itLocation++)
 	{
-		// gp_Pnt point = pMachineState->Fixture().Adjustment( *l_itLocation );
-		gp_Pnt point = itLocation->Location();
+		// Align this point with the fixture (i.e. translation and/or rotation) so that the fixture's coordinate
+		// system in the graphics file translates to the X,Y,Z coordinate system on the physical CNC machine.
+
+		// gp_Pnt point = pMachineState->Fixture().Adjustment( l_itLocation->Location() );
+
+		gp_Pnt point = itLocation->Location();	// Just for now...
 
 		python	<< "drill("
 				<< "x=" << point.X()/units << ", "
@@ -237,7 +349,7 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 				<< "standoff=" << standoff << ", "
 				<< "dwell=" << dwell << ", "
 				<< "peck_depth=" << peck_depth << ", "
-				<< "retract_mode=" << retract_mode << ", "
+				<< "retract_mode=" << int(retract_mode) << ", "
 				<< "clearance_height=" << clearance_height
 				<< ")\n";
         // pMachineState->Location(point); // Remember where we are.

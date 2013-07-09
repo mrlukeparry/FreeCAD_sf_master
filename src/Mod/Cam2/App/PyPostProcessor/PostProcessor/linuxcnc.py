@@ -243,11 +243,6 @@ class Creator(iso.Creator):
 		probe_offset_x_component=None, probe_offset_y_component=None ):
 		self.set_temporary_origin(x=0.0, y=0.0, z=0.0)
 
-		if (self.fhv) : self.calc_feedrate_hv(1, 0)
-		self.write_blocknum()
-		self.write_feedrate()
-		self.write('\t(Set the feed rate for probing)\n')
-
 		self.rapid(point_along_edge_x,point_along_edge_y)
 		self.rapid(retracted_point_x,retracted_point_y)
 		self.feed(z=depth)
@@ -302,11 +297,6 @@ class Creator(iso.Creator):
 		self.set_temporary_origin(x=0.0, y=0.0, z=0.0)
 
 		self.feedrate( feedrate )
-		self.write_blocknum()
-		self.write_feedrate()
-		self.write_spindle()
-		self.write_misc()
-		self.write('\n')
 
 		self.write_blocknum()
 		self.write((self.PROBE_TOWARDS_WITH_SIGNAL() + ' Z ' + (self.fmt.string(depth)) + ('\t(Probe towards our destination point)\n')))
@@ -315,9 +305,6 @@ class Creator(iso.Creator):
 		self.write((self.PROBE_AWAY_WITHOUT_SIGNAL() + (' Z 0.0 ') + ('\t(Move back away until the probe untrips)\n')))
 
 		self.feedrate( feedrate / 2.0 )
-		self.write_blocknum()
-		self.write_feedrate()
-		self.write('\n')
 
 		self.write_blocknum()
 		self.write((self.PROBE_TOWARDS_WITH_SIGNAL() + ' Z ' + (self.fmt.string(depth)) + ('\t(Probe towards our destination point)\n')))

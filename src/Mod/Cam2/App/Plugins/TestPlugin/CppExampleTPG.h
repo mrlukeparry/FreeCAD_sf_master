@@ -55,12 +55,26 @@ public:
     virtual ToolPath *getToolPath();
 
 private:
+	// Declare some static settings names once here so that they're consistent
+	// throughout the various TPG references to them.
 	static QString SettingName_Depth;
 	static QString SettingName_Standoff;
 	static QString SettingName_Dwell;
 	static QString SettingName_PeckDepth;
 	static QString SettingName_RetractMode;
 	static QString SettingName_Clearance;
+	static QString SettingName_SpindleSpeed;
+	static QString SettingName_FeedRate;
+
+	typedef enum
+	{
+		eRapidRetract = 0,
+		eFeedRetract
+	} RetractMode_t;
+
+	// Conversion routines between RetractMode_t and QString (and vice versa)
+	friend QString & operator<< ( QString & buf, const CppExampleTPG::RetractMode_t & retract_mode );
+	RetractMode_t toRetractMode( const QString string_representation ) const;
 
 private:
 	ToolPath *toolpath;	// cache of toolpath from last call of the run() method.
