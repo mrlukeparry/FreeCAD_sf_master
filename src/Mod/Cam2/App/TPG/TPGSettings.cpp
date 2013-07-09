@@ -50,6 +50,9 @@ const char* ts(QString *str)
 
 TPGSettingDefinition::TPGSettingDefinition(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext)
 {
+	this->refcnt = 1;
+    this->parent = NULL;
+
 	this->name = QString::fromAscii(name);
 	this->label = QString::fromAscii(label);
 	this->type = QString::fromAscii(type);
@@ -59,6 +62,9 @@ TPGSettingDefinition::TPGSettingDefinition(const char *name, const char *label, 
 }
 TPGSettingDefinition::TPGSettingDefinition(QString &name, QString &label, QString &type, QString &defaultvalue, QString &units, QString &helptext)
 {
+	this->refcnt = 1;
+    this->parent = NULL;
+
 	this->name = name;
 	this->label = label;
 	this->type = type;
@@ -67,7 +73,8 @@ TPGSettingDefinition::TPGSettingDefinition(QString &name, QString &label, QStrin
 	this->helptext = helptext;
 }
 TPGSettingDefinition::TPGSettingDefinition() {
-
+	this->refcnt = 1;
+    this->parent = NULL;
 }
 
 TPGSettingDefinition::~TPGSettingDefinition() {
@@ -87,6 +94,9 @@ TPGSettingDefinition* TPGSettingDefinition::clone()
 
     for (; it != this->options.end(); ++it)
         clone->addOption((*it)->id, (*it)->label);
+
+	clone->action = this->action;
+	clone->parent = this->parent;
 
     return clone;
 }
@@ -167,6 +177,7 @@ QString TPGSettingDefinition::getFullname() {
 TPGSettings::TPGSettings()
 {
 	this->refcnt = 1;
+	this->tpgFeature = NULL;
 }
 
 TPGSettings::~TPGSettings()
@@ -186,6 +197,8 @@ TPGSettings* TPGSettings::clone()
 		settings->addSettingDefinition((*it)->action, (*it)->clone());
 		++it;
 	}
+
+	settings->tpgFeature = this->tpgFeature;
 
 	return settings;
 }

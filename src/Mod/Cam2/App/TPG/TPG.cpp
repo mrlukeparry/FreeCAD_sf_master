@@ -44,15 +44,17 @@ TPG::TPG()
 //    cache = new TPGCache();
 //    cache->initialise();
 
-    refcnt = 1;
-    settings = NULL;
+    this->refcnt = 1;
+    this->settings = NULL;
 }
 
 TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription)
 {
+  this->refcnt = 1;
   this->id = TPGId;
   this->name = TPGName;
   this->description = TPGDescription;
+  this->settings = NULL;
 }
 
 TPG::~TPG()
