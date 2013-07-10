@@ -342,6 +342,64 @@ void ToolPath::RequiredDecimalPlaces(const unsigned int value)
 }
 
 
+/**
+	If the input graphics exists in the cam::Paths object then it can be used
+	to generate an area::CArea object.  This method accepts an area::CArea object
+	(i.e. the graphical representation within the libArea library) and generates
+	Python definition that may be read by the libArea python module.
+ */
+void ToolPath::addAreaDefinition( const area::CArea graphics, const char *python_object_name )
+{
+	*this << python_object_name << " = area.Area()\n";
+
+	for (std::list<area::CCurve>::const_iterator itCurve = graphics.m_curves.begin(); itCurve != graphics.m_curves.end(); itCurve++)
+	{
+		std::ostringstream l_ossCurveName;
+		l_ossCurveName << python_object_name << "_curve_" << std::distance(graphics.m_curves.begin(), itCurve);
+
+		addCurveDefinition( *itCurve, l_ossCurveName.str().c_str() );
+		*this << python_object_name << ".append(" << l_ossCurveName.str().c_str() << ")\n";
+	} // End for
+
+	// Call the Reorder() method to make sure internal and external curves are oriented correctly
+	// for the libArea library code.
+	*this << python_object_name << ".Reorder()\n";
+}
+
+
+void ToolPath::addCurveDefinition( const area::CCurve curve, const char *python_object_name )
+{
+	*this << python_object_name << " = area.Curve()\n";
+
+	std::list<area::CVertex>::const_iterator itPrevious;
+	for (std::list<area::CVertex>::const_iterator itVertex = curve.m_vertices.begin(); itVertex != curve.m_vertices.end(); itVertex++)
+	{
+		switch (itVertex->m_type)
+		{
+		case 0:	// line (or start point)
+			*this << python_object_name << ".append(area.Point(" << itVertex->m_p.x << "," << itVertex->m_p.y << "))\n";
+			break;
+
+		case -1:	// CW arc
+			{
+				*this << python_object_name << ".append(area.Vertex(-1, area.Point(" << itVertex->m_p.x << "," << itVertex->m_p.y << "), area.Point(" << itVertex->m_c.x << "," << itVertex->m_c.y << ")))\n";
+			}
+			break;
+
+		case 1:	// CCW arc
+			{
+				*this << python_object_name << ".append(area.Vertex(1, area.Point(" << itVertex->m_p.x << "," << itVertex->m_p.y << "), area.Point(" << itVertex->m_c.x << "," << itVertex->m_c.y << ")))\n";
+			}
+			break;
+		}
+		
+		itPrevious = itVertex;
+	} // End for
+}
+
+
+
+
 #ifdef FC_DEBUG
 	ToolPath::Test::Test(ToolPath * tool_path)
 	{

@@ -182,6 +182,14 @@ TPGSettings::TPGSettings()
 
 TPGSettings::~TPGSettings()
 {
+	// The objects in the settingDefs vector used grab() to increment the reference count when they
+	// were added in the addSettingDefinition() method.  Release this reference count now that we
+	// don't need them any more.
+	for (std::vector<TPGSettingDefinition*>::iterator itSetting = settingDefs.begin(); itSetting != settingDefs.end(); /* increment within loop */ )
+	{
+		(*itSetting)->release();
+		itSetting = settingDefs.erase(itSetting);
+	}
 }
 
 /**

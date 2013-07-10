@@ -16,6 +16,7 @@
 #include <BRepBuilderAPI_Copy.hxx>
 #include <TopoDS.hxx>
 #include <Bnd_Box.hxx>
+#include <gp_Circ.hxx>
 
 #include <set>
 #include <string>
