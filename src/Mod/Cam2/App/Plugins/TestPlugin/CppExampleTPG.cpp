@@ -362,7 +362,13 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	circle.SetRadius(10.0);
 	graphics.Add( Cam::Edge(Cam::Point(centre.X() - circle.Radius(), centre.Y(), 0.0), Cam::Point(centre.X() + circle.Radius(), centre.Y(), 0.0), circle));
 
-	python << "import AreaClipper as area\n";
+	python << "import sys\n";
+	// python << "sys.path.insert(0, 'C:\\\\David\\\\src\\\\FreeCAD_sf_master\\\\VC9\\\\src\\Mod\\\\Cam2\\\\App\\\\Libs\\\\libarea-clipper')\n";
+	python << "sys.path.insert(0, 'C:\\\\David\\\\src\\\\jdcnc\\\\trunk\\\\heekscnc')\n";
+	python << "sys.path.insert(0, 'C:\\\\David\\\\src\\\\jdcnc\\\\trunk\\\\heekscnc\\\\Boolean')\n";
+           	                       
+	python << "import AreaClipper_d as area\n";
+	// python << "import area\n";
 	python << "import kurve_funcs as kurve_funcs\n";
 
 	python << "comment('tool change to 1/8 inch End Mill')\n";
@@ -381,8 +387,10 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	python << "roll_radius = float(0)\n";
 	python << "offset_extra = 0\n";
 
+	python.addAreaDefinition( graphics.Area(), "area_description" );
+
 	const char *l_pszObjectName = "outer_profile";
-	python.addAreaDefinition( graphics.Area(), l_pszObjectName );
+	python.addCurveDefinition( graphics[0].AreaCurve(), l_pszObjectName );
 
 	python << "kurve_funcs.make_smaller( " << l_pszObjectName << ", start = area.Point(1.8, 0))\n";
 	python << "roll_on = 'auto'\n";
