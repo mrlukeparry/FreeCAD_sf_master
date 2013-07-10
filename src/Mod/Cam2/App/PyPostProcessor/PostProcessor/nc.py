@@ -88,6 +88,13 @@
 
 import sys
 import os
+ncOFF = 0
+ncLEFT = -1
+ncRIGHT = +1
+ncCW = -1
+ncCCW = +1
+ncMIST = 1
+ncFLOOD = 2
 
 ################################################################################
 class Creator:
@@ -256,6 +263,10 @@ class Creator:
 
     def feedrate(self, f):
         """Set the feedrate"""
+        raise RuntimeError( __name__ + ' not implemented' )
+
+    def feedrate_hv(self, fh, fv):
+        """Set the horizontal and vertical feedrates"""
         raise RuntimeError( __name__ + ' not implemented' )
 
     def spindle(self, s, clockwise=True):
@@ -588,6 +599,9 @@ def mirror_line(line=None):
 
 def feedrate(f):
     creator.feedrate(f)
+
+def feedrate_hv(fh, fv):
+    creator.feedrate_hv(fh, fv)
 
 def spindle(s, clockwise=True):
     creator.spindle(s, clockwise)
