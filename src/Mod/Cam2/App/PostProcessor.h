@@ -45,6 +45,7 @@ namespace Cam {
 	{
 	private:
 		MachineProgram* machine_program;
+		QString buffer;
 
 	public:
 		PythonStdout(MachineProgram *machine_program)
@@ -74,6 +75,7 @@ namespace Cam {
 	{
 	private:
 		MachineProgram* machine_program;
+		QString buffer;
 
 	public:
 		PythonStderr(MachineProgram *machine_program)

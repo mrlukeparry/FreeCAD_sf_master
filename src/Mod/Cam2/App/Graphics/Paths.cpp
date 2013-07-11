@@ -3547,7 +3547,7 @@ Cam::Faces_t Cam::Paths::Faces(const bool subtract_nested_faces /* = true */ ) c
 	and other graphical elements such that the locations for drilling are defined by
 	the intersections of these graphical elements.
  */
-Paths::Locations_t Paths::PointLocationData() const
+Paths::Locations_t Paths::PointLocationData(const Point reference_location_for_sorting /* = Point(0.0, 0.0, 0.0) */ ) const
 {
 	std::set<Cam::Point> distinct_locations;
 	std::set< ::size_t > intersecting_paths;
@@ -3607,6 +3607,29 @@ Paths::Locations_t Paths::PointLocationData() const
 
 	Paths::Locations_t locations;
 	std::copy( distinct_locations.begin(), distinct_locations.end(), std::inserter( locations, locations.begin() ));
+
+	// Now sort these locations so there is less rapid movements between them.
+	for (Paths::Locations_t::iterator l_itPoint = locations.begin(); l_itPoint != locations.end(); l_itPoint++)
+	{
+		if (l_itPoint == locations.begin())
+		{
+			// It's the first point.
+			sort_points_by_distance compare( reference_location_for_sorting );
+			std::sort( locations.begin(), locations.end(), compare );
+		} // End if - then
+		else
+		{
+			// We've already begun.  Just sort based on the previous point's location.
+			Paths::Locations_t::iterator l_itNextPoint = l_itPoint;
+			l_itNextPoint++;
+
+			if (l_itNextPoint != locations.end())
+			{
+				sort_points_by_distance compare( *l_itPoint );
+				std::sort( l_itNextPoint, locations.end(), compare );
+			} // End if - then
+		} // End if - else
+	} // End for
 
 	return(locations);
 }

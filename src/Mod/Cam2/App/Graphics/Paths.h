@@ -16,6 +16,7 @@
 #include <BRepBuilderAPI_Copy.hxx>
 #include <TopoDS.hxx>
 #include <Bnd_Box.hxx>
+#include <gp_Circ.hxx>
 
 #include <set>
 #include <string>
@@ -94,6 +95,44 @@ namespace Cam
 		static double s_tolerance;
 	}; // End Point class definition
 
+	/**
+		By defining a structure that inherits from std::binary_function and has an operator() method, we
+		can use this class to sort lists or vectors of Cam::Point objects.  We will do this, initially, to
+		sort points of NC operations so as to minimize rapid travels.
+
+		The example code to call this would be;
+			std::vector<Cam::Point> points;		// Some container of Cam::Point objects
+			points.push_back(Cam::Point(3,4,5));	// Populate it with good data
+			points.push_back(Cam::Point(6,7,8));
+
+			for (std::vector<Cam::Point>::iterator l_itPoint = points.begin(); l_itPoint != points.end(); l_itPoint++)
+			{
+				std::vector<Cam::Point>::iterator l_itNextPoint = l_itPoint;
+				l_itNextPoint++;
+
+				if (l_itNextPoint != points.end())
+				{
+					sort_points_by_distance compare( *l_itPoint );
+					std::sort( l_itNextPoint, points.end(), compare );
+				} // End if - then
+			} // End for
+	 */
+	struct sort_points_by_distance : public std::binary_function< const Cam::Point &, const Cam::Point &, bool >
+	{
+		sort_points_by_distance( const Cam::Point reference_point ) : m_reference_point(reference_point)
+		{
+		} // End constructor
+
+		Cam::Point m_reference_point;
+
+		// Return true if dist(lhs to ref) < dist(rhs to ref)
+		bool operator()( const Cam::Point & lhs, const Cam::Point & rhs ) const
+		{
+			return( lhs.Location().Distance( m_reference_point.Location() ) < rhs.Location().Distance( m_reference_point.Location() ) );
+		} // End operator() overload
+	}; // End sort_points_by_distance structure definition.
+
+
 
 	std::set<Cam::Point> Corners(Bnd_Box box);
 	Standard_Real LargestBoxDimension(Bnd_Box box);
@@ -114,29 +153,29 @@ namespace Cam
 		bool operator!= ( const Ax3 & rhs ) const;
 	};
 
-	bool IsValid(const TopoDS_Shape shape);	// is non-null and has length > tolerance.
-	Standard_Real Area(const TopoDS_Shape shape);
-	std::list<TopoDS_Face> IntersectFaces( const TopoDS_Face lhs, const TopoDS_Face rhs );
-	std::list<TopoDS_Face> SubtractFaces( const TopoDS_Face lhs, const TopoDS_Face rhs );
-	Faces_t UnionFaces( const TopoDS_Face lhs, const TopoDS_Face rhs );
-	Faces_t UnionFaces( Faces_t faces );
-	bool FacesIntersect( const TopoDS_Face lhs, const TopoDS_Face rhs );
+	CamExport bool IsValid(const TopoDS_Shape shape);	// is non-null and has length > tolerance.
+	CamExport Standard_Real Area(const TopoDS_Shape shape);
+	CamExport std::list<TopoDS_Face> IntersectFaces( const TopoDS_Face lhs, const TopoDS_Face rhs );
+	CamExport std::list<TopoDS_Face> SubtractFaces( const TopoDS_Face lhs, const TopoDS_Face rhs );
+	CamExport Faces_t UnionFaces( const TopoDS_Face lhs, const TopoDS_Face rhs );
+	CamExport Faces_t UnionFaces( Faces_t faces );
+	CamExport bool FacesIntersect( const TopoDS_Face lhs, const TopoDS_Face rhs );
 
-	TopoDS_Edge Edge( const Point start, const Point end, const gp_Circ circle );
-	TopoDS_Edge Edge( const Point start, const Point end );
+	CamExport TopoDS_Edge Edge( const Point start, const Point end, const gp_Circ circle );
+	CamExport TopoDS_Edge Edge( const Point start, const Point end );
 
-	TopoDS_Edge Edge( const gp_Pnt start, const gp_Pnt end, const gp_Circ circle );
-	TopoDS_Edge Edge( const gp_Pnt start, const gp_Pnt end );
-	TopoDS_Edge Edge( const TopoDS_Edge original_edge, const Standard_Real start_u, const Standard_Real end_u );
+	CamExport TopoDS_Edge Edge( const gp_Pnt start, const gp_Pnt end, const gp_Circ circle );
+	CamExport TopoDS_Edge Edge( const gp_Pnt start, const gp_Pnt end );
+	CamExport TopoDS_Edge Edge( const TopoDS_Edge original_edge, const Standard_Real start_u, const Standard_Real end_u );
 
-	double AngleBetweenVectors(
+	CamExport double AngleBetweenVectors(
 			const gp_Pnt & vector_1_start_point,
 			const gp_Pnt & vector_1_end_point,
 			const gp_Pnt & vector_2_start_point,
 			const gp_Pnt & vector_2_end_point,
 			const double minimum_angle );
 
-	double AngleBetweenVectors(
+	CamExport double AngleBetweenVectors(
 			const gp_Vec & vector_1,
 			const gp_Vec & vector_2,
 			const gp_Vec & reference,
@@ -360,7 +399,7 @@ namespace Cam
 		Faces_t Faces(const bool subtract_nested_faces = true ) const;
 
 		typedef std::vector<Point> Locations_t;
-		Locations_t PointLocationData() const;
+		Locations_t PointLocationData(const Point reference_location_for_sorting = Point(0.0, 0.0, 0.0)) const;
 
 	protected:
 		std::vector<ContiguousPath> m_contiguous_paths;

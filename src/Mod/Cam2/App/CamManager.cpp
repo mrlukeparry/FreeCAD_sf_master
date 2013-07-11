@@ -163,7 +163,7 @@ void CamManagerInst::tpgRunnerThreadMain() {
 
 			// Execute the Python program contained in the ToolPath object to produce GCode.
 			Cam::MachineProgram *machine_program = Cam::PostProcessor().postProcess(toolpath, (Cam::Item *) NULL);
-
+			
 			// The only indication as to whether errors occured is if the getErrors() method returns
 			// a QStringList that is not empty.
 			if ((machine_program->getErrors()) && (machine_program->getErrors()->size() > 0))

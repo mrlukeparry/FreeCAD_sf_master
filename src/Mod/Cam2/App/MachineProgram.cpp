@@ -52,6 +52,8 @@ MachineProgram::~MachineProgram() {
 void MachineProgram::addMachineCommand(QString mc) {
     if (this->machineProgram == NULL)
         this->machineProgram = new QStringList();
+
+	if (mc.endsWith(QString::fromAscii("\n"))) mc.remove(mc.size()-1, 1);	// Strip off the newline character.
     this->machineProgram->push_back(mc);
 }
 
