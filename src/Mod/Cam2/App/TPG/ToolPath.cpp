@@ -381,15 +381,11 @@ void ToolPath::addCurveDefinition( const area::CCurve curve, const char *python_
 			break;
 
 		case -1:	// CW arc
-			{
-				*this << python_object_name << ".append(area.Vertex(-1, area.Point(" << itVertex->m_p.x << "," << itVertex->m_p.y << "), area.Point(" << itVertex->m_c.x << "," << itVertex->m_c.y << ")))\n";
-			}
+			*this << python_object_name << ".append(area.Vertex(-1, area.Point(" << itVertex->m_p.x << "," << itVertex->m_p.y << "), area.Point(" << itVertex->m_c.x << "," << itVertex->m_c.y << ")))\n";
 			break;
 
 		case 1:	// CCW arc
-			{
-				*this << python_object_name << ".append(area.Vertex(1, area.Point(" << itVertex->m_p.x << "," << itVertex->m_p.y << "), area.Point(" << itVertex->m_c.x << "," << itVertex->m_c.y << ")))\n";
-			}
+			*this << python_object_name << ".append(area.Vertex(1, area.Point(" << itVertex->m_p.x << "," << itVertex->m_p.y << "), area.Point(" << itVertex->m_c.x << "," << itVertex->m_c.y << ")))\n";
 			break;
 		}
 		
