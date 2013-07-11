@@ -37,6 +37,10 @@
 #define myDesc "A simple example CPP TPG to demonstrating how to create one. "
 
 
+#include <boost/spirit/include/classic_core.hpp>
+#include <boost/spirit/include/classic_increment_actor.hpp>
+
+using namespace BOOST_SPIRIT_CLASSIC_NS;
 
 /**
  * Implement the Cpp shared library interface functions
@@ -210,6 +214,20 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 		qDebug("Releasing previously generated toolpath\n");
 		this->toolpath->release();	// release the previous copy and generate a new one.
 	}
+
+	rule<> line_number = ((chlit<>('N') | chlit<>('n')) >> uint_parser<>());
+	rule<> g00 = ((chlit<>('G') | chlit<>('g')) >> (!(chlit<>('0')) >> chlit<>('0')));
+	rule<> g01 = ((chlit<>('G') | chlit<>('g')) >> (!(chlit<>('0')) >> chlit<>('1')));
+	rule<> g02 = ((chlit<>('G') | chlit<>('g')) >> (!(chlit<>('0')) >> chlit<>('2')));
+
+	rule<> end_of_block = eol_p;
+
+	rule<> rs274 =	line_number >> end_of_block |
+					line_number >> g00 >> end_of_block |
+					line_number >> g01 >> end_of_block ;
+
+	std::string gcode = "N300 G00\n";
+	bool worked_ok = parse(gcode.c_str(), rs274, boost::spirit::classic::space_p).full;
 
 	// Now generate a new toolpath.
 	this->toolpath = new ToolPath(this);

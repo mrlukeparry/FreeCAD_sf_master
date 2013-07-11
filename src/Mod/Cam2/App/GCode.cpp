@@ -34,3 +34,18 @@ GCode::GCode()
 GCode::~GCode()
 {
 }
+
+/* virtual */ parse_info<> GCode::Parse( MachineProgram *pMachineProgram )
+{
+	QString program;
+	program << *pMachineProgram;
+	return(parse(program.toAscii().constData(), rs274(), space_p));
+}
+
+/* virtual */ rule<> GCode::rs274()
+{
+	rule<> rules =	(line_number() >> end_of_block()) [ qDebug("%s\n", "David is a good bloke"); ] |
+					line_number() >> g00() >> end_of_block();
+
+	return(rules);
+}

@@ -26,6 +26,13 @@
 #include <App/PropertyStandard.h>
 #include <PreCompiled.h>
 
+#include <Mod/Cam2/App/MachineProgram.h>
+
+#include <boost/spirit/include/classic_core.hpp>
+#include <boost/spirit/include/classic_increment_actor.hpp>
+
+using namespace BOOST_SPIRIT_CLASSIC_NS;
+
 /// Base class
 namespace Cam
 {
@@ -37,8 +44,53 @@ public:
     GCode();
     ~GCode();
 
+public:
+	virtual rule<> rs274();
+
+	virtual parse_info<> Parse( MachineProgram *pMachineProgram );
+
 protected:
+	/**
+		Define boost::spirit::classic rules for each of the various 'tokens' that make up
+		an RS274 GCode program.  Make them virtual so that this class can be overridden
+		to make specific GCode parsers for different machine controllers.
+	 */
+	virtual rule<> line_number() { return ((chlit<>('N') | chlit<>('n')) >> uint_parser<>()); }
+
+	virtual rule<> g00() { return ((chlit<>('G') | chlit<>('g')) >> (!(chlit<>('0')) >> chlit<>('0'))); }
+	virtual rule<> g01() { return ((chlit<>('G') | chlit<>('g')) >> (!(chlit<>('0')) >> chlit<>('1'))); }
+	virtual rule<> g02() { return ((chlit<>('G') | chlit<>('g')) >> (!(chlit<>('0')) >> chlit<>('2'))); }
+
+	virtual rule<> end_of_block() { return eol_p; }
+
+	// The work_offset rule changes between machine controllers so separate it out in its own rule.
+	virtual rule<> work_offset() { return ((chlit<>('G') | chlit<>('g')) >> str_p<>("10") >> (chlit<>('L') | chlit<>('l')) >> str_p<>("20")); }
+
 };
+
+class CamExport LinuxCNC : public GCode
+{
+public:
+	LinuxCNC();
+	~LinuxCNC();
+
+protected:
+	// Overload the work_offset rule because LinuxCNC uses G10 L20 for that.
+	virtual rule<> work_offset() { return ((chlit<>('G') | chlit<>('g')) >> str_p<>("10") >> (chlit<>('L') | chlit<>('l')) >> str_p<>("20")); }
+
+}; // End LinuxCNC GCode parser class definition.
+
+class CamExport Mach3 : public GCode
+{
+public:
+	Mach3();
+	~Mach3();
+
+protected:
+	// Overload the work_offset rule because LinuxCNC uses G10 L2 for that.
+	virtual rule<> work_offset() { return ((chlit<>('G') | chlit<>('g')) >> str_p<>("10") >> (chlit<>('L') | chlit<>('l')) >> str_p<>('2')); }
+
+}; // End LinuxCNC GCode parser class definition.
 
 } //namespace Cam
 #endif //CAM_GCODE_H
