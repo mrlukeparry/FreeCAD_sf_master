@@ -31,6 +31,7 @@
 
 #include "CppExampleTPG.h"
 #include "Graphics/Paths.h"
+#include <Mod/Cam2/App/GCode.h>
 
 #define myID   "95744f1e-360f-11e2-bcd3-08002734b94f"
 #define myName "Example CPP TPG"
@@ -367,6 +368,10 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 
 	python << "end_canned_cycle()\n";
 
+	wilma();
+
+	GCode a;
+	a.fred();
 
 	/*
 	// Generate some graphics, convert it into the libArea representation and generate

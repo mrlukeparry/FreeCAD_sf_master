@@ -35,17 +35,31 @@ GCode::~GCode()
 {
 }
 
-/* virtual */ parse_info<> GCode::Parse( MachineProgram *pMachineProgram )
+std::map<std::string, double> the_dictionary;
+void insert(std::pair<std::string, double>& p)
 {
-	QString program;
-	program << *pMachineProgram;
-	return(parse(program.toAscii().constData(), rs274(), space_p));
+	the_dictionary[p.first] = p.second;
 }
+ 
+namespace qi = boost::spirit::qi;
 
-/* virtual */ rule<> GCode::rs274()
+
+int wilma()
 {
-	rule<> rules =	(line_number() >> end_of_block()) [ qDebug("%s\n", "David is a good bloke"); ] |
-					line_number() >> g00() >> end_of_block();
+	std::map<std::string, double> arguments;
 
-	return(rules);
+	typedef std::string::iterator iterator;
+	qi::rule<iterator, std::string()> identifier = qi::char_("xyzabcuvwXYZABCUVW");
+	qi::rule<iterator, double()> value = qi::double_;
+
+	qi::rule<iterator, std::pair<std::string, double >()> assignment;
+	qi::rule<iterator, std::map<std::string, double >()> assignments;
+	assignment = identifier >> '=' >> value >> ';';
+	assignments = +(identifier >> '=' >> value >> ';');
+	 
+	std::string input("x=1.1;y=2.2;");
+	// qi::parse(input.begin(), input.end(), assignment[&insert]);
+	qi::parse(input.begin(), input.end(), assignments, arguments);
+
+	return(0);
 }
