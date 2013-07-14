@@ -35,18 +35,19 @@ GCode::~GCode()
 {
 }
 
-std::map<std::string, double> the_dictionary;
-void insert(std::pair<std::string, double>& p)
-{
-	the_dictionary[p.first] = p.second;
-}
  
 namespace qi = boost::spirit::qi;
 
+std::map<std::string, double> arguments;
+
+void insert( std::pair<std::string, double>& value )
+{
+	arguments.insert(value);
+}
 
 int wilma()
 {
-	std::map<std::string, double> arguments;
+	
 
 	typedef std::string::iterator iterator;
 	qi::rule<iterator, std::string()> identifier = qi::char_("xyzabcuvwXYZABCUVW");
@@ -54,12 +55,20 @@ int wilma()
 
 	qi::rule<iterator, std::pair<std::string, double >()> assignment;
 	qi::rule<iterator, std::map<std::string, double >()> assignments;
-	assignment = identifier >> '=' >> value >> ';';
-	assignments = +(identifier >> '=' >> value >> ';');
+	assignment = (identifier >> value);
+	assignments = +(assignment) [ arguments ];
+	// assignments = +(identifier >> value);
 	 
-	std::string input("x=1.1;y=2.2;");
-	// qi::parse(input.begin(), input.end(), assignment[&insert]);
-	qi::parse(input.begin(), input.end(), assignments, arguments);
+	std::string input("x1.1y2.2");
+	std::string::iterator begin = input.begin();
+	// qi::parse(input.begin(), input.end(), assignments, arguments);
+	// qi::phrase_parse(begin, input.end(), assignments, qi::space, arguments);
+	// qi::parse(begin, input.end(), assignment, qi::space);
+	// qi::parse(begin, input.end(), assignments [&insert]);
+	qi::parse(begin, input.end(), assignments);
+
+	// assignment = qi::as<std::map<std::string, std::string> >()[(identifier >> value)][&insert];
+
 
 	return(0);
 }
