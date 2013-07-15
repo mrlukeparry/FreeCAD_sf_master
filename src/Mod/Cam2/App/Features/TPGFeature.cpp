@@ -147,8 +147,12 @@ TPGSettings* TPGFeature::getTPGSettings() {
 
 		// get a description of settings that TPG expects
 		tpgSettings = tpg->getSettingDefinitions();
-		if (tpgSettings == NULL)
+		if (tpgSettings == NULL) {
+			Base::Console().Warning("Unable to get settings\n");
 			return NULL;
+		}
+		else
+			Base::Console().Log("Got settings\n");
 
 		// tell the settings object about myself so it can save values here.
 		tpgSettings->setTPGFeature(this);

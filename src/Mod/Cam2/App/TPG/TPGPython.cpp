@@ -32,6 +32,7 @@
 #include "../Features/TPGFeature.h"
 #include "TPGPython.h"
 #include "PyToolPath.h"
+#include "PyTPGSettings.h"
 
 using namespace Cam;
 
@@ -190,64 +191,77 @@ TPGSettings *TPGPython::getSettingDefinitions()
 		if (inst != NULL) {
 			// Run the method
 	        PyGILState_STATE state = PyGILState_Ensure();
-			PyObject *settingsDict = PyObject_CallMethod(inst, "getSettingDefinitions", NULL);
-			if (settingsDict != NULL) {
+			PyObject *settingsObj = PyObject_CallMethod(inst, "getSettingDefinitions", NULL);
+			if (settingsObj != NULL) {
+				Base::Console().Log("Called getSettingDefinitions() ok.\n");
 
-				// Extract the Each action from the Dictionary
-				if (PyDict_Check(settingsDict)) {
-					PyObject *settingsDictKeys = PyDict_Keys(settingsDict);
-					if (PyList_Check(settingsDictKeys)) {
-						int settingsDictKeysLen = PyList_Size(settingsDictKeys);
-						for (int k = 0; k < settingsDictKeysLen; k++) {
-							PyObject *settingsDictKey = PyList_GetItem(settingsDictKeys, k);
-
-							// Extract settings from list
-							PyObject *settingsDictValue = PyDict_GetItem(settingsDict, settingsDictKey);
-							if (PyList_Check(settingsDictValue)) {
-								settings = new TPGSettings();
-								int len = PyList_Size(settingsDictValue);
-								for (int i = 0; i < len; i++) {
-
-									// Extract details of each setting
-									PyObject *item = PyList_GetItem(settingsDictValue, i);
-									if (PyTuple_Check(item)) {
-										char *name;
-										char *label;
-										char *type;
-										char *defaultvalue;
-										char *units;
-										char *helptext;
-
-										if (PyArg_ParseTuple(item, "zzzzzz", &name, &label, &type,
-												&defaultvalue, &units, &helptext)){
-											QString qaction = QString::fromAscii(PyString_AsString(settingsDictKey));
-											settings->addSettingDefinition(qaction,
-													new TPGSettingDefinition(name, label, type, defaultvalue,
-															units, helptext));
-										}
-										else
-											//TODO: make this more informative
-											Base::Console().Warning("Setting tuple is meant to contain 6 items!\n");
-									}
-									else
-										//TODO: make this more informative
-										Base::Console().Warning("Not a Tuple!\n");
-								}
-							}
-							else
-								//TODO: make this more informative
-								Base::Console().Warning("Value for Action is meant to be a list.  Ignoring this Action.\n");
-						}
-					}
-					else
-						//TODO: make this more informative
-						Base::Console().Warning("Dictionary key list not a list.  This shouldn't happen.\n");
+				if (PyCamTPGSettings_Check(settingsObj)) {
+					Base::Console().Log("Got settings object.\n");
+					cam_PyTPGSettings *pyTPGSettings = (cam_PyTPGSettings*) settingsObj;
+					settings = pyTPGSettings->settings->clone();
 				}
 				else
-					//TODO: make this more informative
-					Base::Console().Warning("Settings needs to be a dictionary.\n");
-				Py_DecRef(settingsDict);
+					Base::Console().Warning("Value returned from PyTPG.getSettingDefinitions() is not a Cam.TPGSettings object.\n");
+
+				Py_DecRef(settingsObj);
+
+//				// Extract the Each action from the Dictionary
+//				if (PyDict_Check(settingsDict)) {
+//					PyObject *settingsDictKeys = PyDict_Keys(settingsDict);
+//					if (PyList_Check(settingsDictKeys)) {
+//						int settingsDictKeysLen = PyList_Size(settingsDictKeys);
+//						for (int k = 0; k < settingsDictKeysLen; k++) {
+//							PyObject *settingsDictKey = PyList_GetItem(settingsDictKeys, k);
+//
+//							// Extract settings from list
+//							PyObject *settingsDictValue = PyDict_GetItem(settingsDict, settingsDictKey);
+//							if (PyList_Check(settingsDictValue)) {
+//								settings = new TPGSettings();
+//								int len = PyList_Size(settingsDictValue);
+//								for (int i = 0; i < len; i++) {
+//
+//									// Extract details of each setting
+//									PyObject *item = PyList_GetItem(settingsDictValue, i);
+//									if (PyTuple_Check(item)) {
+//										char *name;
+//										char *label;
+//										char *type;
+//										char *defaultvalue;
+//										char *units;
+//										char *helptext;
+//
+//										if (PyArg_ParseTuple(item, "zzzzzz", &name, &label, &type,
+//												&defaultvalue, &units, &helptext)){
+//											QString qaction = QString::fromAscii(PyString_AsString(settingsDictKey));
+//											settings->addSettingDefinition(qaction,
+//													new TPGSettingDefinition(name, label, type, defaultvalue,
+//															units, helptext));
+//										}
+//										else
+//											//TODO: make this more informative
+//											Base::Console().Warning("Setting tuple is meant to contain 6 items!\n");
+//									}
+//									else
+//										//TODO: make this more informative
+//										Base::Console().Warning("Not a Tuple!\n");
+//								}
+//							}
+//							else
+//								//TODO: make this more informative
+//								Base::Console().Warning("Value for Action is meant to be a list.  Ignoring this Action.\n");
+//						}
+//					}
+//					else
+//						//TODO: make this more informative
+//						Base::Console().Warning("Dictionary key list not a list.  This shouldn't happen.\n");
+//				}
+//				else
+//					//TODO: make this more informative
+//					Base::Console().Warning("Settings needs to be a dictionary.\n");
+//				Py_DecRef(settingsDict);
 			}
+			else
+				Base::Console().Warning("Unable to execute PyTPG.getSettingDefinitions() method.\n");
 	        PyGILState_Release(state);
 		}
 		else

@@ -27,82 +27,24 @@
 #include "PyTPGSettings.h"
 
 
-/**
- * The python deallocator
- */
-static void
-PyTPGSettingDefinition_dealloc(cam_PyTPGSettings* self) {
-    if (self->settings != NULL) {
-        self->settings->release();
-        self->settings = NULL;
-    }
-    self->ob_type->tp_free((PyObject*)self);
-}
+// ----------------------------------------------------------------------------
+// ----- TPGSetting -----------------------------------------------------------
+// ----------------------------------------------------------------------------
 
-/**
- * The python allocator
- */
-static PyObject *
-PyTPGSettingDefinition_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-    cam_PyTPGSettings *self;
+// ----- Forward declarations -----
+static void      PyTPGSettingDefinition_dealloc(cam_PyTPGSettingDefinition* self);
+static PyObject *PyTPGSettingDefinition_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+static int       PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, PyObject *kwds);
+static PyObject *PyTPGSettingDefinition_addOption (cam_PyTPGSettingDefinition* self, PyObject* args);
 
-    self = (cam_PyTPGSettings *)type->tp_alloc(type, 0);
-    if (self != NULL) {
-        self->settings = NULL; //new Cam::TPGSettings();
-    }
 
-    return (PyObject *)self;
-}
-
-/**
- * Python initialiser
- */
-static int
-PyTPGSettingDefinition_init(cam_PyTPGSettings *self, PyObject *args, PyObject *kwds) {
-
-	self->settings = new Cam::TPGSettings();
-    return 0;
-}
-
-/**
- * Add a command to the toolpath
- */
-static PyObject *
-PyTPGSettings_addOption (cam_PyTPGSettings* self, PyObject* args) {
-
-    //Expects (<action>, <name>, <label>, <type>, <defaultvalue>, <unit>, <helptext>)
-
-	const char *action;
-
-    const char *name;
-    const char *label;
-    const char *type;
-    const char *value;
-    const char *unit;
-    const char *helptext;
-
-    if (!PyArg_ParseTuple(args, "sssssss", &action, &name, &label, &type, &value, &unit, &helptext)) {
-        PyErr_SetString(PyExc_TypeError, "Expects '<action>, <name>, <label>, <type>, <defaultvalue>, <unit>, <helptext>' (7 strings)");
-        return NULL;
-    }
-
-    Cam::TPGSettingDefinition *setting = new Cam::TPGSettingDefinition(name, label, type, value, unit, helptext);
-    QString qaction = QString::fromAscii(action);
-    self->settings->addSettingDefinition(qaction, setting);
-
-    // release my copy of setting (TPGSettings object will grab its own copy)
-    setting->release();
-
-    //TODO: return the setting object here so user can add options.  Need to define a new PyTPGSettingDefinition type
-    Py_RETURN_NONE;
-}
-
+// ----- Data structures instances -----
 
 /**
  * Method table for PyToolPath python type
  */
 static PyMethodDef PyTPGSettingDefinition_methods[] = {
-    {"addOption", (PyCFunction)PyTPGSettings_addOption, METH_VARARGS, "Add an option to this setting"},
+    {"addOption", (PyCFunction)PyTPGSettingDefinition_addOption, METH_VARARGS, "Add an option to this setting"},
 //    {"getAction", (PyCFunction)PyTPGSettings_getAction, METH_NOARGS, "Get the selected action"},
 //    {"setAction", (PyCFunction)PyTPGSettings_setAction, METH_VARARGS, "Set the selected action"},
 //    {"getValue", (PyCFunction)PyTPGSettings_getValue, METH_VARARGS, "Get the value of a setting"},
@@ -154,6 +96,90 @@ static PyTypeObject PyTPGSettingDefinitionType = {
 };
 
 
+extern PyTypeObject *PyTPGSettingDefinition_Type() {
+	return &PyTPGSettingDefinitionType;
+}
+
+
+// ----- Function implementations ----
+
+/**
+ * The python deallocator
+ */
+static void
+PyTPGSettingDefinition_dealloc(cam_PyTPGSettingDefinition* self) {
+    if (self->setting != NULL) {
+        self->setting->release();
+        self->setting = NULL;
+    }
+    self->ob_type->tp_free((PyObject*)self);
+}
+
+/**
+ * The python allocator
+ */
+static PyObject *
+PyTPGSettingDefinition_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+    cam_PyTPGSettings *self;
+
+    self = (cam_PyTPGSettings *)type->tp_alloc(type, 0);
+    if (self != NULL) {
+        self->settings = NULL; //new Cam::TPGSettings();
+    }
+
+    return (PyObject *)self;
+}
+
+/**
+ * Python initialiser
+ */
+static int
+PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, PyObject *kwds) {
+
+	const char *name;
+	const char *label;
+	const char *type;
+	const char *defaultvalue;
+	const char *units;
+	const char *helptext;
+
+	//TODO: make sure kwds doesn't have any values
+	if (!PyArg_ParseTuple(args, "ssssss", &name, &label, &type, &defaultvalue, &units, &helptext)) {
+		PyErr_SetString(PyExc_TypeError, "Cam.TPGSettingDefinition(): expects '<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>' (6 strings)");
+		return -1;
+	}
+
+	self->setting = new Cam::TPGSettingDefinition(name, label, type, defaultvalue, units, helptext);
+    return 0;
+}
+
+/**
+ * Add a command to the toolpath
+ */
+static PyObject *
+PyTPGSettingDefinition_addOption (cam_PyTPGSettingDefinition* self, PyObject* args) {
+
+    //Expects (<name>, <label>)
+
+    const char *id;
+    const char *label;
+
+    if (!PyArg_ParseTuple(args, "ss", &id, &label)) {
+        PyErr_SetString(PyExc_TypeError, "Expects '<id>, <label>' (2 strings)");
+        return NULL;
+    }
+
+    if (self->setting != NULL) {
+    	self->setting->addOption(id, label);
+//    	return self; //TODO: return the self pointer for convenience
+    }
+
+	PyErr_SetString(PyExc_Exception, "Underlying data-structure not set.");
+	return NULL;
+}
+
+
+
 
 // ----------------------------------------------------------------------------
 // ----- TPGSettings ----------------------------------------------------------
@@ -170,6 +196,7 @@ static PyObject *PyTPGSettings_setAction (cam_PyTPGSettings* self, PyObject* arg
 static PyObject *PyTPGSettings_getValue (cam_PyTPGSettings* self, PyObject* args);
 static PyObject *PyTPGSettings_setValue (cam_PyTPGSettings* self, PyObject* args);
 static PyObject *PyTPGSettings_addDefaults (cam_PyTPGSettings* self, PyObject* args);
+static PyObject *PyTPGSettings_getActions (cam_PyTPGSettings* self, PyObject* args);
 
 // ----- Data structures instances -----
 
@@ -180,6 +207,8 @@ static PyMethodDef PyTPGSettings_methods[] = {
     {"getValue", (PyCFunction)PyTPGSettings_getValue, METH_VARARGS, "Get the value of a setting"},
     {"setValue", (PyCFunction)PyTPGSettings_setValue, METH_VARARGS, "Set the value of a setting"},
     {"addDefaults", (PyCFunction)PyTPGSettings_addDefaults, METH_NOARGS, "Adds any missing setting values (with their default value)"},
+    {"getActions", (PyCFunction)PyTPGSettings_getActions, METH_NOARGS, "Gets the action names defined in this settings object"},
+    {"keys", (PyCFunction)PyTPGSettings_getActions, METH_NOARGS, "Gets the action names defined in this settings object"},
 //    {"clone", (PyCFunction)PyTPGSettings_clone, METH_NOARGS, "Clones the settings collection"},
     {NULL}  /* Sentinel */
 };
@@ -225,6 +254,10 @@ static PyTypeObject PyTPGSettingsType = {
     0,                         /* tp_alloc */
     PyTPGSettings_new,         /* tp_new */
 };
+
+extern PyTypeObject *PyTPGSettings_Type() {
+	return &PyTPGSettingsType;
+}
 
 // ----- Function implementations ----
 
@@ -316,30 +349,31 @@ PyTPGSettings_init(cam_PyTPGSettings *self, PyObject *args, PyObject *kwds) {
 static PyObject *
 PyTPGSettings_addSettingDefinition (cam_PyTPGSettings* self, PyObject* args) {
 
-    //Expects (<action>, <name>, <label>, <type>, <defaultvalue>, <unit>, <helptext>)
+    //Expects (<action>, <setting>)
 
 	const char *action;
+	PyObject *settingObj;
 
-    const char *name;
-    const char *label;
-    const char *type;
-    const char *value;
-    const char *unit;
-    const char *helptext;
-
-    if (!PyArg_ParseTuple(args, "sssssss", &action, &name, &label, &type, &value, &unit, &helptext)) {
-        PyErr_SetString(PyExc_TypeError, "Expects '<action>, <name>, <label>, <type>, <defaultvalue>, <unit>, <helptext>' (7 strings)");
+	// extract arguments
+    if (!PyArg_ParseTuple(args, "sO", &action, &settingObj)) {
+        PyErr_SetString(PyExc_TypeError, "addSettingDefinition(..): expects 2 args, '<action>, <setting>' (str, object)");
         return NULL;
     }
 
-    Cam::TPGSettingDefinition *setting = new Cam::TPGSettingDefinition(name, label, type, value, unit, helptext);
-    QString qaction = QString::fromAscii(action);
-    self->settings->addSettingDefinition(qaction, setting);
+    // check object type
+    if (!PyTPGSettingDefinition_Check(settingObj)) {
+        PyErr_SetString(PyExc_TypeError, "<setting> parameter must be a Cam.TPGSettingDefinition instance");
+        return NULL;
+    }
 
-    // release my copy of setting (TPGSettings object will grab its own copy)
-    setting->release();
+    // add the setting to the underlying C++ settings structure
+    cam_PyTPGSettingDefinition *settingPy = (cam_PyTPGSettingDefinition*) settingObj;
+    QString qaction = QString::fromAscii(action);
+    self->settings->addSettingDefinition(qaction, settingPy->setting);
 
     //TODO: return the setting object here so user can add options.  Need to define a new PyTPGSettingDefinition type
+//    Py_INCREF(settingPy);
+//    return settingPy;
     Py_RETURN_NONE;
 }
 
@@ -460,8 +494,35 @@ PyTPGSettings_addDefaults (cam_PyTPGSettings* self, PyObject* args) {
 	if (self->settings != NULL)
 		self->settings->addDefaults();
 
-    Py_RETURN_NONE;
+	PyErr_SetString(PyExc_Exception, "Underlying data-structure not set.");
+	return NULL;
 }
+
+/**
+ * Gets the action names defined in this settings object
+ */
+static PyObject *PyTPGSettings_getActions (cam_PyTPGSettings* self, PyObject* args) {
+
+	if (self->settings != NULL) {
+		// get the actions
+		QStringList sl = self->settings->getActions();
+
+		// convert to python list
+		PyObject *actionList = PyList_New(sl.size());
+		if (actionList != NULL) {
+			for (int i = 0; i < sl.size(); i++)
+				PyList_SET_ITEM(actionList, i, PyString_FromString(sl.at(i).toAscii().constData()));
+			return actionList;
+		}
+
+		PyErr_SetString(PyExc_Exception, "Unable to create new list.");
+		return NULL;
+	}
+
+	PyErr_SetString(PyExc_Exception, "Underlying data-structure not set.");
+	return NULL;
+}
+
 
 ///**
 // * Clones the settings collection

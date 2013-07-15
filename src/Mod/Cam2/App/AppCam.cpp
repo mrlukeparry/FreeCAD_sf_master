@@ -52,7 +52,7 @@ PyDoc_STRVAR(module_Cam_doc,
 
 
 #include "TPG/PyToolPath.cpp"
-#include "TPG/PyTPGSettings.cpp"
+#include "TPG/PyTPGSettings.h"
 
 
 /* Python entry */
@@ -76,9 +76,14 @@ void CamExport initCam()
     if (PyType_Ready(&PyToolPathType) < 0)
         return;
 
-    Py_INCREF(&PyTPGSettingsType);
-    PyModule_AddObject(camModule, "TPGSettings", (PyObject *)&PyTPGSettingsType);
-    if (PyType_Ready(&PyTPGSettingsType) < 0)
+    Py_INCREF(PyTPGSettingDefinition_Type());
+    PyModule_AddObject(camModule, "TPGSettingDefinition", (PyObject *)PyTPGSettingDefinition_Type());
+    if (PyType_Ready(PyTPGSettingDefinition_Type()) < 0)
+        return;
+
+    Py_INCREF(PyTPGSettings_Type());
+    PyModule_AddObject(camModule, "TPGSettings", (PyObject *)PyTPGSettings_Type());
+    if (PyType_Ready(PyTPGSettings_Type()) < 0)
         return;
 
     // Add the PyCam module to the Cam Module

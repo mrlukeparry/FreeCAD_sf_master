@@ -245,6 +245,7 @@ void UIManagerInst::OnChange(Gui::SelectionSingleton::SubjectType &rCaller,
  */
 void UIManagerInst::updateCamProjectSelection(const char* pDocName) {
 
+//	Base::Console().Log("New Selection\n");
     // make unique list of selected objects
     std::vector<Gui::SelectionSingleton::SelObj> objs = Gui::Selection().getSelection(pDocName);
     std::set<App::DocumentObject*> selDocObjs;

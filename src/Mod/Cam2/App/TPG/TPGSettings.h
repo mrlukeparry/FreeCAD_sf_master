@@ -94,7 +94,7 @@ public:
 //	QString value; // deprecated: now uses FreeCAD data structure which is contained in TPGSettings.tpgFeature
 
 	TPGSettingDefinition(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext);
-	TPGSettingDefinition(QString &name, QString &label, QString &type, QString &defaultvalue, QString &units, QString &helptext);
+	TPGSettingDefinition(QString name, QString label, QString type, QString defaultvalue, QString units, QString helptext);
 	TPGSettingDefinition();
 
 	~TPGSettingDefinition();
@@ -126,7 +126,7 @@ public:
     QString getValue();
 
     /// set the value associated with this setting
-    bool setValue(QString &value);
+    bool setValue(QString value);
 
     /// get the namespaced name <action>::<name>
     QString getFullname();
@@ -151,27 +151,27 @@ public:
     /**
      * Add a setting to this Settings collection
      */
-    TPGSettingDefinition* addSettingDefinition(QString &action, TPGSettingDefinition* setting);
+    TPGSettingDefinition* addSettingDefinition(QString action, TPGSettingDefinition* setting);
 
     /**
      * Get the currently selected action.
      */
-    const QString &getAction() const;
+    const QString getAction() const;
 
     /**
      * Change the currently selected action.
      */
-    bool setAction(QString &action);
+    bool setAction(QString action);
 
     /**
      * Get the value of a given setting (by name)
      */
-    const QString getValue(QString &name);
+    const QString getValue(QString name);
 
     /**
      * Get the value of a given setting (by name)
      */
-    const QString getValue(QString &action, QString &name);
+    const QString getValue(QString action, QString name);
 
     /**
      * Print the settings to stdout
@@ -188,14 +188,19 @@ public:
     void addDefaults();
 
     /**
-     * Set the value for the named setting
+     * Get the action names defined
      */
-    bool setValue(QString &action, QString &name, QString &value);
+    QStringList getActions();
 
     /**
      * Set the value for the named setting
      */
-    bool setValue(QString &name, QString &value);
+    bool setValue(QString action, QString name, QString value);
+
+    /**
+     * Set the value for the named setting
+     */
+    bool setValue(QString name, QString value);
 
     /**
      * Sets the TPGFeature that the value will be saved-to/read-from.
@@ -220,13 +225,15 @@ protected:
     std::vector<TPGSettingDefinition*> settingDefs;
     /// the same settings but in map data structure for random access (key: <action>::<name>)
     std::map<QString, TPGSettingDefinition*> settingDefsMap;
+    /// a map to store which settings are in which action
+    std::map<QString, std::vector<TPGSettingDefinition*> > settingDefsActionMap;
     /// reference counter
     int refcnt;
     /// the tpgFeature to which these settings belong
     TPGFeature *tpgFeature;
 
     /// make a namespaced name (from <action>::<name>)
-    QString makeName(QString &action, QString &name) const;
+    QString makeName(QString action, QString name) const;
 };
 
 } //namespace Cam
