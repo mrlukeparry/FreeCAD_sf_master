@@ -370,8 +370,6 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 
 	wilma();
 
-	GCode a;
-	a.fred();
 
 	/*
 	// Generate some graphics, convert it into the libArea representation and generate

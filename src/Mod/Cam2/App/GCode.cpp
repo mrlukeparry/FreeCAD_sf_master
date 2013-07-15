@@ -35,40 +35,102 @@ GCode::~GCode()
 {
 }
 
- 
-namespace qi = boost::spirit::qi;
 
-std::map<std::string, double> arguments;
 
-void insert( std::pair<std::string, double>& value )
+void callback(char c, double f)
 {
-	arguments.insert(value);
+	int = 3;
+}
+
+std::vector<double> doubles;
+void add_argument(double const &value)
+{
+	doubles.push_back(value);
 }
 
 int wilma()
 {
-	
+	std::string input("x1.1");
 
-	typedef std::string::iterator iterator;
-	qi::rule<iterator, std::string()> identifier = qi::char_("xyzabcuvwXYZABCUVW");
-	qi::rule<iterator, double()> value = qi::double_;
+	typedef boost::spirit::function2<void, char, double> Callback_t;
+	typedef std::string::iterator Iterator;
 
-	qi::rule<iterator, std::pair<std::string, double >()> assignment;
-	qi::rule<iterator, std::map<std::string, double >()> assignments;
-	assignment = (identifier >> value);
-	assignments = +(assignment) [ arguments ];
-	// assignments = +(identifier >> value);
-	 
-	std::string input("x1.1y2.2");
-	std::string::iterator begin = input.begin();
-	// qi::parse(input.begin(), input.end(), assignments, arguments);
-	// qi::phrase_parse(begin, input.end(), assignments, qi::space, arguments);
-	// qi::parse(begin, input.end(), assignment, qi::space);
-	// qi::parse(begin, input.end(), assignments [&insert]);
-	qi::parse(begin, input.end(), assignments);
+	boost::spirit::qi::rule<Iterator, char, double>()> arguments;
+	arguments = boost::spirit::qi::char_('x') >> boost::spirit::qi::double_;
 
-	// assignment = qi::as<std::map<std::string, std::string> >()[(identifier >> value)][&insert];
+	boost::spirit::qi::parse(input.begin(), input.end(), arguments );
 
+
+	// http://climbing-the-hill.blogspot.com.au/2010/05/boost-your-spirits.html
+
+
+	// from http://4thmouse.com/index.php/2008/07/20/boost-spirit-part-ii-attaching-actions-to-your-grammar/
+
+
+	// from http://www.codeproject.com/Articles/8516/An-Introduction-to-the-Boost-Spirit-Parser-framewo
+
+	/*
+	struct Syntax :
+		public boost::spirit::grammar<Syntax>
+	{
+	public:
+		Syntax( CParser &parser );
+		virtual ~Syntax();
+		template <typename ScannerT>
+		struct definition
+		{
+		public:
+			definition( Syntax const &self )
+			{
+				integer =
+					lexeme_d[ (+digit_p) ]
+					;
+				factor =
+					integer |
+					vars |
+					'(' >> expression >> ')' |
+					( '-' >> factor ) |
+					( '+' >> factor )
+					;
+				term =
+					factor >> *( ( '*' >> factor) | ( '/' >> factor ) )
+					;
+				expression =
+					term >> *( ( '+' >> term ) | ( '-' >> term ) )
+					;
+				assignment =
+					vars
+					>> '=' >> expression
+					;
+				var_decl =
+					lexeme_d
+					[
+						( ( alpha_p >> *( alnum_p | '_' ) )
+						- vars )[vars.add]
+					]
+					;
+				declaration =
+					"int" >> var_decl >> *( ',' >> var_decl )
+					;
+				baseExpression =
+					str_p( "exit" )[*self.m_finishedProcessing] |
+					str_p( "mod" ) >> integer |
+					declaration |
+					assignment |
+					'?' >> expression
+					;
+			}
+			boost::spirit::symbols<int> vars;
+			boost::spirit::rule<ScannerT> integer, factor, term,
+				expression, assignment, var_decl, declaration,
+				baseExpression;
+			const boost::spirit::rule<ScannerT> &start() const { return baseExpression; }
+		};
+		friend struct definition;
+	private:
+		Private::FinishedProcessing *m_finishedProcessing;
+	};
+	*/
 
 	return(0);
 }
