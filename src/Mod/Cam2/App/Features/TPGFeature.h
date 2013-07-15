@@ -24,6 +24,8 @@
 #ifndef CAM_TPGFEATURE_H
 #define CAM_TPGFEATURE_H
 
+#include <PreCompiled.h>
+
 namespace Cam {
 class CamExport TPGFeature;
 }
@@ -60,7 +62,8 @@ public:
 
     /// Methods for creating external interface to attach input to each TPG
     // [TODO] eventually this could be an APP::Property link list but doesn't make sens
-//    void setInputGeometry(const std::vector<Part::Feature *> & vals) { inputGeometry = std::vector<Part::Feature *>(vals); } //Unsure whether we should convert this in here;
+	typedef std::vector<Part::Feature *> InputGeometry_t;
+    // void setInputGeometry(const InputGeometry_t & vals); //Unsure whether we should convert this in here;
 //    void setBoundingBox(const Base::BoundBox3d & bbox) { inputBBox = bbox; }
 
     /// Methods for obtaining output the output
@@ -97,7 +100,7 @@ protected:
     TPG *tpg;
     TPGSettings *tpgSettings;
 //    Base::BoundBox3d inputBBox;
-//    std::vector<Part::Feature *> inputGeometry;
+    // InputGeometry_t inputGeometry;
     
     virtual void onDocumentRestored();
 };

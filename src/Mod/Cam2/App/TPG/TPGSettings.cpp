@@ -21,14 +21,14 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
 #include "TPGSettings.h"
 
 #include <cstdio>
-#include <qlist.h>
+#include <QList>
 
 #include <Base/Console.h>
 
@@ -50,9 +50,9 @@ const char* ts(QString *str)
 
 TPGSettingDefinition::TPGSettingDefinition(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext)
 {
-	printf("new TPGSetting:(%p) %p,%p,%p,%p,%p,%p\n", this, name, label, type, defaultvalue, units, helptext);
-	printf("new TPGSetting:(%p) %p,%p,%p,%p,%p,%p\n", this, &this->name, &this->label, &this->type, &this->defaultvalue, &this->units, &this->helptext);
-	printf("new TPGSetting: %s,%s,%s,%s,%s,%s\n", name, label, type, defaultvalue, units, helptext);
+	this->refcnt = 1;
+    this->parent = NULL;
+
 	this->name = QString::fromAscii(name);
 	this->label = QString::fromAscii(label);
 	this->type = QString::fromAscii(type);
@@ -62,7 +62,9 @@ TPGSettingDefinition::TPGSettingDefinition(const char *name, const char *label, 
 }
 TPGSettingDefinition::TPGSettingDefinition(QString name, QString label, QString type, QString defaultvalue, QString units, QString helptext)
 {
-	printf("new TPGSetting: %p,%p,%p,%p,%p,%p\n", &name, &label, &type, &defaultvalue, &units, &helptext);
+	this->refcnt = 1;
+    this->parent = NULL;
+
 	this->name = name;
 	this->label = label;
 	this->type = type;
@@ -71,7 +73,8 @@ TPGSettingDefinition::TPGSettingDefinition(QString name, QString label, QString 
 	this->helptext = helptext;
 }
 TPGSettingDefinition::TPGSettingDefinition() {
-
+	this->refcnt = 1;
+    this->parent = NULL;
 }
 
 TPGSettingDefinition::~TPGSettingDefinition() {
@@ -91,6 +94,9 @@ TPGSettingDefinition* TPGSettingDefinition::clone()
 
     for (; it != this->options.end(); ++it)
         clone->addOption((*it)->id, (*it)->label);
+
+	clone->action = this->action;
+	clone->parent = this->parent;
 
     return clone;
 }
@@ -112,7 +118,7 @@ void TPGSettingDefinition::addOption(const char *id, const char *label) {
 
 void TPGSettingDefinition::print()
 {
-	printf("  - (%s, %s, %s, %s, %s, %s)\n",
+	qDebug("  - (%s, %s, %s, %s, %s, %s)\n",
 			name.toAscii().constData(),
 			label.toAscii().constData(),
 			type.toAscii().constData(),
@@ -170,10 +176,20 @@ QString TPGSettingDefinition::getFullname() {
 
 TPGSettings::TPGSettings()
 {
+	this->refcnt = 1;
+	this->tpgFeature = NULL;
 }
 
 TPGSettings::~TPGSettings()
 {
+	// The objects in the settingDefs vector used grab() to increment the reference count when they
+	// were added in the addSettingDefinition() method.  Release this reference count now that we
+	// don't need them any more.
+	for (std::vector<TPGSettingDefinition*>::iterator itSetting = settingDefs.begin(); itSetting != settingDefs.end(); /* increment within loop */ )
+	{
+		(*itSetting)->release();
+		itSetting = settingDefs.erase(itSetting);
+	}
 }
 
 /**
@@ -189,6 +205,8 @@ TPGSettings* TPGSettings::clone()
 		settings->addSettingDefinition((*it)->action, (*it)->clone());
 		++it;
 	}
+
+	settings->tpgFeature = this->tpgFeature;
 
 	return settings;
 }
@@ -237,7 +255,11 @@ const QString TPGSettings::getAction() const {
 bool TPGSettings::setAction(QString action) {
 	this->action = action;
 	if (tpgFeature != NULL)
+	{
 		tpgFeature->PropTPGSettings.setValue("action", action.toAscii().constData());
+		return(true);
+	}
+	return(false);
 }
 
 /**
@@ -314,6 +336,12 @@ void TPGSettings::print()
 		(*it)->print();
 		++it;
 	}
+}
+
+
+std::vector<TPGSettingDefinition*> TPGSettings::getSettings() 
+{
+	return this->settingDefs;
 }
 
 /**

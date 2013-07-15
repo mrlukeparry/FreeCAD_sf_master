@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -49,6 +49,11 @@ CppTPGFactoryInst::CppTPGFactoryInst() {
 }
 
 CppTPGFactoryInst::~CppTPGFactoryInst() {
+	for (Plugins_t::iterator itPlugin = plugins.begin(); itPlugin != plugins.end(); itPlugin++)
+	{
+		(*itPlugin)->release();
+	}
+	plugins.clear();
 }
 
 /**
@@ -62,29 +67,28 @@ void CppTPGFactoryInst::scanPlugins()
 	path.append(QString::fromAscii("Mod/Cam/CppTPG/"));
 
     // cleanout old plugins
-    // printf("Releasing old Plugins:\n");
+    qDebug("Releasing old Plugins:\n");
     for (size_t i = 0; i < plugins.size(); i++) {
         CppTPGPlugin* plugin = plugins.at(i);
-        // printf(" - %p, %i\n", plugin, plugin->refcnt);
+        qDebug(" - %p, %i\n", plugin, plugin->refcnt);
         plugin->release();
     }
     plugins.clear();
 
-    printf("Scanning: %s\n", path.toAscii().constData()); //TODO: delete this once the workbench is more stable
+	qDebug("Scanning: %s\n", path.toAscii().constData());
 
 	QDir dir(path);
-	dir.setFilter(QDir::Files | QDir::Executable);
+	dir.setFilter(QDir::Files);
 	QFileInfoList file_info_list = dir.entryInfoList();
 	for (QFileInfoList::ConstIterator itFileInfo = file_info_list.begin(); itFileInfo != file_info_list.end(); itFileInfo++)
 	{
-		if (itFileInfo->fileName().endsWith(QString::fromAscii(".so"), Qt::CaseInsensitive))
+		if (QLibrary::isLibrary(itFileInfo->fileName()))
 		{
 			 // make library pointer
-            QString lib = itFileInfo->absoluteFilePath();
-            plugins.push_back(new CppTPGPlugin(lib));
-            printf("CppPlugin: %s\n", lib.toAscii().constData()); //TODO: delete this once the workbench is more stable
+			QString lib = itFileInfo->absoluteFilePath();
+			plugins.push_back(new CppTPGPlugin(lib));
+			qDebug("CppPlugin: %s\n", lib.toAscii().constData()); //TODO: delete this once the workbench is more stable
 		} // End if - then
-
 	} // End for
 }
 
@@ -104,7 +108,7 @@ TPGDescriptorCollection* CppTPGFactoryInst::getDescriptors()
         }
     }
 
-    printf("Found %i CppTPGs\n", int(descriptors->size())); //TODO: delete this once the workbench is more stable
+    qDebug("Found %i CppTPGs\n", int(descriptors->size())); //TODO: delete this once the workbench is more stable
 
     // copy the tpg collection cache
     return descriptors->clone();

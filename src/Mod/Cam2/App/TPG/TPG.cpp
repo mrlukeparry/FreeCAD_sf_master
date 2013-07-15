@@ -21,7 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -44,15 +44,17 @@ TPG::TPG()
 //    cache = new TPGCache();
 //    cache->initialise();
 
-    refcnt = 1;
-    settings = NULL;
+    this->refcnt = 1;
+    this->settings = NULL;
 }
 
 TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription)
 {
+  this->refcnt = 1;
   this->id = TPGId;
   this->name = TPGName;
   this->description = TPGDescription;
+  this->settings = NULL;
 }
 
 TPG::~TPG()
@@ -141,3 +143,20 @@ void TPG::release() {
         delete this;
 }
 
+/* static */ QString TPG::stateToStr(State state) {
+	if (state == RUNNING)
+		return QString::fromAscii("Running");
+	else if (state == STARTED)
+		return QString::fromAscii("Started");
+	else if (state == ERROR)
+		return QString::fromAscii("Error");
+	else if (state == FINISHED)
+		return QString::fromAscii("Finished");
+	else if (state == INITIALISED)
+		return QString::fromAscii("Initialised");
+	else if (state == UNDEFINED)
+		return QString::fromAscii("Undefined");
+	else if (state == LOADED)
+		return QString::fromAscii("Loaded");
+	return QString::fromAscii("Undefined");
+}

@@ -20,12 +20,12 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
 #include <cstdlib>
-#include <qlabel.h>
+#include <QLabel>
 
 #include <Base/Console.h>
 
@@ -110,7 +110,7 @@ bool CamTextBoxComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLay
 
             // make the label
             QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
-            labelWidget->setObjectName(qname + "Label");
+			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
             form->setWidget(row, QFormLayout::LabelRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
 
@@ -173,7 +173,7 @@ bool CamRadioComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayou
 
             // make the label
             QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
-            labelWidget->setObjectName(qname + "Label");
+			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
             form->setWidget(row, QFormLayout::SpanningRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
 
@@ -196,7 +196,7 @@ bool CamRadioComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayou
                     btn->setChecked(true);
                 btn->setText((*it)->label);
                 layout->addWidget(btn);
-                radios.insert((*it)->id, btn);
+				radios.insert((*it)->id, btn);
             }
 
             // keep reference to widgets for later cleanup

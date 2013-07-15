@@ -23,14 +23,26 @@
 #ifndef MACHINEPROGRAM_H_
 #define MACHINEPROGRAM_H_
 
-#include <qstringlist.h>
+#include <QStringList>
 
 
 namespace Cam {
 
+/**
+	The MachineProgram class contains the output from executing the
+	Python scripts housed within a single ToolPath object.  It holds
+	a QStringList for the stdout (GCode) and another for the errors
+	(including execptions).
+
+	An instance of this class is constructed by the PostProcessor::postProcess()
+	method.  The MachineProgram pointer returned must be released
+	by the calling routine.  i.e. call the release() method and allow
+	that to free any memory when the refcnt reaches zero.
+ */
 class MachineProgram {
 protected:
     QStringList *machineProgram;
+	QStringList *errors;
 
     int refcnt;
     virtual ~MachineProgram();
@@ -42,15 +54,28 @@ public:
      */
     void addMachineCommand(QString mc);
 
+	void addErrorString(QString error_string);
+
     /**
      * Clear out the toolpath.
      */
     void clear();
 
     /**
-     * Get the Machine Program as a list of strings
+     * Get the Machine Program as a list of strings.  This comes from the
+	 * stdout of the Python interpreter when executing the python code
+	 * held within the ToolPath object.
      */
     QStringList *getMachineProgram();
+
+	/**
+	 * Return any error strings (including exceptions) that were seen during the
+	 * execution of the ToolPath (i.e. the python code).  It's only by looking
+	 * at this QStringList that the calling routine can determine if any errors
+	 * (including exceptions) occured during the execution of the ToolPath (i.e.
+	 * the Python program).
+	 */
+	QStringList *getErrors();
 
     /**
      * Increases reference count
@@ -69,6 +94,9 @@ public:
         if (refcnt == 0)
             delete this;
     }
+
+public:
+	friend QString CamExport operator<< ( QString & buf, const MachineProgram & machine_program );
 };
 
 } /* namespace Cam */

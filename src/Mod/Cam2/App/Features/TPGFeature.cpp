@@ -21,7 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -136,6 +136,15 @@ TPG* TPGFeature::getTPG() {
 		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()));
 	return tpg;
 }
+
+/*
+void TPGFeature::setInputGeometry(const std::vector<Part::Feature *> & vals)
+{
+	inputGeometry.clear();
+	std::copy( vals.begin(), vals.end(), std::inserter( inputGeometry, inputGeometry.begin() ) );
+}
+*/
+
 
 /**
  * Get the current TPG settings object

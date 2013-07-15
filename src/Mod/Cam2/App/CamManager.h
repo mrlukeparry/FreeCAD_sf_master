@@ -26,9 +26,7 @@
 #include <boost/thread.hpp>
 
 #include <queue>
-
-#include <qobject.h>
-
+#include <QObject>
 #include <App/Document.h>
 
 #include "TPG/TPG.h"
@@ -55,6 +53,7 @@ protected:
 	class TPGRunnerItem {
 	public:
 		TPGRunnerItem(TPG* tpg, TPGSettings* settings) {this->tpg = tpg; this->settings = settings;}
+		~TPGRunnerItem() { if (this->settings) this->settings->release(); }
 		TPG* tpg;
 		TPGSettings* settings;
 	};

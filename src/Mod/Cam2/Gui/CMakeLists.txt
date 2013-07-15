@@ -1,10 +1,13 @@
 if(MSVC)
-    add_definitions(-DFCAppCam -DHAVE_ACOSH -DHAVE_ASINH -DHAVE_ATANH)
+    add_definitions(-DHAVE_ACOSH -DHAVE_ASINH -DHAVE_ATANH)
 else(MSVC)
     add_definitions(-DHAVE_LIMITS_H -DHAVE_CONFIG_H)
 endif(MSVC)
 
 include_directories(
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/Gui
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App/Graphics
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App/Libs/libarea-clipper
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_BINARY_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -46,6 +49,11 @@ set(CamGui_MOC_HDRS
     UIManager.h
     TPGListModel.h
 )
+
+set (CamGui_MOC_SRCS
+	../App/CamManager.cpp
+)
+
 fc_wrap_cpp(CamGui_MOC_SRCS ${CamGui_MOC_HDRS})
 
 set(CamGui_UIC_SRCS
@@ -97,6 +105,11 @@ SET(CamGui_SRCS
     UIManager.h
     TPGListModel.cpp
     TPGListModel.h
+
+    ../App/TPG/TPGDescriptor.h
+    ../App/TPG/TPGDescriptorCollection.h
+    ../App/TPG/TPGSettings.h
+    ../App/CamManager.h
 )
 
 add_library(CamGui SHARED ${CamGui_SRCS})

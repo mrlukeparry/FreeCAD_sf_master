@@ -23,11 +23,14 @@
 #ifndef CAMPROJECTDOCKWINDOWCOMPONENTS_H_
 #define CAMPROJECTDOCKWINDOWCOMPONENTS_H_
 
-#include <qlineedit.h>
-#include <qformlayout.h>
-#include <qlist.h>
-#include <qwidget.h>
-#include <qradiobutton.h>
+#include <PreCompiled.h>
+
+#include <QLineEdit>
+#include <QFormLayout>
+#include <QList>
+#include <QWidget>
+#include <QRadioButton>
+#include <QMap>
 
 #include "../App/TPG/TPGSettings.h"
 

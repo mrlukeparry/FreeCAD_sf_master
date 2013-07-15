@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #include <Python.h>
 #endif
@@ -454,12 +454,22 @@ Cam::CamFeature *UIManagerInst::makeCamFeature(App::Document* Doc)
 	// create the object
 	App::DocumentObject *camFeat =  Doc->addObject("Cam::CamFeature", FeatName.c_str());
 	if(camFeat && camFeat->isDerivedFrom(Cam::CamFeature::getClassTypeId())) {
-		Cam::CamFeature *camFeature = dynamic_cast<Cam::CamFeature *>(camFeature);
-		camFeature->initialise();
+		Cam::CamFeature *camFeature = dynamic_cast<Cam::CamFeature *>(camFeat);
+		if (camFeature != NULL)
+		{
+			camFeature->initialise();
 
-	    Gui::Command::commitCommand();
-//		Doc->recompute();
-		return camFeature;
+			Gui::Command::commitCommand();
+	//		Doc->recompute();
+			return camFeature;
+		}
+		else
+		{
+			Base::Console().Error("Unable to create Cam Feature\n");
+
+			Gui::Command::abortCommand();
+			return NULL;
+		}
 	}
 	else {
 		Base::Console().Error("Unable to create Cam Feature\n");

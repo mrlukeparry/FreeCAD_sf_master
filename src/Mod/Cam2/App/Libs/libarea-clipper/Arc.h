@@ -6,6 +6,9 @@
 
 #include "Point.h"
 
+namespace area
+{
+
 class Arc{
 public:
 	Point m_s;
@@ -22,3 +25,7 @@ public:
 	bool AlmostALine()const;
 	Point MidParam(double param)const;
 };
+
+
+} // End namespace area
+

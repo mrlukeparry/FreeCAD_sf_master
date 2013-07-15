@@ -24,7 +24,7 @@
 #define PYTPGSETTINGS_H_
 
 #include <Python.h>
-#include <qstring.h>
+#include <QString>
 
 #include "TPGSettings.h"
 

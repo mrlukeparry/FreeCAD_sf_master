@@ -5,6 +5,8 @@ else(MSVC)
 endif(MSVC)
 
 include_directories(
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App/Features
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
     ${Boost_INCLUDE_DIRS}
@@ -12,11 +14,14 @@ include_directories(
     ${ZLIB_INCLUDE_DIR}
     ${PYTHON_INCLUDE_PATH}
     ${XERCESC_INCLUDE_DIR}
+    ${QT_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App/Libs/libarea-clipper
 )
 link_directories(${OCC_LIBRARY_DIR})
 
 set(Cam_LIBS
     Part
+    AreaClipper
     ${OCC_LIBRARIES}
     FreeCADApp
 )
@@ -30,6 +35,13 @@ add_subdirectory(Libs)
 add_subdirectory(Plugins)
 
 # generate_from_xml(CamPy)
+
+SET(Graphics_SRCS
+    Graphics/CDouble.h
+    Graphics/Paths.h
+    Graphics/Paths.cpp
+)
+SOURCE_GROUP("Graphics" FILES ${Graphics_SRCS})
 
 SET(Features_SRCS
     Features/CamFeature.cpp
@@ -96,6 +108,13 @@ SET(TPG_SRCS
 )
 SOURCE_GROUP("TPG" FILES ${TPG_SRCS})
 
+SET(PLUGINS_SRCS
+	Plugins/MyPlugin.cpp
+	Plugins/MyPlugin.h
+)
+
+SOURCE_GROUP("Plugins" FILES ${PLUGINS_SRCS})
+
 # SET(Python_SRCS
 # )
 # SOURCE_GROUP("Python" FILES ${Python_SRCS})
@@ -126,7 +145,9 @@ SET(Cam_SRCS
     ${TPG_SRCS}
     ${CamModule_SRCS}
     ${Features_SRCS}
+    ${Graphics_SRCS}
     ${Python_SRCS}
+    ${PLUGINS_SRCS}
 )
 
 SET(Cam_Scripts
@@ -158,6 +179,12 @@ SET(PostProc_Scripts
     PyPostProcessor/PostProcessorAPI.py
     PyPostProcessor/TestPostProcessor.py
     PyPostProcessor/PostProcessor/__init__.py
+    PyPostProcessor/PostProcessor/nc.py
+    PyPostProcessor/PostProcessor/format.py
+    PyPostProcessor/PostProcessor/iso.py
+    PyPostProcessor/PostProcessor/linuxcnc.py
+    PyPostProcessor/PostProcessor/mach3.py
+    PyPostProcessor/PostProcessor/hm50.py
 
 	## TODO: add core postprocessor files
 
@@ -203,5 +230,7 @@ else(MSVC)
     set_target_properties(Cam PROPERTIES PREFIX "")
     set_target_properties(Cam PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
 endif(MSVC)
+
+add_definitions(-DCAM_BINARY_DIR="${CMAKE_BINARY_DIR}")
 
 INSTALL(TARGETS Cam DESTINATION lib)

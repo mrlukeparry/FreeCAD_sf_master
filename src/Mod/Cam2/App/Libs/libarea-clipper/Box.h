@@ -7,6 +7,11 @@
 #include <string.h>	// for memcpy() prototype
 #include <math.h>	// for sqrt() prototype
 
+#include "Point.h"
+
+namespace area
+{
+
 class CBox{
 public:
 	Point m_minxy;
@@ -67,4 +72,7 @@ public:
 	double MinY() const { return(m_minxy.y); }
 	double MaxY() const { return(m_maxxy.y); }
 };
+
+} // End namespace area
+
 

@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -31,11 +31,19 @@ namespace Cam {
 MachineProgram::MachineProgram() {
     refcnt = 1;
     machineProgram = new QStringList();
+	errors = new QStringList();
 }
 
 MachineProgram::~MachineProgram() {
-    if (this->machineProgram == NULL)
+    if (this->machineProgram != NULL)
+	{
         delete this->machineProgram;
+	}
+
+	if (this->errors != NULL)
+	{
+		delete this->errors;
+	}
 }
 
 /**
@@ -44,7 +52,16 @@ MachineProgram::~MachineProgram() {
 void MachineProgram::addMachineCommand(QString mc) {
     if (this->machineProgram == NULL)
         this->machineProgram = new QStringList();
+
+	if (mc.endsWith(QString::fromAscii("\n"))) mc.remove(mc.size()-1, 1);	// Strip off the newline character.
     this->machineProgram->push_back(mc);
+}
+
+void MachineProgram::addErrorString(QString error_string) {
+    if (this->errors == NULL)
+        this->errors = new QStringList();
+
+    this->errors->push_back(error_string);
 }
 
 /**
@@ -55,6 +72,11 @@ void MachineProgram::clear() {
         this->machineProgram->clear();
     else
         this->machineProgram = new QStringList();
+
+	if (this->errors != NULL)
+        this->errors->clear();
+    else
+        this->errors = new QStringList();
 }
 
 /**
@@ -63,5 +85,25 @@ void MachineProgram::clear() {
 QStringList *MachineProgram::getMachineProgram() {
     return machineProgram;
 }
+
+QStringList *MachineProgram::getErrors() {
+	return this->errors;
+}
+
+
+/* friend */ QString operator<< ( QString & buf, const MachineProgram & machine_program )
+{
+	if (machine_program.machineProgram)
+	{
+		for (QStringList::const_iterator itString = machine_program.machineProgram->begin(); itString != machine_program.machineProgram->end(); itString++)
+		{
+			buf.append(*itString);
+			buf.append(QString::fromAscii("\n"));
+		}
+	}
+	return(buf);
+}
+
+
 
 } /* namespace Cam */
