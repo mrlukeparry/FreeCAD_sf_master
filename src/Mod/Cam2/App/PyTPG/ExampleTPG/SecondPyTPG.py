@@ -1,3 +1,4 @@
+'''
 #/***************************************************************************
 # *   Copyright (c) 2012 Andrew Robinson  (andrewjrobinson@gmail.com)       *
 # *                                                                         *
@@ -19,55 +20,27 @@
 # *   Suite 330, Boston, MA  02111-1307, USA                                *
 # *                                                                         *
 # ***************************************************************************/
+Created on 16/06/2013
 
-#import logging, traceback
+@author: arobinson
+'''
+
+
 import Cam
 from PyCam.PyCam import PyTPGBase, UnimplementedTPError
 
 
-__all__ = ['ExampleTPG']
+__all__ = ['SecondPyTPG']
 
-
-class ExampleTPG(PyTPGBase):
-    '''This is an example TPG that demonstrates how to create a TPG for the 
-    CAM2 module.'''
-    
-#    '''
-#    Each settings is made up of a 6-tuple (<name>, <label>, <type>, 
-#    <defaultvalue>, <unit>, <helptext>)
-#    
-#    NOTE: All values must be a string, unicode or None
-#    <name>
-#        A unique (within the action) identifier for the given setting.  It may 
-#        be preceded by one or more group names (separated by ':') which are 
-#        used by the UI to construct a setting Tree.
-#        
-#    <label>
-#        The text to display to the user for this setting.
-#    
-#    <type>
-#        May be 'Cam::Group' for a group header (i.e. not a real setting) OR one
-#        of the built in types
-#        @see: http://sourceforge.net/apps/mediawiki/free-cad/index.php?title=Scripted_objects#Available_properties
-#        
-#    <defaultvalue>
-#        The default value that will appear on screen before the user makes 
-#        changes.
-#        
-#    <unit>
-#        Optional help text that identifies the units that this setting expects
-#        
-#    <helptext>
-#        Optional description of this setting; it is useful to include examples 
-#        of desirable options
-#    '''
+class SecondPyTPG(PyTPGBase):
+    '''A second TPG to test ui'''
     settings = None
     
     # The static identification and descriptive information 
-    id = u'10bf335e-2491-11e2-8f39-08002734b94f' #this NEEDS to be unique!!!  @see PyTPGBase.id for details how to generate one.
-    name = u'ExampleTPG' # should match classname
-    description = u'This is a simple Example Python TPG'
-        
+    id = u'299d8e22-3155-11e2-98ec-08002734b94f' #this NEEDS to be unique!!!  @see PyTPGBase.id
+    name = u'SecondPyTPG' # should match classname
+    description = u'A second Python TPG for testing UI'
+    
     def _defineSettings(self):
         '''Support method to setup the settings structure'''
         
@@ -93,12 +66,9 @@ class ExampleTPG(PyTPGBase):
         
         @return: Cam.TPGSettings instance containing the settings
         '''
-        try:
-            print("Example.getSettingDefinitions() starting")
-            if self.settings is None:
-                self._defineSettings()
-        except Exception as e:
-            print e
+        if self.settings is None:
+            self._defineSettings()
+
         return self.settings
         
     def run(self, action, settings=[]):
@@ -136,3 +106,5 @@ class ExampleTPG(PyTPGBase):
         
         return out
     # end run()
+    
+    

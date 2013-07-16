@@ -28,20 +28,28 @@
 
 #include "TPGSettings.h"
 
+
 #define QString_toPyString(__str__) PyString_FromString(((const char*)(__str__)).toStdString().c_str());
 #define QStringPtr_toPyString(__str__) PyString_FromString(((const char*)(__str__))->toStdString().c_str());
 
+extern PyTypeObject *PyTPGSettings_Type();
+extern PyTypeObject *PyTPGSettingDefinition_Type();
 
-#define PyCamTPGSettings_Check(__obj__) PyObject_TypeCheck((__obj__), &PyTPGSettingsType)
-#define PyTPGSettingDefinition_Check(__obj__) PyObject_TypeCheck((__obj__), &PyTPGSettingDefinitionType)
 
+#define PyCamTPGSettings_Check(__obj__) PyObject_TypeCheck((__obj__), PyTPGSettings_Type())
+#define PyTPGSettingDefinition_Check(__obj__) PyObject_TypeCheck((__obj__), PyTPGSettingDefinition_Type())
+
+
+// ----------------------------------------------------------------------------
+// ----- TPGSettingDefinition -------------------------------------------------
+// ----------------------------------------------------------------------------
 
 /**
  * A wrapper for the TPGSettingDefinition class to allow access from PyTPGs
  */
 typedef struct  {
     PyObject_HEAD
-    Cam::TPGSettingDefinition *settings;
+    Cam::TPGSettingDefinition *setting;
 } cam_PyTPGSettingDefinition;
 
 

@@ -60,7 +60,7 @@ TPGSettingDefinition::TPGSettingDefinition(const char *name, const char *label, 
 	this->units = QString::fromAscii(units);
 	this->helptext = QString::fromAscii(helptext);
 }
-TPGSettingDefinition::TPGSettingDefinition(QString &name, QString &label, QString &type, QString &defaultvalue, QString &units, QString &helptext)
+TPGSettingDefinition::TPGSettingDefinition(QString name, QString label, QString type, QString defaultvalue, QString units, QString helptext)
 {
 	this->refcnt = 1;
     this->parent = NULL;
@@ -157,7 +157,7 @@ QString TPGSettingDefinition::getValue() {
 /**
  * Set the value associated with this setting
  */
-bool TPGSettingDefinition::setValue(QString &value) {
+bool TPGSettingDefinition::setValue(QString value) {
 	if (this->parent != NULL) {
 		return parent->setValue(action, name, value);
 	}
@@ -214,17 +214,29 @@ TPGSettings* TPGSettings::clone()
 /**
  * Adds the setting to this setting group
  */
-TPGSettingDefinition* TPGSettings::addSettingDefinition(QString &action, TPGSettingDefinition* setting) {
+TPGSettingDefinition* TPGSettings::addSettingDefinition(QString action, TPGSettingDefinition* setting) {
 
-	QString qname = action + QString::fromAscii("::") + setting->name;
+	if (setting != NULL) {
+		QString qname = action + QString::fromAscii("::") + setting->name;
 
-	// store reference to setting
-	settingDefs.push_back(setting->grab());
-	settingDefsMap.insert(std::pair<QString, TPGSettingDefinition*>(qname, setting));
+		// store reference to setting
+		settingDefs.push_back(setting->grab());
+		settingDefsMap.insert(std::pair<QString, TPGSettingDefinition*>(qname, setting));
 
-	// take ownership of setting
-	setting->action = action;
-	setting->parent = this;
+		// take ownership of setting
+		setting->action = action;
+		setting->parent = this;
+
+		// add setting to the required action
+		std::map<QString, std::vector<TPGSettingDefinition*> >::iterator it = settingDefsActionMap.find(action);
+		if (it == settingDefsActionMap.end()) {
+			std::vector<TPGSettingDefinition*> settings;
+			settings.push_back(setting);
+			settingDefsActionMap.insert(std::pair<QString, std::vector<TPGSettingDefinition*> >(action, settings));
+		} else {
+			it->second.push_back(setting);
+		}
+	}
 
 	// return setting for convenience
 	return setting;
@@ -233,14 +245,14 @@ TPGSettingDefinition* TPGSettings::addSettingDefinition(QString &action, TPGSett
 /**
  * Get the currently selected action.
  */
-const QString &TPGSettings::getAction() const {
+const QString TPGSettings::getAction() const {
 	return action;
 }
 
 /**
  * Change the currently selected action.
  */
-bool TPGSettings::setAction(QString &action) {
+bool TPGSettings::setAction(QString action) {
 	this->action = action;
 	if (tpgFeature != NULL)
 	{
@@ -253,7 +265,7 @@ bool TPGSettings::setAction(QString &action) {
 /**
  * Get the value of a given setting (by name)
  */
-const QString TPGSettings::getValue(QString &name) {
+const QString TPGSettings::getValue(QString name) {
 	if (action.isNull() || action.isEmpty())
 		return QString::null;
 	return getValue(name, action);
@@ -262,7 +274,7 @@ const QString TPGSettings::getValue(QString &name) {
 /**
  * Get the value of a given setting (by name)
  */
-const QString TPGSettings::getValue(QString &action, QString &name) {
+const QString TPGSettings::getValue(QString action, QString name) {
 
 	if (action.isNull() || action.isEmpty()) {
 		Base::Console().Message("action not set\n");
@@ -289,7 +301,7 @@ const QString TPGSettings::getValue(QString &action, QString &name) {
 /**
  * Set the value for the named setting
  */
-bool TPGSettings::setValue(QString &action, QString &name, QString &value) {
+bool TPGSettings::setValue(QString action, QString name, QString value) {
 
 	if (action.isNull() || action.isEmpty())
 		return false;
@@ -312,7 +324,7 @@ bool TPGSettings::setValue(QString &action, QString &name, QString &value) {
 /**
  * Set the value for the named setting
  */
-bool TPGSettings::setValue(QString &name, QString &value) {
+bool TPGSettings::setValue(QString name, QString value) {
 	return setValue(action, name, value);
 }
 
@@ -355,6 +367,20 @@ void TPGSettings::addDefaults() {
 	}
 }
 
+QStringList TPGSettings::getActions() {
+
+	QStringList result;
+
+	std::map<QString, std::vector<TPGSettingDefinition*> >::iterator it = settingDefsActionMap.begin();
+	while (it != settingDefsActionMap.end()) {
+		Base::Console().Log("%s\n", (*it).first.toAscii().constData());
+		result.append((*it).first);
+		++it;
+	}
+
+	return result;
+}
+
 /**
  * Sets the TPGFeature that the value will be saved-to/read-from.
  *
@@ -390,7 +416,7 @@ void TPGSettings::release() {
 /**
  * Make a namespaced name (from <action>::<name>)
  */
-QString TPGSettings::makeName(QString &action, QString &name) const {
+QString TPGSettings::makeName(QString action, QString name) const {
 	QString result = action;
 	result.append(QString::fromAscii("::"));
 	result.append(name);
