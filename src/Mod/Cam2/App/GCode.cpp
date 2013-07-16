@@ -25,6 +25,11 @@
 #ifndef _PreComp_
 #endif
 
+// #include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+
 #include "GCode.h"
 using namespace Cam;
 GCode::GCode()
@@ -39,7 +44,7 @@ GCode::~GCode()
 
 void callback(char c, double f)
 {
-	int = 3;
+	int i = 3;
 }
 
 std::vector<double> doubles;
@@ -48,17 +53,111 @@ void add_argument(double const &value)
 	doubles.push_back(value);
 }
 
+
+namespace qi = boost::spirit::qi;
+
+typedef std::string::iterator Iterator;
+
+template <typename Iterator>
+struct argument_grammar : boost::spirit::qi::grammar<Iterator, std::pair<char, double>()>
+{
+    argument_grammar() : argument_grammar::base_type(d)
+    {
+        d = +boost::spirit::qi::lit('x') >> boost::spirit::qi::double_ >> *boost::spirit::qi::lit(' ');
+    }
+    boost::spirit::qi::rule<Iterator, std::pair<char, double>()> d;
+};
+
+
+template <typename Iterator>
+struct point_double_grammar : boost::spirit::qi::grammar<Iterator, double()>
+{
+    point_double_grammar() : point_double_grammar::base_type(d)
+    {
+        d = *boost::spirit::qi::lit(' ') >> boost::spirit::qi::double_ >> *boost::spirit::qi::lit(' ');
+    }
+    boost::spirit::qi::rule<Iterator, double()> d;
+};
+
 int wilma()
 {
 	std::string input("x1.1");
 
-	typedef boost::spirit::function2<void, char, double> Callback_t;
-	typedef std::string::iterator Iterator;
+	point_double_grammar<std::string::iterator> point_grammar;
+	argument_grammar<std::string::iterator> arguments;
 
-	boost::spirit::qi::rule<Iterator, char, double>()> arguments;
-	arguments = boost::spirit::qi::char_('x') >> boost::spirit::qi::double_;
+    bool result = false;
+    double d = 0.0;
+    std::string p1 = "575040.3400";
+    std::string p2 = "117380.1200";
+    std::string p3 = "-001.22916765";
+    std::string p4 = "063.39171738";
+    std::string p5 = "2.5";
 
-	boost::spirit::qi::parse(input.begin(), input.end(), arguments );
+    std::string::iterator it;
+    std::string::iterator last;
+
+    it = p1.begin();
+    last = p1.end();
+    result = (boost::spirit::qi::parse(it, last, point_grammar, d) && it ==
+            last);
+    if(result)
+    {
+        std::cout << p1 << " == " << d << std::endl;
+    }
+    else
+    {
+        std::cout << "Parsing failed!" << std::endl;
+    }
+
+    it = p2.begin();
+    last = p2.end();
+    result = (boost::spirit::qi::parse(it, last, point_grammar, d) && it ==
+            last);
+    if(result)
+    {
+        std::cout << p2 << " == " << d << std::endl;
+    }
+    else
+    {
+        std::cout << "Parsing failed!" << std::endl;
+    }
+
+    it = p3.begin();
+    last = p3.end();
+    result = (boost::spirit::qi::parse(it, last, point_grammar, d) && it == last);
+    if(result)
+    {
+        std::cout << p3 << " == " << d << std::endl;
+    }
+    else
+    {
+        std::cout << "Parsing failed!" << std::endl;
+    }
+
+    it = p4.begin();
+    last = p4.end();
+    result = (boost::spirit::qi::parse(it, last, point_grammar, d) && it == last);
+    if(result)
+    {
+        std::cout << p4 << " == " << d << std::endl;
+    }
+    else
+    {
+        std::cout << "Parsing failed!" << std::endl;
+    }
+
+    it = p5.begin();
+    last = p5.end();
+    result = (boost::spirit::qi::parse(it, last, point_grammar, d) && it == last);
+    if(result)
+    {
+        std::cout << p5 << " == " << d << std::endl;
+    }
+    else
+    {
+        std::cout << "Parsing failed!" << std::endl;
+    }
 
 
 	// http://climbing-the-hill.blogspot.com.au/2010/05/boost-your-spirits.html
