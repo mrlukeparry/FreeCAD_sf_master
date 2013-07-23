@@ -404,6 +404,8 @@ namespace Cam
 	protected:
 		std::vector<ContiguousPath> m_contiguous_paths;
 		bool		m_is_forwards;
+
+		mutable std::auto_ptr<Locations_t> m_pPointLocationData;	// cache to save re-calculation when possible.
 	}; // End Paths class definition.
 
 

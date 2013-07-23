@@ -1040,6 +1040,8 @@ Cam::Paths::Paths(area::CArea & area)
 
 void Cam::Paths::Add(area::CArea & area)
 {
+	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
+
 	for (std::list<area::CCurve>::const_iterator itCurve = area.m_curves.begin(); itCurve != area.m_curves.end(); itCurve++)
 	{
 		std::list<area::Span> spans;
@@ -1255,6 +1257,8 @@ bool Cam::ContiguousPath::Add(Cam::Path path)
 
 void Cam::Paths::Add(const TPGFeature::InputGeometry_t input_geometry)
 {
+	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
+
 	for (TPGFeature::InputGeometry_t::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
 	{
 		Add( (*itGeometry) );
@@ -1268,6 +1272,8 @@ void Cam::Paths::Add(const TPGFeature::InputGeometry_t input_geometry)
  */
 void Cam::Paths::Add( const Part::Feature *link )
 {
+	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
+
 	if (!link) return;
     if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) return;
     const TopoDS_Shape& shape = static_cast<const Part::Feature*>(link)->Shape.getShape()._Shape;
@@ -1277,6 +1283,8 @@ void Cam::Paths::Add( const Part::Feature *link )
 
 void Cam::Paths::Add(const TopoDS_Shape shape)
 {
+	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
+
 	if (! shape.IsNull())
 	{
 		TopAbs_ShapeEnum shape_type(shape.ShapeType());
@@ -1342,6 +1350,8 @@ void Paths::Add(const TopoDS_Wire wire, const gp_Pln reference_plane, const doub
  */
 void Cam::Paths::Add(const Path path)
 {
+	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
+
 	bool added = false;
 
 	// See if any of the paths already contain this path.  If so, don't add the duplicate copy.
@@ -3542,14 +3552,17 @@ Cam::Faces_t Cam::Paths::Faces(const bool subtract_nested_faces /* = true */ ) c
 	This method is used to find individual locations for Drilling, Positioning,
 	Tapping or Counterbore operations. (and any other machining operations that
 	act around a single location)
-
-	The idea is that drilling locations (etc.) can be defined by placing lines, circles
-	and other graphical elements such that the locations for drilling are defined by
-	the intersections of these graphical elements.
  */
-Paths::Locations_t Paths::PointLocationData(const Point reference_location_for_sorting /* = Point(0.0, 0.0, 0.0) */ ) const
+Paths::Locations_t Paths::PointLocationData(const Point reference_location_for_sorting /* = Point(0.0, 0.0, 0.0) */) const
 {
-	std::set<Cam::Point> distinct_locations;
+	// Check to see if we've already calculated this information.
+
+	if (m_pPointLocationData.get() != NULL)
+	{
+		return(*m_pPointLocationData);
+	}
+
+	std::set< Cam::Point > distinct_locations;
 	std::set< ::size_t > intersecting_paths;
 
 	for (::size_t lhs=0; lhs<size(); lhs++)
@@ -3605,17 +3618,17 @@ Paths::Locations_t Paths::PointLocationData(const Point reference_location_for_s
 		}
 	}
 
-	Paths::Locations_t locations;
-	std::copy( distinct_locations.begin(), distinct_locations.end(), std::inserter( locations, locations.begin() ));
+	m_pPointLocationData = std::auto_ptr<Paths::Locations_t>(new Paths::Locations_t());
+	std::copy( distinct_locations.begin(), distinct_locations.end(), std::inserter( *m_pPointLocationData, m_pPointLocationData->begin() ));
 
 	// Now sort these locations so there is less rapid movements between them.
-	for (Paths::Locations_t::iterator l_itPoint = locations.begin(); l_itPoint != locations.end(); l_itPoint++)
+	for (Paths::Locations_t::iterator l_itPoint = m_pPointLocationData->begin(); l_itPoint != m_pPointLocationData->end(); l_itPoint++)
 	{
-		if (l_itPoint == locations.begin())
+		if (l_itPoint == m_pPointLocationData->begin())
 		{
 			// It's the first point.
 			sort_points_by_distance compare( reference_location_for_sorting );
-			std::sort( locations.begin(), locations.end(), compare );
+			std::sort( m_pPointLocationData->begin(), m_pPointLocationData->end(), compare );
 		} // End if - then
 		else
 		{
@@ -3623,15 +3636,15 @@ Paths::Locations_t Paths::PointLocationData(const Point reference_location_for_s
 			Paths::Locations_t::iterator l_itNextPoint = l_itPoint;
 			l_itNextPoint++;
 
-			if (l_itNextPoint != locations.end())
+			if (l_itNextPoint != m_pPointLocationData->end())
 			{
 				sort_points_by_distance compare( *l_itPoint );
-				std::sort( l_itNextPoint, locations.end(), compare );
+				std::sort( l_itNextPoint, m_pPointLocationData->end(), compare );
 			} // End if - then
 		} // End if - else
 	} // End for
-
-	return(locations);
+	
+	return(*m_pPointLocationData);
 }
 
 } // End namespace Cam
