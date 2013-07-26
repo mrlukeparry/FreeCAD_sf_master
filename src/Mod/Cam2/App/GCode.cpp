@@ -25,7 +25,19 @@
 #ifndef _PreComp_
 #endif
 
-// #include <boost/spirit/include/qi.hpp>
+#include <sstream>
+
+// NOTE: These BOOST SPIRIT DEBUG macros MUST be defined BEFORE the include
+// files.  Otherwise the default values, defined within the include files,
+// will be used instead.
+
+// Define an ostringstream to accumulate any debug output the grammar has
+// to offer.  If we fail to parse the GCode, we will want to know why.
+std::ostringstream GrammarDebugOutputBuffer;
+
+#define BOOST_SPIRIT_DEBUG
+#define BOOST_SPIRIT_DEBUG_OUT GrammarDebugOutputBuffer
+
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/function.hpp>
@@ -111,18 +123,19 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		int j=3;
 	}
 
+
 	rs274(arguments_dictionary &dict) : rs274::base_type(Start)
 	{
+		using phx::construct;
+		using phx::val;
+
 		// Variables declared here are created and destroyed for each rule parsed.
 		// Use member variables of the structure for long-lived variables instead.
 
-		// arguments_dictionary arguments;
-
-		line_number = 0;
-
 		// N110 - i.e. use qi::lexeme to avoid qi::space_type skipper which allows the possibility of interpreting 'N 110'.  We don't want spaces here.
-		LineNumberRule = (qi::lexeme [qi::char_("nN") ] >> qi::int_ )
-			[ phx::ref(line_number) = qi::_2 ];
+		LineNumberRule = qi::lexeme [ (qi::char_("nN") >> qi::int_ ) ]
+			[ phx::ref(line_number) = qi::_1 ]
+			;
 
 		// X 1.1 etc.
 		MotionArgument = (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)
@@ -130,7 +143,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			;
 
 		// g00 X <float> Y <float> etc.
-		Rapid = (qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("0")] >> +(MotionArgument) >> EndOfBlock)
+		Rapid = (qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("0")] >> +(MotionArgument))
 			[ phx::bind(&rs274<Iter, Skipper>::Print, phx::ref(*this) ) ]	// call this->Print()
 			;
 
@@ -139,14 +152,14 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			[ phx::bind(&rs274<Iter, Skipper>::Print, phx::ref(*this) ) ]	// call this->Print()
 			;
 
-			EndOfBlock = (qi::no_skip[*qi::space >> qi::eol])
+		EndOfBlock = (qi::no_skip[*qi::space >> qi::eol])
 			[ phx::bind(&rs274<Iter, Skipper>::ProcessBlock, phx::ref(*this) ) ]	// call this->EndOfBlock()
 			;
 
 		MotionCommand =	
 					(LineNumberRule >> EndOfBlock)
 				|	(LineNumberRule >> Feed >> EndOfBlock)
-				|	(LineNumberRule >> Rapid)
+				|	(LineNumberRule >> Rapid >> EndOfBlock)
 					;
 
 		Start = +(MotionCommand)	// [ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ]
@@ -167,10 +180,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		qi::rule<Iter, Skipper> Feed;
 		qi::rule<Iter, Skipper> Rapid;		
 		qi::rule<Iter, Skipper> MotionCommand;
-		qi::rule<Iter, Skipper> LineNumberRule;
+		qi::rule<Iter, boost::fusion::vector2<char,int>(), Skipper> LineNumberRule;
 		qi::rule<Iter, Skipper> EndOfBlock;
 
-		int			line_number;
+		boost::fusion::vector2<char,int>		line_number;
 
 		typedef std::map<char, double>	DoubleMap_t;
 		DoubleMap_t	m_doubles;
@@ -181,16 +194,13 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 int CamExport wilma()
 {
-
 	// from http://stackoverflow.com/questions/12208705/add-to-a-spirit-qi-symbol-table-in-a-semantic-action
 	// and http://stackoverflow.com/questions/9139015/parsing-mixed-values-and-key-value-pairs-with-boost-spirit
-
-
 
 	arguments_dictionary arguments;
 	rs274<std::string::const_iterator> linuxcnc(arguments);
 
-	const std::string gcode = "N220 g0 X 1.1 Y 2.2 Z3.3   \n";
+	const std::string gcode = "N220 g0 X 1.1 Y 2.2 Z3.3\n";
 
 	std::string::const_iterator begin = gcode.begin();
 	// if (qi::phrase_parse(begin, gcode.end(), linuxcnc, qi::space - qi::eol))
@@ -202,7 +212,8 @@ int CamExport wilma()
 	}
 	else
 	{
-		qDebug("Parsing failed at N%d %d, %s\n", linuxcnc.line_number, std::distance(gcode.begin(), begin), begin);
+		// qDebug("Parsing failed at %c%d\n", linuxcnc.line_number[0].first, linuxcnc.line_number[0].second);
+		qDebug("%s\n", GrammarDebugOutputBuffer.str().c_str());
 	}
 
 	return(0);
