@@ -27,6 +27,7 @@
 
 // #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/phoenix.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 
@@ -55,18 +56,12 @@ void add_argument(double const &value)
 
 
 namespace qi = boost::spirit::qi;
+namespace ascii = boost::spirit::ascii;
 
 typedef std::string::iterator Iterator;
-
-template <typename Iterator>
-struct argument_grammar : boost::spirit::qi::grammar<Iterator, std::pair<char, double>()>
-{
-    argument_grammar() : argument_grammar::base_type(d)
-    {
-        d = +boost::spirit::qi::lit('x') >> boost::spirit::qi::double_ >> *boost::spirit::qi::lit(' ');
-    }
-    boost::spirit::qi::rule<Iterator, std::pair<char, double>()> d;
-};
+typedef std::pair<char, double> ArgumentData_t;
+typedef double Double_t;
+Double_t g_double;
 
 
 template <typename Iterator>
@@ -74,17 +69,104 @@ struct point_double_grammar : boost::spirit::qi::grammar<Iterator, double()>
 {
     point_double_grammar() : point_double_grammar::base_type(d)
     {
-        d = *boost::spirit::qi::lit(' ') >> boost::spirit::qi::double_ >> *boost::spirit::qi::lit(' ');
+		d = boost::spirit::qi::double_ [ g_double = boost::spirit::qi::as<double>(boost::spirit::qi::_1) ];
     }
     boost::spirit::qi::rule<Iterator, double()> d;
 };
 
-int wilma()
+
+// double mysub(boost::spirit::_1_type a, boost::spirit::_2_type b)
+double mysub(char a, double b)
 {
+	qDebug("%c %lf\n", a, b);
+	return(b);
+}
+
+namespace qi = boost::spirit::qi;
+namespace phx = boost::phoenix;
+
+typedef qi::symbols<char, double> arguments_dictionary;
+
+template <typename Iter> struct parser : qi::grammar<Iter, qi::space_type> 
+{
+	parser(arguments_dictionary &dict) : parser::base_type(start) 
+	{
+		// g01 X <float> Y <float> etc.
+		start = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)
+			[ phx::bind(dict.add, qi::_1, qi::_2) ]
+			;
+	}
+
+	qi::rule<Iter, qi::space_type> start;
+};
+
+int CamExport wilma()
+{
+
+	// from http://stackoverflow.com/questions/12208705/add-to-a-spirit-qi-symbol-table-in-a-semantic-action
+
+
+
+	arguments_dictionary arguments;
+	parser<std::string::const_iterator> prsr(arguments);
+	const std::string test = "g1 X 1.1";
+
+	if (qi::phrase_parse(test.begin(), test.end(), prsr, qi::space))
+	{
+		qDebug("%lf\n", arguments.at("X"));
+	}
+/*
+	// from http://stackoverflow.com/questions/3066701/boost-spirit-semantic-action-parameters
+
+	std::string input("X1.1");
+   std::string::const_iterator begin = input.begin(), end = input.end();
+
+   typedef double ArgumentRuleReturn_t;
+   qi::rule<
+      std::string::const_iterator,
+      ArgumentRuleReturn_t(double),                    //output (_val) and input (_r1)
+      qi::locals<double>,             //local int (_a)
+      ascii::space_type
+   >
+      ArgumentRule =
+            (qi::char_("xXyYzZ") >> qi::double_)
+			[
+				qi::_val = mysub(qi::as<char>(qi::_1), qi::as<double>(qi::_2))
+			];
+
+   double ruleValue, x0 = 10;
+   qi::phrase_parse(begin, end, ArgumentRule(x0), ascii::space, ruleValue);
+   std::cout << "rule value: " << ruleValue << std::endl;
+	*/
+
+
+   /*
+   std::string input("1234, 6543, 42");
+   std::string::const_iterator begin = input.begin(), end = input.end();
+
+   qi::rule<
+      std::string::const_iterator,
+      int(int),                    //output (_val) and input (_r1)
+      qi::locals<int>,             //local int (_a)
+      ascii::space_type
+   >
+      intRule =
+            (qi::int_ >> "," >> qi::int_ >> "," >> qi::int_)
+			[
+				qi::_val = (qi::_1 + qi::_2) * qi::_3 + qi::_r1
+			];
+
+   int ruleValue, x0 = 10;
+   qi::phrase_parse(begin, end, intRule(x0), ascii::space, ruleValue);
+   std::cout << "rule value: " << ruleValue << std::endl;
+   */
+
+
+   /*
 	std::string input("x1.1");
 
 	point_double_grammar<std::string::iterator> point_grammar;
-	argument_grammar<std::string::iterator> arguments;
+	// argument_grammar<std::string::iterator> arguments;
 
     bool result = false;
     double d = 0.0;
@@ -158,6 +240,7 @@ int wilma()
     {
         std::cout << "Parsing failed!" << std::endl;
     }
+	*/
 
 
 	// http://climbing-the-hill.blogspot.com.au/2010/05/boost-your-spirits.html
