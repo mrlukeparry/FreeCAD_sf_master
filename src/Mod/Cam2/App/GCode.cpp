@@ -87,31 +87,53 @@ namespace phx = boost::phoenix;
 
 typedef qi::symbols<char, double> arguments_dictionary;
 
-template <typename Iter> struct parser : qi::grammar<Iter, qi::space_type> 
+qi::rule<std::string::const_iterator, qi::space_type> GetRapid()
 {
-	parser(arguments_dictionary &dict) : parser::base_type(start) 
+	return(qi::rule<std::string::const_iterator, qi::space_type>(qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("0")] >> (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)));
+}
+
+
+template <typename Iter, typename Skipper = qi::space_type> 
+	struct rs274 : qi::grammar<Iter, Skipper> 
+{
+	rs274(arguments_dictionary &dict) : rs274::base_type(start)
 	{
-		// g01 X <float> Y <float> etc.
-		start = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)
+		arguments_dictionary arguments;
+
+		// g00 X <float> Y <float> etc.
+		rapid = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("0")] >> (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)
 			[ phx::bind(dict.add, qi::_1, qi::_2) ]
 			;
+
+		// g01 X <float> Y <float> etc.
+		feed = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)
+			[ phx::bind(dict.add, qi::_1, qi::_2) ]
+			;
+
+		MotionCommands = feed | rapid;
+		start = MotionCommands;
 	}
 
-	qi::rule<Iter, qi::space_type> start;
+	private:
+		qi::rule<Iter, Skipper> feed;
+		qi::rule<Iter, Skipper> rapid;
+		qi::rule<Iter, Skipper> start;
+		qi::rule<Iter, Skipper> MotionCommands;
 };
 
 int CamExport wilma()
 {
 
 	// from http://stackoverflow.com/questions/12208705/add-to-a-spirit-qi-symbol-table-in-a-semantic-action
+	// and http://stackoverflow.com/questions/9139015/parsing-mixed-values-and-key-value-pairs-with-boost-spirit
 
 
 
 	arguments_dictionary arguments;
-	parser<std::string::const_iterator> prsr(arguments);
-	const std::string test = "g1 X 1.1";
+	rs274<std::string::const_iterator> linuxcnc(arguments);
+	const std::string test = "g01 X 1.1";
 
-	if (qi::phrase_parse(test.begin(), test.end(), prsr, qi::space))
+	if (qi::phrase_parse(test.begin(), test.end(), linuxcnc, qi::space))
 	{
 		qDebug("%lf\n", arguments.at("X"));
 	}
