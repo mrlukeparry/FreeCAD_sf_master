@@ -92,16 +92,50 @@ qi::rule<std::string::const_iterator, qi::space_type> GetRapid()
 	return(qi::rule<std::string::const_iterator, qi::space_type>(qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("0")] >> (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)));
 }
 
+struct Arguments_t
+{
+	Arguments_t()
+	{
+	}
+
+	~Arguments_t()
+	{
+		
+	}
+
+	void Add(std::vector<char> c, double value)
+	{
+		if (c.size() == 1)
+		{
+			m_arguments.insert(std::make_pair(c[0], value));
+		}
+	}
+
+	void Print()
+	{
+		for (std::map<char, double>::const_iterator itArg = m_arguments.begin(); itArg != m_arguments.end(); itArg++)
+		{
+			qDebug("%c=%lf\n", itArg->first, itArg->second);
+		}
+
+	}
+
+private:
+	typedef std::map<char, double>	Map_t;
+	Map_t	m_arguments;
+};
 
 template <typename Iter, typename Skipper = qi::space_type> 
 	struct rs274 : qi::grammar<Iter, Skipper> 
 {
 	rs274(arguments_dictionary &dict) : rs274::base_type(start)
 	{
-		arguments_dictionary arguments;
+		
+		// arguments_dictionary arguments;
 
 		MotionArguments = (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)
-			[ phx::bind(dict.add, qi::_1, qi::_2) ]
+			[ phx::bind(&Arguments_t::Add, phx::ref(arguments), qi::_1, qi::_2) ]
+			// [ phx::bind(dict.add, qi::_1, qi::_2) ]
 			;
 
 		// g00 X <float> Y <float> etc.
@@ -110,10 +144,11 @@ template <typename Iter, typename Skipper = qi::space_type>
 
 		// g01 X <float> Y <float> etc.
 		feed = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> +(MotionArguments)
+			// [ phx::bind(&Arguments_t::Print, arguments) ]
 			;
 
 		MotionCommands = feed | rapid;
-		start = MotionCommands;
+		start = MotionCommands [ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ];
 	}
 
 	private:
@@ -122,6 +157,8 @@ template <typename Iter, typename Skipper = qi::space_type>
 		qi::rule<Iter, Skipper> rapid;
 		qi::rule<Iter, Skipper> start;
 		qi::rule<Iter, Skipper> MotionCommands;
+
+		Arguments_t	arguments;
 };
 
 int CamExport wilma()
@@ -138,7 +175,9 @@ int CamExport wilma()
 
 	if (qi::phrase_parse(test.begin(), test.end(), linuxcnc, qi::space))
 	{
-		qDebug("%lf\n", arguments.at("X"));
+		if (arguments.find("X")) qDebug("%lf\n", arguments.at("X"));
+		if (arguments.find("Y")) qDebug("%lf\n", arguments.at("Y"));
+		if (arguments.find("Z")) qDebug("%lf\n", arguments.at("Z"));
 	}
 /*
 	// from http://stackoverflow.com/questions/3066701/boost-spirit-semantic-action-parameters
