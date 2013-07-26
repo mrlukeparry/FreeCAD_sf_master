@@ -117,7 +117,11 @@ struct Arguments_t
 		{
 			qDebug("%c=%lf\n", itArg->first, itArg->second);
 		}
+	}
 
+	void EndOfBlock()
+	{
+		int j=3;
 	}
 
 private:
@@ -128,12 +132,16 @@ private:
 template <typename Iter, typename Skipper = qi::space_type> 
 	struct rs274 : qi::grammar<Iter, Skipper> 
 {
-	rs274(arguments_dictionary &dict) : rs274::base_type(start)
+	rs274(arguments_dictionary &dict) : rs274::base_type(Start)
 	{
 		// Variables declared here are created and destroyed for each rule parsed.
 		// Use member variables of the structure for long-lived variables instead.
 
 		// arguments_dictionary arguments;
+
+		line_number = 0;
+
+		// N110 - i.e. use qi::lexeme to avoid qi::space_type skipper which allows the possibility of interpreting 'N 110'.  We don't want spaces here.
 		LineNumberRule = (qi::lexeme [qi::char_("nN") ] >> qi::int_ )
 			[ phx::ref(line_number) = qi::_2 ];
 
@@ -143,28 +151,37 @@ template <typename Iter, typename Skipper = qi::space_type>
 			;
 
 		// g00 X <float> Y <float> etc.
-		rapid = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("0")] >> +(MotionArguments)
+		Rapid = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("0")] >> +(MotionArguments)
 			[ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ]	// call arguments.Print()
 			;
 
 		// g01 X <float> Y <float> etc.
-		feed = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> +(MotionArguments)
+		Feed = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> +(MotionArguments)
 			[ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ]	// call arguments.Print()
 			// [ phx::bind(&Arguments_t::Print, arguments) ]
 			;
 
-		MotionCommands =	LineNumberRule >> feed 
-						|	LineNumberRule >> rapid;
-		start = MotionCommands [ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ];
+		EndOfBlock = qi::lit("\n")
+			[ phx::bind(&Arguments_t::EndOfBlock, phx::ref(arguments) ) ]	// call arguments.EndOfBlock()
+			;
+
+		MotionCommand =	
+					LineNumberRule >> Feed
+				|	LineNumberRule >> Rapid
+					;
+
+		Start = MotionCommand	// [ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ]
+					;
 	}
 
-	private:
+	public:
+		qi::rule<Iter, Skipper> Start;
 		qi::rule<Iter, Skipper> MotionArguments;
-		qi::rule<Iter, Skipper> feed;
-		qi::rule<Iter, Skipper> rapid;
-		qi::rule<Iter, Skipper> start;
-		qi::rule<Iter, Skipper> MotionCommands;
+		qi::rule<Iter, Skipper> Feed;
+		qi::rule<Iter, Skipper> Rapid;		
+		qi::rule<Iter, Skipper> MotionCommand;
 		qi::rule<Iter, Skipper> LineNumberRule;
+		qi::rule<Iter, Skipper> EndOfBlock;
 
 		Arguments_t	arguments;
 		int			line_number;
@@ -180,13 +197,17 @@ int CamExport wilma()
 
 	arguments_dictionary arguments;
 	rs274<std::string::const_iterator> linuxcnc(arguments);
-	const std::string test = "N220 g01 X 1.1 Y 2.2 Z3.3";
-
-	if (qi::phrase_parse(test.begin(), test.end(), linuxcnc, qi::space))
+	const std::string test = "N220 g01 X 1.1 Y 2.2 Z3.3   ";
+	std::string::const_iterator begin = test.begin();
+	if (qi::phrase_parse(begin, test.end(), linuxcnc, qi::space))
 	{
 		if (arguments.find("X")) qDebug("%lf\n", arguments.at("X"));
 		if (arguments.find("Y")) qDebug("%lf\n", arguments.at("Y"));
 		if (arguments.find("Z")) qDebug("%lf\n", arguments.at("Z"));
+	}
+	else
+	{
+		qDebug("Parsing failed at N%d %d, %s\n", linuxcnc.line_number, std::distance(test.begin(), begin), begin);
 	}
 /*
 	// from http://stackoverflow.com/questions/3066701/boost-spirit-semantic-action-parameters
