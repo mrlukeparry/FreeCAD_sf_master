@@ -107,13 +107,13 @@ struct Arguments_t
 	{
 		if (c.size() == 1)
 		{
-			m_arguments.insert(std::make_pair(c[0], value));
+			m_doubles.insert(std::make_pair(c[0], value));
 		}
 	}
 
 	void Print()
 	{
-		for (std::map<char, double>::const_iterator itArg = m_arguments.begin(); itArg != m_arguments.end(); itArg++)
+		for (DoubleMap_t::const_iterator itArg = m_doubles.begin(); itArg != m_doubles.end(); itArg++)
 		{
 			qDebug("%c=%lf\n", itArg->first, itArg->second);
 		}
@@ -121,8 +121,8 @@ struct Arguments_t
 	}
 
 private:
-	typedef std::map<char, double>	Map_t;
-	Map_t	m_arguments;
+	typedef std::map<char, double>	DoubleMap_t;
+	DoubleMap_t	m_doubles;
 };
 
 template <typename Iter, typename Skipper = qi::space_type> 
@@ -130,24 +130,31 @@ template <typename Iter, typename Skipper = qi::space_type>
 {
 	rs274(arguments_dictionary &dict) : rs274::base_type(start)
 	{
-		
+		// Variables declared here are created and destroyed for each rule parsed.
+		// Use member variables of the structure for long-lived variables instead.
+
 		// arguments_dictionary arguments;
+		LineNumberRule = (qi::lexeme [qi::char_("nN") ] >> qi::int_ )
+			[ phx::ref(line_number) = qi::_2 ];
 
 		MotionArguments = (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)
-			[ phx::bind(&Arguments_t::Add, phx::ref(arguments), qi::_1, qi::_2) ]
+			[ phx::bind(&Arguments_t::Add, phx::ref(arguments), qi::_1, qi::_2) ] // call arguments.Add(_1, _2);
 			// [ phx::bind(dict.add, qi::_1, qi::_2) ]
 			;
 
 		// g00 X <float> Y <float> etc.
 		rapid = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("0")] >> +(MotionArguments)
+			[ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ]	// call arguments.Print()
 			;
 
 		// g01 X <float> Y <float> etc.
 		feed = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> +(MotionArguments)
+			[ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ]	// call arguments.Print()
 			// [ phx::bind(&Arguments_t::Print, arguments) ]
 			;
 
-		MotionCommands = feed | rapid;
+		MotionCommands =	LineNumberRule >> feed 
+						|	LineNumberRule >> rapid;
 		start = MotionCommands [ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ];
 	}
 
@@ -157,8 +164,10 @@ template <typename Iter, typename Skipper = qi::space_type>
 		qi::rule<Iter, Skipper> rapid;
 		qi::rule<Iter, Skipper> start;
 		qi::rule<Iter, Skipper> MotionCommands;
+		qi::rule<Iter, Skipper> LineNumberRule;
 
 		Arguments_t	arguments;
+		int			line_number;
 };
 
 int CamExport wilma()
@@ -171,7 +180,7 @@ int CamExport wilma()
 
 	arguments_dictionary arguments;
 	rs274<std::string::const_iterator> linuxcnc(arguments);
-	const std::string test = "g01 X 1.1 Y 2.2 Z3.3";
+	const std::string test = "N220 g01 X 1.1 Y 2.2 Z3.3";
 
 	if (qi::phrase_parse(test.begin(), test.end(), linuxcnc, qi::space))
 	{
