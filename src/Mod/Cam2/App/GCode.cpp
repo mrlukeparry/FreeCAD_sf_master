@@ -100,14 +100,16 @@ template <typename Iter, typename Skipper = qi::space_type>
 	{
 		arguments_dictionary arguments;
 
-		// g00 X <float> Y <float> etc.
-		rapid = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("0")] >> (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)
+		MotionArguments = (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)
 			[ phx::bind(dict.add, qi::_1, qi::_2) ]
 			;
 
+		// g00 X <float> Y <float> etc.
+		rapid = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("0")] >> +(MotionArguments)
+			;
+
 		// g01 X <float> Y <float> etc.
-		feed = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)
-			[ phx::bind(dict.add, qi::_1, qi::_2) ]
+		feed = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> +(MotionArguments)
 			;
 
 		MotionCommands = feed | rapid;
@@ -115,6 +117,7 @@ template <typename Iter, typename Skipper = qi::space_type>
 	}
 
 	private:
+		qi::rule<Iter, Skipper> MotionArguments;
 		qi::rule<Iter, Skipper> feed;
 		qi::rule<Iter, Skipper> rapid;
 		qi::rule<Iter, Skipper> start;
@@ -131,7 +134,7 @@ int CamExport wilma()
 
 	arguments_dictionary arguments;
 	rs274<std::string::const_iterator> linuxcnc(arguments);
-	const std::string test = "g01 X 1.1";
+	const std::string test = "g01 X 1.1 Y 2.2 Z3.3";
 
 	if (qi::phrase_parse(test.begin(), test.end(), linuxcnc, qi::space))
 	{
