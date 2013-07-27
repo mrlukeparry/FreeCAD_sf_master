@@ -131,6 +131,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 	void ProcessBlock()
 	{
 		int j=3;
+		Print();
+		m_doubles.clear();
 	}
 
 
@@ -153,13 +155,13 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			;
 
 		// g00 X <float> Y <float> etc.
-		// Rapid = (qi::lexeme [qi::repeat(1,1)[qi::char_("gG")] >> *qi::char_("0") >> qi::char_("0")] >> +(MotionArgument))
-			Rapid = qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(1,2)[qi::char_("0")] >> +(MotionArgument)
+		Rapid = qi::lexeme[qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(1,2)[qi::char_("0")]] >> +(MotionArgument)
 			[ phx::bind(&rs274<Iter, Skipper>::Print, phx::ref(*this) ) ]	// call this->Print()
 			;
 
 		// g01 X <float> Y <float> etc.
-		Feed = (qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> +(MotionArgument))
+		Feed = qi::lexeme[qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::repeat(1,1)[qi::char_("1")]] >> +(MotionArgument)
+		// Feed = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> +(MotionArgument)
 			[ phx::bind(&rs274<Iter, Skipper>::Print, phx::ref(*this) ) ]	// call this->Print()
 			;
 
@@ -214,7 +216,8 @@ int CamExport wilma()
 	arguments_dictionary arguments;
 	rs274<std::string::const_iterator> linuxcnc(arguments);
 
-	const std::string gcode = "N220 g0 X 1.1 Y 2.2 Z3.3 \n";
+	const std::string gcode = "N220 g0 X 1.1 Y 2.2 Z3.3 \n"
+							  "N230 g01 X 4.4 Y5.5\n";
 	// const std::string gcode = "N220 G0 \n";
 
 	std::string::const_iterator begin = gcode.begin();
