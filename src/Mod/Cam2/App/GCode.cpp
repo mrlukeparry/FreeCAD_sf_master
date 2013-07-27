@@ -37,7 +37,7 @@ std::ostringstream GrammarDebugOutputBuffer;
 
 #define BOOST_SPIRIT_DEBUG
 #define BOOST_SPIRIT_DEBUG_OUT GrammarDebugOutputBuffer
-#define BOOST_SPIRIT_DEBUG_PRINT_SOME 9999999	// We want as much debug output as possible.
+// #define BOOST_SPIRIT_DEBUG_PRINT_SOME 9999999	// We want as much debug output as possible.
 
 /*
 void BOOST_SPIRIT_DEBUG_TOKEN_PRINTER(std::ostringstream & o, std::string::value_type c)
@@ -128,8 +128,14 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		}
 	}
 
+	void SetLineNumber( const int value )
+	{
+		line_number = value;
+	}
+
 	void ProcessBlock()
 	{
+		qDebug("Processing block\n");
 		int j=3;
 		Print();
 		m_doubles.clear();
@@ -141,26 +147,37 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		using phx::construct;
 		using phx::val;
 
+		using qi::lit;
+        using qi::lexeme;
+        using ascii::char_;
+        using ascii::string;
+        using namespace qi::labels;
+
+        using phx::at_c;
+        using phx::push_back;
+
 		// Variables declared here are created and destroyed for each rule parsed.
 		// Use member variables of the structure for long-lived variables instead.
 
 		// N110 - i.e. use qi::lexeme to avoid qi::space_type skipper which allows the possibility of interpreting 'N 110'.  We don't want spaces here.
-		LineNumberRule = qi::repeat(1,1)[qi::char_("nN")] >> qi::int_
-			// [ phx::ref(line_number) = qi::_2 ]
+		// LineNumberRule = qi::lexeme[ qi::repeat(1,1)[qi::char_("nN")] >> qi::int_ ]
+		LineNumberRule = (qi::repeat(1,1)[qi::char_("nN")] >> qi::int_)
+			// [ phx::bind(&rs274<Iter, Skipper>::SetLineNumber, phx::ref(*this), qi::_2) ] // call this->SetLineNumber(_2);
+		[ qi::_val = qi::_2 ]
 			;
 
 		// X 1.1 etc.
-		MotionArgument = (qi::repeat(1,1)[qi::char_("xXyYzZ")] >> qi::double_)
+		MotionArgument = (qi::repeat(1,1)[qi::char_("xXyYzZ")] >> MathematicalExpression )
 			[ phx::bind(&rs274<Iter, Skipper>::Add, phx::ref(*this), qi::_1, qi::_2) ] // call this->Add(_1, _2);
 			;
 
 		// g00 X <float> Y <float> etc.
-		Rapid = qi::lexeme[qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(1,2)[qi::char_("0")]] >> +(MotionArgument)
+		G00 = qi::lexeme[qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(1,2)[qi::char_("0")]] >> +(MotionArgument)
 			[ phx::bind(&rs274<Iter, Skipper>::Print, phx::ref(*this) ) ]	// call this->Print()
 			;
 
 		// g01 X <float> Y <float> etc.
-		Feed = qi::lexeme[qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::repeat(1,1)[qi::char_("1")]] >> +(MotionArgument)
+		G01 = qi::lexeme[qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::repeat(1,1)[qi::char_("1")]] >> +(MotionArgument)
 		// Feed = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> +(MotionArgument)
 			[ phx::bind(&rs274<Iter, Skipper>::Print, phx::ref(*this) ) ]	// call this->Print()
 			;
@@ -172,31 +189,44 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 		MotionCommand =	
 					(LineNumberRule >> EndOfBlock)
-				|	(LineNumberRule >> Feed >> EndOfBlock)
-				|	(LineNumberRule >> Rapid >> EndOfBlock)
+				|	(LineNumberRule >> G01 >> EndOfBlock)
+				|	(LineNumberRule >> G00 >> EndOfBlock)
 					;
+
+		MathematicalExpression = 
+			  (qi::double_) [ qi::_val = qi::_1 ]
+			// | (Addition) [ qi::_val = qi::_1 ]
+			| (qi::repeat(1,1)[qi::char_("[")] >> MathematicalExpression >> qi::repeat(1,1)[qi::char_("]")]) [ qi::_val = qi::_2 ]
+			;
+
+		Addition = (MathematicalExpression >> qi::char_("+") >> MathematicalExpression) [ qi::_val = qi::_1 + qi::_2 ]
+			;
 
 		Start = +(MotionCommand)	// [ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ]
 					;
 
 		BOOST_SPIRIT_DEBUG_NODE(Start);
 		BOOST_SPIRIT_DEBUG_NODE(MotionArgument);
-		BOOST_SPIRIT_DEBUG_NODE(Feed);
-		BOOST_SPIRIT_DEBUG_NODE(Rapid);
+		BOOST_SPIRIT_DEBUG_NODE(G01);
+		BOOST_SPIRIT_DEBUG_NODE(G00);
 		BOOST_SPIRIT_DEBUG_NODE(MotionCommand);
 		BOOST_SPIRIT_DEBUG_NODE(LineNumberRule);
 		BOOST_SPIRIT_DEBUG_NODE(EndOfBlock);
+		BOOST_SPIRIT_DEBUG_NODE(MathematicalExpression);
+		BOOST_SPIRIT_DEBUG_NODE(Addition);		
 	}
 
 	public:
 		qi::rule<Iter, Skipper> Start;
 		qi::rule<Iter, Skipper> MotionArgument;
-		qi::rule<Iter, Skipper> Feed;
-		qi::rule<Iter, Skipper> Rapid;		
+		qi::rule<Iter, Skipper> G01;
+		qi::rule<Iter, Skipper> G00;		
 		qi::rule<Iter, Skipper> MotionCommand;
 		// qi::rule<Iter, boost::fusion::vector2<char,int>(), Skipper> LineNumberRule;
-		qi::rule<Iter, Skipper> LineNumberRule;
+		qi::rule<Iter, int(), Skipper> LineNumberRule;
 		qi::rule<Iter, Skipper> EndOfBlock;
+		qi::rule<Iter, double(), Skipper> MathematicalExpression;
+		qi::rule<Iter, double(), Skipper> Addition;
 
 		// boost::fusion::vector2<char,int>		line_number;
 		int		line_number;
@@ -216,7 +246,7 @@ int CamExport wilma()
 	arguments_dictionary arguments;
 	rs274<std::string::const_iterator> linuxcnc(arguments);
 
-	const std::string gcode = "N220 g0 X 1.1 Y 2.2 Z3.3 \n"
+	const std::string gcode = "N220 g0 X [1.0 + 0.1] Y 2.2 Z3.3 \n"
 							  "N230 g01 X 4.4 Y5.5\n";
 	// const std::string gcode = "N220 G0 \n";
 
@@ -224,6 +254,7 @@ int CamExport wilma()
 	// if (qi::phrase_parse(begin, gcode.end(), linuxcnc, qi::space - qi::eol))
 	if (qi::phrase_parse(begin, gcode.end(), linuxcnc, qi::blank))
 	{
+		qDebug("last line number %d\n", linuxcnc.line_number );
 		if (arguments.find("X")) qDebug("%lf\n", arguments.at("X"));
 		if (arguments.find("Y")) qDebug("%lf\n", arguments.at("Y"));
 		if (arguments.find("Z")) qDebug("%lf\n", arguments.at("Z"));
