@@ -37,6 +37,16 @@ std::ostringstream GrammarDebugOutputBuffer;
 
 #define BOOST_SPIRIT_DEBUG
 #define BOOST_SPIRIT_DEBUG_OUT GrammarDebugOutputBuffer
+#define BOOST_SPIRIT_DEBUG_PRINT_SOME 9999999	// We want as much debug output as possible.
+
+/*
+void BOOST_SPIRIT_DEBUG_TOKEN_PRINTER(std::ostringstream & o, std::string::value_type c)
+{
+	qDebug("%s", o.str().c_str());
+	qDebug("%c", c);
+}
+*/
+
 
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
@@ -133,17 +143,18 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		// Use member variables of the structure for long-lived variables instead.
 
 		// N110 - i.e. use qi::lexeme to avoid qi::space_type skipper which allows the possibility of interpreting 'N 110'.  We don't want spaces here.
-		LineNumberRule = qi::lexeme [ (qi::char_("nN") >> qi::int_ ) ]
-			[ phx::ref(line_number) = qi::_1 ]
+		LineNumberRule = qi::repeat(1,1)[qi::char_("nN")] >> qi::int_
+			// [ phx::ref(line_number) = qi::_2 ]
 			;
 
 		// X 1.1 etc.
-		MotionArgument = (qi::lexeme [+qi::char_("xXyYzZ")] >> qi::double_)
+		MotionArgument = (qi::repeat(1,1)[qi::char_("xXyYzZ")] >> qi::double_)
 			[ phx::bind(&rs274<Iter, Skipper>::Add, phx::ref(*this), qi::_1, qi::_2) ] // call this->Add(_1, _2);
 			;
 
 		// g00 X <float> Y <float> etc.
-		Rapid = (qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("0")] >> +(MotionArgument))
+		// Rapid = (qi::lexeme [qi::repeat(1,1)[qi::char_("gG")] >> *qi::char_("0") >> qi::char_("0")] >> +(MotionArgument))
+			Rapid = qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(1,2)[qi::char_("0")] >> +(MotionArgument)
 			[ phx::bind(&rs274<Iter, Skipper>::Print, phx::ref(*this) ) ]	// call this->Print()
 			;
 
@@ -152,7 +163,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			[ phx::bind(&rs274<Iter, Skipper>::Print, phx::ref(*this) ) ]	// call this->Print()
 			;
 
-		EndOfBlock = (qi::no_skip[*qi::space >> qi::eol])
+		// EndOfBlock = (qi::no_skip[*qi::space >> qi::eol])
+		EndOfBlock = qi::eol
 			[ phx::bind(&rs274<Iter, Skipper>::ProcessBlock, phx::ref(*this) ) ]	// call this->EndOfBlock()
 			;
 
@@ -180,10 +192,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		qi::rule<Iter, Skipper> Feed;
 		qi::rule<Iter, Skipper> Rapid;		
 		qi::rule<Iter, Skipper> MotionCommand;
-		qi::rule<Iter, boost::fusion::vector2<char,int>(), Skipper> LineNumberRule;
+		// qi::rule<Iter, boost::fusion::vector2<char,int>(), Skipper> LineNumberRule;
+		qi::rule<Iter, Skipper> LineNumberRule;
 		qi::rule<Iter, Skipper> EndOfBlock;
 
-		boost::fusion::vector2<char,int>		line_number;
+		// boost::fusion::vector2<char,int>		line_number;
+		int		line_number;
 
 		typedef std::map<char, double>	DoubleMap_t;
 		DoubleMap_t	m_doubles;
@@ -200,7 +214,8 @@ int CamExport wilma()
 	arguments_dictionary arguments;
 	rs274<std::string::const_iterator> linuxcnc(arguments);
 
-	const std::string gcode = "N220 g0 X 1.1 Y 2.2 Z3.3\n";
+	const std::string gcode = "N220 g0 X 1.1 Y 2.2 Z3.3 \n";
+	// const std::string gcode = "N220 G0 \n";
 
 	std::string::const_iterator begin = gcode.begin();
 	// if (qi::phrase_parse(begin, gcode.end(), linuxcnc, qi::space - qi::eol))
