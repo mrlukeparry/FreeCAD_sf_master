@@ -20,33 +20,31 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifndef CAM_LINUX_CNC_H
+#define CAM_LINUX_CNC_H
 
 #include <PreCompiled.h>
-#ifndef _PreComp_
-#endif
 
-#include <sstream>
-#include <math.h>
-
-// NOTE: These BOOST SPIRIT DEBUG macros MUST be defined BEFORE the include
-// files.  Otherwise the default values, defined within the include files,
-// will be used instead.
-
-#include "GCode.h"
+#include <Mod/Cam2/App/GCode.h>
 
 
-using namespace Cam;
+///////////////////////////////////////////////////////////////////////////////
 
-// Define an ostringstream to accumulate any debug output the grammar has
-// to offer.  If we fail to parse the GCode, we will want to know why.
-std::ostringstream CamExport GCode_GrammarDebugOutputBuffer;
-
-GCode::GCode()
+/// Base class
+namespace Cam
 {
-}
 
-GCode::~GCode()
+class CamExport LinuxCNC : public GCode
 {
-}
+public:
+    LinuxCNC();
+    ~LinuxCNC();
+
+public:
+	virtual Geometry_t Parse(const char *program);
+
+}; // End LinuxCNC class definition.
 
 
+} //namespace Cam
+#endif //CAM_LINUX_CNC_H

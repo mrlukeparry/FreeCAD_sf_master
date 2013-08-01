@@ -35,6 +35,8 @@
 #include "Features/CamFeature.h"
 #include "PostProcessor.h"
 
+#include "LinuxCNC.h"	// For DEBUG only.  We need to move the GCode parsing out to somewhere else.
+
 namespace Cam {
 CamManagerInst* CamManagerInst::_pcSingleton = NULL;
 
@@ -184,6 +186,9 @@ void CamManagerInst::tpgRunnerThreadMain() {
 				QString gcode;
 				gcode << *machine_program;
 				qDebug("%s\n", gcode.toAscii().constData());
+
+				LinuxCNC parser;
+				parser.Parse(gcode.toAscii().constData());
 			}
 
 			// And release both the toolpath and the machine_program objects now.  The toolpath probably

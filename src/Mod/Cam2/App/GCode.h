@@ -26,16 +26,21 @@
 #include <App/PropertyStandard.h>
 #include <PreCompiled.h>
 
+// NOTE: These BOOST SPIRIT DEBUG macros MUST be defined BEFORE the include
+// files.  Otherwise the default values, defined within the include files,
+// will be used instead.
+
+#ifndef BOOST_SPIRIT_DEBUG
+	#define BOOST_SPIRIT_DEBUG
+	#define BOOST_SPIRIT_DEBUG_OUT GCode_GrammarDebugOutputBuffer
+#endif
+
 #include <Mod/Cam2/App/MachineProgram.h>
+#include <Mod/Part/App/PartFeature.h>
 
-#include <boost/spirit/include/qi.hpp>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-
+extern std::ostringstream CamExport GCode_GrammarDebugOutputBuffer;
 
 ///////////////////////////////////////////////////////////////////////////////
-int CamExport wilma();
-
 /// Base class
 namespace Cam
 {
@@ -47,38 +52,11 @@ public:
     ~GCode();
 
 public:
+	typedef std::vector<Part::Feature *> Geometry_t;
+	virtual Geometry_t Parse(const char *program) = 0;
 
 }; // End GCode class definition.
 
-
-/*
-class CamExport LinuxCNC : public GCode
-{
-public:
-	LinuxCNC();
-	~LinuxCNC();
-
-protected:
-	// Overload the work_offset rule because LinuxCNC uses G10 L20 for that.
-	virtual rule<> work_offset() { return ((chlit<>('G') | chlit<>('g')) >> str_p<>("10") >> (chlit<>('L') | chlit<>('l')) >> str_p<>("20")); }
-
-	// Variables can be #9999 or #<alpha> in LinuxCNC
-	virtual rule<> variable() { return (GCode::variable() | (str_p<>("#<") >> +(char_("a-zA-Z0-9_")) >> str_p<>(">")) ); }
-
-}; // End LinuxCNC GCode parser class definition.
-
-class CamExport Mach3 : public GCode
-{
-public:
-	Mach3();
-	~Mach3();
-
-protected:
-	// Overload the work_offset rule because LinuxCNC uses G10 L2 for that.
-	virtual rule<> work_offset() { return ((chlit<>('G') | chlit<>('g')) >> str_p<>("10") >> (chlit<>('L') | chlit<>('l')) >> str_p<>('2')); }
-
-}; // End LinuxCNC GCode parser class definition.
-*/
 
 } //namespace Cam
 #endif //CAM_GCODE_H
