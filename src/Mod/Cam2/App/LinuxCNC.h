@@ -156,10 +156,16 @@ public:
 
 		If the variable's name is automatically generated then it's name starts
 		from 1000000 and counts up.
+
+		If an emc.var file is provided then this object is initialized from that
+		variables file so that the generated toolpath graphics makes sense in the
+		context of the real machine.
 	 */
-	class LinuxCNCVariables {
+	class Variables {
 	public:
-		LinuxCNCVariables()
+		typedef int SymbolId_t;
+
+		Variables()
 		{
 			m_last_id = 1000000;
 		}
@@ -305,6 +311,8 @@ public:
 		NameIdMap_t m_name_id_map;
 		int m_last_id;
 	};
+
+	typedef std::map<char, Variables::SymbolId_t > MotionArguments_t;
 
 }; // End LinuxCNC class definition.
 

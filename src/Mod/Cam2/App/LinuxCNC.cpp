@@ -66,11 +66,19 @@ template <typename Iter, typename Skipper = qi::blank_type>
 	struct linuxcnc_grammar : qi::grammar<Iter, Skipper> 
 {
 
-	void Add(std::vector<char> c, double value)
+	// Accumulate a map of command line arguments for the motion commands
+	// so that we know what was specified on each block.  This map is
+	// cleaned out (after being duplicated) once the 'EndOfBlock' processing
+	// is complete.
+	// The 'value' isn't passed in directly here.  Instead, a symbol ID
+	// is given that indicates which entry in the symbol table contains
+	// the value.  We need to do this so that we can handle literal values,
+	// mathematical expressions and variables.
+	void AddMotionArgument(std::vector<char> c, LinuxCNC::Variables::SymbolId_t symbol_id)
 	{
 		if (c.size() == 1)
 		{
-			m_doubles.insert(std::make_pair(c[0], value));
+			motion_arguments.insert(std::make_pair(c[0], symbol_id));
 		}
 	}
 
@@ -90,9 +98,9 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 	void Print()
 	{
-		for (DoubleMap_t::const_iterator itArg = m_doubles.begin(); itArg != m_doubles.end(); itArg++)
+		for (LinuxCNC::MotionArguments_t::const_iterator itArg = motion_arguments.begin(); itArg != motion_arguments.end(); itArg++)
 		{
-			qDebug("%c=%lf\n", itArg->first, itArg->second);
+			qDebug("%c=%lf\n", itArg->first, variables[itArg->second]);
 		}
 	}
 
@@ -110,9 +118,9 @@ template <typename Iter, typename Skipper = qi::blank_type>
 	void ProcessBlock()
 	{
 		qDebug("Processing block\n");
-		int j=3;
 		Print();
-		m_doubles.clear();
+		std::copy( motion_arguments.begin(), motion_arguments.end(), std::inserter( previous_motion_arguments, previous_motion_arguments.begin()));
+		motion_arguments.clear();
 	}
 
 	typedef boost::proto::result_of::deep_copy<
@@ -155,7 +163,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 		// X 1.1 etc.
 		MotionArgument = (ascii::no_case[qi::repeat(1,1)[qi::char_("XYZABCUVWLPRQIJK")]] >> MathematicalExpression )
-			[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Add, phx::ref(*this), qi::_1, qi::_2) ] // call this->Add(_1, _2);
+			[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::AddMotionArgument, phx::ref(*this), qi::_1, qi::_2) ] // call this->AddMotionArgument(_1, _2);
 			;
 
 		G00 = qi::lexeme[qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(1,2)[qi::char_("0")]];
@@ -164,7 +172,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		G03 = qi::lexeme[ascii::no_case[qi::lit("G")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::lit("3")];
 		G04 = qi::lexeme[ascii::no_case[qi::lit("G")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::lit("4")];
 
-		// EndOfBlock = (qi::no_skip[*qi::space >> qi::eol])
 		EndOfBlock = qi::eol
 			[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ProcessBlock, phx::ref(*this) ) ]	// call this->EndOfBlock()
 			;
@@ -250,20 +257,21 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			;
 
 		MathematicalExpression = 
-			  (qi::double_) [ qi::_val = qi::_1 ]
+			  (qi::double_) 
+				[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::AddSymbol, phx::ref(*this), qi::_val, "", qi::_1 ) ]
 
 			// NOTE: We use _1 and _3 because qi::lit() does not produce an attribute and so it doesn't count as an argument.
 			| (qi::lit("[") >> MathematicalExpression >> qi::char_("+") >> MathematicalExpression >> qi::lit("]"))
-				[ qi::_val = qi::_1 + qi::_3 ]	
+				[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::LHSplusRHS, phx::ref(*this), qi::_val, qi::_1, qi::_3 ) ]
 
 			| (qi::lit("[") >> MathematicalExpression >> qi::char_("-") >> MathematicalExpression >> qi::lit("]"))
-				[ qi::_val = qi::_1 - qi::_3 ]	
+				[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::LHSminusRHS, phx::ref(*this), qi::_val, qi::_1, qi::_3 ) ]
 
 			| (qi::lit("[") >> MathematicalExpression >> qi::char_("*") >> MathematicalExpression >> qi::lit("]"))
-				[ qi::_val = qi::_1 * qi::_3 ]	
+				[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::LHStimesRHS, phx::ref(*this), qi::_val, qi::_1, qi::_3 ) ]
 
 			| (qi::lit("[") >> MathematicalExpression >> qi::char_("/") >> MathematicalExpression >> qi::lit("]"))
-				[ qi::_val = qi::_1 / qi::_3 ]	
+				[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::LHSdividedbyRHS, phx::ref(*this), qi::_val, qi::_1, qi::_3 ) ]
 
 			| Functions [ qi::_val = qi::_1 ]
 
@@ -272,43 +280,43 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 		Functions = 
 				(ascii::no_case[qi::lit("ABS")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ABS, phx::ref(*this), qi::_val, qi::_1) ] // call this->ABS(_val, _1);
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::AbsoluteValue, phx::ref(*this), qi::_val, qi::_1) ] // call this->Abs(_val, _1);
 
 			|	(ascii::no_case[qi::lit("ACOS")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ACOS, phx::ref(*this), qi::_val, qi::_1) ] // call this->ACOS(_val, _1);
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ACos, phx::ref(*this), qi::_val, qi::_1) ] // call this->ACOS(_val, _1);
 
 			|	(ascii::no_case[qi::lit("ASIN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ASIN, phx::ref(*this), qi::_val, qi::_1) ] // call this->ASIN(_val, _1);
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ASin, phx::ref(*this), qi::_val, qi::_1) ] // call this->ASIN(_val, _1);
 
 			|	(ascii::no_case[qi::lit("COS")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::COS, phx::ref(*this), qi::_val, qi::_1) ] // call this->COS(_val, _1);
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Cos, phx::ref(*this), qi::_val, qi::_1) ] // call this->COS(_val, _1);
 
 			|	(ascii::no_case[qi::lit("EXP")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::EXP, phx::ref(*this), qi::_val, qi::_1) ] // call this->EXP(_val, _1);
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Exp, phx::ref(*this), qi::_val, qi::_1) ] // call this->EXP(_val, _1);
 
 			|	(ascii::no_case[qi::lit("FIX")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::FIX, phx::ref(*this), qi::_val, qi::_1) ] // call this->FIX(_val, _1);
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Fix, phx::ref(*this), qi::_val, qi::_1) ] // call this->FIX(_val, _1);
 
 			|	(ascii::no_case[qi::lit("FUP")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::FUP, phx::ref(*this), qi::_val, qi::_1) ] // call this->FUP(_val, _1);
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Fup, phx::ref(*this), qi::_val, qi::_1) ] // call this->FUP(_val, _1);
 
 			|	(ascii::no_case[qi::lit("ROUND")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ROUND, phx::ref(*this), qi::_val, qi::_1) ] // call this->ROUND(_val, _1);
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Round, phx::ref(*this), qi::_val, qi::_1) ] // call this->ROUND(_val, _1);
 
 			|	(ascii::no_case[qi::lit("LN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::LN, phx::ref(*this), qi::_val, qi::_1) ] // call this->LN(_val, _1);
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Ln, phx::ref(*this), qi::_val, qi::_1) ] // call this->LN(_val, _1);
 
 			|	(ascii::no_case[qi::lit("SIN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SIN, phx::ref(*this), qi::_val, qi::_1) ] // call this->SIN(_val, _1);
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Sin, phx::ref(*this), qi::_val, qi::_1) ] // call this->SIN(_val, _1);
 
 			|	(ascii::no_case[qi::lit("SQRT")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SQRT, phx::ref(*this), qi::_val, qi::_1) ] // call this->SQRT(_val, _1);
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Sqrt, phx::ref(*this), qi::_val, qi::_1) ] // call this->SQRT(_val, _1);
 
 			|	(ascii::no_case[qi::lit("TAN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::TAN, phx::ref(*this), qi::_val, qi::_1) ] // call this->TAN(_val, _1);
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Tan, phx::ref(*this), qi::_val, qi::_1) ] // call this->TAN(_val, _1);
 
 			|	(ascii::no_case[qi::lit("ATAN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]") >> qi::lit("/") >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
-				[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ATAN, phx::ref(*this), qi::_val, qi::_1, qi::_2) ] // call this->ATAN(_val, _1, _2);
+				[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ATan, phx::ref(*this), qi::_val, qi::_1, qi::_2) ] // call this->ATAN(_val, _1, _2);
 			;
 
 		Spindle =	(ascii::no_case[qi::lit("S")] >> MathematicalExpression)
@@ -381,8 +389,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		qi::rule<Iter, Skipper> Motion;
 		qi::rule<Iter, Skipper> MotionArgument;
 		qi::rule<Iter, int(), Skipper> LineNumberRule;
-		qi::rule<Iter, double(), Skipper> MathematicalExpression;
-		qi::rule<Iter, double(), Skipper> Functions;
+		qi::rule<Iter, LinuxCNC::Variables::SymbolId_t(), Skipper> MathematicalExpression;
+		qi::rule<Iter, LinuxCNC::Variables::SymbolId_t(), Skipper> Functions;
 		qi::rule<Iter, Skipper> Comment;
 		qi::rule<Iter, Skipper> RS274;
 		qi::rule<Iter, Skipper> Expression;
@@ -412,12 +420,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		// motion used.
 		LinuxCNC::eStatement_t statement_type;
 		LinuxCNC::eStatement_t previous_statement_type;	// from previous block.
-
-		typedef std::map<char, double>	DoubleMap_t;
-		DoubleMap_t	m_doubles;
-
-		typedef std::map<char, int>	IntegerMap_t;
-		IntegerMap_t	m_integers; 
+		
+		LinuxCNC::Variables	variables;	// Symbol table that holds both GCode variables and any transient numbers found in the program.
+		LinuxCNC::MotionArguments_t motion_arguments;	// ONLY for the current block.  It's cleared at each newline that's found.
+		LinuxCNC::MotionArguments_t previous_motion_arguments;	// ONLY for the current block.  It's cleared at each newline that's found.
 
 	private:
 			double Emc2Units(const double value_in_parse_units)
@@ -554,18 +560,20 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			}
 
 
-			int AddSymbol( const char *name, const double value )
+			void AddSymbol( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const char *name, const double value )
 			{
 				if ((name == NULL) || (*name == '\0'))
 				{
-					int id = emc_variables.new_id();
-					emc_variables[id] = value;
-					return(id);
+					int id = variables.new_id();
+					variables[id] = value;
+					returned_symbol_id = id;
+					return;
 				}
 				else
 				{
-					double unused = emc_variables[name];	// This either finds or creates an entry.
-					return(emc_variables.hash(name));
+					double unused = variables[name];	// This either finds or creates an entry.
+					returned_symbol_id = variables.hash(name);
+					return;
 				}
 			}
 
@@ -576,87 +584,87 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			{
 				if ((name == NULL) || (*name == '\0'))
 				{
-					int id = emc_variables.new_id();
-					emc_variables[id] = 0.0;
+					int id = variables.new_id();
+					variables[id] = 0.0;
 					return(id);
 				}
 				else
 				{
-					double unused = emc_variables[name];	// This either finds or creates an entry.
-					return(emc_variables.hash(name));
+					double unused = variables[name];	// This either finds or creates an entry.
+					return(variables.hash(name));
 				}
 			}
 
 
 			int LHSequivalenttoRHS(const int lhs, const int rhs)
 			{
-				return(( emc_variables[lhs] == emc_variables[rhs] )?1:0);
+				return(( variables[lhs] == variables[rhs] )?1:0);
 			}
 
 			int LHSnotequaltoRHS(const int lhs, const int rhs)
 			{
-				return(( emc_variables[lhs] != emc_variables[rhs] )?1:0);
+				return(( variables[lhs] != variables[rhs] )?1:0);
 			}
 
 			int LHSgreaterthanRHS(const int lhs, const int rhs)
 			{
-				return(( emc_variables[lhs] > emc_variables[rhs] )?1:0);
+				return(( variables[lhs] > variables[rhs] )?1:0);
 			}
 
 			int LHSlessthanRHS(const int lhs, const int rhs)
 			{
-				return(( emc_variables[lhs] < emc_variables[rhs] )?1:0);
+				return(( variables[lhs] < variables[rhs] )?1:0);
 			}
 
 
-			int LHSplusRHS(const int lhs, const int rhs)
+			void LHSplusRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
 			{
-				int id = emc_variables.new_id();
-				emc_variables[id] = emc_variables[lhs] + emc_variables[rhs];
-				return(id);
+				int id = variables.new_id();
+				variables[id] = variables[lhs] + variables[rhs];
+				returned_symbol_id = id;
 			}
 
-			int LHSminusRHS(const int lhs, const int rhs)
+			void LHSminusRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
 			{
-				int id = emc_variables.new_id();
-				emc_variables[id] = emc_variables[lhs] - emc_variables[rhs];
-				return(id);
+				int id = variables.new_id();
+				variables[id] = variables[lhs] - variables[rhs];
+				returned_symbol_id = id;
 			}
 
-			int LHStimesRHS(const int lhs, const int rhs)
+			void LHStimesRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
 			{
-				int id = emc_variables.new_id();
-				emc_variables[id] = emc_variables[lhs] * emc_variables[rhs];
-				return(id);
+				int id = variables.new_id();
+				variables[id] = variables[lhs] * variables[rhs];
+				returned_symbol_id = id;
 			}
 
-			int LHSdividedbyRHS(const int lhs, const int rhs)
+			void LHSdividedbyRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
 			{
-				int id = emc_variables.new_id();
-				if (emc_variables[rhs] == 0.0)
+				int id = variables.new_id();
+				if (variables[rhs] == 0.0)
 				{
 					// We don't want to get into too much trouble just for backplotting.
-					emc_variables[id] = DBL_MAX;
+					variables[id] = DBL_MAX;
 				}
 				else
 				{
-					emc_variables[id] = emc_variables[lhs] / emc_variables[rhs];
+					variables[id] = variables[lhs] / variables[rhs];
 				}
 
-				return(id);
+				returned_symbol_id = id;
 			}
 
 
-			int LHSassignmentfromRHS( const int lhs, const int rhs )
+			void LHSassignmentfromRHS( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs )
 			{
-				emc_variables[lhs] = emc_variables[rhs];
-				return(lhs);
+				variables[lhs] = variables[rhs];
+				returned_symbol_id = lhs;
 			}
 
 
 			double Value(const int name)
 			{
-				return( emc_variables[name] );
+				return( variables[name] );
 			}
 
 
@@ -689,102 +697,102 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			}
 
 
-			int ASin(const int symbol_id)
+			void ASin(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				emc_variables[id] = radians_to_degrees( asin(degrees_to_radians(emc_variables[symbol_id] )) );
-				return(id);
+				int id=variables.new_id();
+				variables[id] = radians_to_degrees( asin(degrees_to_radians(variables[symbol_id] )) );
+				returned_symbol_id = id;
 			}
 
-			int ACos(const int symbol_id)
+			void ACos(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				emc_variables[id] = radians_to_degrees( acos(degrees_to_radians(emc_variables[symbol_id] )) );
-				return(id);
+				int id=variables.new_id();
+				variables[id] = radians_to_degrees( acos(degrees_to_radians(variables[symbol_id] )) );
+				returned_symbol_id = id;
 			}
 
-			int ATan(const int symbol_id)
+			void ATan(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				double degrees = emc_variables[symbol_id];
+				int id=variables.new_id();
+				double degrees = variables[symbol_id];
 				double radians = atan(degrees_to_radians(degrees));
-				emc_variables[id] = radians_to_degrees( radians );
-				return(id);
+				variables[id] = radians_to_degrees( radians );
+				returned_symbol_id = id;
 			}
 
-			int Sin(const int symbol_id)
+			void Sin(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				emc_variables[id] = radians_to_degrees( sin(degrees_to_radians(emc_variables[symbol_id] )) );
-				return(id);
+				int id=variables.new_id();
+				variables[id] = radians_to_degrees( sin(degrees_to_radians(variables[symbol_id] )) );
+				returned_symbol_id = id;
 			}
 
-			int Cos(const int symbol_id)
+			void Cos(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				emc_variables[id] = radians_to_degrees( cos(degrees_to_radians(emc_variables[symbol_id] )) );
-				return(id);
+				int id=variables.new_id();
+				variables[id] = radians_to_degrees( cos(degrees_to_radians(variables[symbol_id] )) );
+				returned_symbol_id = id;
 			}
 
-			int Tan(const int symbol_id)
+			void Tan(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				emc_variables[id] = radians_to_degrees( tan(degrees_to_radians(emc_variables[symbol_id] )) );
-				return(id);
+				int id=variables.new_id();
+				variables[id] = radians_to_degrees( tan(degrees_to_radians(variables[symbol_id] )) );
+				returned_symbol_id = id;
 			}
 
-			int AbsoluteValue(const int symbol_id)
+			void AbsoluteValue(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				emc_variables[id] = abs(emc_variables[symbol_id]);
-				return(id);
+				int id=variables.new_id();
+				variables[id] = abs(variables[symbol_id]);
+				returned_symbol_id = id;
 			}
 
-			int	Sqrt(const int symbol_id)
+			void	Sqrt(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				emc_variables[id] = sqrt(emc_variables[symbol_id]);
-				return(id);
+				int id=variables.new_id();
+				variables[id] = sqrt(variables[symbol_id]);
+				returned_symbol_id = id;
 			}
 
-			int	Exp(const int symbol_id)
+			void	Exp(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				emc_variables[id] = exp((emc_variables[symbol_id]));
-				return(id);
+				int id=variables.new_id();
+				variables[id] = exp((variables[symbol_id]));
+				returned_symbol_id = id;
 			}
 
-			int	Fix(const int symbol_id)
+			void	Fix(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				emc_variables[id] = int(floor(((emc_variables[symbol_id]))));
-				return(id);
+				int id=variables.new_id();
+				variables[id] = int(floor(((variables[symbol_id]))));
+				returned_symbol_id = id;
 			}
 
-			int	Fup(const int symbol_id)
+			void	Fup(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				emc_variables[id] = int(ceil(((emc_variables[symbol_id]))));
-				return(id);
+				int id=variables.new_id();
+				variables[id] = int(ceil(((variables[symbol_id]))));
+				returned_symbol_id = id;
 			}
 
-			int	Round(const int symbol_id)
+			void	Round(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				emc_variables[id] = int(((emc_variables[symbol_id])));
-				return(id);
+				int id=variables.new_id();
+				variables[id] = int(((variables[symbol_id])));
+				returned_symbol_id = id;
 			}
 
-			int	Ln(const int symbol_id)
+			void	Ln(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
 			{
-				int id=emc_variables.new_id();
-				emc_variables[id] = log(emc_variables[symbol_id]);
-				return(id);
+				int id=variables.new_id();
+				variables[id] = log(variables[symbol_id]);
+				returned_symbol_id = id;
 			}
 
 			int	Exists(const int symbol_id)
 			{
-				return(emc_variables.exists(symbol_id));
+				return(variables.exists(symbol_id));
 			}
 
 
