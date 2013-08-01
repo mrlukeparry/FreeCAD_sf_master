@@ -143,6 +143,8 @@ void CamProjectDockWindow::updatedTPGSelection(Cam::TPGFeature* tpgFeature) {
 
     if (tpgFeature != NULL) {
 		Cam::TPGSettings *settings = tpgFeature->getTPGSettings();
+		QStringList sl = settings->getActions();
+		Base::Console().Log("Actions: %i",sl.size());
 		if (!this->editSettings(settings))
 			Base::Console().Error("Failed to edit settings for '%s'\n", tpgFeature->Label.getValue());
     }

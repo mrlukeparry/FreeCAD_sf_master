@@ -50,15 +50,10 @@ class Creator(nc.Creator):
         self.b = 0
         self.c = 0
         self.f = Address('F', fmt = Format(number_of_decimal_places = 2))
-        self.fh = None
-        self.fv = None
-        self.fhv = False
         self.g_plane = Address('G', fmt = Format(number_of_decimal_places = 0))
-        self.g_list = []
         self.i = 0
         self.j = 0
         self.k = 0
-        self.m = []
         self.n = 10
         self.r = 0
         self.s = AddressPlusMinus('S', fmt = Format(number_of_decimal_places = 2), modal = False)
@@ -66,10 +61,7 @@ class Creator(nc.Creator):
         self.x = 0
         self.y = 0
         self.z = 500
-        self.g0123_modal = False
-        self.drill_modal = False
         self.prev_f = ''
-        self.prev_g0123 = ''
         self.prev_drill = ''
         self.prev_retract = ''
         self.prev_z = ''
@@ -79,9 +71,6 @@ class Creator(nc.Creator):
         self.fmt = Format()
         self.ffmt = Format(number_of_decimal_places = 2)
         self.sfmt = Format(number_of_decimal_places = 1)
-        self.arc_centre_absolute = False
-        self.arc_centre_positive = False
-        self.in_arc_splitting = False
         self.machine_coordinates = False
 	self.tool_length_compenstation_enabled = False
 	self.gcode_is_metric = True
@@ -100,7 +89,14 @@ class Creator(nc.Creator):
     def FORMAT_DWELL(self): return('P%f')
 
     def BLOCK(self): return('N%i')
-    def COMMENT(self,comment): return( ('(%s)' % comment ) )
+
+    def COMMENT(self,comment):
+	# Replace any embedded round brackets with curly braces so that the GCode
+	# interpreter does not have trouble with nested comments.
+	_comment = comment.replace('(','{')
+	_comment = _comment.replace(')','}')
+        return( ('(%s)' % _comment ) )
+
     def VARIABLE(self): return( '#%i')
     def VARIABLE_SET(self): return( '=%.3f')
 
@@ -154,11 +150,14 @@ class Creator(nc.Creator):
     def DRILL(self): return('G81')
     def DRILL_WITH_DWELL(self, format, dwell): return('G82' + self.SPACE() + (format.string(dwell)))
     def PECK_DRILL(self): return('G83')
-    def PECK_DEPTH(self, format, depth): return(self.SPACE() + 'Q' + (format.string(depth)))
-    def RETRACT(self, format, height): return(self.SPACE() + 'R' + (format.string(height)))
+    def PECK_DEPTH(self, format, depth): return('Q' + (format.string(depth)))
+    def RETRACT(self, format, height): return('R' + (format.string(height)))
     def END_CANNED_CYCLE(self): return('G80')
     def TAP(self): return('G84')
     def TAP_DEPTH(self, format, depth): return(self.SPACE() + 'K' + (format.string(depth)))
+    def BORE_FEED_OUT(self): return('G85')
+    def BORE_SPINDLE_STOP_RAPID_OUT(self): return('G86')
+    def BORE_DWELL_FEED_OUT(self, format, dwell): return('G89') + self.SPACE() + (format % dwell)
 
     def X(self): return('X')
     def Y(self): return('Y')
@@ -188,27 +187,21 @@ class Creator(nc.Creator):
     ############################################################################
     ##  Internals
 
-    def write_feedrate(self):
-        self.write(self.f)
-
-    def write_preps(self):
-        self.g_plane.write(self)
-        for g in self.g_list:
-            self.write(self.SPACE() + 'G' + g)
-        self.g_list = []
-
-    def write_misc(self):
-        if (len(self.m)) : self.write(self.m.pop())
-
     def write_blocknum(self):
         self.write((self.BLOCK() % self.n) + self.SPACE())
         self.n += 10
         
-    def write_spindle(self):
-        self.s.write(self)
-
     ############################################################################
     ##  Programs
+
+    def program_begin(self, id, comment):
+        self.write( ('(' + comment + ')' + '\n') )
+        self.write_blocknum()
+        self.write( self.DISABLE_TOOL_LENGTH_COMPENSATION() + '\t(Ensure tool length compensation is OFF)\n' )
+        self.tool_length_compenstation_enabled = False
+        self.remove_temporary_origin()
+        for _coordinate_system_number in range(1,10):
+            self.work_offset(workplane=_coordinate_system_number, xy_plane_rotation=0.0)
 
     def program_begin(self, id, name=''):
 	if len(name) > 0:
@@ -218,14 +211,13 @@ class Creator(nc.Creator):
 	for _coordinate_system_number in range(1,10):
 		self.work_offset(workplane=_coordinate_system_number, xy_plane_rotation=0.0)
 
+
     def program_stop(self, optional=False):
         self.write_blocknum()
         if (optional) : 
-            self.write(self.SPACE() + self.STOP_OPTIONAL() + '\n')
-            self.prev_g0123 = ''
+            self.write(self.STOP_OPTIONAL() + '\n')
         else : 
             self.write(self.STOP() + '\n')
-            self.prev_g0123 = ''
 
 
     def program_end(self):
@@ -238,15 +230,8 @@ class Creator(nc.Creator):
 		self.work_offset(workplane=_coordinate_system_number, xy_plane_rotation=0.0)
 
         self.write_blocknum()
-        self.write(self.SPACE() + self.PROGRAM_END() + '\n')
+        self.write(self.PROGRAM_END() + '\n')
 
-
-    def flush_nc(self):
-        if len(self.g_list) == 0 and len(self.m) == 0: return
-        self.write_blocknum()
-        self.write_preps()
-        self.write_misc()
-        self.write('\n')
 
     ############################################################################
     ##  Subprograms
@@ -257,24 +242,25 @@ class Creator(nc.Creator):
 
     def sub_call(self, id):
         self.write_blocknum()
-        self.write(self.SPACE() + (self.SUBPROG_CALL() % id) + '\n')
+        self.write((self.SUBPROG_CALL() % id) + '\n')
 
     def sub_end(self):
         self.write_blocknum()
-        self.write(self.SPACE() + self.SUBPROG_END() + '\n')
+        self.write(self.SUBPROG_END() + '\n')
 
     ############################################################################
     ##  Settings
     
     def imperial(self):
-        self.g_list.append(self.IMPERIAL())
+        self.write_blocknum()
+	self.write( self.IMPERIAL() + '\t(Imperial Values)\n')
         self.fmt.number_of_decimal_places = 4
 	self.gcode_is_metric = False
 
     def metric(self):
         self.write_blocknum()
-        self.fmt.number_of_decimal_places = 3
         self.write( self.METRIC() + '\t (Metric Values)\n' )
+        self.fmt.number_of_decimal_places = 3
 	self.gcode_is_metric = True
 
     def machine_units_metric(self, is_metric):
@@ -285,8 +271,12 @@ class Creator(nc.Creator):
         self.write( self.ABSOLUTE() + '\t (Absolute Coordinates)\n')
 
     def polar(self, on=True):
-        if (on) : self.g_list.append(self.POLAR_ON())
-        else : self.g_list.append(self.POLAR_OFF())
+        if (on) : 
+            self.write_blocknum()
+	    self.write(self.POLAR_ON() + '\t(Plar ON)\n' )
+        else :
+            self.write_blocknum()
+	    self.write(self.POLAR_OFF() + '\t(Plar OFF)\n' )
 
     def set_plane(self, plane):
         if (plane == 0) : 
@@ -351,26 +341,10 @@ class Creator(nc.Creator):
 
         self.write('\n')
 
-    def offset_radius(self, id, radius=None):
-        pass
-
-    def offset_length(self, id, length=None):
-        pass
-
-    def measure_and_offset_tool(self, distance=None, switch_offset_variable_name=None, fixture_offset_variable_name=None, feed_rate=None ):
-	"""Only implemented within EMC2 at the moment"""
-        pass
-
 
     ############################################################################
     ##  Datums
     
-    def datum_shift(self, x=None, y=None, z=None, a=None, b=None, c=None):
-        pass
-
-    def datum_set(self, x=None, y=None, z=None, a=None, b=None, c=None):
-        pass
-
     # This is the coordinate system we're using.  G54->G59, G59.1, G59.2, G59.3
     # These are selected by values from 1 to 9 inclusive.
     def workplane(self, id):
@@ -382,31 +356,16 @@ class Creator(nc.Creator):
             self.write_blocknum()
             self.write( ((self.WORKPLANE() % (6 + self.WORKPLANE_BASE())) + ('.%i' % (id - 6))) + '\t (Select Relative Coordinate System)\n')
         
-    def work_offset(self, workplane, x=None, y=None, z=None, a=None, b=None, c=None, xy_plane_rotation=None ):
-        pass
-
     ############################################################################
     ##  Rates + Modes
 
     def feedrate(self, f):
-        self.f = self.SPACE() + self.FEEDRATE() + self.ffmt.string(f)
-        self.fhv = False
-
-    def feedrate_hv(self, fh, fv):
-        self.fh = fh
-        self.fv = fv
-        self.fhv = True
-	self.calc_feedrate_hv( fh, fv )
-
-    def calc_feedrate_hv(self, h, v):
-        if math.fabs(v) > math.fabs(h * 2):
-            # some horizontal, so it should be fine to use the horizontal feed rate
-            self.f = self.SPACE() + self.FEEDRATE() + self.ffmt.string(self.fv)
-        else:
-            # not much, if any horizontal component, so use the vertical feed rate
-            self.f = self.SPACE() + self.FEEDRATE() + self.ffmt.string(self.fh)
+        self.write_blocknum()
+	self.write(self.FEEDRATE() + self.ffmt.string(f) + '\n')
+	self.f = f
 
     def spindle(self, s, clockwise):
+	self.s = s
         if s <= 0.0:
             self.write_blocknum()
             self.write(self.SPINDLE_STOPPED() + '\n')
@@ -420,13 +379,23 @@ class Creator(nc.Creator):
 	    self.write( 'S' + str(s) + self.SPACE() + self.SPINDLE_CCW() + '\n')
 
     def coolant(self, mode=0):
-        if (mode <= 0) : self.m.append(self.SPACE() + self.COOLANT_OFF())
-        elif (mode == 1) : self.m.append(self.SPACE() + self.COOLANT_MIST())
-        elif (mode == 2) : self.m.append(self.SPACE() + self.COOLANT_FLOOD())
+        if (mode <= 0) :   
+            self.write_blocknum()
+	    self.write(self.COOLANT_OFF() + '\n')
+        elif (mode == 1) :
+            self.write_blocknum()
+	    self.write(self.COOLANT_MIST() + '\n')
+        elif (mode == 2) : 
+            self.write_blocknum()
+	    self.write(self.COOLANT_FLOOD() + '\n')
 
     def gearrange(self, gear=0):
-        if (gear <= 0) : self.m.append(self.SPACE() + self.GEAR_OFF())
-        elif (gear <= 4) : self.m.append(self.SPACE() + self.GEAR() % (gear + GEAR_BASE()))
+        if (gear <= 0) :
+            self.write_blocknum()
+            self.write(self.GEAR_OFF() + '\n')
+        elif (gear <= 4) :
+            self.write_blocknum()
+	    self.write(self.GEAR() % (gear + GEAR_BASE()) + '\n')
 
     ############################################################################
     ##  Moves
@@ -437,13 +406,7 @@ class Creator(nc.Creator):
         if self.machine_coordinates != False or (machine_coordinates != None and machine_coordinates == True):
             self.write( self.MACHINE_COORDINATES() + self.SPACE() )
 
-        if self.g0123_modal:
-            if self.prev_g0123 != self.RAPID():
-                self.write(self.RAPID())
-                self.prev_g0123 = self.RAPID()
-        else:
-            self.write(self.RAPID())
-        self.write_preps()
+        self.write(self.RAPID())
         if (x != None):
             self.write(self.SPACE() + self.X() + (self.fmt.string(x)))
             self.x = x
@@ -465,20 +428,12 @@ class Creator(nc.Creator):
         if (c != None):
             self.write(self.SPACE() + self.C() + (self.fmt.string(c)))
             self.c = c
-        self.write_spindle()
-        self.write_misc()
         self.write('\n')
 
     def feed(self, x=None, y=None, z=None):
         if self.same_xyz(x, y, z): return
         self.write_blocknum()
-        if self.g0123_modal:
-            if self.prev_g0123 != self.FEED():
-                self.write(self.FEED())
-                self.prev_g0123 = self.FEED()
-        else:
-            self.write(self.FEED())
-        self.write_preps()
+        self.write(self.FEED())
         dx = dy = dz = 0
         if (x != None):
             self.write(self.SPACE() + self.X() + (self.fmt.string(x)))
@@ -492,23 +447,7 @@ class Creator(nc.Creator):
             self.write(self.SPACE() + self.Z() + (self.fmt.string(z)))
 	    dz = z - self.z
             self.z = z
-        if (self.fhv) : self.calc_feedrate_hv(math.sqrt(dx*dx+dy*dy), math.fabs(dz))
-        self.write_feedrate()
-        self.write_spindle()
-        self.write_misc()
         self.write('\n')
-
-    def nurbs_begin_definition(self, id, degree=None, x=None, y=None, weight=None):
-	""" This routine has been implemented within emc2.py """
-        pass
-
-    def nurbs_add_pole(self, id, x=None, y=None, weight=None):
-	""" This routine has been implemented within emc2.py """
-        pass
-
-    def nurbs_end_definition(self, id):
-	""" This routine has been implemented within emc2.py """
-        pass
 
     def same_xyz(self, x=None, y=None, z=None):
         if (x != None):
@@ -551,16 +490,9 @@ class Creator(nc.Creator):
     def arc(self, cw, x=None, y=None, z=None, i=None, j=None, k=None, r=None):
         #if self.same_xyz(x, y, z): return
         self.write_blocknum()
-        arc_g_code = ''
-        if cw: arc_g_code = self.ARC_CW()
-        else: arc_g_code = self.ARC_CCW()
-        if self.g0123_modal:
-            if self.prev_g0123 != arc_g_code:
-                self.write(arc_g_code)
-                self.prev_g0123 = arc_g_code
-        else:
-            self.write(arc_g_code)
-        self.write_preps()
+        if cw: self.write(self.ARC_CW())
+        else:  self.write(self.ARC_CCW())
+
         if (x != None):
             self.write(self.SPACE() + self.X() + (self.fmt.string(x)))
         if (y != None):
@@ -568,40 +500,14 @@ class Creator(nc.Creator):
         if (z != None):
             self.write(self.SPACE() + self.Z() + (self.fmt.string(z)))
         if (i != None):
-            if self.arc_centre_absolute == False:
-                i = i - self.x
-            s = self.fmt.string(i)
-            if self.arc_centre_positive == True:
-                if s[0] == '-':
-                    s = s[1:]
-            self.write(self.SPACE() + self.CENTRE_X() + s)
+            self.write(self.SPACE() + self.CENTRE_X() + self.fmt.string(i))
         if (j != None):
-            if self.arc_centre_absolute == False:
-                j = j - self.y
-            s = self.fmt.string(j)
-            if self.arc_centre_positive == True:
-                if s[0] == '-':
-                    s = s[1:]
-            self.write(self.SPACE() + self.CENTRE_Y() + s)
+            self.write(self.SPACE() + self.CENTRE_Y() + self.fmt.string(j))
         if (k != None):
-            if self.arc_centre_absolute == False:
-                k = k - self.z
-            s = self.fmt.string(k)
-            if self.arc_centre_positive == True:
-                if s[0] == '-':
-                    s = s[1:]
-            self.write(self.SPACE() + self.CENTRE_Z() + s)
+            self.write(self.SPACE() + self.CENTRE_Z() + self.fmt.string(k))
         if (r != None):
-            s = self.fmt.string(r)
-            if self.arc_centre_positive == True:
-                if s[0] == '-':
-                    s = s[1:]
-            self.write(self.SPACE() + self.RADIUS() + s)
+            self.write(self.SPACE() + self.RADIUS() + self.fmt.string(r))
 #       use horizontal feed rate
-        if (self.fhv) : self.calc_feedrate_hv(1, 0)
-        self.write_feedrate()
-        self.write_spindle()
-        self.write_misc()
         self.write('\n')
         if (x != None):
             self.x = x
@@ -618,20 +524,8 @@ class Creator(nc.Creator):
 
     def dwell(self, t):
         self.write_blocknum()
-        self.write_preps()
         self.write(self.DWELL() + (self.TIME() % t))
-        self.write_misc()
         self.write('\n')
-
-    def rapid_home(self, x=None, y=None, z=None, a=None, b=None, c=None):
-        pass
-
-    def rapid_unhome(self):
-        pass
-
-    def set_machine_coordinates(self):
-        self.write(self.SPACE() + self.MACHINE_COORDINATES())
-        self.prev_g0123 = ''
 
     ############################################################################
     ##  CRC
@@ -643,31 +537,20 @@ class Creator(nc.Creator):
         return self.useCrcCenterline
 
     def start_CRC(self, left = True, radius = 0.0):
-        # set up prep code, to be output on next line
         if self.t == None:
             raise "No tool specified for start_CRC()"
         self.write_blocknum()
         if left:
-            self.write(self.SPACE() + 'G41')
+            self.write(('G41' + self.SPACE() + 'D%i') % self.t  + '\t(start left cutter radius compensation)\n' )
         else:
-            self.write(self.SPACE() + 'G42')
-        self.write((self.SPACE() + 'D%i\n') % self.t)
+            self.write(('G42' + self.SPACE() + 'D%i') % self.t  + '\t(start right cutter radius compensation)\n' )
 
     def end_CRC(self):
         self.write_blocknum()
-        self.write(self.SPACE() + 'G40\n')
+        self.write(self.SPACE() + 'G40\t(end cutter radius compensation)\n')
 
     ############################################################################
     ##  Cycles
-
-    def pattern(self):
-        pass
-
-    def pocket(self):
-        pass
-
-    def profile(self):
-        pass
 
     def boring(self, x=None, y=None, z=None, depth=None, standoff=None, dwell=None, retract_mode=None, spindle_mode=None, clearance_height=None):
     	"""
@@ -708,7 +591,6 @@ class Creator(nc.Creator):
 	self.rapid(x=x,y=y)
 	self.rapid(z=standoff)
 	
-	self.write_preps()
 	self.write_blocknum()
         
 	if (dwell == None) or (dwell == 0):
@@ -766,24 +648,11 @@ class Creator(nc.Creator):
                       
         dz = (z + standoff) - self.z # In the end, we will be standoff distance above the z value passed in.
 
-        if self.drill_modal:
-            if z != self.prev_z:
-                self.write(self.SPACE() + self.Z() + (self.fmt.string(z - depth)))
-                self.prev_z=z
-        else:             
-            self.write(self.SPACE() + self.Z() + (self.fmt.string(z - depth)))    # This is the 'z' value for the bottom of the hole.
-            self.z = (z + standoff)            # We want to remember where z is at the end (at the top of the hole)
+        self.write(self.SPACE() + self.Z() + (self.fmt.string(z - depth)))    # This is the 'z' value for the bottom of the hole.
+        self.z = (z + standoff)            # We want to remember where z is at the end (at the top of the hole)
 
-        if self.drill_modal:
-            if self.prev_retract  != self.RETRACT(self.fmt, retract_height) :
-                self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))               
-                self.prev_retract = self.RETRACT(self.fmt, retract_height)
-        else:              
-            self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))
+        self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))
            
-        self.write_feedrate()
-        self.write_spindle()            
-        self.write_misc()    
         self.write('\n')
        
 	self.rapid(z=clearance_height)
@@ -807,7 +676,10 @@ class Creator(nc.Creator):
     # revert it.  I must set the mode so that I can be sure the values I'm passing in make
     # sense to the end-machine.
     #
-    def drill(self, x=None, y=None, z=None, depth=None, standoff=None, dwell=None, peck_depth=None, retract_mode=None, spindle_mode=None, clearance_height=None):
+    # retract_mode = 0 indicates rapid retract
+    # retract_mdoe = 1 indicates feed rate retract
+    #
+    def drill(self, x=None, y=None, z=None, depth=None, standoff=None, dwell=None, peck_depth=None, retract_mode=None, clearance_height=None):
         if (standoff == None):        
         # This is a bad thing.  All the drilling cycles need a retraction (and starting) height.        
             return
@@ -821,7 +693,6 @@ class Creator(nc.Creator):
 	self.rapid(x=x,y=y)
 	self.rapid(z=standoff)
 	
-        self.write_preps()
         self.write_blocknum()
         
         if (peck_depth != 0):        
@@ -834,42 +705,24 @@ class Creator(nc.Creator):
                 self.write(self.DRILL())  
             else:        
                 # We're drilling with dwell.
-
-                if self.drill_modal:       
-                   self.write(self.DRILL_WITH_DWELL(self.FORMAT_DWELL(),dwell))  
+                self.write(self.DRILL_WITH_DWELL(self.FORMAT_DWELL(),dwell))  
     
     # Set the retraction point to the 'standoff' distance above the starting z height.        
         retract_height = z + standoff        
         if (x != None):        
-            dx = x - self.x        
             self.write(self.SPACE() + self.X() + (self.fmt.string(x)))        
             self.x = x 
        
         if (y != None):        
-            dy = y - self.y        
             self.write(self.SPACE() + self.Y() + (self.fmt.string(y)))        
             self.y = y
                       
         dz = (z + standoff) - self.z # In the end, we will be standoff distance above the z value passed in.
 
-        if self.drill_modal:
-            if z != self.prev_z:
-                self.write(self.SPACE() + self.Z() + (self.fmt.string(z - depth)))
-                self.prev_z=z
-        else:             
-            self.write(self.SPACE() + self.Z() + (self.fmt.string(z - depth)))    # This is the 'z' value for the bottom of the hole.
-            self.z = (z + standoff)            # We want to remember where z is at the end (at the top of the hole)
+        self.write(self.SPACE() + self.Z() + (self.fmt.string(z - depth)))    # This is the 'z' value for the bottom of the hole.
+        self.z = (z + standoff)            # We want to remember where z is at the end (at the top of the hole)
 
-        if self.drill_modal:
-            if self.prev_retract  != self.RETRACT(self.fmt, retract_height) :
-                self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))               
-                self.prev_retract = self.RETRACT(self.fmt, retract_height)
-        else:              
-            self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))
-           
-        self.write_feedrate()
-        self.write_spindle()            
-        self.write_misc()    
+        self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))
         self.write('\n')
        
 	self.rapid(z=clearance_height)
@@ -904,11 +757,6 @@ class Creator(nc.Creator):
 	if (clearance_height == None):
 		clearance_height = standoff
 
-        self.write_preps()
-        self.write_blocknum()				
-        self.write_spindle()
-        self.write('\n')
-
         # rapid to starting point; z first, then x,y iff given
 
         # Set the retraction point to the 'standoff' distance above the starting z height.		
@@ -938,33 +786,24 @@ class Creator(nc.Creator):
         self.write( self.TAP_DEPTH(self.ffmt,pitch) + self.SPACE() )			
         self.write(self.Z() + self.fmt.string(z - depth))	# This is the 'z' value for the bottom of the tap.
         self.write(self.RETRACT( self.ffmt, retract_height))	# This is the 'z' value at the top of the tap.
-        self.write_misc()	
         self.write('\n')
 
         self.z = retract_height	# this cycle returns to the start position, so remember that as z value
         
-    def bore(self, x=None, y=None, z=None, zretract=None, depth=None, standoff=None, dwell_bottom=None, feed_in=None, feed_out=None, stoppos=None, shift_back=None, shift_right=None, backbore=False, stop=False):
-        pass
-
     def end_canned_cycle(self):
         self.write_blocknum()
         self.write(self.END_CANNED_CYCLE() + '\n')
         self.prev_drill = ''
-        self.prev_g0123 = ''
         self.prev_z = ''   
         self.prev_f = '' 
-        self.prev_retract = ''    
+        self.prev_retract = ''
+    
     ############################################################################
     ##  Misc
 
     def comment(self, text):
+        self.write_blocknum()
         self.write((self.COMMENT(text) + '\n'))
-
-    def insert(self, text):
-        pass
-
-    def block_delete(self, on=False):        
-        pass
 
     def variable(self, id):
         return (self.VARIABLE() % id)
@@ -972,47 +811,6 @@ class Creator(nc.Creator):
     def variable_set(self, id, value):
         self.write_blocknum()
         self.write(self.SPACE() + (self.VARIABLE() % id) + self.SPACE() + (self.VARIABLE_SET() % value) + '\n')
-
-    def probe_single_point(self, \
-				point_along_edge_x=None, point_along_edge_y=None, depth=None, \
-				retracted_point_x=None, retracted_point_y=None, \
-				destination_point_x=None, destination_point_y=None, \
-				intersection_variable_x=None, intersection_variable_y=None, \
-				probe_offset_x_component=None, probe_offset_y_component=None ):
-        """
-        	NOTE: Only supported in EMC2 due to the verbose variable names passed in
-        """
-        pass
-
-    def probe_grid(self, x_increment, x_count, y_increment, y_count, z_safety, z_probe, feed_rate, filename):
-	pass
-
-    def probe_downward_point(self, depth=None, intersection_variable_z=None, touch_off_as_z=None, rapid_down_to_height=None, feedrate=None):
-        """
-        	NOTE: Only supported in EMC2 due to the verbose variable names passed in
-        """
-	pass
-
-    def report_probe_results(self, x1=None, y1=None, z1=None, x2=None, y2=None, z2=None, x3=None, y3=None, z3=None, x4=None, y4=None, z4=None, x5=None, y5=None, z5=None, x6=None, y6=None, z6=None, xml_file_name=None ):
-        pass
-
-    def open_log_file(self, xml_file_name=None ):
-        pass
-
-    def log_coordinate(self, x=None, y=None, z=None):
-        pass
-
-    def message(self, text=None):
-        pass
-
-    def debug_message(self, message=None):
-        pass
-
-    def log_message(self, message=None):
-        pass
-
-    def close_log_file(self):
-        pass
 
     # Rapid movement to the midpoint between the two points specified.
     # NOTE: The points are specified either as strings representing numbers or as strings
@@ -1032,98 +830,6 @@ class Creator(nc.Creator):
 
         self.write('\n')
 
-    # Rapid movement to the intersection of two lines (in the XY plane only). This routine
-    # is based on information found in http://local.wasp.uwa.edu.au/~pbourke/geometry/lineline2d/
-    # written by Paul Bourke.  The ua_numerator, ua_denominator, ua and ub parameters
-    # represent variable names (with the preceding '#' included in them) for use as temporary
-    # variables.  They're specified here simply so that HeeksCNC can manage which variables
-    # are used in which GCode calculations.
-    #
-    # As per the notes on the web page, the ua_denominator and ub_denominator formulae are
-    # the same so we don't repeat this.  If the two lines are coincident or parallel then
-    # no movement occurs.
-    #
-    # NOTE: The points are specified either as strings representing numbers or as strings
-    # representing variable names.  This allows the HeeksCNC module to determine which
-    # variable names are used in these various routines.
-    def rapid_to_intersection(self, x1, y1, x2, y2, x3, y3, x4, y4, intersection_x, intersection_y, ua_numerator, ua_denominator, ua, ub_numerator, ub):
-        self.comment('Find the intersection of the two lines made up by the four probed points')
-        self.write_blocknum();
-        self.write(ua_numerator + '=[[[' + x4 + ' - ' + x3 + '] * [' + y1 + ' - ' + y3 + ']] - [[' + y4 + ' - ' + y3 + '] * [' + x1 + ' - ' + x3 + ']]]\n')
-        self.write_blocknum();
-        self.write(ua_denominator + '=[[[' + y4 + ' - ' + y3 + '] * [' + x2 + ' - ' + x1 + ']] - [[' + x4 + ' - ' + x3 + '] * [' + y2 + ' - ' + y1 + ']]]\n')
-        self.write_blocknum();
-        self.write(ub_numerator + '=[[[' + x2 + ' - ' + x1 + '] * [' + y1 + ' - ' + y3 + ']] - [[' + y2 + ' - ' + y1 + '] * [' + x1 + ' - ' + x3 + ']]]\n')
-
-        self.comment('If they are not parallel')
-        self.write('O900 IF [' + ua_denominator + ' NE 0]\n')
-        self.comment('And if they are not coincident')
-        self.write('O901    IF [' + ua_numerator + ' NE 0 ]\n')
-
-        self.write_blocknum();
-        self.write('       ' + ua + '=[' + ua_numerator + ' / ' + ua_denominator + ']\n')
-        self.write_blocknum();
-        self.write('       ' + ub + '=[' + ub_numerator + ' / ' + ua_denominator + ']\n') # NOTE: ub denominator is the same as ua denominator
-        self.write_blocknum();
-        self.write('       ' + intersection_x + '=[' + x1 + ' + [[' + ua + ' * [' + x2 + ' - ' + x1 + ']]]]\n')
-        self.write_blocknum();
-        self.write('       ' + intersection_y + '=[' + y1 + ' + [[' + ua + ' * [' + y2 + ' - ' + y1 + ']]]]\n')
-        self.write_blocknum();
-        self.write('       ' + self.RAPID())
-        self.write(' X ' + intersection_x + ' Y ' + intersection_y + '\n')
-
-        self.write('O901    ENDIF\n')
-        self.write('O900 ENDIF\n')
-
-    # We need to calculate the rotation angle based on the line formed by the
-    # x1,y1 and x2,y2 coordinate pair.  With that angle, we need to move
-    # x_offset and y_offset distance from the current (0,0,0) position.
-    #
-    # The x1,y1,x2 and y2 parameters are all variable names that contain the actual
-    # values.
-    # The x_offset and y_offset are both numeric (floating point) values
-    #
-    # If the coordinate_system_number is positive (and defined) then issue
-    # the commands necessary to set the XY plane rotation value (i.e. around the Z axis).
-    #
-    def rapid_to_rotated_coordinate(self, x1, y1, x2, y2, ref_x, ref_y, x_current, y_current, x_final, y_final, coordinate_system_number ):
-        self.comment('Rapid to rotated coordinate')
-        self.write_blocknum();
-        self.write( '#1 = [atan[' + y2 + ' - ' + y1 + ']/[' + x2 +' - ' + x1 + ']] (nominal_angle)\n')
-        self.write_blocknum();
-        self.write( '#2 = [atan[' + ref_y + ']/[' + ref_x + ']] (reference angle)\n')
-        self.write_blocknum();
-        self.write( '#3 = [#1 - #2] (angle)\n' )
-        self.write_blocknum();
-        self.write( '#4 = [[[' + (self.fmt.string(0)) + ' - ' + (self.fmt.string(x_current)) + '] * COS[ #3 ]] - [[' + (self.fmt.string(0)) + ' - ' + (self.fmt.string(y_current)) + '] * SIN[ #3 ]]]\n' )
-        self.write_blocknum();
-        self.write( '#5 = [[[' + (self.fmt.string(0)) + ' - ' + (self.fmt.string(x_current)) + '] * SIN[ #3 ]] + [[' + (self.fmt.string(0)) + ' - ' + (self.fmt.string(y_current)) + '] * COS[ #3 ]]]\n' )
-
-        self.write_blocknum();
-        self.write( '#6 = [[' + (self.fmt.string(x_final)) + ' * COS[ #3 ]] - [' + (self.fmt.string(y_final)) + ' * SIN[ #3 ]]]\n' )
-        self.write_blocknum();
-        self.write( '#7 = [[' + (self.fmt.string(y_final)) + ' * SIN[ #3 ]] + [' + (self.fmt.string(y_final)) + ' * COS[ #3 ]]]\n' )
-
-        self.write_blocknum();
-        self.write( self.RAPID() + ' X [ #4 + #6 ] Y [ #5 + #7 ]\n' )
-
-	if coordinate_system_number != None and coordinate_system_number > 0:
-		self.write_blocknum();
-		self.write( 'G10 L2 P' + str(coordinate_system_number) + ' R [ #3 ] (set to XY plane rotation based on the probed points)\n' )
-		self.write_blocknum();
-		self.write( '(DEBUG,XY plane is rotated [ #3 ] degrees)\n' )
-
-    def BEST_POSSIBLE_SPEED(self, motion_blending_tolerance, naive_cam_tolerance): 
-	    statement = 'G64'
-
-	    if (motion_blending_tolerance > 0):
-		    statement += ' P ' + str(motion_blending_tolerance)
-
-	    if (naive_cam_tolerance > 0):
-		    statement += ' Q ' + str(naive_cam_tolerance)
-
-	    return(statement)
-            
     def set_path_control_mode(self, mode, motion_blending_tolerance, naive_cam_tolerance ):
         self.write_blocknum()
         if (mode == 0):

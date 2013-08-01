@@ -1,6 +1,6 @@
 
-# You need to import the package that contains your PyTPGBase sub-type
-#import ExampleTPG
+# You need to import the package that contains your PyTPGBase sub-type instances
+import ExampleTPG
 
 
 __all__ = ['ExampleTPG']

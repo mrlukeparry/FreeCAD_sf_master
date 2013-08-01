@@ -36,10 +36,58 @@
 #    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 #    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ################################################################################
+#
+#	This file contains TWO distinct features.  The first is to define
+#	a Creator class that forms the basis of all conversion from the
+#	ToolPath language (i.e. rapid(), feed() etc.) to the GCode (G00, G01 etc.)
+#
+#	The second is to define the COMPLETE series of global functions available
+#	to all ToolPath generating modules.  These global functions simply
+#	call their counterpart methods in the Creator class.
+#
+#	The implementation of this Creator class is by way of a base class
+#	available for other scripts to override.  We have four main levels
+#	available for overriding.  
+#
+#	The base class version of Creator, found in this nc.py file, holds 
+#	methods that simply raise a 'not implemented' exception.  By having
+#	this mechanism at the base, we can ensure that the various combinations
+#	of overriding classes that follow will either result in all necessary
+#	methods being implemented or that the operator will be warned if our
+#	ToolPath generator is issuing a command that our machine controller
+#	does not support.  eg: NURBS definitions for toolpaths.
+#
+#	The next is contained in iso.py.  This holds a basic implementation 
+#	of only those methods that are likely to be available in all machine 
+#	processors (i.e. LinuxCNC, Mach3 etc.)  
+#
+#	The next layer is based on the machine controllers themselves.  eg:
+#	linuxcnc.py, mach3.py etc.  These files override those methods in
+#	the iso/nc layers with implementations that are specific to their
+#	corresponding machine controller. (eg: the WORK_OFFSET() method
+#	produces G10 L2 for Mach3 but G10 L20 for LinuxCNC)
+#
+#	Finally, we have machine-specific implementations. These are the
+#	places where most user configuration must go.  These implementations
+#	base their definition of the Creator class on the corresponding
+#	machine controller and then override those methods where they want
+#	some particular function to occur differently for their machine.
+#
+#	An example of all of this layering is for a Hafco HM50 model milling
+# 	machine that is controlled using LinuxCNC.  This implementation
+#	defines an hm50.py file that defines a Creator class that inherits
+#	from that defined in the linuxcnc.py file.  The Creator class
+#	found within linuxcnc.py is based on that found in the iso.py file.
+#	The Creator class defined in iso.py is based on that found in
+#	nc.py.  The global functions in nc.py call the Creator class methods
+#	which, through our layering of inheritance, ends up calling
+#	the most appropriate version of each method at any of the layers
+#	of inheritance.
+#
+################################################################################
 
 import sys
 import os
-
 ncOFF = 0
 ncLEFT = -1
 ncRIGHT = +1
@@ -66,7 +114,7 @@ class Creator:
 	"""
 	We use sys.stdout.write(s) to avoid the implicit space and newline characters
 	added by the print() call.  This ends up calling the PythonStdout::write() method
-	in PostProcessor.cpp anyway.
+	in PostProcessor.cpp.
 	"""
         sys.stdout.write(s)
 
@@ -264,10 +312,6 @@ class Creator:
         """Return from rapid home"""
         raise RuntimeError( __name__ + ' not implemented' )
 
-    def set_machine_coordinates(self):
-        """Set machine coordinates"""
-        raise RuntimeError( __name__ + ' not implemented' )
-
     ############################################################################
     ##  Cutter radius compensation
 
@@ -290,22 +334,15 @@ class Creator:
         """Profile routine"""
         raise RuntimeError( __name__ + ' not implemented' )
 
-    def drill(self, x=None, y=None, z=None, depth=None, standoff=None, dwell=None, peck_depth=None, retract_mode=None, spindle_mode=None):
+    def drill(self, x=None, y=None, z=None, depth=None, standoff=None, dwell=None, peck_depth=None, retract_mode=None, clearance_height=None):
         """Drilling routines"""
         raise RuntimeError( __name__ + ' not implemented' )
-
-    # original prototype was:
-    # def tap(self, x=None, y=None, z=None, zretract=None, depth=None, standoff=None, dwell_bottom=None, pitch=None, stoppos=None, spin_in=None, spin_out=None):
-    #
-    # current call is like so:
-    # tap(x=10, y=10, z=0, tap_mode=0, depth=12.7, standoff=6.35, direction=0, pitch=1.25)
-    # just add tap_mode & direction parameters
 
     def tap(self, x=None, y=None, z=None, zretract=None, depth=None, standoff=None, dwell_bottom=None, pitch=None, stoppos=None, spin_in=None, spin_out=None, tap_mode=None, direction=None):
         """Tapping routines"""
         raise RuntimeError( __name__ + ' not implemented' )
 
-    def bore(self, x=None, y=None, z=None, zretract=None, depth=None, standoff=None, dwell_bottom=None, feed_in=None, feed_out=None, stoppos=None, shift_back=None, shift_right=None, backbore=False, stop=False):
+    def boring(self, x=None, y=None, z=None, depth=None, standoff=None, dwell=None, retract_mode=None, spindle_mode=None, clearance_height=None):
         """Boring routines"""
         raise RuntimeError( __name__ + ' not implemented' )
 
@@ -338,13 +375,29 @@ class Creator:
     def probe_linear_centre_outside(self, x1=None, y1=None, depth=None, x2=None, y2=None ):
         raise RuntimeError( __name__ + ' not implemented' )
 
-    def probe_single_point(self, point_along_edge_x=None, point_along_edge_y=None, depth=None, retracted_point_x=None, retracted_point_y=None, destination_point_x=None, destination_point_y=None, intersection_variable_x=None, intersection_variable_y=None, probe_offset_x_component=None, probe_offset_y_component=None ):
+    def probe_single_point(self, point_along_edge_x=None, \
+		    		 point_along_edge_y=None, \
+				 depth=None, \
+				 retracted_point_x=None, \
+				 retracted_point_y=None, \
+				 destination_point_x=None, \
+				 destination_point_y=None, \
+				 intersection_variable_x=None, \
+				 intersection_variable_y=None, \
+				 probe_offset_x_component=None, \
+				 probe_offset_y_component=None ):
         raise RuntimeError( __name__ + ' not implemented' )
 
     def probe_downward_point(self, x=None, y=None, depth=None, intersection_variable_z=None):
         raise RuntimeError( __name__ + ' not implemented' )
 
-    def report_probe_results(self, x1=None, y1=None, z1=None, x2=None, y2=None, z2=None, x3=None, y3=None, z3=None, x4=None, y4=None, z4=None, x5=None, y5=None, z5=None, x6=None, y6=None, z6=None, xml_file_name=None ):
+    def report_probe_results(self, 	x1=None, y1=None, z1=None, \
+		    			x2=None, y2=None, z2=None, \
+					x3=None, y3=None, z3=None, \
+					x4=None, y4=None, z4=None, \
+					x5=None, y5=None, z5=None, \
+					x6=None, y6=None, z6=None, \
+					xml_file_name=None ):
         raise RuntimeError( __name__ + ' not implemented' )
 
     def open_log_file(self, xml_file_name=None ):
@@ -362,7 +415,13 @@ class Creator:
     def rapid_to_midpoint(self, x1=None, y1=None, z1=None, x2=None, y2=None, z2=None):
         raise RuntimeError( __name__ + ' not implemented' )
 
-    def rapid_to_intersection(self, x1, y1, x2, y2, x3, y3, x4, y4, intersection_x, intersection_y, ua_numerator, ua_denominator, ua, ub_numerator, ub):
+    def rapid_to_intersection(self, 	x1, y1, \
+		    			x2, y2, \
+					x3, y3, \
+					x4, y4, \
+					intersection_x, intersection_y, \
+					ua_numerator, ua_denominator, ua, \
+					ub_numerator, ub):
         raise RuntimeError( __name__ + ' not implemented' )
 
     def rapid_to_rotated_coordinate(self, x1, y1, x2, y2, ref_x, ref_y, x_current, y_current, x_final, y_final):
@@ -577,9 +636,6 @@ def rapid_home(x=None, y=None, z=None, a=None, b=None, c=None):
 def rapid_unhome():
     creator.rapid_unhome()
 
-def set_machine_coordinates():
-    creator.set_machine_coordinates()
-
 ############################################################################
 ##  Cutter radius compensation
 
@@ -607,14 +663,14 @@ def pocket():
 def profile():
     creator.profile()
 
-def drill(x=None, y=None, z=None, depth=None, standoff=None, dwell=None, peck_depth=None, retract_mode=None, spindle_mode=None):
-    creator.drill(x, y, z, depth, standoff, dwell, peck_depth, retract_mode, spindle_mode)
+def drill(x=None, y=None, z=None, depth=None, standoff=None, dwell=None, peck_depth=None, retract_mode=None, clearance_height=None):
+    creator.drill(x, y, z, depth, standoff, dwell, peck_depth, retract_mode, clearance_height)
 
 def tap(x=None, y=None, z=None, zretract=None, depth=None, standoff=None, dwell_bottom=None, pitch=None, stoppos=None, spin_in=None, spin_out=None, tap_mode=None, direction=None):
     creator.tap(x, y, z, zretract, depth, standoff, dwell_bottom, pitch, stoppos, spin_in, spin_out, tap_mode, direction)
 
-def bore(x=None, y=None, z=None, zretract=None, depth=None, standoff=None, dwell_bottom=None, feed_in=None, feed_out=None, stoppos=None, shift_back=None, shift_right=None, backbore=False, stop=False):
-    creator.bore(x, y, z, zretract, depth, standoff, dwell_Bottom, feed_in, feed_out, stoppos, shift_back, shift_right, backbore, stop)
+def boring(x=None, y=None, z=None, depth=None, standoff=None, dwell=None, retract_mode=None, spindle_mode=None, clearance_height=None):
+    creator.boring(x, y, z, depth, standoff, dwell, retract_mode, spindle_mode, clearance_height)
 
 def end_canned_cycle():
     creator.end_canned_cycle()

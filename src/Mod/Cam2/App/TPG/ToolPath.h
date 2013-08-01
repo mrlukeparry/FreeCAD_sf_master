@@ -75,6 +75,12 @@ public:
      */
     void addToolPath(QString tp);
 
+	/**
+	 * Add the python construction version of the libArea graphics.
+	 */
+	void addAreaDefinition( const area::CArea graphics, const char *python_area_object_name );
+	void addCurveDefinition( const area::CCurve graphics, const char *python_curve_object_name );
+
     /**
      * Clear out the toolpath.
      */
