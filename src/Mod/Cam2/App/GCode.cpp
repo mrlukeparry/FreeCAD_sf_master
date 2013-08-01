@@ -195,11 +195,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 		MathematicalExpression = 
 			  (qi::double_) [ qi::_val = qi::_1 ]
-			// | (Addition) [ qi::_val = qi::_1 ]
+			| (Addition) [ qi::_val = qi::_1 ]
 			| (qi::repeat(1,1)[qi::char_("[")] >> MathematicalExpression >> qi::repeat(1,1)[qi::char_("]")]) [ qi::_val = qi::_2 ]
 			;
 
-		Addition = (MathematicalExpression >> qi::char_("+") >> MathematicalExpression) [ qi::_val = qi::_1 + qi::_2 ]
+		Addition = (qi::repeat(1,1)[qi::char_("[")] >> MathematicalExpression >> qi::char_("+") >> MathematicalExpression >> qi::repeat(1,1)[qi::char_("]")])
+				[ qi::_val = qi::_2 + qi::_4 ]
 			;
 
 		Start = +(MotionCommand)	// [ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ]
