@@ -97,6 +97,15 @@ template <typename Iter, typename Skipper = qi::blank_type>
 	}
 
 	void SetLineNumber( const int value ) { line_number = value; }
+	void StatementType( const LinuxCNC::eStatement_t type )
+	{
+		// Only override the statement type if this integer is larger than the
+		// current value.  This allows the order of the statement type
+		// enumeration to determine the precendence used for statement
+		// types (for colour etc.)
+
+		if (int(type) > int(statement_type)) statement_type = type;
+	}
 
 	void ProcessBlock()
 	{
@@ -139,29 +148,25 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			;
 
 		// X 1.1 etc.
-		MotionArgument = (qi::repeat(1,1)[qi::char_("xXyYzZ")] >> MathematicalExpression )
+			MotionArgument = (ascii::no_case[qi::repeat(1,1)[qi::char_("XYZABCUVWLPRQIJK")]] >> MathematicalExpression )
 			[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Add, phx::ref(*this), qi::_1, qi::_2) ] // call this->Add(_1, _2);
 			;
 
-		// g00 X <float> Y <float> etc.
-		G00 = qi::lexeme[qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(1,2)[qi::char_("0")]] >> +(MotionArgument)
-			[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Print, phx::ref(*this) ) ]	// call this->Print()
-			;
-
-		// g01 X <float> Y <float> etc.
-		G01 = ascii::no_case[qi::lit("G")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::lit("1") >> +(MotionArgument)
-			[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Print, phx::ref(*this) ) ]	// call this->Print()
-			;
+		G00 = qi::lexeme[qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(1,2)[qi::char_("0")]];
+		G01 = qi::lexeme[ascii::no_case[qi::lit("G")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::lit("1")];
 
 		// EndOfBlock = (qi::no_skip[*qi::space >> qi::eol])
 		EndOfBlock = qi::eol
 			[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ProcessBlock, phx::ref(*this) ) ]	// call this->EndOfBlock()
 			;
 
-		MotionCommand =	 
-					G01
-				|	G00
-					;
+		Motion =	 
+					(G01 >> +(MotionArgument))
+				|	(G00 >> +(MotionArgument))
+				|	(ascii::no_case[qi::lit("G80")])
+				|	((ascii::no_case[qi::lit("G83")]) >> +(MotionArgument))
+						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stDrilling ) ]
+				;
 
 		Comment =	(qi::lit("(") >> +(qi::char_ - qi::lit(")")) >> qi::lit(")"))
 			;
@@ -228,48 +233,104 @@ template <typename Iter, typename Skipper = qi::blank_type>
 				[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ATAN, phx::ref(*this), qi::_val, qi::_1, qi::_2) ] // call this->ATAN(_val, _1, _2);
 			;
 
-		RS274 = (MotionCommand)
+		Spindle =	(ascii::no_case[qi::lit("S")] >> MathematicalExpression)
+			;
+
+		FeedRate =	(ascii::no_case[qi::lit("F")] >> MathematicalExpression)
+			;
+
+		MCodes =	(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("0")]])	// M00 - Pause Program
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("1")]])	// M01
+			// Add M02 (end of program) as its own rule as its location is quite specific.
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("3")]])	// M03 - turn spindle clockwise
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("4")]])	// M04 - turn spindle counter-clockwise
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("5")]])	// M05 - stop spindle
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("6")]])	// M06 - enable selected tool
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("7")]])	// M07 - mist coolant on
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("8")]])	// M08 - flood coolant on
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("9")]])	// M09 - coolant off
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")]                                  >> qi::repeat(1,1)[qi::lit("60")]])	// M60
+			;
+
+		EndOfProgram = (qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("2")]])	// M02 - end of program
+			;
+
+		RS274 = (LineNumberRule)
+			|	(Motion)
 			|	(Comment)
+			|	(Spindle >> *(MCodes))
+			|	(Spindle)
+			|	(MCodes)
+			|	(FeedRate)
+			|	(EndOfProgram)
 			;
 
-		Expression = (LineNumberRule >> RS274 >> EndOfBlock)
-			|		 (RS274 >> EndOfBlock)
+		Expression = (+(RS274) >> EndOfBlock)
 			;
 
-		Start = +(Expression);
-					;
+		Start = +(Expression)
+			;
 
 		BOOST_SPIRIT_DEBUG_NODE(Start);
-		BOOST_SPIRIT_DEBUG_NODE(MotionArgument);
-		BOOST_SPIRIT_DEBUG_NODE(G01);
 		BOOST_SPIRIT_DEBUG_NODE(G00);
-		BOOST_SPIRIT_DEBUG_NODE(MotionCommand);
+		BOOST_SPIRIT_DEBUG_NODE(G01);		
+		BOOST_SPIRIT_DEBUG_NODE(Motion);
+		BOOST_SPIRIT_DEBUG_NODE(MotionArgument);
 		BOOST_SPIRIT_DEBUG_NODE(LineNumberRule);
-		BOOST_SPIRIT_DEBUG_NODE(EndOfBlock);
 		BOOST_SPIRIT_DEBUG_NODE(MathematicalExpression);
 		BOOST_SPIRIT_DEBUG_NODE(Functions);
 		BOOST_SPIRIT_DEBUG_NODE(Comment);
 		BOOST_SPIRIT_DEBUG_NODE(RS274);
 		BOOST_SPIRIT_DEBUG_NODE(Expression);
-
+		BOOST_SPIRIT_DEBUG_NODE(Spindle);
+		BOOST_SPIRIT_DEBUG_NODE(MCodes);
+		BOOST_SPIRIT_DEBUG_NODE(EndOfBlock);
+		BOOST_SPIRIT_DEBUG_NODE(EndOfProgram);
+		BOOST_SPIRIT_DEBUG_NODE(FeedRate);
 	}
 
 	public:
 		qi::rule<Iter, Skipper> Start;
-		qi::rule<Iter, Skipper> MotionArgument;
+		qi::rule<Iter, Skipper> G00;
 		qi::rule<Iter, Skipper> G01;
-		qi::rule<Iter, Skipper> G00;		
-		qi::rule<Iter, Skipper> MotionCommand;
+		qi::rule<Iter, Skipper> G80;
+		qi::rule<Iter, Skipper> G83;
+		qi::rule<Iter, Skipper> Motion;
+		qi::rule<Iter, Skipper> MotionArgument;
 		qi::rule<Iter, int(), Skipper> LineNumberRule;
-		qi::rule<Iter, Skipper> EndOfBlock;
 		qi::rule<Iter, double(), Skipper> MathematicalExpression;
 		qi::rule<Iter, double(), Skipper> Functions;
 		qi::rule<Iter, Skipper> Comment;
 		qi::rule<Iter, Skipper> RS274;
 		qi::rule<Iter, Skipper> Expression;
+		qi::rule<Iter, Skipper> Spindle;
+		qi::rule<Iter, Skipper> MCodes;
+		qi::rule<Iter, Skipper> EndOfBlock;
+		qi::rule<Iter, Skipper> EndOfProgram;
+		qi::rule<Iter, Skipper> FeedRate;
 
-		// boost::fusion::vector2<char,int>		line_number;
-		int		line_number;
+		double previous[9]; // in parse_units
+
+		LinuxCNC::eCoordinateSystems_t current_coordinate_system;
+		LinuxCNC::eCoordinateSystems_t modal_coordinate_system;
+
+		double feed_rate;	// invalid.
+		double spindle_speed;
+		double units;
+		double tool_length_offset;
+
+		int	 line_offset;			// Which line in the GCode file are we processing?  i.e. index into g_svLines
+		int  line_number;			// GCode line number.  i.e. N30, N40 etc.
+		char comment[1024];
+
+		LinuxCNC::ePlane_t plane;
+
+		int	tool_slot_number;
+
+		// The statement type defines both the colour of the GCode text and the type of
+		// motion used.
+		LinuxCNC::eStatement_t statement_type;
+		LinuxCNC::eStatement_t previous_statement_type;	// from previous block.
 
 		typedef std::map<char, double>	DoubleMap_t;
 		DoubleMap_t	m_doubles;
