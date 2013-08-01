@@ -100,6 +100,7 @@ struct point_double_grammar : boost::spirit::qi::grammar<Iterator, double()>
 
 namespace qi = boost::spirit::qi;
 namespace phx = boost::phoenix;
+namespace ascii = boost::spirit::ascii;
 
 typedef qi::symbols<char, double> arguments_dictionary;
 qi::rule<std::string::const_iterator, qi::space_type> GetRapid()
@@ -141,6 +142,14 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		m_doubles.clear();
 	}
 
+	typedef boost::proto::result_of::deep_copy<
+				BOOST_TYPEOF(ascii::no_case[qi::lit(std::string())])
+			>::type nocaselit_return_type;
+
+	nocaselit_return_type nocaselit(const std::string& keyword)
+	{
+		return boost::proto::deep_copy(ascii::no_case[qi::lit(keyword)]);
+	}
 
 	rs274(arguments_dictionary &dict) : rs274::base_type(Start)
 	{
@@ -177,8 +186,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			;
 
 		// g01 X <float> Y <float> etc.
-		G01 = qi::lexeme[qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::repeat(1,1)[qi::char_("1")]] >> +(MotionArgument)
-		// Feed = qi::lexeme [+qi::char_("gG") >> *qi::char_("0") >> qi::char_("1")] >> +(MotionArgument)
+		G01 = ascii::no_case[qi::lit("G")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::lit("1") >> +(MotionArgument)
 			[ phx::bind(&rs274<Iter, Skipper>::Print, phx::ref(*this) ) ]	// call this->Print()
 			;
 
@@ -195,12 +203,21 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 		MathematicalExpression = 
 			  (qi::double_) [ qi::_val = qi::_1 ]
-			| (Addition) [ qi::_val = qi::_1 ]
-			| (qi::repeat(1,1)[qi::char_("[")] >> MathematicalExpression >> qi::repeat(1,1)[qi::char_("]")]) [ qi::_val = qi::_2 ]
-			;
 
-		Addition = (qi::repeat(1,1)[qi::char_("[")] >> MathematicalExpression >> qi::char_("+") >> MathematicalExpression >> qi::repeat(1,1)[qi::char_("]")])
-				[ qi::_val = qi::_2 + qi::_4 ]
+			// NOTE: We use _1 and _3 because qi::lit() does not produce an attribute and so it doesn't count as an argument.
+			| (qi::lit("[") >> MathematicalExpression >> qi::char_("+") >> MathematicalExpression >> qi::lit("]"))
+				[ qi::_val = qi::_1 + qi::_3 ]	
+
+			| (qi::lit("[") >> MathematicalExpression >> qi::char_("-") >> MathematicalExpression >> qi::lit("]"))
+				[ qi::_val = qi::_1 - qi::_3 ]	
+
+			| (qi::lit("[") >> MathematicalExpression >> qi::char_("*") >> MathematicalExpression >> qi::lit("]"))
+				[ qi::_val = qi::_1 * qi::_3 ]	
+
+			| (qi::lit("[") >> MathematicalExpression >> qi::char_("/") >> MathematicalExpression >> qi::lit("]"))
+				[ qi::_val = qi::_1 / qi::_3 ]	
+
+			| (qi::lit("[") >> MathematicalExpression >> qi::lit("]")) [ qi::_val = qi::_1 ]
 			;
 
 		Start = +(MotionCommand)	// [ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ]
@@ -214,7 +231,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		BOOST_SPIRIT_DEBUG_NODE(LineNumberRule);
 		BOOST_SPIRIT_DEBUG_NODE(EndOfBlock);
 		BOOST_SPIRIT_DEBUG_NODE(MathematicalExpression);
-		BOOST_SPIRIT_DEBUG_NODE(Addition);		
 	}
 
 	public:
@@ -227,7 +243,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		qi::rule<Iter, int(), Skipper> LineNumberRule;
 		qi::rule<Iter, Skipper> EndOfBlock;
 		qi::rule<Iter, double(), Skipper> MathematicalExpression;
-		qi::rule<Iter, double(), Skipper> Addition;
 
 		// boost::fusion::vector2<char,int>		line_number;
 		int		line_number;
@@ -247,12 +262,16 @@ int CamExport wilma()
 	arguments_dictionary arguments;
 	rs274<std::string::const_iterator> linuxcnc(arguments);
 
-	const std::string gcode = "N220 g0 X [1.0 + 0.1] Y 2.2 Z3.3 \n"
+	const std::string gcode = "N220 g0 X [1.0 + 0.1] Y [2.2 - 0.1] Z[[3.3 * 2]/7.0] \n"
 							  "N230 g01 X 4.4 Y5.5\n";
 	// const std::string gcode = "N220 G0 \n";
 
 	std::string::const_iterator begin = gcode.begin();
-	// if (qi::phrase_parse(begin, gcode.end(), linuxcnc, qi::space - qi::eol))
+	
+	// Parse the GCode using the linuxcnc grammar.  The qi::blank skipper will skip all whitespace
+	// except newline characters.  i.e. it allows newline characters to be included in the grammar
+	// (which they need to be as they represent an 'end of block' marker)
+
 	if (qi::phrase_parse(begin, gcode.end(), linuxcnc, qi::blank))
 	{
 		qDebug("last line number %d\n", linuxcnc.line_number );
