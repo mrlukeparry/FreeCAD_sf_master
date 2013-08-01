@@ -26,6 +26,7 @@
 #endif
 
 #include <sstream>
+#include <math.h>
 
 // NOTE: These BOOST SPIRIT DEBUG macros MUST be defined BEFORE the include
 // files.  Otherwise the default values, defined within the include files,
@@ -120,6 +121,20 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			m_doubles.insert(std::make_pair(c[0], value));
 		}
 	}
+
+	void ABS(double & result, double value)		{ result = ::abs(value); }
+	void ACOS(double & result, double value)	{ result = ::acos(value); }
+	void ASIN(double & result, double value)	{ result = ::asin(value); }
+	void ATAN(double & result, double lhs, double rhs)	{ result = ::atan2(lhs,rhs); }
+	void COS(double & result, double value)	{ result = ::cos(value); }
+	void EXP(double & result, double value)	{ result = ::exp(value); }
+	void FIX(double & result, double value)	{ result = double(int(::floor(value))); }
+	void FUP(double & result, double value)	{ result = double(int(::ceil(value))); }
+	void ROUND(double & result, double value)	{ result = double(int(value)); }
+	void LN(double & result, double value)	{ result = ::log(value); }
+	void SIN(double & result, double value)	{ result = ::sin(value); }
+	void SQRT(double & result, double value)	{ result = ::sqrt(value); }
+	void TAN(double & result, double value)	{ result = ::tan(value); }
 
 	void Print()
 	{
@@ -217,7 +232,50 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			| (qi::lit("[") >> MathematicalExpression >> qi::char_("/") >> MathematicalExpression >> qi::lit("]"))
 				[ qi::_val = qi::_1 / qi::_3 ]	
 
+			| Functions [ qi::_val = qi::_1 ]
+
 			| (qi::lit("[") >> MathematicalExpression >> qi::lit("]")) [ qi::_val = qi::_1 ]
+			;
+
+		Functions = 
+				(ascii::no_case[qi::lit("ABS")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+					[ phx::bind(&rs274<Iter, Skipper>::ABS, phx::ref(*this), qi::_val, qi::_1) ] // call this->ABS(_val, _1);
+
+			|	(ascii::no_case[qi::lit("ACOS")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+					[ phx::bind(&rs274<Iter, Skipper>::ACOS, phx::ref(*this), qi::_val, qi::_1) ] // call this->ACOS(_val, _1);
+
+			|	(ascii::no_case[qi::lit("ASIN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+					[ phx::bind(&rs274<Iter, Skipper>::ASIN, phx::ref(*this), qi::_val, qi::_1) ] // call this->ASIN(_val, _1);
+
+			|	(ascii::no_case[qi::lit("COS")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+					[ phx::bind(&rs274<Iter, Skipper>::COS, phx::ref(*this), qi::_val, qi::_1) ] // call this->COS(_val, _1);
+
+			|	(ascii::no_case[qi::lit("EXP")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+					[ phx::bind(&rs274<Iter, Skipper>::EXP, phx::ref(*this), qi::_val, qi::_1) ] // call this->EXP(_val, _1);
+
+			|	(ascii::no_case[qi::lit("FIX")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+					[ phx::bind(&rs274<Iter, Skipper>::FIX, phx::ref(*this), qi::_val, qi::_1) ] // call this->FIX(_val, _1);
+
+			|	(ascii::no_case[qi::lit("FUP")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+					[ phx::bind(&rs274<Iter, Skipper>::FUP, phx::ref(*this), qi::_val, qi::_1) ] // call this->FUP(_val, _1);
+
+			|	(ascii::no_case[qi::lit("ROUND")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+					[ phx::bind(&rs274<Iter, Skipper>::ROUND, phx::ref(*this), qi::_val, qi::_1) ] // call this->ROUND(_val, _1);
+
+			|	(ascii::no_case[qi::lit("LN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+					[ phx::bind(&rs274<Iter, Skipper>::LN, phx::ref(*this), qi::_val, qi::_1) ] // call this->LN(_val, _1);
+
+			|	(ascii::no_case[qi::lit("SIN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+					[ phx::bind(&rs274<Iter, Skipper>::SIN, phx::ref(*this), qi::_val, qi::_1) ] // call this->SIN(_val, _1);
+
+			|	(ascii::no_case[qi::lit("SQRT")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+					[ phx::bind(&rs274<Iter, Skipper>::SQRT, phx::ref(*this), qi::_val, qi::_1) ] // call this->SQRT(_val, _1);
+
+			|	(ascii::no_case[qi::lit("TAN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+					[ phx::bind(&rs274<Iter, Skipper>::TAN, phx::ref(*this), qi::_val, qi::_1) ] // call this->TAN(_val, _1);
+
+			|	(ascii::no_case[qi::lit("ATAN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]") >> qi::lit("/") >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
+				[ phx::bind(&rs274<Iter, Skipper>::ATAN, phx::ref(*this), qi::_val, qi::_1, qi::_2) ] // call this->ATAN(_val, _1, _2);
 			;
 
 		Start = +(MotionCommand)	// [ phx::bind(&Arguments_t::Print, phx::ref(arguments) ) ]
@@ -231,6 +289,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		BOOST_SPIRIT_DEBUG_NODE(LineNumberRule);
 		BOOST_SPIRIT_DEBUG_NODE(EndOfBlock);
 		BOOST_SPIRIT_DEBUG_NODE(MathematicalExpression);
+		BOOST_SPIRIT_DEBUG_NODE(Functions);
 	}
 
 	public:
@@ -239,10 +298,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		qi::rule<Iter, Skipper> G01;
 		qi::rule<Iter, Skipper> G00;		
 		qi::rule<Iter, Skipper> MotionCommand;
-		// qi::rule<Iter, boost::fusion::vector2<char,int>(), Skipper> LineNumberRule;
 		qi::rule<Iter, int(), Skipper> LineNumberRule;
 		qi::rule<Iter, Skipper> EndOfBlock;
 		qi::rule<Iter, double(), Skipper> MathematicalExpression;
+		qi::rule<Iter, double(), Skipper> Functions;
 
 		// boost::fusion::vector2<char,int>		line_number;
 		int		line_number;
@@ -263,7 +322,7 @@ int CamExport wilma()
 	rs274<std::string::const_iterator> linuxcnc(arguments);
 
 	const std::string gcode = "N220 g0 X [1.0 + 0.1] Y [2.2 - 0.1] Z[[3.3 * 2]/7.0] \n"
-							  "N230 g01 X 4.4 Y5.5\n";
+							  "N230 g01 X abs[-4.4] Y ATAN[4]/[3]\n";
 	// const std::string gcode = "N220 G0 \n";
 
 	std::string::const_iterator begin = gcode.begin();
