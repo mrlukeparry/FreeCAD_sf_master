@@ -58,6 +58,7 @@
 # include <Handle_Geom_Circle.hxx>
 # include <Handle_Geom_Plane.hxx>
 # include <Handle_Geom2d_TrimmedCurve.hxx>
+# include <Interface_Static.hxx>
 # include <ShapeUpgrade_ShellSewing.hxx>
 # include <Standard_ConstructionError.hxx>
 # include <Standard_DomainError.hxx>
@@ -329,7 +330,6 @@ static PyObject * makeWireString(PyObject *self, PyObject *args)
     float height;
     int track = 0;
 
-    const char* text;
     Py_UNICODE *unichars;
     Py_ssize_t pysize;
    
@@ -342,17 +342,17 @@ static PyObject * makeWireString(PyObject *self, PyObject *args)
                                           &track))  {
         Base::Console().Message("** makeWireString bad args.\n");                                           
         return NULL;
-        }
+    }
 
     if (PyString_Check(intext)) {
         PyObject *p = Base::PyAsUnicodeObject(PyString_AsString(intext));    
         if (!p) {
             Base::Console().Message("** makeWireString can't convert PyString.\n");
             return NULL;
-            }
+        }
         pysize = PyUnicode_GetSize(p);    
         unichars = PyUnicode_AS_UNICODE(p);
-        }
+    }
     else if (PyUnicode_Check(intext)) {        
         pysize = PyUnicode_GetSize(intext);   
         unichars = PyUnicode_AS_UNICODE(intext);
@@ -376,7 +376,7 @@ static PyObject * makeWireString(PyObject *self, PyObject *args)
 
     return (CharList);
 }
-#else 
+#else
 
 static PyObject * makeWireString(PyObject *self, PyObject *args)
 {
@@ -1251,6 +1251,34 @@ static PyObject * makeLoft(PyObject *self, PyObject *args)
 #endif
 }
 
+static PyObject * exportUnits(PyObject *self, PyObject *args)
+{
+    char* unit=0;
+    if (!PyArg_ParseTuple(args, "|s", &unit))
+        return NULL;
+    if (unit) {
+        if (strcmp(unit,"M") == 0 || strcmp(unit,"MM") == 0 || strcmp(unit,"IN") == 0) {
+            if (!Interface_Static::SetCVal("write.iges.unit",unit)) {
+                PyErr_SetString(PyExc_RuntimeError, "Failed to set 'write.iges.unit'");
+                return 0;
+            }
+            if (!Interface_Static::SetCVal("write.step.unit",unit)) {
+                PyErr_SetString(PyExc_RuntimeError, "Failed to set 'write.step.unit'");
+                return 0;
+            }
+        }
+        else {
+            PyErr_SetString(PyExc_ValueError, "Wrong unit");
+            return 0;
+        }
+    }
+
+    Py::Dict dict;
+    dict.setItem("write.iges.unit", Py::String(Interface_Static::CVal("write.iges.unit")));
+    dict.setItem("write.step.unit", Py::String(Interface_Static::CVal("write.step.unit")));
+    return Py::new_reference_to(dict);
+}
+
 static PyObject * toPythonOCC(PyObject *self, PyObject *args)
 {
     PyObject *pcObj;
@@ -1588,9 +1616,12 @@ struct PyMethodDef Part_methods[] = {
 
     {"makeLoft" ,makeLoft,METH_VARARGS,
      "makeLoft(list of wires) -- Create a loft shape."},
-     
+
     {"makeWireString" ,makeWireString ,METH_VARARGS,
      "makeWireString(string,fontdir,fontfile,height,[track]) -- Make list of wires in the form of a string's characters."},
+
+    {"exportUnits" ,exportUnits ,METH_VARARGS,
+     "exportUnits([string=MM|M|IN]) -- Set units for exporting STEP/IGES files and returns the units."},
 
     {"cast_to_shape" ,cast_to_shape,METH_VARARGS,
      "cast_to_shape(shape) -- Cast to the actual shape type"},
