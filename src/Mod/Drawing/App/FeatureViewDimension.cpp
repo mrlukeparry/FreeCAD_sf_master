@@ -143,7 +143,7 @@ double FeatureViewDimension::getValue() const
         } else if(strcmp(projType, "Radius") == 0){
             return measurement->radius();
         } else if(strcmp(projType, "Diameter") == 0){
-            return measurement->radius() * 2;
+            return measurement->radius() * 2.0;
         } else if(strcmp(projType, "Angle") == 0){
             throw Base::Exception("Cannot measure the true angle");
         }
@@ -171,6 +171,10 @@ double FeatureViewDimension::getValue() const
             } else if(strcmp(projType, "DistanceZ") == 0) {
                 throw Base::Exception("Cannot use z direction for projection type");
             }
+        } else if(strcmp(projType, "Radius") == 0){
+            return measurement->radius(); // Can only use true value
+        } else if(strcmp(projType, "Diameter") == 0){
+            return measurement->radius() * 2.0; // Can only use true value
         } else if(strcmp(projType, "Angle") == 0){
 
             // Must project lines to 2D so cannot use measurement framework this time
