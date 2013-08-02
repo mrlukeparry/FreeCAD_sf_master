@@ -170,7 +170,7 @@ public:
 			m_last_id = 1000000;
 		}
 
-		int exists( const int name )
+		bool exists( const int name )
 		{
 			int id=this->hash(name);
 			return(m_variables.find(id) != m_variables.end());
