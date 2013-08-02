@@ -82,20 +82,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		}
 	}
 
-	void ABS(double & result, double value)		{ result = ::abs(value); }
-	void ACOS(double & result, double value)	{ result = ::acos(value); }
-	void ASIN(double & result, double value)	{ result = ::asin(value); }
-	void ATAN(double & result, double lhs, double rhs)	{ result = ::atan2(lhs,rhs); }
-	void COS(double & result, double value)	{ result = ::cos(value); }
-	void EXP(double & result, double value)	{ result = ::exp(value); }
-	void FIX(double & result, double value)	{ result = double(int(::floor(value))); }
-	void FUP(double & result, double value)	{ result = double(int(::ceil(value))); }
-	void ROUND(double & result, double value)	{ result = double(int(value)); }
-	void LN(double & result, double value)	{ result = ::log(value); }
-	void SIN(double & result, double value)	{ result = ::sin(value); }
-	void SQRT(double & result, double value)	{ result = ::sqrt(value); }
-	void TAN(double & result, double value)	{ result = ::tan(value); }
-
 	void Print()
 	{
 		for (LinuxCNC::MotionArguments_t::const_iterator itArg = motion_arguments.begin(); itArg != motion_arguments.end(); itArg++)
@@ -278,12 +264,16 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			| (qi::lit("[") >> MathematicalExpression >> qi::lit("]")) [ qi::_val = qi::_1 ]
 			;
 
+
 		Functions = 
 				(ascii::no_case[qi::lit("ABS")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::AbsoluteValue, phx::ref(*this), qi::_val, qi::_1) ] // call this->Abs(_val, _1);
 
+
 			|	(ascii::no_case[qi::lit("ACOS")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ACos, phx::ref(*this), qi::_val, qi::_1) ] // call this->ACOS(_val, _1);
+
+
 
 			|	(ascii::no_case[qi::lit("ASIN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ASin, phx::ref(*this), qi::_val, qi::_1) ] // call this->ASIN(_val, _1);
@@ -297,6 +287,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|	(ascii::no_case[qi::lit("FIX")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Fix, phx::ref(*this), qi::_val, qi::_1) ] // call this->FIX(_val, _1);
 
+
+
 			|	(ascii::no_case[qi::lit("FUP")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Fup, phx::ref(*this), qi::_val, qi::_1) ] // call this->FUP(_val, _1);
 
@@ -306,11 +298,15 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|	(ascii::no_case[qi::lit("LN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Ln, phx::ref(*this), qi::_val, qi::_1) ] // call this->LN(_val, _1);
 
+
+
 			|	(ascii::no_case[qi::lit("SIN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Sin, phx::ref(*this), qi::_val, qi::_1) ] // call this->SIN(_val, _1);
 
 			|	(ascii::no_case[qi::lit("SQRT")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Sqrt, phx::ref(*this), qi::_val, qi::_1) ] // call this->SQRT(_val, _1);
+
+
 
 			|	(ascii::no_case[qi::lit("TAN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Tan, phx::ref(*this), qi::_val, qi::_1) ] // call this->TAN(_val, _1);
@@ -711,11 +707,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 				returned_symbol_id = id;
 			}
 
-			void ATan(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+			void ATan(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
 			{
 				int id=variables.new_id();
-				double degrees = variables[symbol_id];
-				double radians = atan(degrees_to_radians(degrees));
+				double radians = atan2(variables[lhs], variables[rhs]);
 				variables[id] = radians_to_degrees( radians );
 				returned_symbol_id = id;
 			}
