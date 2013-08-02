@@ -39,6 +39,8 @@ using namespace DrawingGui;
 
 QGraphicsItemArrow::QGraphicsItemArrow(QGraphicsScene *scene)
 {
+    isFlipped = false;
+
     if(scene) {
         scene->addItem(this);
     }
@@ -55,12 +57,16 @@ QPainterPath QGraphicsItemArrow::shape() const
 
 void QGraphicsItemArrow::setHighlighted(bool state)
 {
-    QPen pen = this->pen();
+    QPen pen     = this->pen();
+    QBrush brush = this->brush();
     if(state) {
         pen.setColor(Qt::blue);
+        brush.setColor(Qt::blue);
     } else {
         pen.setColor(Qt::black);
+        brush.setColor(Qt::black);
     }
+    this->setBrush(brush);
     this->setPen(pen);
 }
 
@@ -83,18 +89,33 @@ QVariant QGraphicsItemArrow::itemChange(GraphicsItemChange change, const QVarian
     return QGraphicsPathItem::itemChange(change, value);
 }
 
+void QGraphicsItemArrow::flip(bool state) {
+    isFlipped = state;
+}
+
 void QGraphicsItemArrow::draw() {
     // the center is the end point on a dimension
     QPainterPath path;
     QPen pen(QColor(Qt::black));
     pen.setWidth(1);
-    this->setPen(pen);
 
-    path.moveTo(QPointF(1,1));
-    path.lineTo(QPointF(-1,-1));
+    QBrush brush(QColor(Qt::black));
+    //this->setPen(pen);
+    this->setBrush(brush);
+
+    float length = -5.;
+
+    if(isFlipped)
+        length *= -1;
+    path.moveTo(QPointF(0.,0.));
+    path.lineTo(QPointF(length,-0.6));
+    path.lineTo(QPointF(length, 0.6));
+
+    path.closeSubpath();
 //     path.moveTo(QPointF(-1,1));
 //     path.lineTo(QPointF(1,-1));
     this->setPath(path);
+
 }
 
 void QGraphicsItemArrow::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)

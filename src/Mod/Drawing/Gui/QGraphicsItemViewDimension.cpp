@@ -494,7 +494,7 @@ void QGraphicsItemViewDimension::draw()
         //Compare to see if datum label is larger than dimension
         if (dot1 > (par4 - par1).Length()) {
             // Increase Margin to improve visability
-            float tmpMargin = 5.f * scaler;
+            float tmpMargin = 10.f * scaler;
             par3 = par4;
             if(dot2 > (par4 - par1).Length()) {
                 par3 = par2;
@@ -502,7 +502,7 @@ void QGraphicsItemViewDimension::draw()
                 flipTriang = true;
             }
         } else if (dot2 < 0.f) {
-            float tmpMargin = 5.f * scaler;
+            float tmpMargin = 10.f * scaler;
             par2 = par1;
             if(dot1 < 0.f) {
                 par2 = par3;
@@ -511,20 +511,24 @@ void QGraphicsItemViewDimension::draw()
             }
         }
 
+        // Add a small margin
+        p1 += norm * margin * 0.5;
+        p2 += norm * margin * 0.5;
+
         // Perp Lines
         QPainterPath path;
-        path.moveTo(p1[0], p1[1]);
-        path.lineTo(perp1[0], perp1[1]);
+        path.moveTo(p1.x, p1.y);
+        path.lineTo(perp1.x, perp1.y);
 
-        path.moveTo(p2[0], p2[1]);
-        path.lineTo(perp2[0], perp2[1]);
+        path.moveTo(p2.x, p2.y);
+        path.lineTo(perp2.x, perp2.y);
 
         // Parallel Lines
-        path.moveTo(par1[0], par1[1]);
-        path.lineTo(par2[0], par2[1]);
+        path.moveTo(par1.x, par1.y);
+        path.lineTo(par2.x, par2.y);
 
-        path.moveTo(par3[0], par3[1]);
-        path.lineTo(par4[0], par4[1]);
+        path.moveTo(par3.x, par3.y);
+        path.lineTo(par4.x, par4.y);
 
         QGraphicsPathItem *arrw = dynamic_cast<QGraphicsPathItem *> (this->arrows);
         arrw->setPath(path);
@@ -541,8 +545,8 @@ void QGraphicsItemViewDimension::draw()
             for(std::vector<QGraphicsItem *>::iterator it = arw.begin(); it != arw.end(); ++it) {
                 this->removeFromGroup(*it);
                 delete (*it);
-                arw.clear();
             }
+            arw.clear();
 
             // These items are added to the scene-graph so should be handled by the canvas
             QGraphicsItemArrow *ar1 = new QGraphicsItemArrow();
@@ -551,6 +555,7 @@ void QGraphicsItemViewDimension::draw()
             arw.push_back(ar2);
 
             ar1->draw();
+            ar2->flip(true);
             ar2->draw();
 
             this->addToGroup(arw.at(0));
@@ -560,8 +565,14 @@ void QGraphicsItemViewDimension::draw()
         QGraphicsItemArrow *ar1 = dynamic_cast<QGraphicsItemArrow *>(arw.at(0));
         QGraphicsItemArrow *ar2 = dynamic_cast<QGraphicsItemArrow *>(arw.at(1));
 
-        ar1->setRotation(angle * 180 / M_PI);
-        ar2->setRotation(angle * 180 / M_PI);
+        float arrowAngle = angle * 180 / M_PI;
+        if(flipTriang){
+            ar1->setRotation(arrowAngle + 180.);
+            ar2->setRotation(arrowAngle + 180.);
+        } else {
+            ar1->setRotation(arrowAngle);
+            ar2->setRotation(arrowAngle);
+        }
 
         ar1->setPos(par1[0], par1[1]);
         ar2->setPos(par4[0], par4[1]);
@@ -569,8 +580,7 @@ void QGraphicsItemViewDimension::draw()
         ar1->setHighlighted(isSelected() || this->hasHover);
         ar2->setHighlighted(isSelected() || this->hasHover);
 
-    } else if(strcmp(dimType, "Radius") == 0 ||
-              strcmp(dimType, "Diameter") == 0) {
+    } else if(strcmp(dimType, "Radius") == 0) {
         // Not sure whether to treat radius and diameter as the same
 
         Base::Vector3d p1, p2, dir;
@@ -661,8 +671,11 @@ void QGraphicsItemViewDimension::draw()
         Base::Vector3d pnt1 = labelPos - dir * (margin + w / 2);
         Base::Vector3d pnt2 = labelPos + dir * (margin + w / 2);
 
-        if ((labelPos-p1).Length() > (p2-p1).Length())
+        bool outerPlacement = false;
+        if ((labelPos-p1).Length() > (p2-p1).Length()) {
             p2 = pnt2;
+            outerPlacement = true;
+        }
 
         QPainterPath path;
         path.moveTo(p1[0], p1[1]);
@@ -678,6 +691,61 @@ void QGraphicsItemViewDimension::draw()
         lbl->setTransformOriginPoint(bbX / 2, bbY /2);
         lbl->setRotation(angle * 180 / M_PI);
 
+        if(outerPlacement) {
+            if(arw.size() != 1) {
+                prepareGeometryChange();
+                for(std::vector<QGraphicsItem *>::iterator it = arw.begin(); it != arw.end(); ++it) {
+                    this->removeFromGroup(*it);
+                    delete (*it);
+                }
+                arw.clear();
+
+                // These items are added to the scene-graph so should be handled by the canvas
+                QGraphicsItemArrow *ar1 = new QGraphicsItemArrow();
+                arw.push_back(ar1);
+
+                ar1->draw();
+                this->addToGroup(arw.at(0));
+            }
+        } else {
+            // Create Two Arrows
+            if(arw.size() != 2) {
+                prepareGeometryChange();
+                for(std::vector<QGraphicsItem *>::iterator it = arw.begin(); it != arw.end(); ++it) {
+                    this->removeFromGroup(*it);
+                    delete (*it);
+                }
+                arw.clear();
+
+                // These items are added to the scene-graph so should be handled by the canvas
+                QGraphicsItemArrow *ar1 = new QGraphicsItemArrow();
+                QGraphicsItemArrow *ar2 = new QGraphicsItemArrow();
+                arw.push_back(ar1);
+                arw.push_back(ar2);
+
+                ar1->draw();
+                ar2->flip(true);
+                ar2->draw();
+                this->addToGroup(arw.at(0));
+                this->addToGroup(arw.at(1));
+            }
+        }
+
+        QGraphicsItemArrow *ar1 = dynamic_cast<QGraphicsItemArrow *>(arw.at(0));
+
+        Base::Vector3d ar1Pos = p1 + dir * radius;
+        float arAngle = atan2(dir.y, dir.x) * 180 / M_PI;
+
+        ar1->setPos(ar1Pos.x, ar1Pos.y);
+        ar1->setRotation(arAngle);
+        ar1->setHighlighted(isSelected() || this->hasHover);
+
+        if(!outerPlacement) {
+            QGraphicsItemArrow *ar2 = dynamic_cast<QGraphicsItemArrow *>(arw.at(1));
+            ar2->setPos(p1.x, p1.y);
+            ar2->setRotation(arAngle);
+            ar2->setHighlighted(isSelected() || this->hasHover);
+        }
     } else if(strcmp(dimType, "Angle") == 0) {
 
         // Only use two straight line edeges for angle
@@ -788,7 +856,6 @@ void QGraphicsItemViewDimension::draw()
                 path.arcMoveTo(arcRect, endangle * 180 / M_PI);
                 path.arcTo(arcRect, endangle * 180 / M_PI, -range * 180 / M_PI);
 
-
                 QGraphicsPathItem *arrw = dynamic_cast<QGraphicsPathItem *> (this->arrows);
                 arrw->setPath(path);
                 arrw->setPen(pen);
@@ -799,8 +866,8 @@ void QGraphicsItemViewDimension::draw()
                     for(std::vector<QGraphicsItem *>::iterator it = arw.begin(); it != arw.end(); ++it) {
                         this->removeFromGroup(*it);
                         delete (*it);
-                        arw.clear();
                     }
+                    arw.clear();
 
                     // These items are added to the scene-graph so should be handled by the canvas
                     QGraphicsItemArrow *ar1 = new QGraphicsItemArrow();
@@ -808,6 +875,7 @@ void QGraphicsItemViewDimension::draw()
                     arw.push_back(ar1);
                     arw.push_back(ar2);
 
+                    ar1->flip(true);
                     ar1->draw();
                     ar2->draw();
 
@@ -819,13 +887,17 @@ void QGraphicsItemViewDimension::draw()
                 QGraphicsItemArrow *ar2 = dynamic_cast<QGraphicsItemArrow *>(arw.at(1));
 
                 // Find the normal of the angle lines
-                Base::Vector3d norm1(-dir1.y, dir1.x, 0.);
-                Base::Vector3d norm2(-dir2.y, dir2.x, 0.);
+                Base::Vector3d norm1 = (p1-p0).Normalize(); //(-dir1.y, dir1.x, 0.);
+                Base::Vector3d norm2 = (p2-p0).Normalize(); //(-dir2.y, dir2.x, 0.);
+
+                norm1 = Base::Vector3d(norm1.y, -norm1.x);
+                norm2 = Base::Vector3d(norm2.y, -norm2.x);
 
                 ar1->setPos(ar1Pos.x,ar1Pos.y );
                 ar2->setPos(ar2Pos.x,ar2Pos.y );
 
                 ar1->setRotation(atan2(norm1.y, norm1.x) * 180 / M_PI);
+
                 ar2->setRotation(atan2(norm2.y, norm2.x) * 180 / M_PI);
 
                 ar1->setHighlighted(isSelected() || this->hasHover);

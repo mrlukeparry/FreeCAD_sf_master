@@ -49,6 +49,7 @@ public:
 public:
     void draw();
     void setHighlighted(bool state);
+    void flip(bool state);
     QPainterPath shape() const;
     virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
 
@@ -61,6 +62,7 @@ protected:
 
 private:
     QPen m_pen;
+    bool isFlipped;
 };
 
 } // namespace DrawingViewGui
