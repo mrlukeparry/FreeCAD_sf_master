@@ -432,7 +432,6 @@ void QGraphicsItemViewDimension::draw()
 
         Base::Vector3d dir, norm;
 
-
         if (strcmp(dimType, "Distance") == 0 ) {
             dir = (p2-p1);
         } else if (strcmp(dimType, "DistanceX") == 0 ) {
@@ -545,6 +544,7 @@ void QGraphicsItemViewDimension::draw()
                 arw.clear();
             }
 
+            // These items are added to the scene-graph so should be handled by the canvas
             QGraphicsItemArrow *ar1 = new QGraphicsItemArrow();
             QGraphicsItemArrow *ar2 = new QGraphicsItemArrow();
             arw.push_back(ar1);
@@ -569,26 +569,6 @@ void QGraphicsItemViewDimension::draw()
         ar1->setHighlighted(isSelected() || this->hasHover);
         ar2->setHighlighted(isSelected() || this->hasHover);
 
-#if 0
-        SbVec3f ar1 = par1 + ((flipTriang) ? -1 : 1) * dir * 0.866f * 2 * margin;
-        SbVec3f ar2 = ar1 + norm * margin;
-                ar1 -= norm * margin;
-
-        SbVec3f ar3 = par4 - ((flipTriang) ? -1 : 1) * dir * 0.866f * 2 * margin;
-        SbVec3f ar4 = ar3 + norm * margin ;
-                ar3 -= norm * margin;
-
-        //Draw a pretty arrowhead (Equilateral) (Eventually could be improved to other shapes?)
-        glBegin(GL_TRIANGLES);
-          glVertex2f(par1[0], par1[1]);
-          glVertex2f(ar1[0], ar1[1]);
-          glVertex2f(ar2[0], ar2[1]);
-
-          glVertex2f(par4[0], par4[1]);
-          glVertex2f(ar3[0], ar3[1]);
-          glVertex2f(ar4[0], ar4[1]);
-        glEnd();
-#endif
     } else if(strcmp(dimType, "Radius") == 0 ||
               strcmp(dimType, "Diameter") == 0) {
         // Not sure whether to treat radius and diameter as the same
@@ -669,9 +649,7 @@ void QGraphicsItemViewDimension::draw()
         int w = fm.width(str);
         int h = fm.height();
 
-        float scaler = 1.;
-        float margin = 1.f;
-        margin *= scaler;
+        float margin = 5.f;
 
 //         // Create the arrowhead
 //         SbVec3f ar0  = p2;
@@ -700,22 +678,179 @@ void QGraphicsItemViewDimension::draw()
         lbl->setTransformOriginPoint(bbX / 2, bbY /2);
         lbl->setRotation(angle * 180 / M_PI);
 
-        // Draw the Lines
-//         glBegin(GL_LINES);
-//         glVertex2f(p1[0], p1[1]);
-//         glVertex2f(pnt1[0], pnt1[1]);
-//
-//         glVertex2f(pnt2[0], pnt2[1]);
-//         glVertex2f(p2[0], p2[1]);
-//         glEnd();
-//
-//         glBegin(GL_TRIANGLES);
-//           glVertex2f(ar0[0], ar0[1]);
-//           glVertex2f(ar1[0], ar1[1]);
-//           glVertex2f(ar2[0], ar2[1]);
-//         glEnd();
     } else if(strcmp(dimType, "Angle") == 0) {
 
+        // Only use two straight line edeges for angle
+        if(dim->References.getValues().size() == 2 &&
+            SubNames[0].substr(0,4) == "Edge" &&
+            SubNames[1].substr(0,4) == "Edge") {
+            // Point to Point Dimension
+            const Drawing::FeatureViewPart *refObj = static_cast<const Drawing::FeatureViewPart*>(objects[0]);
+            int idx = std::atoi(SubNames[0].substr(4,4000).c_str());
+            int idx2 = std::atoi(SubNames[1].substr(4,4000).c_str());
+
+            // Use the cached value or gather projected edges
+            if(projGeom.size() != 2 || !projGeom.at(0) || !projGeom.at(0)) {
+                clearProjectionCache();
+                projGeom.push_back(refObj->getCompleteEdge(idx));
+                projGeom.push_back(refObj->getCompleteEdge(idx2));
+            }
+
+            if(projGeom.at(0) && projGeom.at(0)->geomType == DrawingGeometry::GENERIC ||
+               projGeom.at(1) && projGeom.at(1)->geomType == DrawingGeometry::GENERIC) {
+                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(projGeom.at(0));
+                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(projGeom.at(1));
+
+                // Get Points for line
+                Base::Vector2D pnt1, pnt2;
+                Base::Vector3d p1S, p1E, p2S, p2E;
+                pnt1 = gen1->points.at(0);
+                pnt2 = gen1->points.at(1);
+
+                p1S = Base::Vector3d(pnt1.fX, pnt1.fY, 0);
+                p1E = Base::Vector3d(pnt2.fX, pnt2.fY, 0);
+
+                pnt1 = gen2->points.at(0);
+                pnt2 = gen2->points.at(1);
+
+                p2S = Base::Vector3d(pnt1.fX, pnt1.fY, 0);
+                p2E = Base::Vector3d(pnt2.fX, pnt2.fY, 0);
+
+                Base::Vector3d dir1 = p1E - p1S;
+                Base::Vector3d dir2 = p2E - p2S;
+
+                double det = dir1.x*dir2.y - dir1.y*dir2.x;
+                if ((det > 0 ? det : -det) < 1e-10)
+                    return;
+                double c1 = dir1.y*p1S.x - dir1.x*p1S.y;
+                double c2 = dir2.y*p2S.x - dir2.x*p2S.y;
+                double x = (dir1.x*c2 - dir2.x*c1)/det;
+                double y = (dir1.y*c2 - dir2.y*c1)/det;
+
+                Base::Vector3d p0(x,y,0);
+
+                // Get directions with outwards orientation and check if coincident
+                dir1 = ((p1E - p0).Length() > FLT_EPSILON) ? p1E - p0 : p1S - p0;
+                dir2 = ((p2E - p0).Length() > FLT_EPSILON) ? p2E - p0 : p2S - p0;
+
+                // Qt y coordinates are flipped
+                dir1.y *= -1.;
+                dir2.y *= -1.;
+
+                double startangle = atan2(dir1.y,dir1.x);
+                double range      = atan2(-dir1.y*dir2.x+dir1.x*dir2.y,
+                                           dir1.x*dir2.x+dir1.y*dir2.y);
+                double endangle = startangle + range;
+
+                // Obtain the Label Position and measure the length between intersection
+                QGraphicsItemDatumLabel *lbl = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
+                Base::Vector3d labelPos(lbl->X(), lbl->Y(), 0);
+
+                float bbX  = lbl->boundingRect().width();
+                float bbY  = lbl->boundingRect().height();
+
+                // Get font height
+                QFontMetrics fm(lbl->font());
+
+                int h = fm.height();
+                double length = (labelPos - p0).Length();
+                length -= h * 0.6; // Adjust the length so the label isn't over the line
+
+                // Find the end points for dim lines
+                Base::Vector3d p1 = ((p1E - p0).Length() > (p1S - p0).Length()) ? p1E : p1S;
+                Base::Vector3d p2 = ((p2E - p0).Length() > (p2S - p0).Length()) ? p2E : p2S;
+
+                // add an offset from the ends (add 1mm from end)
+                p1 += (p1-p0).Normalize() * 5.;
+                p2 += (p2-p0).Normalize() * 5.;
+
+                Base::Vector3d ar1Pos = p0;
+                Base::Vector3d ar2Pos = p0;
+
+                ar1Pos += Base::Vector3d(cos(startangle) * length, -sin(startangle) * length, 0.);
+                ar2Pos += Base::Vector3d(cos(endangle) * length  , -sin(endangle) * length, 0.);
+
+                // Draw the path
+                QPainterPath path;
+
+                // Only draw extension lines if outside arc
+                if(length > (p1-p0).Length()) {
+                    path.moveTo(p1.x, p1.y);
+                    p1 = ar1Pos + (p1-p0).Normalize() * 5.;
+                    path.lineTo(p1.x, p1.y);
+
+                    path.moveTo(p2.x, p2.y);
+                    p2 = ar2Pos + (p2-p0).Normalize() * 5.;
+                    path.lineTo(p2.x, p2.y);
+                }
+
+                QRectF arcRect(p0.x - length, p0.y - length, 2. * length, 2. * length);
+                path.arcMoveTo(arcRect, endangle * 180 / M_PI);
+                path.arcTo(arcRect, endangle * 180 / M_PI, -range * 180 / M_PI);
+
+
+                QGraphicsPathItem *arrw = dynamic_cast<QGraphicsPathItem *> (this->arrows);
+                arrw->setPath(path);
+                arrw->setPen(pen);
+
+                // Add the arrows
+                if(arw.size() != 2) {
+                    prepareGeometryChange();
+                    for(std::vector<QGraphicsItem *>::iterator it = arw.begin(); it != arw.end(); ++it) {
+                        this->removeFromGroup(*it);
+                        delete (*it);
+                        arw.clear();
+                    }
+
+                    // These items are added to the scene-graph so should be handled by the canvas
+                    QGraphicsItemArrow *ar1 = new QGraphicsItemArrow();
+                    QGraphicsItemArrow *ar2 = new QGraphicsItemArrow();
+                    arw.push_back(ar1);
+                    arw.push_back(ar2);
+
+                    ar1->draw();
+                    ar2->draw();
+
+                    this->addToGroup(arw.at(0));
+                    this->addToGroup(arw.at(1));
+                }
+
+                QGraphicsItemArrow *ar1 = dynamic_cast<QGraphicsItemArrow *>(arw.at(0));
+                QGraphicsItemArrow *ar2 = dynamic_cast<QGraphicsItemArrow *>(arw.at(1));
+
+                // Find the normal of the angle lines
+                Base::Vector3d norm1(-dir1.y, dir1.x, 0.);
+                Base::Vector3d norm2(-dir2.y, dir2.x, 0.);
+
+                ar1->setPos(ar1Pos.x,ar1Pos.y );
+                ar2->setPos(ar2Pos.x,ar2Pos.y );
+
+                ar1->setRotation(atan2(norm1.y, norm1.x) * 180 / M_PI);
+                ar2->setRotation(atan2(norm2.y, norm2.x) * 180 / M_PI);
+
+                ar1->setHighlighted(isSelected() || this->hasHover);
+                ar2->setHighlighted(isSelected() || this->hasHover);
+
+                // Set the angle of the datum text
+
+                Base::Vector3d labelVec = labelPos - p0;
+                labelVec = Base::Vector3d(-labelVec.y, labelVec.x, 0.);
+                double lAngle = atan2(labelVec.y, labelVec.x);
+
+                if (lAngle > M_PI_2+M_PI/12) {
+                    lAngle -= M_PI;
+                } else if (lAngle <= -M_PI_2+M_PI/12) {
+                    lAngle += M_PI;
+                }
+
+                lbl->setTransformOriginPoint(bbX / 2., bbY /2.);
+
+                lbl->setRotation(lAngle * 180 / M_PI);
+
+            } else {
+                throw Base::Exception("Invalid reference for dimension type");
+            }
+        }
     }
 
     // Call to redraw the object

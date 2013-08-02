@@ -157,8 +157,8 @@ double FeatureViewDimension::getValue() const
 
             Base::Vector3d delta = measurement->delta();
             Base::Vector3f projDir = ProjDirection.getValue();
-            Base::Vector3d projDim = delta.ProjToPlane(Base::Vector3d(0.,0.,0.), Base::Vector3d(projDir.x, projDir.y,
-                                                                       projDir.z));
+            Base::Vector3d projDim = delta.ProjToPlane(Base::Vector3d(0.,0.,0.),
+                                                       Base::Vector3d(projDir.x, projDir.y, projDir.z));
 
             Base::Console().Log("proj <%f %f %f>", delta.x, delta.y, delta.z);
             Base::Console().Log("proj <%f %f %f>", projDim.x, projDim.y, projDim.z);

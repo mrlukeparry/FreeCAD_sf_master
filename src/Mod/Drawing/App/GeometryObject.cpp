@@ -377,7 +377,6 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
     const TopoDS_Edge &refEdge = TopoDS::Edge(mkTrfScale.Shape());
 
     gp_Ax2 transform;
-    Base::Console().Log("xaxis: %f, %f, %f\n", projXAxis.x, projXAxis.y, projXAxis.z);
     if(projXAxis.Length() > FLT_EPSILON) {
         transform = gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2),
                            gp_Dir(direction.x, direction.y, direction.z),
@@ -406,8 +405,6 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
           line->points.push_back(Base::Vector2D(pnt1.X(), pnt1.Y()));
           line->points.push_back(Base::Vector2D(pnt2.X(), pnt2.Y()));
 
-          Base::Console().Log("vertl %f, %f \n", line->points[0].fX,  line->points[0].fY);
-          Base::Console().Log("vertl %f, %f \n", line->points[1].fX,  line->points[1].fY);
           result = line;
         }break;
      case GeomAbs_Circle: {
