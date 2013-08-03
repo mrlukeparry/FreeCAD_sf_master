@@ -805,6 +805,10 @@ void QGraphicsItemViewDimension::draw()
                 dir1.y *= -1.;
                 dir2.y *= -1.;
 
+                Base::Vector3d labelVec = (labelPos - p0);
+
+                double labelangle = atan2(-labelVec.y, labelVec.x);
+
                 double startangle = atan2(dir1.y,dir1.x);
                 double range      = atan2(-dir1.y*dir2.x+dir1.x*dir2.y,
                                            dir1.x*dir2.x+dir1.y*dir2.y);
@@ -821,7 +825,7 @@ void QGraphicsItemViewDimension::draw()
                 QFontMetrics fm(lbl->font());
 
                 int h = fm.height();
-                double length = (labelPos - p0).Length();
+                double length = labelVec.Length();
                 length -= h * 0.6; // Adjust the length so the label isn't over the line
 
                 // Find the end points for dim lines
@@ -852,10 +856,21 @@ void QGraphicsItemViewDimension::draw()
                     path.lineTo(p2.x, p2.y);
                 }
 
+
+                bool isOutside = false;
+                if(labelangle < startangle || labelangle > endangle) {
+                    isOutside = true;
+                }
+
                 QRectF arcRect(p0.x - length, p0.y - length, 2. * length, 2. * length);
                 path.arcMoveTo(arcRect, endangle * 180 / M_PI);
-                path.arcTo(arcRect, endangle * 180 / M_PI, -range * 180 / M_PI);
-
+                if(isOutside) {
+                    path.arcTo(arcRect, endangle * 180 / M_PI, 180 / 12);
+                    path.arcMoveTo(arcRect,startangle * 180 / M_PI);
+                    path.arcTo(arcRect, startangle * 180 / M_PI, -180 / 12);
+                } else {
+                    path.arcTo(arcRect, endangle * 180 / M_PI, -range * 180 / M_PI);
+                }
                 QGraphicsPathItem *arrw = dynamic_cast<QGraphicsPathItem *> (this->arrows);
                 arrw->setPath(path);
                 arrw->setPen(pen);
@@ -896,18 +911,24 @@ void QGraphicsItemViewDimension::draw()
                 ar1->setPos(ar1Pos.x,ar1Pos.y );
                 ar2->setPos(ar2Pos.x,ar2Pos.y );
 
-                ar1->setRotation(atan2(norm1.y, norm1.x) * 180 / M_PI);
+                float ar1angle = atan2(norm1.y, norm1.x) * 180 / M_PI;
+                float ar2angle = atan2(norm2.y, norm2.x) * 180 / M_PI;
 
-                ar2->setRotation(atan2(norm2.y, norm2.x) * 180 / M_PI);
+                if(isOutside) {
+                    ar1->setRotation(ar1angle + 180.);
+                    ar2->setRotation(ar2angle + 180.);
+                } else {
+                    ar1->setRotation(ar1angle);
+                    ar2->setRotation(ar2angle);
+                }
 
                 ar1->setHighlighted(isSelected() || this->hasHover);
                 ar2->setHighlighted(isSelected() || this->hasHover);
 
                 // Set the angle of the datum text
 
-                Base::Vector3d labelVec = labelPos - p0;
-                labelVec = Base::Vector3d(-labelVec.y, labelVec.x, 0.);
-                double lAngle = atan2(labelVec.y, labelVec.x);
+                Base::Vector3d labelNorm(-labelVec.y, labelVec.x, 0.);
+                double lAngle = atan2(labelNorm.y, labelNorm.x);
 
                 if (lAngle > M_PI_2+M_PI/12) {
                     lAngle -= M_PI;
