@@ -37,6 +37,8 @@ SET(Features_SRCS
     FeatureViewAnnotation.h
     FeatureViewDimension.cpp
     FeatureViewDimension.h
+    FeatureViewOrthographic.cpp
+    FeatureViewOrthographic.h
     FeatureViewPart.cpp
     FeatureViewPart.h
     FeatureViewSection.cpp

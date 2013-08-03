@@ -1,8 +1,7 @@
 /***************************************************************************
  *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
- *   Copyright (c) 2012 Yorik van Havre <yorik@uncreated.net>              *
  *                                                                         *
- *   This file is Drawing of the FreeCAD CAx development system.           *
+ *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
  *   This library is free software; you can redistribute it and/or         *
  *   modify it under the terms of the GNU Library General Public           *
@@ -11,7 +10,7 @@
  *                                                                         *
  *   This library  is distributed in the hope that it will be useful,      *
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A DrawingICULAR PURPOSE.  See the      *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
  *   GNU Library General Public License for more details.                  *
  *                                                                         *
  *   You should have received a copy of the GNU Library General Public     *
@@ -21,31 +20,54 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#ifndef _DRAWING_FEATUREVIEWORTHOGRAPHIC_h_
+#define _DRAWING_FEATUREVIEWORTHOGRAPHIC_h_
 
-#ifndef _PreComp_
-# include <sstream>
-#endif
+#include <App/DocumentObject.h>
+#include <App/PropertyStandard.h>
+#include <App/PropertyLinks.h>
+#include <App/FeaturePython.h>
+#include "FeatureView.h"
 
-#include "FeatureViewAnnotation.h"
-
-using namespace Drawing;
-
-PROPERTY_SOURCE(Drawing::FeatureViewAnnotation, Drawing::FeatureView)
-
-FeatureViewAnnotation::FeatureViewAnnotation(void)
+namespace Drawing
 {
-    static const char *vgroup = "Drawing annotation";
 
-    ADD_PROPERTY_TYPE(Font ,("osifont")            ,vgroup,App::Prop_None, "The name of the font to use");
-    ADD_PROPERTY_TYPE(TextColor,(0.0f,0.0f,0.0f),vgroup,App::Prop_None, "The color of the text");
-}
-
-FeatureViewAnnotation::~FeatureViewAnnotation()
+/**
+ * Class super-container for managing a collection of FeatureOrthoView
+ * Page Features
+ */
+class DrawingExport FeatureViewOrthographic : public Drawing::FeatureView
 {
-}
+    PROPERTY_HEADER(Drawing::FeatureViewOrthographic);
 
-App::DocumentObjectExecReturn *FeatureViewAnnotation::execute(void)
-{
-    return App::DocumentObject::StdReturn;
-}
+public:
+    /// Constructor
+    FeatureViewOrthographic();
+    ~FeatureViewOrthographic();
+
+    App::PropertyEnumeration Type;
+    App::PropertyLink   Source;
+    App::PropertyLinkList Views;
+
+    short mustExecute() const;
+    /** @name methods overide Feature */
+    //@{
+    /// recalculate the Feature
+    virtual void onDocumentRestored();
+    virtual App::DocumentObjectExecReturn *execute(void);
+    //@}
+
+    /// returns the type name of the ViewProvider
+    virtual const char* getViewProviderName(void) const {
+        return "DrawingGui::ViewProviderDrawingView";
+    }
+
+protected:
+    void onChanged(const App::Property* prop);
+private:
+    static const char* TypeEnums[];
+};
+
+} //namespace Drawing
+
+#endif // _DRAWING_FEATUREVIEWORTHOGRAPHIC_h_
