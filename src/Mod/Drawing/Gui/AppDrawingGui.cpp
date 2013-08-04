@@ -24,6 +24,7 @@
 #include "PreCompiled.h"
 #ifndef _PreComp_
 # include <Python.h>
+#include <QFontDatabase>
 #endif
 
 #include <Base/Console.h>
@@ -68,6 +69,11 @@ void DrawingGuiExport initDrawingGui()
     // instantiating the commands
     CreateDrawingCommands();
     DrawingGui::Workbench::init();
+
+    //Load the osifont for Drawing View
+    // See https://code.google.com/p/osifont/
+    QFontDatabase fontDB;
+    fontDB.addApplicationFont(QString::fromAscii(":/fonts/osifont.ttf"));
 
     DrawingGui::ViewProviderDrawingPage::init();
     DrawingGui::ViewProviderDrawingView::init();
