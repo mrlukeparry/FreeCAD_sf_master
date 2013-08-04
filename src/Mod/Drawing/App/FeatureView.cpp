@@ -26,6 +26,8 @@
 # include <sstream>
 #endif
 
+#include <App/Document.h>
+#include <Base/Console.h>
 #include <Base/Exception.h>
 
 #include "FeatureView.h"
@@ -77,7 +79,6 @@ App::DocumentObjectExecReturn *FeatureView::execute(void)
 {
     return App::DocumentObject::StdReturn;
 }
-
 
 // Python Drawing feature ---------------------------------------------------------
 

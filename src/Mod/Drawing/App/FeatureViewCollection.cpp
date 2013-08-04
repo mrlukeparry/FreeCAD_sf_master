@@ -90,9 +90,9 @@ void FeatureViewCollection::onChanged(const App::Property* prop)
 {
     if (prop == &Source ||
         prop == &Views){
-          if (!this->isRestoring()) {
-              Base::Console().Log("Views touched");
-          }
+        if (!this->isRestoring()) {
+            Base::Console().Log("Views touched");
+        }
     }
     Drawing::FeatureView::onChanged(prop);
 }

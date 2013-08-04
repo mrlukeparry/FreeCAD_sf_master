@@ -52,6 +52,9 @@ public:
     /// recalculate the Feature
     virtual void onDocumentRestored();
     virtual App::DocumentObjectExecReturn *execute(void);
+
+    void setPageFeature(const char *pageName);
+    App::DocumentObject * getPageFeature() const;
     //@}
 
     /// returns the type name of the ViewProvider
@@ -61,7 +64,7 @@ public:
 
 protected:
     void onChanged(const App::Property* prop);
-
+    std::string pageFeatName;
 };
 
 typedef App::FeaturePythonT<FeatureView> FeatureViewPython;

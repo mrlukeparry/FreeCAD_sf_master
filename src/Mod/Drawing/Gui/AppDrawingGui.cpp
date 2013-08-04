@@ -32,6 +32,8 @@
 #include "Workbench.h"
 #include "ViewProviderPage.h"
 #include "ViewProviderView.h"
+
+#include "ViewProviderViewPart.h"
 #include "ViewProviderViewOrthographic.h"
 #include "ViewProviderViewSection.h"
 
@@ -69,6 +71,7 @@ void DrawingGuiExport initDrawingGui()
 
     DrawingGui::ViewProviderDrawingPage::init();
     DrawingGui::ViewProviderDrawingView::init();
+    DrawingGui::ViewProviderViewPart::init();
     DrawingGui::ViewProviderViewOrthographic::init();
     DrawingGui::ViewProviderDrawingViewSection::init();
 
