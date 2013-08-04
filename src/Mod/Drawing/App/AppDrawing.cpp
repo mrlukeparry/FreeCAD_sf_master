@@ -19,12 +19,14 @@
 
 # include "FeaturePage.h"
 # include "FeatureView.h"
+# include "FeatureViewCollection.h"
 # include "FeatureViewPart.h"
 # include "FeatureViewSection.h"
 
 # include "FeatureViewAnnotation.h"
 # include "FeatureViewDimension.h"
 # include "FeatureOrthoView.h"
+# include "FeatureViewOrthographic.h"
 # include "FeatureProjection.h"
 # include "FeatureClip.h"
 # include "PageGroup.h"
@@ -59,10 +61,13 @@ void DrawingExport initDrawing()
 
     Drawing::FeaturePage            ::init();
     Drawing::FeatureView            ::init();
+    Drawing::FeatureViewCollection  ::init();
+
     Drawing::FeatureViewPart        ::init();
     Drawing::FeatureViewSection     ::init();
     Drawing::FeatureViewAnnotation  ::init();
     Drawing::FeatureViewDimension   ::init();
+    Drawing::FeatureViewOrthographic::init();
     Drawing::FeatureOrthoView       ::init();
 
     Drawing::FeatureProjection      ::init();

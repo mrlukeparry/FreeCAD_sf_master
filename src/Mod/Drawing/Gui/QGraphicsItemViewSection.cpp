@@ -63,10 +63,10 @@ void QGraphicsItemViewSection::draw()
 void QGraphicsItemViewSection::drawSectionFace()
 {
     // Iterate
-    if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewSection::getClassTypeId()))
+    if(this->getViewObject() == 0 || !this->getViewObject()->isDerivedFrom(Drawing::FeatureViewSection::getClassTypeId()))
         return;
 
-    Drawing::FeatureViewSection *part = dynamic_cast<Drawing::FeatureViewSection *>(this->viewObject);
+    Drawing::FeatureViewSection *part = dynamic_cast<Drawing::FeatureViewSection *>(this->getViewObject());
 
     Base::Console().Log("drawing section face");
 
@@ -128,10 +128,10 @@ void QGraphicsItemViewSection::drawSectionFace()
 void QGraphicsItemViewSection::updateView(bool update)
 {
       // Iterate
-    if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()))
+    if(this->getViewObject() == 0 || !this->getViewObject()->isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()))
         return;
 
-    Drawing::FeatureViewSection *viewPart = dynamic_cast<Drawing::FeatureViewSection *>(this->viewObject);
+    Drawing::FeatureViewSection *viewPart = dynamic_cast<Drawing::FeatureViewSection *>(this->getViewObject());
 
     if(update ||
        viewPart->SectionNormal.isTouched() ||

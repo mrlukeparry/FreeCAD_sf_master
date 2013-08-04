@@ -44,6 +44,7 @@
 
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
+#include <Gui/Command.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
 #include <Gui/MainWindow.h>
@@ -95,14 +96,16 @@ std::vector<std::string> ViewProviderDrawingPage::getDisplayModes(void) const
     StrList.push_back("Drawing");
     return StrList;
 }
-    
+
 void ViewProviderDrawingPage::updateData(const App::Property* prop)
 {
+
     if (prop == &(getPageObject()->Views)) {
         if(this->view) {
             view->updateDrawing();
-        }           
+        }
     }
+
     Gui::ViewProviderDocumentObjectGroup::updateData(prop);
 }
 
@@ -142,6 +145,7 @@ bool ViewProviderDrawingPage::doubleClicked(void)
     if (!this->view) {
         showDrawingView();
         view->attachPageObject(getPageObject());
+        view->updateDrawing();
 //         view->viewAll();
     }
     Gui::getMainWindow()->setActiveWindow(this->view);
@@ -174,7 +178,15 @@ DrawingView* ViewProviderDrawingPage::showDrawingView()
         view->setWindowTitle(QObject::tr("Drawing viewer") + QString::fromAscii("[*]"));
         Gui::getMainWindow()->addWindow(view);
     }
+
+    // Update the drawing
     return view;
+}
+
+bool ViewProviderDrawingPage::onDelete(const std::vector<std::string> &subList)
+{
+    std::vector<Gui::SelectionObject> selection = Gui::Selection().getSelectionEx();
+    const std::vector<std::string> &SubNames = selection[0].getSubNames();
 }
 
 Drawing::FeaturePage* ViewProviderDrawingPage::getPageObject() const

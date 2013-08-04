@@ -1,6 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2004 Jürgen Riegel <juergen.riegel@web.de>              *
- *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -21,36 +20,29 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef DRAWINGGUI_VIEWPROVIDERPAGE_H
-#define DRAWINGGUI_VIEWPROVIDERPAGE_H
+#ifndef DRAWINGGUI_VIEWPROVIDERVIEWORTHOGRAPHIC_H
+#define DRAWINGGUI_VIEWPROVIDERVIEWORTHOGRAPHIC_H
 
 #include <Gui/ViewProviderFeature.h>
-#include <Gui/ViewProviderDocumentObjectGroup.h>
+#include <Gui/ViewProviderDocumentObject.h>
 
 #include <QPointer>
 
 namespace Drawing{
-    class FeaturePage;
+    class FeatureViewOrthographic;
 }
 
 namespace DrawingGui {
 
-class DrawingView;
 
-class DrawingGuiExport ViewProviderDrawingPage : public Gui::ViewProviderDocumentObjectGroup
+class DrawingGuiExport ViewProviderViewOrthographic : public Gui::ViewProviderDocumentObject
 {
-    PROPERTY_HEADER(DrawingGui::ViewProviderDrawingPage);
+    PROPERTY_HEADER(DrawingGui::ViewProviderViewOrthographic);
 
 public:
 
-    ViewProviderDrawingPage();  /// constructor
-    ~ViewProviderDrawingPage(); /// destructor
-
-    App::PropertyFloat         HintScale;
-    App::PropertyFloat         HintOffsetX;
-    App::PropertyFloat         HintOffsetY;
-
-
+     ViewProviderViewOrthographic();  /// constructor
+     ~ViewProviderViewOrthographic(); /// destructor
 
     virtual void attach(App::DocumentObject *);
     virtual void setDisplayMode(const char* ModeName);
@@ -66,18 +58,14 @@ public:
     void setupContextMenu(QMenu*, QObject*, const char*);
     virtual void updateData(const App::Property*);
 
-    Drawing::FeaturePage* getPageObject() const;
+    Drawing::FeatureViewOrthographic* getObject() const;
     void unsetEdit(int ModNum);
 
 protected:
     bool setEdit(int ModNum);
-    bool onDelete(const std::vector<std::string> &subList);
-    DrawingView* showDrawingView();
 
-private:
-    QPointer<DrawingView> view;
 };
 
 } // namespace DrawingGui
 
-#endif // DRAWINGGUI_VIEWPROVIDERPAGE_H
+#endif // DRAWINGGUI_VIEWPROVIDERVIEWORTHOGRAPHIC_H

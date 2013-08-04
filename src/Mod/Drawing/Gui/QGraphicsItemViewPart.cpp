@@ -166,10 +166,10 @@ QPainterPath QGraphicsItemViewPart::drawPainterPath(DrawingGeometry::BaseGeom *b
 void QGraphicsItemViewPart::updateView(bool update)
 {
       // Iterate
-    if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()))
+    if(this->getViewObject() == 0 || !this->getViewObject()->isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()))
         return;
 
-    Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(this->viewObject);
+    Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(this->getViewObject());
 
     if(update ||
        viewPart->Direction.isTouched() ||
@@ -229,10 +229,10 @@ void QGraphicsItemViewPart::draw() {
 void QGraphicsItemViewPart::drawViewPart()
 {
     // Iterate
-    if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()))
+    if(this->getViewObject() == 0 || !this->getViewObject()->isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()))
         return;
 
-    Drawing::FeatureViewPart *part = dynamic_cast<Drawing::FeatureViewPart *>(this->viewObject);
+    Drawing::FeatureViewPart *part = dynamic_cast<Drawing::FeatureViewPart *>(this->getViewObject());
 
     float lineWidth = part->LineWidth.getValue();
 
@@ -690,7 +690,7 @@ void QGraphicsItemViewPart::drawBorder(QPainter *painter){
   myPen.setStyle(Qt::DashLine);
   myPen.setWidth(0.3);
   painter->setPen(myPen);
-  QString name = QString::fromAscii(this->viewObject->Label.getValue());
+  QString name = QString::fromAscii(this->getViewObject()->Label.getValue());
 
   QFont font;
   font.setPointSize(3.f);

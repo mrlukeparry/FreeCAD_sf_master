@@ -89,6 +89,8 @@ SET(DrawingGuiViewProvider_SRCS
     ViewProviderPage.h
     ViewProviderView.cpp
     ViewProviderView.h
+    ViewProviderViewOrthographic.cpp
+    ViewProviderViewOrthographic.h
     ViewProviderViewSection.cpp
     ViewProviderViewSection.h
 )

@@ -83,6 +83,9 @@ protected:
     App::PropertyLink pageFeat;
 
 protected:
+    void findMissingViews( const std::vector<App::DocumentObject*> &list, std::vector<App::DocumentObject*> &missing);
+    bool hasQView(App::DocumentObject *obj);
+    bool orphanExists(const char *viewName, const std::vector<App::DocumentObject*> &list);
     void attachView(App::DocumentObject *obj);
     void contextMenuEvent(QContextMenuEvent *event);
 

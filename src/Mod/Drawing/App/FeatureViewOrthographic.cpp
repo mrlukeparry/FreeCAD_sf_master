@@ -26,10 +26,13 @@
 # include <sstream>
 #endif
 
-#include <strstream>
-#include <Base/Console.h>
-#include <Base/Writer.h>
+#include <App/Document.h>
+#include <App/DocumentObject.h>
 
+#include <Base/Console.h>
+#include <Base/Exception.h>
+
+#include "FeatureOrthoView.h"
 #include "FeatureViewOrthographic.h"
 
 using namespace Drawing;
@@ -38,22 +41,26 @@ const char* FeatureViewOrthographic::TypeEnums[]= {"First Angle",
                                                    "Third Angle",
                                                    NULL};
 
-PROPERTY_SOURCE(Drawing::FeatureViewOrthographic, Drawing::FeatureView)
+PROPERTY_SOURCE(Drawing::FeatureViewOrthographic, Drawing::FeatureViewCollection)
 
 FeatureViewOrthographic::FeatureViewOrthographic(void)
 {
     static const char *group = "Drawing view";
     Type.setEnums(TypeEnums);
-    ADD_PROPERTY_TYPE(Source    ,(0), group, App::Prop_None,"Shape to view");
-    ADD_PROPERTY_TYPE(Views     ,(0), group, App::Prop_None,"Attached Views");
     ADD_PROPERTY(Type,((long)0));
 }
 
 short FeatureViewOrthographic::mustExecute() const
 {
+    if(Views.isTouched() ||
+       Source.isTouched()) {
+        return 1;
+        Base::Console().Log("Oview touched");
+     }
+
     if (Type.isTouched())
         return 1;
-    return Drawing::FeatureView::mustExecute();
+    return Drawing::FeatureViewCollection::mustExecute();
 }
 
 /// get called by the container when a Property was changed
@@ -67,11 +74,69 @@ void FeatureViewOrthographic::onChanged(const App::Property* prop)
               this->touch();
           }
     }
-    Drawing::FeatureView::onChanged(prop);
+    Drawing::FeatureViewCollection::onChanged(prop);
 }
 
 FeatureViewOrthographic::~FeatureViewOrthographic()
 {
+}
+
+bool FeatureViewOrthographic::hasView(const char *viewProjType)
+{
+    const std::vector<App::DocumentObject *> &views = Views.getValues();
+
+    for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
+
+        Drawing::FeatureView *view = dynamic_cast<Drawing::FeatureView *>(*it);
+        if(view->getClassTypeId() == Drawing::FeatureOrthoView::getClassTypeId()) {
+            Drawing::FeatureOrthoView *orthoView = dynamic_cast<Drawing::FeatureOrthoView *>(*it);
+
+            if(strcmp(viewProjType, orthoView->Type.getValueAsString()) == 0)
+                return true;
+        }
+    }
+    return false;
+}
+
+int FeatureViewOrthographic::addView(const char *viewProjType)
+{
+    // Find a more elegant way of validating the type
+    if(strcmp(viewProjType, "Front")  == 0 ||
+       strcmp(viewProjType, "Left")   == 0 ||
+       strcmp(viewProjType, "Right")  == 0 ||
+       strcmp(viewProjType, "Top")    == 0 ||
+       strcmp(viewProjType, "Bottom") == 0 ||
+       strcmp(viewProjType, "Rear")  == 0 ) {
+
+        if(hasView(viewProjType)) {
+            throw Base::Exception("The Projection is already used in this group");
+        }
+
+        std::string FeatName = this->getDocument()->getUniqueObjectName("OrthoView");
+        App::DocumentObject *docObj = this->getDocument()->addObject("Drawing::FeatureOrthoView",
+                                                                     FeatName.c_str());
+        Drawing::FeatureOrthoView *view = dynamic_cast<Drawing::FeatureOrthoView *>(docObj);
+        view->Source.setValue(this->Source.getValue());
+        view->Scale.setValue(this->Scale.getValue());
+        view->Type.setValue(viewProjType);
+
+        std::string label = viewProjType;
+        view->Label.setValue(label);
+
+        // Add the new view to the collection
+        std::vector<App::DocumentObject *> newViews(Views.getValues());
+        newViews.push_back(docObj);
+        Views.setValues(newViews);
+
+        this->touch();
+        return 1;
+    } else if(strcmp(viewProjType, "Top Right")  == 0 ||
+              strcmp(viewProjType, "Top Left")  == 0 ||
+              strcmp(viewProjType, "Bottom Right")  == 0 ||
+              strcmp(viewProjType, "Bottom Left")  == 0) {
+        // Add an isometric view of the part
+    }
+    return -1;
 }
 
 void FeatureViewOrthographic::onDocumentRestored()
@@ -81,15 +146,6 @@ void FeatureViewOrthographic::onDocumentRestored()
 
 App::DocumentObjectExecReturn *FeatureViewOrthographic::execute(void)
 {
-    // Rebuild the view
-    const std::vector<App::DocumentObject *> &views = Views.getValues();
-    for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
-
-        Drawing::FeatureView *view = dynamic_cast<Drawing::FeatureView *>(*it);
-
-        // Set scale factor of each view
-        view->Scale.setValue(this->Scale.getValue());
-    }
-    return Drawing::FeatureView::execute();
+    return Drawing::FeatureViewCollection::execute();
 }
 

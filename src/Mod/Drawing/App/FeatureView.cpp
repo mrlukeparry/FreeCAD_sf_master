@@ -26,15 +26,11 @@
 # include <sstream>
 #endif
 
-#include <Base/Writer.h>
-#include <Base/Reader.h>
 #include <Base/Exception.h>
-#include <Base/FileInfo.h>
 
 #include "FeatureView.h"
 
 using namespace Drawing;
-
 
 //===========================================================================
 // FeatureView

@@ -25,9 +25,9 @@
 
 #include <App/DocumentObject.h>
 #include <App/PropertyStandard.h>
-#include <App/PropertyLinks.h>
 #include <App/FeaturePython.h>
-#include "FeatureView.h"
+
+#include "FeatureViewCollection.h"
 
 namespace Drawing
 {
@@ -36,7 +36,7 @@ namespace Drawing
  * Class super-container for managing a collection of FeatureOrthoView
  * Page Features
  */
-class DrawingExport FeatureViewOrthographic : public Drawing::FeatureView
+class DrawingExport FeatureViewOrthographic : public Drawing::FeatureViewCollection
 {
     PROPERTY_HEADER(Drawing::FeatureViewOrthographic);
 
@@ -46,8 +46,10 @@ public:
     ~FeatureViewOrthographic();
 
     App::PropertyEnumeration Type;
-    App::PropertyLink   Source;
-    App::PropertyLinkList Views;
+
+    // Check if container has a view of a specific type
+    bool hasView(const char *viewProjType);
+    int  addView(const char *viewProjType);
 
     short mustExecute() const;
     /** @name methods overide Feature */
@@ -59,7 +61,7 @@ public:
 
     /// returns the type name of the ViewProvider
     virtual const char* getViewProviderName(void) const {
-        return "DrawingGui::ViewProviderDrawingView";
+        return "DrawingGui::ViewProviderViewOrthographic";
     }
 
 protected:

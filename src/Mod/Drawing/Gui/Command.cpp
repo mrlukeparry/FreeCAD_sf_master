@@ -38,6 +38,7 @@
 
 # include <Mod/Drawing/App/FeatureViewPart.h>
 # include <Mod/Drawing/App/FeatureOrthoView.h>
+# include <Mod/Drawing/App/FeatureViewOrthographic.h>
 # include <Mod/Drawing/App/FeatureViewDimension.h>
 # include <Mod/Drawing/App/FeaturePage.h>
 
@@ -576,7 +577,29 @@ void CmdDrawingOrthoViews::activated(int iMsg)
         return;
     }
 
-    Gui::Control().showDialog(new TaskDlgOrthoViews());
+    std::string PageName = pages.front()->getNameInDocument();
+
+    openCommand("Create Orthographic View");
+    for (std::vector<App::DocumentObject*>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
+        std::string FeatName = getUniqueObjectName("View");
+        doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewOrthographic','%s')",FeatName.c_str());
+        doCommand(Doc,"App.activeDocument().%s.Source = App.activeDocument().%s",FeatName.c_str(),(*it)->getNameInDocument());
+        doCommand(Doc,"App.activeDocument().%s.X = 0.0",    FeatName.c_str());
+        doCommand(Doc,"App.activeDocument().%s.Y = 0.0",    FeatName.c_str());
+        doCommand(Doc,"App.activeDocument().%s.Scale = 1.0",FeatName.c_str());
+//         doCommand(Doc,"App.activeDocument().%s.addObject(App.activeDocument().%s)",PageName.c_str(),);
+
+        App::DocumentObject *docObj = getDocument()->getObject(FeatName.c_str());
+        Drawing::FeatureViewOrthographic *viewOrtho = dynamic_cast<Drawing::FeatureViewOrthographic *>(docObj);
+
+        viewOrtho->addView("Front");
+        viewOrtho->addView("Top");
+        viewOrtho->addView("Left");
+        Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
+        page->addView(page->getDocument()->getObject(FeatName.c_str()));
+    }
+    updateActive();
+    commitCommand();
 }
 
 

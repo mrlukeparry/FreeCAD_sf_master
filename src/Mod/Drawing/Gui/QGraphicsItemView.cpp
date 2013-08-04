@@ -43,7 +43,7 @@
 
 using namespace DrawingGui;
 
-QGraphicsItemView::QGraphicsItemView(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemGroup(),viewObject(0)
+QGraphicsItemView::QGraphicsItemView(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemGroup()
 {
     this->setFlags(QGraphicsItem::ItemIsSelectable);
     this->setPos(pos);
@@ -66,8 +66,8 @@ void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 {
     if(scene() && this == scene()->mouseGrabberItem()) {
         Gui::Command::openCommand("Drag View");
-        Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", viewObject->getNameInDocument(), this->x());
-        Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", viewObject->getNameInDocument(), this->y());
+        Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", this->getViewObject()->getNameInDocument(), this->x());
+        Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", this->getViewObject()->getNameInDocument(), this->y());
         Gui::Command::commitCommand();
         Gui::Command::updateActive();
     }
@@ -76,7 +76,17 @@ void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 
 void QGraphicsItemView::updateView(bool update)
 {
-    this->setPos(viewObject->X.getValue(), viewObject->Y.getValue());
+    this->setPos(this->getViewObject()->X.getValue(), this->getViewObject()->Y.getValue());
+}
+
+const char * QGraphicsItemView::getViewName() const
+{
+    return viewName.c_str();
+}
+
+Drawing::FeatureView * QGraphicsItemView::getViewObject() const
+{
+     return viewObj;
 }
 
 void QGraphicsItemView::setViewFeature(Drawing::FeatureView *obj)
@@ -84,7 +94,9 @@ void QGraphicsItemView::setViewFeature(Drawing::FeatureView *obj)
     if(obj == 0)
         return;
 
-    this->viewObject = obj;
+    viewObj = obj;
+
+    viewName = obj->getNameInDocument(); //Guarantee access for the name if deleted
     Q_EMIT dirty();
 }
 

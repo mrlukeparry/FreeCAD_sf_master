@@ -74,6 +74,7 @@ FeatureViewDimension::FeatureViewDimension(void)
 FeatureViewDimension::~FeatureViewDimension()
 {
     delete measurement;
+    measurement = 0;
 }
 
 short FeatureViewDimension::mustExecute() const

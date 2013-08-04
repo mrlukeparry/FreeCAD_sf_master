@@ -217,9 +217,9 @@ void QGraphicsItemViewDimension::hover(bool state)
 void QGraphicsItemViewDimension::updateView(bool update)
 {
           // Iterate
-    if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
+    if(this->getViewObject() == 0 || !this->getViewObject()->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
         return;
-    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension*>(this->viewObject);
+    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension*>(this->getViewObject());
 
     // Reset the cache;
     clearProjectionCache();
@@ -253,10 +253,10 @@ void QGraphicsItemViewDimension::updateDim()
     // For now assume only show absolute dimension values
     bool absolute = true;
 
-    if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
+    if(this->getViewObject() == 0 || !this->getViewObject()->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
         return;
 
-    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->viewObject);
+    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getViewObject());
 
     QString str = QString::number((absolute) ? fabs(dim->getValue()) : dim->getValue(), 'f', dim->Precision.getValue());
 
@@ -284,10 +284,10 @@ void QGraphicsItemViewDimension::datumLabelDragFinished()
 //     int x = this->datumLabel->posX;
 //     int y = this->datumLabel->posY;
 
-    if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
+    if(this->getViewObject() == 0 || !this->getViewObject()->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
         return;
 
-    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->viewObject);
+    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getViewObject());
     QGraphicsItemDatumLabel *datumLbl = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
 
     Gui::Command::openCommand("Drag Dimension");
@@ -301,10 +301,10 @@ void QGraphicsItemViewDimension::datumLabelDragFinished()
 void QGraphicsItemViewDimension::draw()
 {
     // Iterate
-    if(this->viewObject == 0 || !this->viewObject->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
+    if(this->getViewObject() == 0 || !this->getViewObject()->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
         return;
 
-    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->viewObject);
+    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getViewObject());
     QGraphicsItemDatumLabel *lbl = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
 
     pen.setStyle(Qt::SolidLine);

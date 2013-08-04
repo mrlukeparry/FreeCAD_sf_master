@@ -105,6 +105,14 @@ void CanvasView::addViewSection(Drawing::FeatureViewPart *part)
     views.push_back(group);
 }
 
+void CanvasView::addFeatureView(Drawing::FeatureView *view)
+{
+    // This essentially adds a null view feature to ensure view size is consistent
+    QGraphicsItemView *qview = new  QGraphicsItemView(QPoint(0,0), this->scene());
+    qview->setViewFeature(view);
+    views.push_back(qview);
+}
+
 void CanvasView::addViewDimension(Drawing::FeatureViewDimension *dim)
 {
     QGraphicsItemViewDimension *dimGroup = new QGraphicsItemViewDimension(QPoint(0,0), this->scene());

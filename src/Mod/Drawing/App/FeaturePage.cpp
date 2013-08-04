@@ -37,6 +37,7 @@
 
 #include "FeaturePage.h"
 #include "FeatureView.h"
+#include "FeatureViewCollection.h"
 #include "FeatureClip.h"
 
 using namespace Drawing;
@@ -51,7 +52,7 @@ PROPERTY_SOURCE(Drawing::FeaturePage, App::DocumentObjectGroup)
 
 const char *group = "Drawing view";
 
-FeaturePage::FeaturePage(void) 
+FeaturePage::FeaturePage(void)
 {
     static const char *group = "Drawing view";
     ADD_PROPERTY_TYPE(Template ,(""),group, (App::PropertyType) App::Prop_None,"Template for the page");
@@ -62,18 +63,19 @@ FeaturePage::~FeaturePage()
 {
 }
 
+
 short FeaturePage::mustExecute() const
 {
     // If Tolerance Property is touched
     if(Template.isTouched())
         return 1;
-    
+
     // Check if within the selection, any Document Object have been touched
     bool ViewsTouched = false;
     const std::vector<App::DocumentObject*> &vals = Views.getValues();
     for(std::vector<App::DocumentObject *>::const_iterator it = vals.begin(); it < vals.end(); ++it) {
         if((*it)->isTouched()) {
-            ViewsTouched = true;            
+            ViewsTouched = true;
         }
     }
 
@@ -87,7 +89,6 @@ void FeaturePage::onChanged(const App::Property* prop)
         if (!this->isRestoring()) {
         }
     } else if (prop == &Views) {
-        Base::Console().Log("Views changed -> feature page \n");
     }
     App::DocumentObjectGroup::onChanged(prop);
 }
@@ -95,7 +96,17 @@ void FeaturePage::onChanged(const App::Property* prop)
 int FeaturePage::addView(App::DocumentObject *docObj)
 {
     if(!docObj->isDerivedFrom(Drawing::FeatureView::getClassTypeId()))
-        return -1; //Doc Object mst be derived from a Part Feature
+        return -1; //Doc Object must be derived from a Part Feature
+
+    if(docObj->getTypeId().isDerivedFrom(Drawing::FeatureViewCollection::getClassTypeId())) {
+        // Add child views recursively to the page feature
+        Drawing::FeatureViewCollection *collection = dynamic_cast<Drawing::FeatureViewCollection *>(docObj);
+        const std::vector<App::DocumentObject *> & views = collection->Views.getValues();
+        for(std::vector<App::DocumentObject*>::const_iterator it = views.begin(); it != views.end(); ++it) {
+            Base::Console().Log("adding child view");
+            this->addView(*it); // Recursively add child views
+        }
+    }
 
     const std::vector<App::DocumentObject *> vals = Views.getValues();
 
@@ -114,9 +125,10 @@ App::DocumentObjectExecReturn *FeaturePage::execute(void)
         if ( (*it)->getTypeId().isDerivedFrom(Drawing::FeatureView::getClassTypeId()) ) {
             Drawing::FeatureView *View = dynamic_cast<Drawing::FeatureView *>(*it);
         } else if ( (*it)->getTypeId().isDerivedFrom(Drawing::FeatureClip::getClassTypeId()) ) {
-            Drawing::FeatureClip *Clip = dynamic_cast<Drawing::FeatureClip *>(*it);        
+            Drawing::FeatureClip *Clip = dynamic_cast<Drawing::FeatureClip *>(*it);
         }
     }
+
     Views.touch();
     return App::DocumentObject::StdReturn;
 }

@@ -25,6 +25,7 @@
 
 #include <QGraphicsItemGroup>
 #include <QObject>
+#include <App/PropertyLinks.h>
 
 QT_BEGIN_NAMESPACE
 class QGraphicsScene;
@@ -49,9 +50,9 @@ public:
     enum {Type = QGraphicsItem::UserType + 101};
     int type() const { return Type;}
 
+    const char * getViewName() const;
     void setViewFeature(Drawing::FeatureView *obj);
-    Drawing::FeatureView * getViewObject() const { return viewObject; }
-
+    Drawing::FeatureView * getViewObject() const;
     virtual void updateView(bool update = false);
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
 
@@ -60,7 +61,9 @@ Q_SIGNALS:
 
 protected:
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-  Drawing::FeatureView *viewObject;
+  Drawing::FeatureView *viewObj;
+  std::string viewName;
+
 };
 
 } // namespace DrawingViewGui

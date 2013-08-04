@@ -35,12 +35,12 @@
 using namespace Drawing;
 
 const char* FeatureOrthoView::TypeEnums[]= {"Front",
-"Left",
-"Right",
-"Back",
-"Top",
-"Bottom",
-NULL};
+                                            "Left",
+                                            "Right",
+                                            "Back",
+                                            "Top",
+                                            "Bottom",
+                                            NULL};
 
 PROPERTY_SOURCE(Drawing::FeatureOrthoView, Drawing::FeatureViewPart)
 
