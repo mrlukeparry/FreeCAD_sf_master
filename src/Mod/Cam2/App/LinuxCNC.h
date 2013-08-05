@@ -37,33 +37,13 @@ namespace Cam
 class CamExport LinuxCNC : public GCode
 {
 public:
-    LinuxCNC();
+    LinuxCNC(MachineProgram *machine_program);
     ~LinuxCNC();
 
+	MachineProgram *GetMachineProgram();
+
 public:
-	virtual Geometry_t Parse(const char *program);
-
-	typedef enum {
-		csUndefined = -1,
-		csG53 = 0,
-		csG54,
-		csG55,
-		csG56,
-		csG57,
-		csG58,
-		csG59,
-		csG59_1,
-		csG59_2,
-		csG59_3,
-		csG92,
-		csG92_1
-	} eCoordinateSystems_t;
-
-	typedef enum {
-		eXYPlane = 0,
-		eXZPlane,
-		eYZPlane
-	} ePlane_t;
+	virtual bool Parse();
 
 	/*
 		NOTE: The order of the eStatement_t enumeration determines the 

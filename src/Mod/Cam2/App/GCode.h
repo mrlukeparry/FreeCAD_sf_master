@@ -48,12 +48,75 @@ namespace Cam
 class CamExport GCode
 {
 public:
-    GCode();
+	typedef enum {
+		csUndefined = -1,
+		csG53 = 0,
+		csG54,
+		csG55,
+		csG56,
+		csG57,
+		csG58,
+		csG59,
+		csG59_1,
+		csG59_2,
+		csG59_3,
+		csG92,
+		csG92_1
+	} eCoordinateSystems_t;
+
+	typedef enum {
+		eXYPlane = 0,
+		eXZPlane,
+		eYZPlane
+	} ePlane_t;
+
+public:
+    GCode(MachineProgram *machine_program);
     ~GCode();
 
 public:
 	typedef std::vector<Part::Feature *> Geometry_t;
-	virtual Geometry_t Parse(const char *program) = 0;
+	virtual bool Parse() = 0;
+	void AddWarning(const QString warning);
+
+public:
+	MachineProgram *machine_program;
+	QStringList	warnings;
+
+	// Define a type representing the index into the QStringList contained within the MachineProgram object.
+	// We will assign specific graphics to these for later reference.
+	typedef QStringList::size_type MachineProgramIndex_t;
+
+	/**
+		Define a class that contains a single graphical element representing
+		tool movements defined by the GCode contained in the MachineProgram object.
+		We will end up with a list of such graphical elements.
+	 */
+	class GraphicalReference
+	{
+	public:
+		GraphicalReference(MachineProgram *machine_program);
+		~GraphicalReference();
+		GraphicalReference( const GraphicalReference & rhs );
+		GraphicalReference & operator= ( const GraphicalReference & rhs );
+
+		void Index(const MachineProgramIndex_t index) { machine_program_index = index; }
+		MachineProgramIndex_t Index() const { return(machine_program_index); }
+
+		void PartFeature( Part::Feature *part_feature ) { this->part_feature = part_feature; }
+		Part::Feature *PartFeature() const { return(this->part_feature); }
+
+		void CoordinateSystem( const eCoordinateSystems_t value ) { this->coordinate_system = value; }
+		eCoordinateSystems_t CoordinateSystem() const { return(this->coordinate_system); }
+
+	private:
+		MachineProgram *machine_program;
+		MachineProgramIndex_t machine_program_index;
+		Part::Feature *part_feature;	// graphical element - line, arc etc.
+		eCoordinateSystems_t coordinate_system;
+	};
+
+	typedef std::map< MachineProgramIndex_t, GraphicalReference > Graphics_t;
 
 }; // End GCode class definition.
 

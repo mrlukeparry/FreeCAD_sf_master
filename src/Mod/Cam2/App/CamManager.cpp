@@ -187,8 +187,15 @@ void CamManagerInst::tpgRunnerThreadMain() {
 				gcode << *machine_program;
 				qDebug("%s\n", gcode.toAscii().constData());
 
-				LinuxCNC parser;
-				parser.Parse(gcode.toAscii().constData());
+				LinuxCNC parser(machine_program);
+				if (parser.Parse())
+				{
+					qDebug("GCode parsed OK\n");
+				}
+				else
+				{
+					qDebug("GCode failed to parse\n");
+				}
 			}
 
 			// And release both the toolpath and the machine_program objects now.  The toolpath probably

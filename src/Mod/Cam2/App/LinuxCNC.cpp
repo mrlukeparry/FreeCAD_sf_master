@@ -40,7 +40,7 @@
 #include <boost/bind.hpp>
 
 using namespace Cam;
-LinuxCNC::LinuxCNC()
+LinuxCNC::LinuxCNC(MachineProgram *machine_program) : GCode(machine_program)
 {
 }
 
@@ -48,14 +48,12 @@ LinuxCNC::~LinuxCNC()
 {
 }
 
-
 namespace qi = boost::spirit::qi;
 namespace ascii = boost::spirit::ascii;
 
 typedef std::string::iterator Iterator;
 typedef std::pair<char, double> ArgumentData_t;
 typedef double Double_t;
-Double_t g_double;
 
 
 namespace qi = boost::spirit::qi;
@@ -78,11 +76,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 	{
 		if (c.size() == 1)
 		{
-			char lower_c = tolower(c[0]);
-			motion_arguments.insert(std::make_pair(c[0], symbol_id));
+			char lower_c = tolower(c[0]);	// make it consistent for when we search for it later.
+			motion_arguments.insert(std::make_pair(lower_c, symbol_id));
 		}
 	}
 
+	/// Just for debugging.
 	void Print()
 	{
 		for (LinuxCNC::MotionArguments_t::const_iterator itArg = motion_arguments.begin(); itArg != motion_arguments.end(); itArg++)
@@ -92,6 +91,17 @@ template <typename Iter, typename Skipper = qi::blank_type>
 	}
 
 	void SetLineNumber( const int value ) { line_number = value; }
+
+	/**
+		The statement type is really the feed from the grammar parsing to what's done
+		about it in the ProcessBlock() method.  The ProcessBlock() method is the thing
+		that actually generates the graphics representing the tool movements and it
+		decides which pattern of movement to generate based on the statement type.
+		We do this separately as various sub-statement types may appear on the same
+		line as a more important one.  eg: we can be setting the spindle speed
+		on a line that contains a feed (G01) command.  In this case the feed command
+		will result in a tool movement but the spindle speed command will not.
+	 */
 	void StatementType( const LinuxCNC::eStatement_t type )
 	{
 		// Only override the statement type if this integer is larger than the
@@ -102,35 +112,19 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		if (int(type) > int(statement_type)) statement_type = type;
 	}
 
-	void ProcessBlock()
+	/**
+		This is the constructor for the template and is effectively the 'main' routine
+		for the grammar parsing.  This is where we define the grammar itself as well as
+		the 'actions' (i.e. method calls) that result where various patterns of grammar
+		are detected.  It's the side-effects of these 'actions' that produce our real
+		output.  Mostly these come from the ProcessBlock() method.
+	 */
+	linuxcnc_grammar(LinuxCNC *pLinuxCNC) : linuxcnc_grammar::base_type(Start)
 	{
-		qDebug("Processing block\n");
-		Print();
-		ResetForEndOfBlock();
-	}
+		// Variables declared here are created and destroyed for each rule parsed.
+		// Use member variables of the structure for long-lived variables instead.
 
-	typedef boost::proto::result_of::deep_copy<
-				BOOST_TYPEOF(ascii::no_case[qi::lit(std::string())])
-			>::type nocaselit_return_type;
-
-	nocaselit_return_type nocaselit(const std::string& keyword)
-	{
-		return boost::proto::deep_copy(ascii::no_case[qi::lit(keyword)]);
-	}
-
-	linuxcnc_grammar(GCode::Geometry_t *tool_movement_geometry) : linuxcnc_grammar::base_type(Start)
-	{
-		using phx::construct;
-		using phx::val;
-
-		using qi::lit;
-        using qi::lexeme;
-        using ascii::char_;
-        using ascii::string;
-        using namespace qi::labels;
-
-        using phx::at_c;
-        using phx::push_back;
+		this->pLinuxCNC = pLinuxCNC;
 
 		current_coordinate_system = LinuxCNC::csG53;
 		modal_coordinate_system = LinuxCNC::csG54;
@@ -139,9 +133,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		tool_length_offset = 0.0;
 
 		InitializeGCodeVariables();
-
-		// Variables declared here are created and destroyed for each rule parsed.
-		// Use member variables of the structure for long-lived variables instead.
 
 		// N110 - i.e. use qi::lexeme to avoid qi::space_type skipper which allows the possibility of interpreting 'N 110'.  We don't want spaces here.
 		// LineNumberRule = qi::lexeme[ qi::repeat(1,1)[qi::char_("nN")] >> qi::int_ ]
@@ -154,20 +145,29 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::AddMotionArgument, phx::ref(*this), qi::_1, qi::_2) ] // call this->AddMotionArgument(_1, _2);
 			;
 
+		// The G00 to G09 commands need some special treatment due to the optional '0'. i.e. G01 and G1 are both valid while G10
+		// can only ever be expressed as G10.  We use the ascii::no_case to handle the 'G' or 'g' equivalence.
 		G00 = qi::lexeme[qi::repeat(1,1)[qi::char_("gG")] >> qi::repeat(1,2)[qi::char_("0")]];
 		G01 = qi::lexeme[ascii::no_case[qi::lit("G")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::lit("1")];
 		G02 = qi::lexeme[ascii::no_case[qi::lit("G")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::lit("2")];
 		G03 = qi::lexeme[ascii::no_case[qi::lit("G")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::lit("3")];
 		G04 = qi::lexeme[ascii::no_case[qi::lit("G")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::lit("4")];
 
+		// A newline character represents an 'end of block' in RS274.  We must have gathered up all of our
+		// command line arguments as well as identified the dominant statement type at this point.  Go ahead
+		// and generate any graphics that represents the tool's movement as a result of this command.
 		EndOfBlock = qi::eol
 			[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ProcessBlock, phx::ref(*this) ) ]	// call this->EndOfBlock()
 			;
 
+		// Register statement type values for these.
 		G43   =(ascii::no_case[qi::lit("G43")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stToolLengthEnabled ) ];
 		G43_1 =(ascii::no_case[qi::lit("G43_1")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stToolLengthEnabled ) ];
 		G49   =(ascii::no_case[qi::lit("G49")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stToolLengthDisabled ) ];
 
+		// These won't result in extra graphics but they will change some 'variables' used
+		// to store the state of the machine.  These 'variables' will also be used to adjust
+		// any position arguments specified in subsequent movement commands.
 		ToolLengthOffset = (G43 >> +(MotionArgument))
 			|				(G43_1 >> +(MotionArgument))
 			|				(G49)
@@ -253,6 +253,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		Comment =	(qi::lit("(") >> +(qi::char_ - qi::lit(")")) >> qi::lit(")"))
 			;
 
+		// Any time we refer to a floating point number, we use this MathematicalExpression rule instead.  This allows
+		// the floating point number to be expressed using literal numbers, mathematical expressions, variable names
+		// or any combination of the above.  In order to support all these we store all variables and numbers in a
+		// 'symbol table'.   Since we also use this to hold linuxcnc variables by name, we use the 'variables' object
+		// for all such values.  The result of any of these expressions is really an integer ID that forms the key
+		// into this 'variables' symbol table.
 		MathematicalExpression = 
 			  (qi::double_) 
 				[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::AddSymbol, phx::ref(*this), qi::_val, "", qi::_1 ) ]
@@ -278,15 +284,16 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			;
 
 
+		// These functions also result in an integer ID which forms the key into the 'variables' symbol table.
+		// We use the phoenix::bind method to tie the arguments seen in the GCode to arguments in local methods.  It
+		// then calls these methods to accumulate the information.  In any case qi::_val needs to end up
+		// being the symbol ID.
 		Functions = 
 				(ascii::no_case[qi::lit("ABS")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::AbsoluteValue, phx::ref(*this), qi::_val, qi::_1) ] // call this->Abs(_val, _1);
 
-
 			|	(ascii::no_case[qi::lit("ACOS")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ACos, phx::ref(*this), qi::_val, qi::_1) ] // call this->ACOS(_val, _1);
-
-
 
 			|	(ascii::no_case[qi::lit("ASIN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ASin, phx::ref(*this), qi::_val, qi::_1) ] // call this->ASIN(_val, _1);
@@ -300,8 +307,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|	(ascii::no_case[qi::lit("FIX")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Fix, phx::ref(*this), qi::_val, qi::_1) ] // call this->FIX(_val, _1);
 
-
-
 			|	(ascii::no_case[qi::lit("FUP")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Fup, phx::ref(*this), qi::_val, qi::_1) ] // call this->FUP(_val, _1);
 
@@ -311,15 +316,11 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|	(ascii::no_case[qi::lit("LN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Ln, phx::ref(*this), qi::_val, qi::_1) ] // call this->LN(_val, _1);
 
-
-
 			|	(ascii::no_case[qi::lit("SIN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Sin, phx::ref(*this), qi::_val, qi::_1) ] // call this->SIN(_val, _1);
 
 			|	(ascii::no_case[qi::lit("SQRT")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Sqrt, phx::ref(*this), qi::_val, qi::_1) ] // call this->SQRT(_val, _1);
-
-
 
 			|	(ascii::no_case[qi::lit("TAN")] >> qi::lit("[") >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Tan, phx::ref(*this), qi::_val, qi::_1) ] // call this->TAN(_val, _1);
@@ -328,6 +329,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 				[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ATan, phx::ref(*this), qi::_val, qi::_1, qi::_2) ] // call this->ATAN(_val, _1, _2);
 			;
 
+		// These are similar to the Functions definition above.  All of these (qi::_val) result in a symbol ID that holds
+		// the actual value calculated.
 		Comparison = 
 				(qi::lit("[") >> MathematicalExpression >> ascii::no_case[qi::lit("EQ")] >> MathematicalExpression >> qi::lit("]"))
 					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::LHSequivalenttoRHS, phx::ref(*this), qi::_val, qi::_1, qi::_2) ]
@@ -343,6 +346,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			;
 			
 
+		// We add the Boolean rule so that these constructs are recognised in the grammar but this grammar parsing does not
+		// really do program flow.  Maybe at some later date it will but, for now, we just look for tool movement commands
+		// directly.  So far we've got away with this by virtue of the fact that the generated GCode does not add subroutine
+		// definitions or much program-flow code.
 		Boolean = (ascii::no_case[qi::lit("EXISTS")] >> qi::lit("[") >> Variable >> qi::lit("]"))
 				[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Exists, phx::ref(*this), qi::_val, qi::_1) ] // call this->Exists(_val, _1);
 
@@ -353,17 +360,25 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|	(qi::lit("[") >> Boolean >> ascii::no_case[qi::lit("AND")] >> Boolean >> qi::lit("]"))
 			;
 
+		// The 'variable' is added to the 'variables' symbol table by name.  If it's an integer name then the
+		// name forms the symbol ID.  If it's a character string variable name then it's converted to an integer
+		// via a LinuxCNC::Variables::Hash() method so that we always end up using the same symbol each time
+		// this variable name is mentioned in the GCode.  As with all the MathematicalExpressions defined above,
+		// this construct results in (i.e. qi::_val) a symbol ID into the 'variables' symbol table.  In the case
+		// of the integer variables, it's possible that such symbols were already created when the linuxcnc.var
+		// variables file was read in before parsing began.  If they're not found, they will be created though.
 		Variable = 
-				// #5061
-				(qi::lit("#") >> qi::int_)
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::AddIntegerSymbol, phx::ref(*this), qi::_val, qi::_1 ) ]
+					// #5061
+					(qi::lit("#") >> qi::int_)
+						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::AddIntegerSymbol, phx::ref(*this), qi::_val, qi::_1 ) ]
 
-				// #<myvariable>
-			|	(qi::lit("#") >> qi::lit("<") >> +(ascii::no_case[qi::char_("a-z0-9_")]) >> qi::lit(">"))
-					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::AddSymbolByName, phx::ref(*this), qi::_val, qi::_1 ) ]
+					// #<myvariable>
+			|		(qi::lit("#") >> qi::lit("<") >> +(ascii::no_case[qi::char_("a-z0-9_")]) >> qi::lit(">"))
+						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::AddSymbolByName, phx::ref(*this), qi::_val, qi::_1 ) ]
 			;
 			
 		Spindle =	(ascii::no_case[qi::lit("S")] >> MathematicalExpression)
+						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stPreparation ) ]
 			;
 
 		FeedRate =	(ascii::no_case[qi::lit("F")] >> MathematicalExpression)
@@ -372,7 +387,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|		(ascii::no_case[qi::lit("G95")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stPreparation ) ]
 			;
 
-		FeedRate =	
+		Units =	
 					(ascii::no_case[qi::lit("G20")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SwitchParseUnits, phx::ref(*this), 0 ) ]
 			|		(ascii::no_case[qi::lit("G21")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SwitchParseUnits, phx::ref(*this), 1 ) ]
 			;
@@ -413,11 +428,36 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|	(EndOfProgram)
 			;
 
+		// one or more RS274 sequences followed by a newline (end of block)
 		Expression = (+(RS274) >> EndOfBlock)
 			;
 
+		// This 'Start' rule was passed into the base class during construction via the
+		// linuxcnc_grammar::base_type(Start) sequence at the top of this method.  This defines
+		// the top-most level of the hierarchy of rules that make up the grammar for the GCode.
 		Start = +(Expression)
 			;
+
+		// As the boost::spirit::qi parser consumes input, it generates 'trees' of possible
+		// matches between the input and the hierarchy of rules that make up the grammar.
+		// If it finds a perfect rule to fit the input then that rule's "action" code is called.
+		// If it cannot find a perfect rule to fit the input sequence then it generates
+		// a std::string that represents the 'tree' of rules along with the character sequences
+		// it tried to apply to each.  This std::string was defined by defining the
+		// BOOST_SPIRIT_DEBUG_OUT as GCode_GrammarDebugOutputBuffer.  The GCode_GrammarDebugOutputBuffer, in turn,
+		// was defined as a std::ostringstream.  All this was done in GCode.h.  This is how
+		// we intercept this debug string that's generated for us.  Mostly we can use this
+		// to debug the grammar but, even at runtime, it would be helpful to identify
+		// which line of GCode could not be interpreted and why.
+		// The rules that will appear in this debug string MUST be defined using
+		// the BOOST_SPIRIT_DEBUG_NODE macro.  To that end we really want to define
+		// ALL the rules that make up this grammar so that, if something goes wrong, we can
+		// figure out why.
+		//
+		// NOTE: This mechanism is 'global' to the application and is, therefore, NOT thread-safe.
+		// this might be a motivation to turn it off.  Perhaps we should end up surrounding these
+		// definitions in an '#ifdef FC_DEBUG' sequence so that the delivered version is threadsafe
+		// while the development version can be debugged.
 
 		BOOST_SPIRIT_DEBUG_NODE(Start);
 		BOOST_SPIRIT_DEBUG_NODE(G00);
@@ -451,6 +491,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 	}
 
 	public:
+		// Define all of our member variables used both to define this grammar
+		// and to be used during the execution of this grammar.  By keeping
+		// such variables local we allow for thread-safe operation.
+
 		qi::rule<Iter, Skipper> Start;
 		qi::rule<Iter, Skipper> G00;
 		qi::rule<Iter, Skipper> G01, G02, G03, G04, G43, G43_1, G49;
@@ -458,7 +502,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		qi::rule<Iter, Skipper> G83;
 		qi::rule<Iter, Skipper> Motion, ToolLengthOffset, DistanceMode, Units;
 		qi::rule<Iter, Skipper> MotionArgument;
-		qi::rule<Iter, int(), Skipper> LineNumberRule, Comparison;
+		qi::rule<Iter, int(), Skipper> LineNumberRule;
 		qi::rule<Iter, LinuxCNC::Variables::SymbolId_t(), Skipper> MathematicalExpression, Variable, Functions;
 		qi::rule<Iter, Skipper> Comment;
 		qi::rule<Iter, Skipper> RS274;
@@ -466,36 +510,62 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		qi::rule<Iter, Skipper> Spindle, FeedRate;
 		qi::rule<Iter, Skipper> MCodes, NonModalCodes;
 		qi::rule<Iter, Skipper> EndOfBlock, EndOfProgram;
-		qi::rule<Iter, bool(), Skipper> Boolean;
+		qi::rule<Iter, bool(), Skipper> Boolean, Comparison;
+
+		LinuxCNC	*pLinuxCNC;	// pointer to owning object into which we accumulate results.
+		MachineProgram *machine_program;
 
 		double previous[9]; // in parse_units
 
 		LinuxCNC::eCoordinateSystems_t current_coordinate_system;
 		LinuxCNC::eCoordinateSystems_t modal_coordinate_system;
 
-		double feed_rate;	// invalid.
+		// This doesn't change the generated graphics but, if it has not been set, it shows invalid GCode. 
+		// eg: if we see a G01 (feed) movement without having seen a feedrate definition first.
+		double feed_rate;
 		double spindle_speed;
 		double units;
 		double tool_length_offset;
 
-		int	 line_offset;			// Which line in the GCode file are we processing?  i.e. index into g_svLines
-		int  line_number;			// GCode line number.  i.e. N30, N40 etc.
-		char comment[1024];
+		int	 line_offset;			// Which line in the GCode file are we processing?  i.e. index into ToolPath::toolpath (QStringList)
+		int  line_number;			// GCode line number.  i.e. N30, N40 etc.  Used for any error/warning messages presented to the user.
 
-		LinuxCNC::ePlane_t plane;
-
-		int	tool_slot_number;
+		LinuxCNC::ePlane_t plane;	// XY, YZ or XZ.  Used as a 'modal' setting upon which arc movements are defined.
 
 		// The statement type defines both the colour of the GCode text and the type of
-		// motion used.
+		// motion used.  It's the key into the ProcessBlock() method that's used to define which sequence of graphics
+		// represents the tool's movement.
 		LinuxCNC::eStatement_t statement_type;
-		LinuxCNC::eStatement_t previous_statement_type;	// from previous block.
+		LinuxCNC::eStatement_t previous_statement_type;	// from previous block. kept for modal commands such as G01 or drilling cycles etc.
 		
 		LinuxCNC::Variables	variables;	// Symbol table that holds both GCode variables and any transient numbers found in the program.
+
 		LinuxCNC::MotionArguments_t motion_arguments;	// ONLY for the current block.  It's cleared at each newline that's found.
-		LinuxCNC::MotionArguments_t previous_motion_arguments;	// ONLY for the current block.  It's cleared at each newline that's found.
+
+		// Accumulated set of arguments that's updated at each block of input.  Used for modal commands 
+		// that rely on arguments defined in earlier blocks (such as feedrate and spindle speed)
+		LinuxCNC::MotionArguments_t previous_motion_arguments;	
 
 	private:
+		// Define the series of methods that form 'actions' that are called when various inputs accurately match
+		// a rule.  Many of these will be of the form;
+		//
+		// void myMethod(Symbol_t & returned_symbol_id, int arg1, double arg2).
+		//
+		// This is so that we can use the phoenix::bind() method to call them from the grammar's "action" sequence.  We
+		// use the phoenix::bind() method to handle the type conversions between the arguments found in the grammar
+		// parsing and those used in these methods.
+		// In our exmaple above, the 'action' would be something like;
+		//
+		// [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::myMethod, phx::ref(*this), qi::_val, qi::_1, qi::_2) ]
+		// It's a cryptic way of getting the "action" code to call qi::_val = this->myMethod(int(qi::_1), double(qi::_2))
+		// The qi::_val is always the return type defined as part of the rule's declaration.  eg: this rule is
+		// returning an integer symbol ID so it would be defined something lile;
+		//
+		// qi::rule<Iter, LinuxCNC::Variables::SymbolId_t(), Skipper> MyRule;
+		// i.e. the second argument to the template indicates the 'type' returned by the rule.  This defines the type of qi::_val
+		
+
 			double Emc2Units(const double value_in_parse_units)
 			{
 				double value_in_mm = value_in_parse_units * this->units;
@@ -637,6 +707,11 @@ template <typename Iter, typename Skipper = qi::blank_type>
 				}
 			}
 
+			// The +(qi::char_) rule produces a std::vector<char> argument.  Convert that into
+			// a std::string and then add the rule 'by name'.  i.e. use the Variables::Hash() method
+			// to produce an integer that represents this 'name' and add the symbol against
+			// that integer.  Return the integer used as the symbol ID in the returned_symbol_id
+			// argument so that it's assigned to the qi::_val variable within the grammar.
 			void AddSymbolByName( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, std::vector<char> name )
 			{
 				std::string _name;
@@ -672,24 +747,24 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			
 
 
-			void LHSequivalenttoRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+			void LHSequivalenttoRHS(bool & returned_boolean, const int lhs, const int rhs)
 			{
-				returned_symbol_id = (( variables[lhs] == variables[rhs] )?1:0);
+				returned_boolean = ( variables[lhs] == variables[rhs] );
 			}
 
-			void LHSnotequaltoRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+			void LHSnotequaltoRHS(bool & returned_boolean, const int lhs, const int rhs)
 			{
-				returned_symbol_id = (( variables[lhs] != variables[rhs] )?1:0);
+				returned_boolean = ( variables[lhs] != variables[rhs] );
 			}
 
-			void LHSgreaterthanRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+			void LHSgreaterthanRHS(bool & returned_boolean, const int lhs, const int rhs)
 			{
-				returned_symbol_id = (( variables[lhs] > variables[rhs] )?1:0);
+				returned_boolean = ( variables[lhs] > variables[rhs] );
 			}
 
-			void LHSlessthanRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+			void LHSlessthanRHS(bool & returned_boolean, const int lhs, const int rhs)
 			{
-				returned_symbol_id = (( variables[lhs] < variables[rhs] )?1:0);
+				returned_boolean = ( variables[lhs] < variables[rhs] );
 			}
 
 
@@ -895,7 +970,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 				if (parameter_offset >= 9)
 				{
-					printf("Parameter offset must be less than 9.  It is %d instead\n", parameter_offset);
+					qDebug("Parameter offset must be less than 9.  It is %d instead\n", parameter_offset);
 					return( HeeksUnits(value_in_emc2_units) );
 				}
 
@@ -920,17 +995,26 @@ template <typename Iter, typename Skipper = qi::blank_type>
 				return(HeeksUnits(value_in_emc2_units - g54_offset + variables[name] + tool_length_offset));
 			}
 
+			// Utility method for easy shorthand later.
+			bool Specified(const char name) const
+			{
+				if (motion_arguments.find(name) == motion_arguments.end()) return(false);
+				return(true);
+			}
 
 			/**
-				We have received an 'end of block' character (a newline character).  Take all the settings we've found for
-				this block and add the XML describing them. This includes both a verbatim copy of the original GCode line
-				(taken from the g_svLines cache) and the various line/arc (etc.) elements that will allow Heeks to draw
-				the path's meaning.
+				We've accumulated all the command line arguments as well as the statement
+				type for this line (block).  Go ahead and adjust any of the command line
+				arguments based on current machine settings and generate the graphics
+				that represent this tool movement.
 			 */
-			void AddToHeeks()
+			void ProcessBlock()
 			{
-
-				if (this->statement_type == stUndefined)
+				qDebug("Processing block\n");
+				Print();
+				ResetForEndOfBlock();
+	
+				if (this->statement_type == LinuxCNC::stUndefined)
 				{
 					switch (this->previous_statement_type)
 					{
@@ -938,107 +1022,100 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						// that command again in the next block.  We could just be given the next
 						// set of coordinates for the same command.  In this case, keep the
 						// statement type as it is.  If another is seen, it will be overridden.
-						case stProbe:
-						case stFeed:
-						case stArcClockwise:
-						case stArcCounterClockwise:
-						case stDrilling:
-						case stBoring:
-						case stTapping:
+						case LinuxCNC::stProbe:
+						case LinuxCNC::stFeed:
+						case LinuxCNC::stArcClockwise:
+						case LinuxCNC::stArcCounterClockwise:
+						case LinuxCNC::stDrilling:
+						case LinuxCNC::stBoring:
+						case LinuxCNC::stTapping:
 							this->statement_type = this->previous_statement_type;	// Reinstate the previous statement type.
 						break;
 					}
 				} // End if - then
 
 
-				if (::size_t(this->line_offset) < g_svLines.size())
+				if (::size_t(this->line_offset) < this->machine_program->getMachineProgram()->size())
 				{
-					xml << _T("<ncblock>\n");
-
-					// See if the line number is the first part of the line.  If so, colour it.
-					if ((strlen(this->line_number) > 0) && (g_svLines[this->line_offset].find(this->line_number) == 0))
-					{
-						xml << _T("<text col=\"blocknum\">") << Ctt(this->line_number) << _T("</text>\n");
-						xml << _T("<text><![CDATA[ ]]></text>\n");
-						std::string value = XmlData(g_svLines[this->line_offset].c_str());
-						value.erase(0, strlen(this->line_number) );
-						xml << _T("<text col=\"") << ColourForStatementType(this->statement_type) << _T("\">") << Ctt(value.c_str()) << _T("</text>\n");
-					}
-					else
-					{
-						xml << _T("<text col=\"") << ColourForStatementType(this->statement_type) << _T("\">") << Ctt(XmlData(g_svLines[this->line_offset].c_str()).c_str()) << _T("</text>\n");
-					}
+					GCode::GraphicalReference graphics(this->machine_program);
+					graphics.Index( this->line_offset );
+					graphics.CoordinateSystem(this->modal_coordinate_system);
 
 					switch (this->statement_type)
 					{
-					case stUndefined:
+					case LinuxCNC::stUndefined:
 						break;
 
-					case stDataSetting:
+					case LinuxCNC::stDataSetting:
 						// The G10 statement has been specified.  Look at the L argument to see what needs to be set.
-						if ((this->l_specified) && (this->p_specified))
+						if (Specified('l') && Specified('p'))
 						{
-							if (this->l == 20)
+							if (this->motion_arguments['l'] == 20)
 							{
 								// We need to make the current coordinate be whatever the arguments say they are.  i.e.
 								// adjust the appropriate coordinate system offset accordingly.
 
-								int coordinate_system = this->p;
+								int coordinate_system = this->motion_arguments['p'];
 
-								if (this->x_specified)
+								if (Specified('x'))
 								{
 									int parameter_offset = 0;	// x
-									int coordinate_system_offset = eG54VariableBase + ((this->p - 1) * 20);
+									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->motion_arguments['p'] - 1) * 20);
 									int name = coordinate_system_offset + parameter_offset;
 									double offset_in_heeks_units = HeeksUnits( variables[name] );
-									double offset_in_emc2_units = Emc2Units( this->x ) - variables[name];
+									double offset_in_emc2_units = Emc2Units( this->motion_arguments['x'] ) - variables[name];
 									variables[name] = variables[name] + offset_in_emc2_units;
 								}
 
-								if (this->y_specified)
+								if (Specified('y'))
 								{
 									int parameter_offset = 1;	// y
-									int coordinate_system_offset = eG54VariableBase + ((this->p - 1) * 20);
+									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->motion_arguments['p'] - 1) * 20);
 									int name = coordinate_system_offset + parameter_offset;
 									double offset_in_heeks_units = HeeksUnits( variables[name] );
-									double offset_in_emc2_units = Emc2Units( this->y ) - variables[name];
+									double offset_in_emc2_units = Emc2Units( this->motion_arguments['y'] ) - variables[name];
 									variables[name] = variables[name] + offset_in_emc2_units;
 								}
 
-								if (this->z_specified)
+								if (this->Specified('z'))
 								{
 									int parameter_offset = 2;	// z
-									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->p - 1) * 20);
+									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->motion_arguments['p'] - 1) * 20);
 									int name = coordinate_system_offset + parameter_offset;
 									double offset_in_heeks_units = HeeksUnits( variables[name] );
-									double offset_in_emc2_units = Emc2Units( this->z ) - variables[name];
+									double offset_in_emc2_units = Emc2Units( this->motion_arguments['z'] ) - variables[name];
 									variables[name] = variables[name] + offset_in_emc2_units;
 								}
 							}
 						}
 						break;
 
-					case stToolLengthEnabled:
+					case LinuxCNC::stToolLengthEnabled:
 						// The Z parameters given determine where we should think
 						// we are right now.
 						// this->tool_length_offset = this->k - ParseUnits(variables[eG54VariableBase+2]);
+						/*
 						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 							<< _T("<line z=\"") << adjust(2,this->z) << _T("\" ")
 							<< _T("/>\n")
 							<< _T("</path>\n");
+							*/
 						break;
 
-					case stToolLengthDisabled:
+					case LinuxCNC::stToolLengthDisabled:
 						// The Z parameters given determine where we should think
 						// we are right now.
 						this->tool_length_offset = 0.0;
+						/*
 						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 							<< _T("<line z=\"") << adjust(2,this->previous[2]) << _T("\" ")
 							<< _T("/>\n")
 							<< _T("</path>\n");
+							*/
 						break;
 
-					case stRapid:
+					case LinuxCNC::stRapid:
+						/*
 						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 							<< _T("<line ");
 						if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
@@ -1046,9 +1123,11 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
 						xml << _T("/>\n")
 							<< _T("</path>\n");
+							*/
 						break;
 
-					case stFeed:
+					case LinuxCNC::stFeed:
+						/*
 						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 							<< _T("<line ");
 						if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
@@ -1056,15 +1135,17 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
 						xml << _T("/>\n")
 							<< _T("</path>\n");
+							*/
 						if (this->feed_rate <= 0.0) 
 						{
-							wxString warning;
-							warning << _("Zero feed rate found for feed movement - line ") << Ctt(this->line_number) << _(" GCode ") << Ctt(g_svLines[this->line_offset].c_str());
-							popup_warnings.insert(warning);
+							QString warning;
+							warning = QString::fromAscii("Zero feed rate found for feed movement - line ") + this->line_number;
+							pLinuxCNC->AddWarning(warning);
 						}
 						break;
 
-					case stProbe:
+					case LinuxCNC::stProbe:
+						/*
 						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 							<< _T("<line ");
 						if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
@@ -1072,25 +1153,32 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
 						xml << _T("/>\n")
 							<< _T("</path>\n");
+							*/
 
 						// Assume that the furthest point of probing tripped the switch.  Store this location
 						// as though we found our probed object here.
-						variables[LinuxCNC::eG38_2VariableBase + 0] = ParseUnitsFromHeeksUnits(adjust(0,this->x));
-						variables[LinuxCNC::eG38_2VariableBase + 1] = ParseUnitsFromHeeksUnits(adjust(1,this->y));
-						variables[LinuxCNC::eG38_2VariableBase + 2] = ParseUnitsFromHeeksUnits(adjust(2,this->z));
+						variables[LinuxCNC::eG38_2VariableBase + 0] = ParseUnitsFromHeeksUnits(adjust(0,this->motion_arguments['x']));
+						variables[LinuxCNC::eG38_2VariableBase + 1] = ParseUnitsFromHeeksUnits(adjust(1,this->motion_arguments['y']));
+						variables[LinuxCNC::eG38_2VariableBase + 2] = ParseUnitsFromHeeksUnits(adjust(2,this->motion_arguments['z']));
 
-						variables[LinuxCNC::eG38_2VariableBase + 3] = adjust(3,this->a);
-						variables[LinuxCNC::eG38_2VariableBase + 4] = adjust(4,this->b);
-						variables[LinuxCNC::eG38_2VariableBase + 5] = adjust(5,this->c);
+						variables[LinuxCNC::eG38_2VariableBase + 3] = adjust(3,this->motion_arguments['a']);
+						variables[LinuxCNC::eG38_2VariableBase + 4] = adjust(4,this->motion_arguments['b']);
+						variables[LinuxCNC::eG38_2VariableBase + 5] = adjust(5,this->motion_arguments['c']);
 
-						variables[LinuxCNC::eG38_2VariableBase + 6] = ParseUnitsFromHeeksUnits(adjust(6,this->u));
-						variables[LinuxCNC::eG38_2VariableBase + 7] = ParseUnitsFromHeeksUnits(adjust(7,this->v));
-						variables[LinuxCNC::eG38_2VariableBase + 8] = ParseUnitsFromHeeksUnits(adjust(8,this->w));
+						variables[LinuxCNC::eG38_2VariableBase + 6] = ParseUnitsFromHeeksUnits(adjust(6,this->motion_arguments['u']));
+						variables[LinuxCNC::eG38_2VariableBase + 7] = ParseUnitsFromHeeksUnits(adjust(7,this->motion_arguments['v']));
+						variables[LinuxCNC::eG38_2VariableBase + 8] = ParseUnitsFromHeeksUnits(adjust(8,this->motion_arguments['w']));
 
-						if (this->feed_rate <= 0.0) popup_warnings.insert(_("Zero feed rate found for probe movement"));
+						if (this->feed_rate <= 0.0) 
+						{
+							QString warning;
+							warning = QString::fromAscii("Zero feed rate found for probe movement - line ") + this->line_number;
+							pLinuxCNC->AddWarning(warning);
+						}
 						break;
 
-					case stArcClockwise:
+					case LinuxCNC::stArcClockwise:
+						/*
 						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 							<< _T("<arc x=\"") << adjust(0,this->x) << _T("\" ")
 							<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
@@ -1101,13 +1189,13 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							<< _T("d=\"-1\" ")
 							<< _T("/>\n")
 							<< _T("</path>\n");
-
+						*/
 							{
 								// Confirm that the previous location, the center-point and the final location all make
 								// sense for an arc movement.  If we have a rounding error then we want to know it.
-								gp_Pnt start(this->previous[0], this->previous[1], this->previous[2]);
-								gp_Pnt end(this->x, this->y, this->z);
-								gp_Pnt centre(this->i + this->previous[0], this->j + this->previous[1], this->k + this->previous[2]);
+								gp_Pnt start(this->previous_motion_argument['x'], this->previous_motion_argument['y'], this->previous_motion_argument['z']);
+								gp_Pnt end(this->motion_argument['x'], this->motion_argument['y'], this->motion_argument['z']);
+								gp_Pnt centre(this->motion_argument['i'] + this->previous_motion_argument['x'], this->motion_argument['j'] + this->previous_motion_argument['y'], this->motion_argument['k'] + this->previous_motion_argument['z']);
 
 								switch (this->plane)
 								{
@@ -1148,7 +1236,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							if (this->feed_rate <= 0.0) popup_warnings.insert(_("Zero feed rate found for arc movement"));
 						break;
 
-					case stArcCounterClockwise:
+					case LinuxCNC::stArcCounterClockwise:
 						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 							<< _T("<arc x=\"") << adjust(0,this->x) << _T("\" ")
 							<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
@@ -1205,8 +1293,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							if (this->feed_rate <= 0.0) popup_warnings.insert(_("Zero feed rate found for arc movement"));
 						break;
 
-					case stBoring:
-					case stDrilling:
+					case LinuxCNC::stBoring:
+					case LinuxCNC::stDrilling:
 						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 							<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
 							<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
@@ -1228,7 +1316,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						if (this->feed_rate <= 0.01) popup_warnings.insert(_("Zero feed rate found for drilling movement"));
 						break;
 
-					case stTapping:
+					case LinuxCNC::stTapping:
 						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 							<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
 							<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
@@ -1251,7 +1339,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						break;
 
 
-					case stG28:
+					case LinuxCNC::stG28:
 						// The saved position can be found in variables 5161 to 5169.
 						this->x = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 0 ] - variables[ LinuxCNC::eG54VariableBase + 0 ]);
 						this->y = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 1 ] - variables[ LinuxCNC::eG54VariableBase + 1 ]);
@@ -1271,7 +1359,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							<< _T("</path>\n");
 						break;
 
-					case stG30:
+					case LinuxCNC::stG30:
 						// The saved position can be found in variables 5181 to 5189.
 						this->x = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 0 ] - variables[ eG54VariableBase + 0 ]);
 						this->y = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 1 ] - variables[ eG54VariableBase + 1 ]);
@@ -1291,7 +1379,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							<< _T("</path>\n");
 						break;
 
-					case stG92:
+					case LinuxCNC::stG92:
 						// Make the axis values just read in become the current machine position by
 						// figuring out what these values are (in machine coordinates) and adding
 						// the offsets into a new set of coordinate system variables.  That's so
@@ -1314,7 +1402,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						variables[LinuxCNC::eG92VariableBase + 8] = Emc2Units(this->previous[8]) - Emc2Units(this->w);
 						break;
 
-					case stG92_1:
+					case LinuxCNC::stG92_1:
 						// Turn off the 'temporary coordinate system' functionality.
 						this->current_coordinate_system = csUndefined;
 
@@ -1329,17 +1417,17 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 						break;
 
-					case stG92_2:
+					case LinuxCNC::stG92_2:
 						// Disable the G92 offset function but don't reset the offsets in the memory locations.
 						variables[eG92Enabled] = 0.0;
 						break;
 
-					case stG92_3:
+					case LinuxCNC::stG92_3:
 						// Re-Enable the G92 offset function and don't change the offsets in the memory locations.
 						variables[eG92Enabled] = 1.0;
 						break;
 
-					case stAxis:
+					case LinuxCNC::stAxis:
 						// Nothing extra special to do here.
 						break;
 
@@ -1435,19 +1523,25 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 };
 
-GCode::Geometry_t LinuxCNC::Parse(const char *program)
+bool LinuxCNC::Parse()
 {
-	// from http://stackoverflow.com/questions/12208705/add-to-a-spirit-qi-symbol-table-in-a-semantic-action
-	// and http://stackoverflow.com/questions/9139015/parsing-mixed-values-and-key-value-pairs-with-boost-spirit
+	// The object exists...
+	if (! this->machine_program)
+	{
+		return(false);
+	}
 
-	Geometry_t tool_movement_graphics;
-	linuxcnc_grammar<std::string::const_iterator> parser(&tool_movement_graphics);
+	// The QStringList within the object exists...
+	if (! this->machine_program->getMachineProgram())
+	{
+		return(false);
+	}
 
-	// const std::string gcode = "N220 g0 X [1.0 + 0.1] Y [2.2 - 0.1] Z[[3.3 * 2]/7.0] \n"
-	// 						  "N230 g01 X abs[-4.4] Y ATAN[4]/[3]\n";
-	// const std::string gcode = "N220 G0 \n";
-	const std::string gcode(program);
+	QString str;
+	str << *(this->machine_program);	// Convert from QStringList to QString
+	const std::string gcode(str.toAscii().constData());
 
+	linuxcnc_grammar<std::string::const_iterator> parser(this);
 	std::string::const_iterator begin = gcode.begin();
 	
 	// Parse the GCode using the linuxcnc grammar.  The qi::blank skipper will skip all whitespace
@@ -1457,7 +1551,6 @@ GCode::Geometry_t LinuxCNC::Parse(const char *program)
 	if ((qi::phrase_parse(begin, gcode.end(), parser, qi::blank)) && (begin == gcode.end()))
 	{
 		qDebug("last line number %d\n", parser.line_number );
-		qDebug("Generated %d graphical elements representing the tool movements\n", tool_movement_graphics.size());
 	}
 	else
 	{
@@ -1469,5 +1562,5 @@ GCode::Geometry_t LinuxCNC::Parse(const char *program)
 		}
 	}
 
-	return(tool_movement_graphics);
+	return(begin == gcode.end());
 }

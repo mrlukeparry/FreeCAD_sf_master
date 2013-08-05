@@ -41,12 +41,63 @@ using namespace Cam;
 // to offer.  If we fail to parse the GCode, we will want to know why.
 std::ostringstream CamExport GCode_GrammarDebugOutputBuffer;
 
-GCode::GCode()
+GCode::GCode(MachineProgram *machine_program)
 {
+	if (machine_program != NULL)
+	{
+		this->machine_program = machine_program->grab();	// Let the MachineProgram object know we're watching.
+	}
+	else
+	{
+		this->machine_program = NULL;	// Make sure we know we don't have a valid pointer.
+	}
 }
 
 GCode::~GCode()
 {
+	if (this->machine_program != NULL)
+	{
+		this->machine_program->release();
+		this->machine_program = NULL;
+	}
 }
 
+void GCode::AddWarning(const QString warning)
+{
+	warnings << warning;
+}
+
+GCode::GraphicalReference::GraphicalReference(MachineProgram *machine_program)
+{
+	this->machine_program = machine_program->grab();
+	this->part_feature = NULL;
+}
+
+GCode::GraphicalReference::~GraphicalReference()
+{
+	this->machine_program->release();
+}
+
+GCode::GraphicalReference::GraphicalReference( const GCode::GraphicalReference & rhs )
+{
+	if (this != &rhs)
+	{
+		this->machine_program = rhs.machine_program->grab();
+		this->machine_program_index = rhs.machine_program_index;
+		this->part_feature = rhs.part_feature;
+	}
+}
+
+GCode::GraphicalReference & GCode::GraphicalReference::operator=( const GCode::GraphicalReference & rhs )
+{
+	if (this != &rhs)
+	{
+		if (this->machine_program) this->machine_program->release();
+		this->machine_program = rhs.machine_program->grab();
+		this->machine_program_index = rhs.machine_program_index;
+		this->part_feature = rhs.part_feature;
+	}
+
+	return(*this);
+}
 
