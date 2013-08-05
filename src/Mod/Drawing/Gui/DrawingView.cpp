@@ -290,21 +290,27 @@ void DrawingView::attachPageObject(Drawing::FeaturePage *pageFeature)
     pageFeat.setValue(dynamic_cast<App::DocumentObject*>(pageFeature));
 }
 
-void DrawingView::attachView(App::DocumentObject *obj)
+int DrawingView::attachView(App::DocumentObject *obj)
 {
+    QGraphicsItemView *qview = 0;
     if(obj->getTypeId().isDerivedFrom(Drawing::FeatureViewSection::getClassTypeId()) ) {
         Drawing::FeatureViewSection *viewSect = dynamic_cast<Drawing::FeatureViewSection *>(obj);
-        m_view->addViewSection(viewSect);
+        qview = m_view->addViewSection(viewSect);
     } else if (obj->getTypeId().isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()) ) {
         Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(obj);
-        m_view->addViewPart(viewPart);
+        qview = m_view->addViewPart(viewPart);
     } else if (obj->getTypeId().isDerivedFrom(Drawing::FeatureViewCollection::getClassTypeId()) ) {
         Drawing::FeatureViewCollection *collection = dynamic_cast<Drawing::FeatureViewCollection *>(obj);
-        m_view->addFeatureView(collection);
+        qview =  m_view->addFeatureView(collection);
     } else if(obj->getTypeId().isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()) ) {
         Drawing::FeatureViewDimension *viewDim = dynamic_cast<Drawing::FeatureViewDimension *>(obj);
-        m_view->addViewDimension(viewDim);
+        qview = m_view->addViewDimension(viewDim);
     }
+
+    if(!qview)
+        return -1;
+    else
+        return m_view->getViews().size();
 }
 
 void DrawingView::preSelectionChanged(const QPoint &pos)
@@ -812,6 +818,7 @@ void DrawingView::print(QPrinter* printer)
     p->begin(printer);
 
     this->m_view->scene()->render(p);
+
     p->end();
     // Reset
     this->m_view->toggleEdit(true);

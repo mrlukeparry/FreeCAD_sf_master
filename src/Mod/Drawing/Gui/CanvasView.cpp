@@ -49,9 +49,11 @@
 
 #include "../App/Geometry.h"
 #include "../App/FeaturePage.h"
+#include "../App/FeatureViewCollection.h"
 #include "../App/FeatureViewPart.h"
 #include "../App/FeatureViewDimension.h"
 
+#include "QGraphicsItemViewCollection.h"
 #include "QGraphicsItemViewPart.h"
 #include "QGraphicsItemViewSection.h"
 #include "QGraphicsItemViewDimension.h"
@@ -114,56 +116,124 @@ void CanvasView::drawBackground(QPainter *p, const QRectF &)
 
 }
 
-void CanvasView::addViewPart(Drawing::FeatureViewPart *part)
-{
-    QGraphicsItemViewPart *group = new QGraphicsItemViewPart(QPoint(0,0), this->scene());
-    group->setViewPartFeature(part);
-    views.push_back(group);
+int CanvasView::addView(QGraphicsItemView * view) {
+    views.push_back(view);
+
+    // Find if it belongs to a parent
+    QGraphicsItemView *parent = 0;
+    parent = this->findParent(view);
+
+    if(parent) {
+        // Transfer the child vierw to the parent
+        view->setPos(parent->pos());
+        parent->addToGroup(view);
+        //update coordinate system
+    }
+    return views.size();
 }
 
-void CanvasView::addViewSection(Drawing::FeatureViewPart *part)
+QGraphicsItemView * CanvasView::addViewPart(Drawing::FeatureViewPart *part)
 {
-    QGraphicsItemViewSection *group = new QGraphicsItemViewSection(QPoint(0,0), this->scene());
-    group->setViewPartFeature(part);
-    views.push_back(group);
+    QGraphicsItemViewPart *viewPart = new QGraphicsItemViewPart(QPoint(0,0), this->scene());
+    viewPart->setViewPartFeature(part);
+
+    this->addView(viewPart);
+    return viewPart;
 }
 
-void CanvasView::addFeatureView(Drawing::FeatureView *view)
+QGraphicsItemView * CanvasView::addViewSection(Drawing::FeatureViewPart *part)
+{
+    QGraphicsItemViewSection *viewSection = new QGraphicsItemViewSection(QPoint(0,0), this->scene());
+    viewSection->setViewPartFeature(part);
+
+    this->addView(viewSection);
+    return viewSection;
+}
+
+QGraphicsItemView * CanvasView::addFeatureView(Drawing::FeatureView *view)
 {
     // This essentially adds a null view feature to ensure view size is consistent
     QGraphicsItemView *qview = new  QGraphicsItemView(QPoint(0,0), this->scene());
     qview->setViewFeature(view);
-    views.push_back(qview);
+
+    this->addView(qview);
+    return qview;
 }
 
-void CanvasView::addViewDimension(Drawing::FeatureViewDimension *dim)
+QGraphicsItemView * CanvasView::addFeatureViewCollection(Drawing::FeatureViewCollection *view)
+{
+    // This essentially adds a null view feature to ensure view size is consistent
+    QGraphicsItemViewCollection *qview = new  QGraphicsItemViewCollection(QPoint(0,0), this->scene());
+    qview->setViewFeature(view);
+
+    this->addView(qview);
+    return qview;
+}
+
+// TODO change to annotation object
+QGraphicsItemView * CanvasView::addViewDimension(Drawing::FeatureViewDimension *dim)
 {
     QGraphicsItemViewDimension *dimGroup = new QGraphicsItemViewDimension(QPoint(0,0), this->scene());
     dimGroup->setViewPartFeature(dim);
-    std::vector<App::DocumentObject *> objs = dim->References.getValues();
 
-    if(objs.size() > 0) {
-        // Attach the dimension to the first object's group
-        for(std::vector<QGraphicsItemView *>::iterator it = views.begin(); it != views.end(); ++it) {
-            Drawing::FeatureView *viewObj = (*it)->getViewObject();
-            if(viewObj == objs.at(0)) {
-                // Found dimensions parent view reference
-                QGraphicsItemView *view = (*it);
+    // The dimensions parent couldn't be found. Add for now.
+    this->addView(dimGroup);
+    return dimGroup;
+}
 
-                //Must transfer to new coordinate system of parent view
-                dimGroup->setPos(view->pos());
-                view->addToGroup(dimGroup);
+QGraphicsItemView * CanvasView::findView(App::DocumentObject *obj) const
+{
+   const std::vector<QGraphicsItemView *> qviews = this->views;
+   for(std::vector<QGraphicsItemView *>::const_iterator it = qviews.begin(); it != qviews.end(); ++it) {
+        Drawing::FeatureView *fview = 0;
+        fview = (*it)->getViewObject();
+        if(strcmp(obj->getNameInDocument(), fview->getNameInDocument()))
+              return *it;
+    }
+    return 0;
+}
 
+QGraphicsItemView * CanvasView::findParent(QGraphicsItemView *view) const
+{
+    const std::vector<QGraphicsItemView *> qviews = this->views;
+    Drawing::FeatureView *myView = view->getViewObject();
+
+    //If type is dimension we check references first
+    // Todo change this to an annotation object later
+    Drawing::FeatureViewDimension *dim = 0;
+    dim = dynamic_cast<Drawing::FeatureViewDimension *>(myView);
+
+    if(dim) {
+        std::vector<App::DocumentObject *> objs = dim->References.getValues();
+
+        if(objs.size() > 0) {
+            // Attach the dimension to the first object's group
+            for(std::vector<QGraphicsItemView *>::const_iterator it = qviews.begin(); it != qviews.end(); ++it) {
+                Drawing::FeatureView *viewObj = (*it)->getViewObject();
+                if(viewObj == objs.at(0)) {
+                    return *it;
+                }
             }
         }
     }
 
-    // The dimensions parent couldn't be found. Add for now.
-    views.push_back(dimGroup);
-    return;
+    // Check if part of view collection
+    for(std::vector<QGraphicsItemView *>::const_iterator it = qviews.begin(); it != qviews.end(); ++it) {
+        QGraphicsItemViewCollection *grp = 0;
+        grp = dynamic_cast<QGraphicsItemViewCollection *>(*it);
+        if(grp) {
+            Drawing::FeatureViewCollection *collection = dynamic_cast<Drawing::FeatureViewCollection *>(view->getViewObject());
+            std::vector<App::DocumentObject *> objs = collection->Views.getValues();
+            for( std::vector<App::DocumentObject *>::iterator it = objs.begin(); it != objs.end(); ++it) {
+                if(strcmp(myView->getNameInDocument(), (*it)->getNameInDocument()) == 0)
+                    return grp;
+            }
+        }
+     }
+
+    // Not found a parent
+    return 0;
 }
-
-
 void CanvasView::setPageFeature(Drawing::FeaturePage *page)
 {
     this->pageFeat = page;

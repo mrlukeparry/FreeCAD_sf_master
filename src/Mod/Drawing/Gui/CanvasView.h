@@ -48,12 +48,17 @@ public:
     void setRenderer(RendererType type = Native);
     void drawBackground(QPainter *p, const QRectF &rect);
 
-    void addViewDimension(Drawing::FeatureViewDimension *dim);
-    void addViewPart(Drawing::FeatureViewPart *part);
-    void addViewSection(Drawing::FeatureViewPart *part);
-    void addFeatureView(Drawing::FeatureView *view);
+    QGraphicsItemView * addViewDimension(Drawing::FeatureViewDimension *dim);
+    QGraphicsItemView * addViewPart(Drawing::FeatureViewPart *part);
+    QGraphicsItemView * addViewSection(Drawing::FeatureViewPart *part);
+    QGraphicsItemView * addFeatureView(Drawing::FeatureView *view);
+    QGraphicsItemView * addFeatureViewCollection(Drawing::FeatureViewCollection *view);
+
+    QGraphicsItemView * findView(App::DocumentObject *obj) const;
+    QGraphicsItemView * findParent(QGraphicsItemView *) const;
 
     const std::vector<QGraphicsItemView *> & getViews() const { return views; }
+    int addView(QGraphicsItemView * view);
     void setViews(const std::vector<QGraphicsItemView *> &view) {views = view; }
     void setPageFeature(Drawing::FeaturePage *page);
 

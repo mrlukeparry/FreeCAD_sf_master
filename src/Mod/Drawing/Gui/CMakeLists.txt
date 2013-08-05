@@ -27,6 +27,7 @@ set(DrawingGui_MOC_HDRS
     CanvasView.h
     DrawingView.h
     QGraphicsItemView.h
+    QGraphicsItemViewCollection.h
     QGraphicsItemViewDimension.h
     QGraphicsItemViewPart.h
     QGraphicsItemViewSection.h
@@ -77,6 +78,8 @@ SET(DrawingGuiView_SRCS
     QGraphicsItemFace.h
     QGraphicsItemVertex.cpp
     QGraphicsItemVertex.h
+    QGraphicsItemViewCollection.cpp
+    QGraphicsItemViewCollection.h
     QGraphicsItemViewDimension.cpp
     QGraphicsItemViewDimension.h
     QGraphicsItemViewPart.cpp

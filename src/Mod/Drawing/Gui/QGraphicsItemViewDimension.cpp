@@ -94,6 +94,7 @@ QVariant QGraphicsItemDatumLabel::itemChange(GraphicsItemChange change, const QV
 
     return QGraphicsItem::itemChange(change, value);
 }
+
 void QGraphicsItemDatumLabel::updatePos()
 {
     this->posX = this->x() + this->boundingRect().width() / 2.;
@@ -165,7 +166,7 @@ QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraph
     this->datumLabel = dLabel;
 
     this->pen.setCosmetic(true);
-    this->pen.setWidthF(2);
+    this->pen.setWidthF(1.);
 
     this->addToGroup(arrows);
     this->addToGroup(datumLabel);
