@@ -139,6 +139,39 @@ int FeatureViewOrthographic::addView(const char *viewProjType)
     return -1;
 }
 
+
+int FeatureViewOrthographic::removeView(const char *viewProjType)
+{
+    // Find a more elegant way of validating the type
+    if(strcmp(viewProjType, "Front")  == 0 ||
+       strcmp(viewProjType, "Left")   == 0 ||
+       strcmp(viewProjType, "Right")  == 0 ||
+       strcmp(viewProjType, "Top")    == 0 ||
+       strcmp(viewProjType, "Bottom") == 0 ||
+       strcmp(viewProjType, "Rear")  == 0 ) {
+
+        if(!hasView(viewProjType)) {
+            throw Base::Exception("The orthographic projection doesn't exist in the group");
+        }
+
+        // Iterate through the child views and find the projection type
+        const std::vector<App::DocumentObject *> &views = Views.getValues();
+        for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
+
+            Drawing::FeatureView *view = dynamic_cast<Drawing::FeatureView *>(*it);
+            if(view->getClassTypeId() == Drawing::FeatureOrthoView::getClassTypeId()) {
+                Drawing::FeatureOrthoView *orthoView = dynamic_cast<Drawing::FeatureOrthoView *>(*it);
+
+                if(strcmp(viewProjType, orthoView->Type.getValueAsString()) == 0)
+                    // Remove from the document
+                    this->getDocument()->remObject((*it)->getNameInDocument());
+                    return views.size();
+            }
+        }
+    }
+    return -1;
+}
+
 void FeatureViewOrthographic::onDocumentRestored()
 {
     this->execute();

@@ -58,6 +58,7 @@ public:
     void setViewPartFeature(Drawing::FeatureViewPart *obj);
 
     void toggleVertices(bool state);
+    void toggleBorder(bool state = true) { this->borderVisible = state; }
     virtual void updateView(bool update = false);
     virtual void draw();
 
@@ -82,6 +83,7 @@ protected:
                                    double x, double y,
                                    double curx, double cury) const;
 
+
   void drawViewPart();
   void drawBorder(QPainter *painter);
 
@@ -93,6 +95,7 @@ protected:
 protected:
   QPen pen;
   QRectF bbox;
+  bool borderVisible;
 };
 
 } // namespace DrawingViewGui

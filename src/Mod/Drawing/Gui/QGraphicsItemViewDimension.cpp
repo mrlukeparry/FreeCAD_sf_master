@@ -491,6 +491,7 @@ void QGraphicsItemViewDimension::draw()
         Base::Vector3d del2 = (par2-par1);
         float dot1 = del1.x * dir.x + del1.y * dir.y;
         float dot2 = del2.x * dir.x + del2.y * dir.y;
+
         //Compare to see if datum label is larger than dimension
         if (dot1 > (par4 - par1).Length()) {
             // Increase Margin to improve visability
@@ -540,6 +541,7 @@ void QGraphicsItemViewDimension::draw()
         lbl->setTransformOriginPoint(bbX / 2, bbY /2);
         lbl->setRotation(angle * 180 / M_PI);
 
+
         if(arw.size() != 2) {
             prepareGeometryChange();
             for(std::vector<QGraphicsItem *>::iterator it = arw.begin(); it != arw.end(); ++it) {
@@ -565,7 +567,9 @@ void QGraphicsItemViewDimension::draw()
         QGraphicsItemArrow *ar1 = dynamic_cast<QGraphicsItemArrow *>(arw.at(0));
         QGraphicsItemArrow *ar2 = dynamic_cast<QGraphicsItemArrow *>(arw.at(1));
 
+        angle = atan2f(dir[1],dir[0]);
         float arrowAngle = angle * 180 / M_PI;
+        arrowAngle -= 180.;
         if(flipTriang){
             ar1->setRotation(arrowAngle + 180.);
             ar2->setRotation(arrowAngle + 180.);

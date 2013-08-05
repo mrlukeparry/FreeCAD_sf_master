@@ -581,7 +581,7 @@ void CmdDrawingOrthoViews::activated(int iMsg)
 
     openCommand("Create Orthographic View");
     for (std::vector<App::DocumentObject*>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
-        std::string FeatName = getUniqueObjectName("View");
+        std::string FeatName = getUniqueObjectName("cView");
         doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewOrthographic','%s')",FeatName.c_str());
         doCommand(Doc,"App.activeDocument().%s.Source = App.activeDocument().%s",FeatName.c_str(),(*it)->getNameInDocument());
         doCommand(Doc,"App.activeDocument().%s.X = 0.0",    FeatName.c_str());

@@ -30,6 +30,7 @@
 # include <QGLWidget>
 # include <QGraphicsScene>
 # include <QGraphicsSvgItem>
+# include <QGraphicsEffect>
 # include <QMouseEvent>
 # include <QPainter>
 # include <QPaintEvent>
@@ -65,30 +66,52 @@ CanvasView::CanvasView(QWidget *parent)
     , m_renderer(Native)
     , m_backgroundItem(0)
     , m_outlineItem(0)
+    , drawBkg(true)
 {
     setScene(new QGraphicsScene(this));
     setTransformationAnchor(AnchorUnderMouse);
-//     setDragMode(ScrollHandDrag);
+    setDragMode(ScrollHandDrag);
 
     setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+
+    m_backgroundItem = new QGraphicsRectItem();
+    this->scene()->addItem(m_backgroundItem);
+
     // Prepare background check-board pattern
+    QLinearGradient gradient;
+    gradient.setStart(0, 0);
+    gradient.setFinalStop(0, this->height());
+    gradient.setColorAt(0., QColor(72, 72, 72));
+    gradient.setColorAt(1., QColor(150, 150, 150));
+    bkgBrush = new QBrush(QColor::fromRgb(70,70,70));
+/*
     QPixmap tilePixmap(64, 64);
     tilePixmap.fill(Qt::white);
     QPainter tilePainter(&tilePixmap);
     QColor color(220, 220, 220);
     tilePainter.fillRect(0, 0, 32, 32, color);
     tilePainter.fillRect(32, 32, 32, 32, color);
-    tilePainter.end();
+//    tilePainter.end();*/
 
-    setBackgroundBrush(tilePixmap);
+    resetCachedContent();
+}
+CanvasView::~CanvasView()
+{
+    delete bkgBrush;
+    delete m_backgroundItem;
 }
 
 void CanvasView::drawBackground(QPainter *p, const QRectF &)
 {
+    if(!this->drawBkg)
+        return;
+
     p->save();
     p->resetTransform();
-    p->drawTiledPixmap(viewport()->rect(), backgroundBrush().texture());
+    p->setBrush(*bkgBrush);
+    p->drawRect( viewport()->rect());
     p->restore();
+
 }
 
 void CanvasView::addViewPart(Drawing::FeatureViewPart *part)
@@ -141,6 +164,33 @@ void CanvasView::addViewDimension(Drawing::FeatureViewDimension *dim)
 }
 
 
+void CanvasView::setPageFeature(Drawing::FeaturePage *page)
+{
+    this->pageFeat = page;
+
+    QRectF paperRect;
+
+    float pageWidth  = this->pageFeat->Width.getValue();
+    float pageHeight = this->pageFeat->Height.getValue();
+
+    paperRect.setWidth(pageWidth);
+    paperRect.setHeight(pageHeight);
+    QBrush brush(Qt::white);
+
+    m_backgroundItem->setBrush(brush);
+    m_backgroundItem->setRect(paperRect);
+
+    QGraphicsDropShadowEffect *shadow = new QGraphicsDropShadowEffect();
+    shadow->setBlurRadius(10.0);
+    shadow->setColor(Qt::white);
+    shadow->setOffset(0,0);
+    //m_backgroundItem->setGraphicsEffect(shadow);
+
+    QRectF myRect = paperRect;
+    myRect.adjust(20,20,20,20);
+    this->setSceneRect(myRect);
+}
+
 void CanvasView::setRenderer(RendererType type)
 {
     m_renderer = type;
@@ -177,6 +227,28 @@ void CanvasView::setViewOutline(bool enable)
         return;
 
     m_outlineItem->setVisible(enable);
+}
+
+void CanvasView::toggleEdit(bool enable)
+{
+    QList<QGraphicsItem *> list = this->scene()->items();
+
+    for (QList<QGraphicsItem *>::iterator it = list.begin(); it != list.end(); ++it) {
+        QGraphicsItemView *itemView = dynamic_cast<QGraphicsItemView *>(*it);
+        if(itemView) {
+            QGraphicsItemViewPart *viewPart = dynamic_cast<QGraphicsItemViewPart *>(*it);
+            if(viewPart) {
+                viewPart->toggleVertices(enable);
+                viewPart->toggleBorder(enable);
+                setViewBackground(enable);
+            }
+            itemView->setSelected(false);
+        }
+        QGraphicsItem *item = dynamic_cast<QGraphicsItem *>(*it);
+        if(item) {
+            item->setCacheMode((enable) ? QGraphicsItem::DeviceCoordinateCache : QGraphicsItem::NoCache);
+        }
+    }
 }
 
 void CanvasView::paintEvent(QPaintEvent *event)

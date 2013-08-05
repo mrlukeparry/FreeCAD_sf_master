@@ -55,6 +55,7 @@
 #endif
 
 #include <Gui/Document.h>
+#include <Gui/Selection.h>
 #include <App/DocumentObject.h>
 #include <Base/Console.h>
 #include <Base/Stream.h>
@@ -284,6 +285,7 @@ void DrawingView::attachPageObject(Drawing::FeaturePage *pageFeature)
         attachView(*it);
     }
 
+    m_view->setPageFeature(pageFeature);
     // Save a link to the page feature - exclusivly one page per drawing view
     pageFeat.setValue(dynamic_cast<App::DocumentObject*>(pageFeature));
 }
@@ -510,6 +512,8 @@ void DrawingView::updateDrawing()
     const std::vector<QGraphicsItemView *> &views = m_view->getViews();
     Drawing::FeaturePage *pageFeature = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
     const std::vector<App::DocumentObject*> &grp = pageFeature->Views.getValues();
+
+    m_view->setPageFeature(pageFeature);
 
     // Count total number of children
     int groupCount = 0;
@@ -787,17 +791,33 @@ void DrawingView::printPreview()
     dlg.exec();
 }
 
+
+
 void DrawingView::print(QPrinter* printer)
 {
 #if 1
-    QPainter p(printer);
-    QRect rect = printer->pageRect();
-    this->m_view->scene()->render(&p, rect);
-    p.end();
+    Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
+
+
+    printer->setPaperSize(QSizeF(page->Width.getValue(), page->Height.getValue()), QPrinter::Millimeter);
+
+    QPainter *p = new QPainter();
+
+    bool block = this->blockConnection(true); // avoid to be notified by itself
+    Gui::Selection().clearSelection();
+
+    this->m_view->toggleEdit(false);
+
+    Gui::Selection().clearSelection();
+    p->begin(printer);
+
+    this->m_view->scene()->render(p);
+    p->end();
+    // Reset
+    this->m_view->toggleEdit(true);
+
 #else
-    printer->setResolution(QPrinter::HighResolution);
-    printer->setPageSize(QPrinter::A4);
-    QPainter painter(printer);
+
 
     // print, fitting the viewport contents into a full page
     m_view->render(&painter);

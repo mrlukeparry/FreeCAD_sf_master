@@ -52,11 +52,22 @@ PROPERTY_SOURCE(Drawing::FeaturePage, App::DocumentObjectGroup)
 
 const char *group = "Drawing view";
 
+const char* FeaturePage::OrientationEnums[]= {"Portrait",
+                                                   "Landscape",
+                                                   NULL};
+
 FeaturePage::FeaturePage(void)
 {
     static const char *group = "Drawing view";
     ADD_PROPERTY_TYPE(Template ,(""),group, (App::PropertyType) App::Prop_None,"Template for the page");
     ADD_PROPERTY_TYPE(Views    ,(0), group, (App::PropertyType)(App::Prop_None),"Attached Views");
+
+    // Physical Properties
+    ADD_PROPERTY_TYPE(Width,(2)        ,"Page",(App::PropertyType)(App::Prop_None),"Width (mm)");
+    ADD_PROPERTY_TYPE(Height,(7)       ,"Page",(App::PropertyType)(App::Prop_None),"Height(mm");
+    ADD_PROPERTY_TYPE(PaperSize,("A3") ,"Page",(App::PropertyType)(App::Prop_None),"Paper Format");
+    Orientation.setEnums(OrientationEnums);
+    ADD_PROPERTY(Orientation,((long)0));
 }
 
 FeaturePage::~FeaturePage()
@@ -103,7 +114,6 @@ int FeaturePage::addView(App::DocumentObject *docObj)
         Drawing::FeatureViewCollection *collection = dynamic_cast<Drawing::FeatureViewCollection *>(docObj);
         const std::vector<App::DocumentObject *> & views = collection->Views.getValues();
         for(std::vector<App::DocumentObject*>::const_iterator it = views.begin(); it != views.end(); ++it) {
-            Base::Console().Log("adding child view");
             this->addView(*it); // Recursively add child views
         }
     }

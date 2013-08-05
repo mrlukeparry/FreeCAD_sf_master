@@ -50,6 +50,7 @@ public:
     // Check if container has a view of a specific type
     bool hasView(const char *viewProjType);
     int  addView(const char *viewProjType);
+    int  removeView(const char *viewProjType);
 
     short mustExecute() const;
     /** @name methods overide Feature */

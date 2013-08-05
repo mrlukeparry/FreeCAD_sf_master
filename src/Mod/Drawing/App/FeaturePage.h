@@ -43,14 +43,20 @@ public:
     App::PropertyFile Template;
     App::PropertyLinkList Views;
 
+    // Page Physical Properties
+    App::PropertyFloat Width;
+    App::PropertyFloat Height;
+    App::PropertyEnumeration Orientation;
+    App::PropertyString PaperSize;
+
     /** @name methods overide Feature */
     //@{
     /// recalculate the Feature
     virtual App::DocumentObjectExecReturn *execute(void);
     //@}
-    
+
     int addView(App::DocumentObject *docObj);
-    
+
     short mustExecute() const;
 
     /// returns the type name of the ViewProvider
@@ -60,6 +66,9 @@ public:
 
 protected:
     void onChanged(const App::Property* prop);
+
+private:
+    static const char* OrientationEnums[];
 };
 
 

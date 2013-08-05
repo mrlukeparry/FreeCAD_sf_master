@@ -28,6 +28,7 @@
 namespace Drawing {
 class FeatureViewPart;
 class FeatureViewDimension;
+class FeaturePage;
 }
 
 namespace DrawingGui
@@ -42,7 +43,7 @@ public:
     enum RendererType { Native, OpenGL, Image };
 
     CanvasView(QWidget *parent = 0);
-    ~CanvasView() {}
+    ~CanvasView();
 
     void setRenderer(RendererType type = Native);
     void drawBackground(QPainter *p, const QRectF &rect);
@@ -54,6 +55,9 @@ public:
 
     const std::vector<QGraphicsItemView *> & getViews() const { return views; }
     void setViews(const std::vector<QGraphicsItemView *> &view) {views = view; }
+    void setPageFeature(Drawing::FeaturePage *page);
+
+    void toggleEdit(bool enable);
 
 public Q_SLOTS:
     void setHighQualityAntialiasing(bool highQualityAntialiasing);
@@ -71,9 +75,11 @@ protected:
 private:
     RendererType m_renderer;
 
+    bool drawBkg;
+    Drawing::FeaturePage *pageFeat;
     QGraphicsRectItem *m_backgroundItem;
     QGraphicsRectItem *m_outlineItem;
-
+    QBrush *bkgBrush;
     QImage m_image;
 };
 

@@ -45,7 +45,9 @@
 
 using namespace DrawingGui;
 
-QGraphicsItemViewPart::QGraphicsItemViewPart(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemView(pos, scene)
+QGraphicsItemViewPart::QGraphicsItemViewPart(const QPoint &pos, QGraphicsScene *scene)
+                :QGraphicsItemView(pos, scene),
+                 borderVisible(true)
 {
     setHandlesChildEvents(false);
     pen.setColor(QColor(150,150,150));
@@ -310,8 +312,10 @@ void QGraphicsItemViewPart::drawViewPart()
 
           // Edges and Vertexs must be transformed to the ViewPart's coordinate system
           item->moveBy(this->x(), this->y());
-          if(part->ShowHiddenLines.getValue())
+          if(part->ShowHiddenLines.getValue()) {
+              Base::Console().Log("show hidden");
               item->setShowHidden(true);
+        }
       }
       item->setStrokeWidth(lineWidth);
 
@@ -707,12 +711,15 @@ void QGraphicsItemViewPart::drawBorder(QPainter *painter){
   painter->restore();
 }
 
+
 void QGraphicsItemViewPart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     QStyleOptionGraphicsItem myOption(*option);
     myOption.state &= ~QStyle::State_Selected;
 
-    this->drawBorder(painter);
+    if(borderVisible){
+         this->drawBorder(painter);
+    }
     QGraphicsItemView::paint(painter, &myOption, widget);
 }
 
