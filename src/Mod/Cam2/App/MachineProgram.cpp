@@ -28,10 +28,11 @@
 
 namespace Cam {
 
-MachineProgram::MachineProgram() {
+MachineProgram::MachineProgram(ToolPath *toolPath) {
     refcnt = 1;
     machineProgram = new QStringList();
 	errors = new QStringList();
+	this->toolPath = toolPath->grab();	// Keep a reference to the toolpath object used to create this MachineProgram object.
 }
 
 MachineProgram::~MachineProgram() {
@@ -44,17 +45,24 @@ MachineProgram::~MachineProgram() {
 	{
 		delete this->errors;
 	}
+
+	if (this->toolPath != NULL)
+	{
+		this->toolPath->release();
+		this->toolPath = NULL;
+	}
 }
 
 /**
  * Add a single Machine command to the Program
  */
-void MachineProgram::addMachineCommand(QString mc) {
+void MachineProgram::addMachineCommand(QString mc, QStringList::size_type toolpath_offset) {
     if (this->machineProgram == NULL)
         this->machineProgram = new QStringList();
 
 	if (mc.endsWith(QString::fromAscii("\n"))) mc.remove(mc.size()-1, 1);	// Strip off the newline character.
     this->machineProgram->push_back(mc);
+	this->index.insert( std::make_pair( toolpath_offset, this->machineProgram->size()-1 ) );
 }
 
 void MachineProgram::addErrorString(QString error_string) {
@@ -90,6 +98,17 @@ QStringList *MachineProgram::getErrors() {
 	return this->errors;
 }
 
+ToolPath *getToolPath()
+{
+	if (this->toolPath != NULL)
+	{
+		return(this->toolPath->grab());
+	}
+	else
+	{
+		return(NULL);
+	}
+}
 
 /* friend */ QString operator<< ( QString & buf, const MachineProgram & machine_program )
 {

@@ -43,16 +43,31 @@ class MachineProgram {
 protected:
     QStringList *machineProgram;
 	QStringList *errors;
+	ToolPath	*toolPath;
+
+	/**
+		We want to keep track of which lines in the ToolPath object (Python code)
+		result in which lines in this MachineProgram (GCode) object.  In the end
+		it would be nice to be able to click on a piece of GCode and see which
+		lines of Python produced them.  This is just part of that linkage.
+	 */
+	typedef QStringList::size_type MachineProgramOffset_t;
+	typedef QStringList::size_type ToolPathOffset_t;
+	typedef std::multimap< ToolPathOffset_t, MachineProgramOffset_t > Index_t;
+
+	Index_t	index;
 
     int refcnt;
     virtual ~MachineProgram();
 public:
-    MachineProgram();
+    MachineProgram(ToolPath *toolPath);
 
     /**
      * Add a single Machine command to the Program
+	 * The toolpath_offset is the zero-based offset of the QStringList
+	 * in the ToolPath::toolpath member.
      */
-    void addMachineCommand(QString mc);
+	void addMachineCommand(QString mc, QStringList::size_type toolpath_offset);
 
 	void addErrorString(QString error_string);
 
@@ -76,6 +91,15 @@ public:
 	 * the Python program).
 	 */
 	QStringList *getErrors();
+
+	/**
+	 * We keep a pointer to the ToolPath object used to create this MachineProgram
+	 * object so that we can make sense of the index that associates which lines
+	 * of the MachineProgram were produced by which lines of the ToolPath.
+	 * NOTE: This method calls grab() to increment the reference counter.  The calling
+	 * object MUST call release() when it's finished with it.
+	 */
+	ToolPath *getToolPath();
 
     /**
      * Increases reference count

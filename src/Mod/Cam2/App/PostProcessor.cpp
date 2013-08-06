@@ -100,6 +100,10 @@ MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postpro
 		QStringList *lines = toolpath->getToolPath();
 		for (QStringList::size_type i=0; i<lines->size(); i++)
 		{
+			// Seed the PythonStdout object with the line offset from the toolpath QStringList
+			// so that we can tie the generated GCode with the lines in the toolpath (Python) scrip.
+			out->ToolPathIndex( QStringList::size_type(i) );
+			err->ToolPathIndex( QStringList::size_type(i) );
 			Base::Interpreter().runString(lines->at(i).toAscii().constData());
 		}
 	}
@@ -130,7 +134,7 @@ Py::Object PythonStdout::write(const Py::Tuple& args)
 				buffer += QString::fromUtf8(string);
 				if (buffer.endsWith(QString::fromAscii("\n")))
 				{
-					this->machine_program->addMachineCommand(buffer);
+					this->machine_program->addMachineCommand(buffer, this->toolpath_index);
 					buffer.clear();
 				}
                 Py_DECREF(unicode);
@@ -146,7 +150,7 @@ Py::Object PythonStdout::write(const Py::Tuple& args)
 			// a single line in buffer.
 			if (buffer.endsWith(QString::fromAscii("\n")))
 			{
-				this->machine_program->addMachineCommand(buffer);
+				this->machine_program->addMachineCommand(buffer, this->toolpath_index);
 				buffer.clear();
 			}
         }
@@ -202,7 +206,7 @@ Py::Object PythonStderr::write(const Py::Tuple& args)
                 const char* string = PyString_AsString(unicode);
 				if (buffer.endsWith(QString::fromAscii("\n")))
 				{
-					this->machine_program->addMachineCommand(buffer);
+					this->machine_program->addMachineCommand(buffer, this->toolpath_index);
 					buffer.clear();
 				}
                 Py_DECREF(unicode);
@@ -214,7 +218,7 @@ Py::Object PythonStderr::write(const Py::Tuple& args)
 			buffer += QString::fromStdString(string);
             if (buffer.endsWith(QString::fromAscii("\n")))
 			{
-				this->machine_program->addMachineCommand(buffer);
+				this->machine_program->addMachineCommand(buffer, this->toolpath_index);
 				buffer.clear();
 			}
         }

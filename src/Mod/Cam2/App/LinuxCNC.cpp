@@ -33,11 +33,14 @@
 // will be used instead.
 
 #include "LinuxCNC.h"
+#include "TPG/ToolPath.h"
 
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
+
+#include <gp_Pnt.hxx>
 
 using namespace Cam;
 LinuxCNC::LinuxCNC(MachineProgram *machine_program) : GCode(machine_program)
@@ -76,8 +79,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 	{
 		if (c.size() == 1)
 		{
-			char lower_c = tolower(c[0]);	// make it consistent for when we search for it later.
-			motion_arguments.insert(std::make_pair(lower_c, symbol_id));
+			switch (c[0])
+			{
+			case 'x':	this->x = Value(symbol_id); this->x_specified = true; break;
+			case 'y':	this->y = Value(symbol_id); this->y_specified = true; break;
+			case 'z':	this->z = Value(symbol_id); this->z_specified = true; break;
+			}
 		}
 	}
 
@@ -540,11 +547,41 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		
 		LinuxCNC::Variables	variables;	// Symbol table that holds both GCode variables and any transient numbers found in the program.
 
-		LinuxCNC::MotionArguments_t motion_arguments;	// ONLY for the current block.  It's cleared at each newline that's found.
+		// Argument values specified within this block.  These are in 'parse units'.
+		double x;
+		double y;
+		double z;
+		double a;
+		double b;
+		double c;
+		double u;
+		double v;
+		double w;
+		double i;
+		double j;
+		double k;
+		double l;
+		double p;
+		double q;
+		double r;
 
-		// Accumulated set of arguments that's updated at each block of input.  Used for modal commands 
-		// that rely on arguments defined in earlier blocks (such as feedrate and spindle speed)
-		LinuxCNC::MotionArguments_t previous_motion_arguments;	
+		// True/False flag indicating whether each argument was mentioned within this block.
+		int x_specified;
+		int y_specified;
+		int z_specified;
+		int a_specified;
+		int b_specified;
+		int c_specified;
+		int u_specified;
+		int v_specified;
+		int w_specified;
+		int i_specified;
+		int j_specified;
+		int k_specified;
+		int l_specified;
+		int p_specified;
+		int q_specified;
+		int r_specified;
 
 	private:
 		// Define the series of methods that form 'actions' that are called when various inputs accurately match
@@ -623,9 +660,9 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					{
 						// Need to adjust the existing settings from imperial to metric.
 
-						if (previous_motion_arguments.find('x') != previous_motion_arguments.end()) previous_motion_arguments['x'] *= 25.4;
-						if (previous_motion_arguments.find('y') != previous_motion_arguments.end()) previous_motion_arguments['y'] *= 25.4;
-						if (previous_motion_arguments.find('z') != previous_motion_arguments.end()) previous_motion_arguments['z'] *= 25.4;
+						this->x *= 25.4;
+						this->y *= 25.4;
+						this->z *= 25.4;
 
 						/*
 						Do not adjust a,b or c values as these are rotational units (degrees) rather than linear units
@@ -634,18 +671,23 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						this->c *= 25.4;
 						*/
 
-						if (previous_motion_arguments.find('u') != previous_motion_arguments.end()) previous_motion_arguments['u'] *= 25.4;
-						if (previous_motion_arguments.find('v') != previous_motion_arguments.end()) previous_motion_arguments['v'] *= 25.4;
-						if (previous_motion_arguments.find('w') != previous_motion_arguments.end()) previous_motion_arguments['w'] *= 25.4;
+						this->u *= 25.4;
+						this->v *= 25.4;
+						this->w *= 25.4;
 
-						if (previous_motion_arguments.find('i') != previous_motion_arguments.end()) previous_motion_arguments['i'] *= 25.4;
-						if (previous_motion_arguments.find('j') != previous_motion_arguments.end()) previous_motion_arguments['j'] *= 25.4;
-						if (previous_motion_arguments.find('k') != previous_motion_arguments.end()) previous_motion_arguments['k'] *= 25.4;
+						this->i *= 25.4;
+						this->j *= 25.4;
+						this->k *= 25.4;
 
-						if (previous_motion_arguments.find('l') != previous_motion_arguments.end()) previous_motion_arguments['l'] *= 25.4;
-						if (previous_motion_arguments.find('p') != previous_motion_arguments.end()) previous_motion_arguments['p'] *= 25.4;
-						if (previous_motion_arguments.find('q') != previous_motion_arguments.end()) previous_motion_arguments['q'] *= 25.4;
-						if (previous_motion_arguments.find('r') != previous_motion_arguments.end()) previous_motion_arguments['r'] *= 25.4;
+						this->l *= 25.4;
+						this->p *= 25.4;
+						this->q *= 25.4;
+						this->r *= 25.4;
+
+						for (::size_t i=0; i<sizeof(this->previous)/sizeof(this->previous[0]); i++)
+						{
+							this->previous[i] *= 25.4;
+						}
 
 						this->feed_rate *= 25.4;
 					}
@@ -658,29 +700,34 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					{
 						// Need to adjust the existing settings from metric to imperial.
 
-						if (previous_motion_arguments.find('x') != previous_motion_arguments.end()) previous_motion_arguments['x'] /= 25.4;
-						if (previous_motion_arguments.find('y') != previous_motion_arguments.end()) previous_motion_arguments['y'] /= 25.4;
-						if (previous_motion_arguments.find('z') != previous_motion_arguments.end()) previous_motion_arguments['z'] /= 25.4;
+						this->x /= 25.4;
+						this->y /= 25.4;
+						this->z /= 25.4;
 
 						/*
 						Do not adjust a,b or c values as these are rotational units (degrees) rather than linear units
-						this->a *= 25.4;
-						this->b *= 25.4;
-						this->c *= 25.4;
+						this->a /= 25.4;
+						this->b /= 25.4;
+						this->c /= 25.4;
 						*/
 
-						if (previous_motion_arguments.find('u') != previous_motion_arguments.end()) previous_motion_arguments['u'] /= 25.4;
-						if (previous_motion_arguments.find('v') != previous_motion_arguments.end()) previous_motion_arguments['v'] /= 25.4;
-						if (previous_motion_arguments.find('w') != previous_motion_arguments.end()) previous_motion_arguments['w'] /= 25.4;
+						this->u /= 25.4;
+						this->v /= 25.4;
+						this->w /= 25.4;
 
-						if (previous_motion_arguments.find('i') != previous_motion_arguments.end()) previous_motion_arguments['i'] /= 25.4;
-						if (previous_motion_arguments.find('j') != previous_motion_arguments.end()) previous_motion_arguments['j'] /= 25.4;
-						if (previous_motion_arguments.find('k') != previous_motion_arguments.end()) previous_motion_arguments['k'] /= 25.4;
+						this->i /= 25.4;
+						this->j /= 25.4;
+						this->k /= 25.4;
 
-						if (previous_motion_arguments.find('l') != previous_motion_arguments.end()) previous_motion_arguments['l'] /= 25.4;
-						if (previous_motion_arguments.find('p') != previous_motion_arguments.end()) previous_motion_arguments['p'] /= 25.4;
-						if (previous_motion_arguments.find('q') != previous_motion_arguments.end()) previous_motion_arguments['q'] /= 25.4;
-						if (previous_motion_arguments.find('r') != previous_motion_arguments.end()) previous_motion_arguments['r'] /= 25.4;
+						this->l /= 25.4;
+						this->p /= 25.4;
+						this->q /= 25.4;
+						this->r /= 25.4;
+
+						for (::size_t i=0; i<sizeof(this->previous)/sizeof(this->previous[0]); i++)
+						{
+							this->previous[i] /= 25.4;
+						}
 
 						this->feed_rate /= 25.4;
 					}
@@ -1048,42 +1095,42 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 					case LinuxCNC::stDataSetting:
 						// The G10 statement has been specified.  Look at the L argument to see what needs to be set.
-						if (Specified('l') && Specified('p'))
+						if (this->l_specified && this->p_specified)
 						{
-							if (this->motion_arguments['l'] == 20)
+							if (this->l == 20)
 							{
 								// We need to make the current coordinate be whatever the arguments say they are.  i.e.
 								// adjust the appropriate coordinate system offset accordingly.
 
-								int coordinate_system = this->motion_arguments['p'];
+								int coordinate_system = this->p;
 
-								if (Specified('x'))
+								if (this->x_specified)
 								{
 									int parameter_offset = 0;	// x
-									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->motion_arguments['p'] - 1) * 20);
+									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->p - 1) * 20);
 									int name = coordinate_system_offset + parameter_offset;
 									double offset_in_heeks_units = HeeksUnits( variables[name] );
-									double offset_in_emc2_units = Emc2Units( this->motion_arguments['x'] ) - variables[name];
+									double offset_in_emc2_units = Emc2Units( this->x ) - variables[name];
 									variables[name] = variables[name] + offset_in_emc2_units;
 								}
 
-								if (Specified('y'))
+								if (this->y_specified)
 								{
 									int parameter_offset = 1;	// y
-									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->motion_arguments['p'] - 1) * 20);
+									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->p - 1) * 20);
 									int name = coordinate_system_offset + parameter_offset;
 									double offset_in_heeks_units = HeeksUnits( variables[name] );
-									double offset_in_emc2_units = Emc2Units( this->motion_arguments['y'] ) - variables[name];
+									double offset_in_emc2_units = Emc2Units( this->y ) - variables[name];
 									variables[name] = variables[name] + offset_in_emc2_units;
 								}
 
-								if (this->Specified('z'))
+								if (this->z_specified)
 								{
 									int parameter_offset = 2;	// z
-									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->motion_arguments['p'] - 1) * 20);
+									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->p - 1) * 20);
 									int name = coordinate_system_offset + parameter_offset;
 									double offset_in_heeks_units = HeeksUnits( variables[name] );
-									double offset_in_emc2_units = Emc2Units( this->motion_arguments['z'] ) - variables[name];
+									double offset_in_emc2_units = Emc2Units( this->z ) - variables[name];
 									variables[name] = variables[name] + offset_in_emc2_units;
 								}
 							}
@@ -1157,17 +1204,17 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 						// Assume that the furthest point of probing tripped the switch.  Store this location
 						// as though we found our probed object here.
-						variables[LinuxCNC::eG38_2VariableBase + 0] = ParseUnitsFromHeeksUnits(adjust(0,this->motion_arguments['x']));
-						variables[LinuxCNC::eG38_2VariableBase + 1] = ParseUnitsFromHeeksUnits(adjust(1,this->motion_arguments['y']));
-						variables[LinuxCNC::eG38_2VariableBase + 2] = ParseUnitsFromHeeksUnits(adjust(2,this->motion_arguments['z']));
+						variables[LinuxCNC::eG38_2VariableBase + 0] = ParseUnitsFromHeeksUnits(adjust(0,this->x));
+						variables[LinuxCNC::eG38_2VariableBase + 1] = ParseUnitsFromHeeksUnits(adjust(1,this->y));
+						variables[LinuxCNC::eG38_2VariableBase + 2] = ParseUnitsFromHeeksUnits(adjust(2,this->z));
 
-						variables[LinuxCNC::eG38_2VariableBase + 3] = adjust(3,this->motion_arguments['a']);
-						variables[LinuxCNC::eG38_2VariableBase + 4] = adjust(4,this->motion_arguments['b']);
-						variables[LinuxCNC::eG38_2VariableBase + 5] = adjust(5,this->motion_arguments['c']);
+						variables[LinuxCNC::eG38_2VariableBase + 3] = adjust(3,this->a);
+						variables[LinuxCNC::eG38_2VariableBase + 4] = adjust(4,this->b);
+						variables[LinuxCNC::eG38_2VariableBase + 5] = adjust(5,this->c);
 
-						variables[LinuxCNC::eG38_2VariableBase + 6] = ParseUnitsFromHeeksUnits(adjust(6,this->motion_arguments['u']));
-						variables[LinuxCNC::eG38_2VariableBase + 7] = ParseUnitsFromHeeksUnits(adjust(7,this->motion_arguments['v']));
-						variables[LinuxCNC::eG38_2VariableBase + 8] = ParseUnitsFromHeeksUnits(adjust(8,this->motion_arguments['w']));
+						variables[LinuxCNC::eG38_2VariableBase + 6] = ParseUnitsFromHeeksUnits(adjust(6,this->u));
+						variables[LinuxCNC::eG38_2VariableBase + 7] = ParseUnitsFromHeeksUnits(adjust(7,this->v));
+						variables[LinuxCNC::eG38_2VariableBase + 8] = ParseUnitsFromHeeksUnits(adjust(8,this->w));
 
 						if (this->feed_rate <= 0.0) 
 						{
@@ -1193,25 +1240,25 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							{
 								// Confirm that the previous location, the center-point and the final location all make
 								// sense for an arc movement.  If we have a rounding error then we want to know it.
-								gp_Pnt start(this->previous_motion_argument['x'], this->previous_motion_argument['y'], this->previous_motion_argument['z']);
-								gp_Pnt end(this->motion_argument['x'], this->motion_argument['y'], this->motion_argument['z']);
-								gp_Pnt centre(this->motion_argument['i'] + this->previous_motion_argument['x'], this->motion_argument['j'] + this->previous_motion_argument['y'], this->motion_argument['k'] + this->previous_motion_argument['z']);
+								gp_Pnt start(this->previous[0], this->previous[1], this->previous[2]);
+								gp_Pnt end(this->x, this->y, this->z);
+								gp_Pnt centre(this->i + this->previous[0], this->j + this->previous[1], this->k + this->previous[2]);
 
 								switch (this->plane)
 								{
-								case eXYPlane:
+								case LinuxCNC::eXYPlane:
 									start  = gp_Pnt(this->previous[0],                  this->previous[1],                  0.0);
 									end    = gp_Pnt(this->x,                            this->y,                            0.0);
 									centre = gp_Pnt(this->i + this->previous[0], this->j + this->previous[1], 0.0);
 									break;
 
-								case eXZPlane:
+								case LinuxCNC::eXZPlane:
 									start  = gp_Pnt(this->previous[0],                  0.0, this->previous[2]);
 									end    = gp_Pnt(this->x,                            0.0, this->y);
 									centre = gp_Pnt(this->i + this->previous[0], 0.0, this->k + this->previous[2]);
 									break;
 
-								case eYZPlane:
+								case LinuxCNC::eYZPlane:
 									start  = gp_Pnt(0.0, this->previous[1],                  this->previous[2]);
 									end    = gp_Pnt(0.0, this->y,                            this->y);
 									centre = gp_Pnt(0.0, this->j + this->previous[1], this->k + this->previous[2]);
@@ -1219,7 +1266,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 								} // End switch
 
 								double error = fabs(fabs(centre.Distance(end)) - fabs(start.Distance(centre)));
-								double tolerance = 1.0 / pow(10, double(Python::RequiredDecimalPlaces()));
+								double tolerance = 1.0 / pow(10, double(ToolPath::RequiredDecimalPlaces()));
 								if (error > tolerance)
 								{
 									double magnitude = (fabs(error) - fabs(tolerance)) * pow(10, double(Python::RequiredDecimalPlaces()-1));
@@ -1257,19 +1304,19 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 								switch (this->plane)
 								{
-								case eXYPlane:
+								case LinuxCNC::eXYPlane:
 									start  = gp_Pnt(this->previous[0],                  this->previous[1],                  0.0);
 									end    = gp_Pnt(this->x,                            this->y,                            0.0);
 									centre = gp_Pnt(this->i + this->previous[0], this->j + this->previous[1], 0.0);
 									break;
 
-								case eXZPlane:
+								case LinuxCNC::eXZPlane:
 									start  = gp_Pnt(this->previous[0],                  0.0, this->previous[2]);
 									end    = gp_Pnt(this->x,                            0.0, this->y);
 									centre = gp_Pnt(this->i + this->previous[0], 0.0, this->k + this->previous[2]);
 									break;
 
-								case eYZPlane:
+								case LinuxCNC::eYZPlane:
 									start  = gp_Pnt(0.0, this->previous[1],                  this->previous[2]);
 									end    = gp_Pnt(0.0, this->y,                            this->y);
 									centre = gp_Pnt(0.0, this->j + this->previous[1], this->k + this->previous[2]);
@@ -1277,10 +1324,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 								} // End switch
 
 								double error = fabs(fabs(centre.Distance(end)) - fabs(start.Distance(centre)));
-								double tolerance = 1.0 / pow(10, double(Python::RequiredDecimalPlaces()));
+								double tolerance = 1.0 / pow(10, double(ToolPath::RequiredDecimalPlaces()));
 								if (error > tolerance)
 								{
-									double magnitude = (fabs(error) - fabs(tolerance)) * pow(10, double(Python::RequiredDecimalPlaces()-1));
+									double magnitude = (fabs(error) - fabs(tolerance)) * pow(10, double(ToolPath::RequiredDecimalPlaces()-1));
 									if (magnitude > 1.0)
 									{
 										wxString msg;
@@ -1341,15 +1388,15 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 					case LinuxCNC::stG28:
 						// The saved position can be found in variables 5161 to 5169.
-						this->x = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 0 ] - variables[ LinuxCNC::eG54VariableBase + 0 ]);
-						this->y = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 1 ] - variables[ LinuxCNC::eG54VariableBase + 1 ]);
-						this->z = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 2 ] - variables[ LinuxCNC::eG54VariableBase + 2 ]);
-						this->a = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 3 ] - variables[ LinuxCNC::eG54VariableBase + 3 ]);
-						this->b = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 4 ] - variables[ LinuxCNC::eG54VariableBase + 4 ]);
-						this->c = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 5 ] - variables[ LinuxCNC::eG54VariableBase + 5 ]);
-						this->u = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 6 ] - variables[ LinuxCNC::eG54VariableBase + 6 ]);
-						this->v = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 7 ] - variables[ LinuxCNC::eG54VariableBase + 7 ]);
-						this->w = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 8 ] - variables[ LinuxCNC::eG54VariableBase + 8 ]);
+						this->x = ParseUnits(emc_variables[ eG28VariableBase + 0 ] - emc_variables[ eG54VariableBase + 0 ]);
+						this->y = ParseUnits(emc_variables[ eG28VariableBase + 1 ] - emc_variables[ eG54VariableBase + 1 ]);
+						this->z = ParseUnits(emc_variables[ eG28VariableBase + 2 ] - emc_variables[ eG54VariableBase + 2 ]);
+						this->a = ParseUnits(emc_variables[ eG28VariableBase + 3 ] - emc_variables[ eG54VariableBase + 3 ]);
+						this->b = ParseUnits(emc_variables[ eG28VariableBase + 4 ] - emc_variables[ eG54VariableBase + 4 ]);
+						this->c = ParseUnits(emc_variables[ eG28VariableBase + 5 ] - emc_variables[ eG54VariableBase + 5 ]);
+						this->u = ParseUnits(emc_variables[ eG28VariableBase + 6 ] - emc_variables[ eG54VariableBase + 6 ]);
+						this->v = ParseUnits(emc_variables[ eG28VariableBase + 7 ] - emc_variables[ eG54VariableBase + 7 ]);
+						this->w = ParseUnits(emc_variables[ eG28VariableBase + 8 ] - emc_variables[ eG54VariableBase + 8 ]);
 
 						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 							<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
@@ -1361,15 +1408,15 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 					case LinuxCNC::stG30:
 						// The saved position can be found in variables 5181 to 5189.
-						this->x = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 0 ] - variables[ eG54VariableBase + 0 ]);
-						this->y = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 1 ] - variables[ eG54VariableBase + 1 ]);
-						this->z = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 2 ] - variables[ eG54VariableBase + 2 ]);
-						this->a = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 3 ] - variables[ eG54VariableBase + 3 ]);
-						this->b = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 4 ] - variables[ eG54VariableBase + 4 ]);
-						this->c = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 5 ] - variables[ eG54VariableBase + 5 ]);
-						this->u = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 6 ] - variables[ eG54VariableBase + 6 ]);
-						this->v = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 7 ] - variables[ eG54VariableBase + 7 ]);
-						this->w = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 8 ] - variables[ eG54VariableBase + 8 ]);
+						this->x = ParseUnits(emc_variables[ eG30VariableBase + 0 ] - emc_variables[ eG54VariableBase + 0 ]);
+						this->y = ParseUnits(emc_variables[ eG30VariableBase + 1 ] - emc_variables[ eG54VariableBase + 1 ]);
+						this->z = ParseUnits(emc_variables[ eG30VariableBase + 2 ] - emc_variables[ eG54VariableBase + 2 ]);
+						this->a = ParseUnits(emc_variables[ eG30VariableBase + 3 ] - emc_variables[ eG54VariableBase + 3 ]);
+						this->b = ParseUnits(emc_variables[ eG30VariableBase + 4 ] - emc_variables[ eG54VariableBase + 4 ]);
+						this->c = ParseUnits(emc_variables[ eG30VariableBase + 5 ] - emc_variables[ eG54VariableBase + 5 ]);
+						this->u = ParseUnits(emc_variables[ eG30VariableBase + 6 ] - emc_variables[ eG54VariableBase + 6 ]);
+						this->v = ParseUnits(emc_variables[ eG30VariableBase + 7 ] - emc_variables[ eG54VariableBase + 7 ]);
+						this->w = ParseUnits(emc_variables[ eG30VariableBase + 8 ] - emc_variables[ eG54VariableBase + 8 ]);
 
 						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 							<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
@@ -1387,19 +1434,19 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						// commands.  This must occur until we find a G92.1 command which turns
 						// this 'temporary coordinate system' functionality off.
 						this->current_coordinate_system = csG92;
-						variables[LinuxCNC::eG92Enabled] = 1.0;
+						emc_variables[eG92Enabled] = 1.0;
 
-						variables[LinuxCNC::eG92VariableBase + 0] = Emc2Units(this->previous[0]) - Emc2Units(this->x);
-						variables[LinuxCNC::eG92VariableBase + 1] = Emc2Units(this->previous[1]) - Emc2Units(this->y);
-						variables[LinuxCNC::eG92VariableBase + 2] = Emc2Units(this->previous[2]) - Emc2Units(this->z);
+						emc_variables[eG92VariableBase + 0] = Emc2Units(this->previous[0]) - Emc2Units(this->x);
+						emc_variables[eG92VariableBase + 1] = Emc2Units(this->previous[1]) - Emc2Units(this->y);
+						emc_variables[eG92VariableBase + 2] = Emc2Units(this->previous[2]) - Emc2Units(this->z);
 
-						variables[LinuxCNC::eG92VariableBase + 3] = Emc2Units(this->previous[3]) - Emc2Units(this->a);
-						variables[LinuxCNC::eG92VariableBase + 4] = Emc2Units(this->previous[4]) - Emc2Units(this->b);
-						variables[LinuxCNC::eG92VariableBase + 5] = Emc2Units(this->previous[5]) - Emc2Units(this->c);
+						emc_variables[eG92VariableBase + 3] = Emc2Units(this->previous[3]) - Emc2Units(this->a);
+						emc_variables[eG92VariableBase + 4] = Emc2Units(this->previous[4]) - Emc2Units(this->b);
+						emc_variables[eG92VariableBase + 5] = Emc2Units(this->previous[5]) - Emc2Units(this->c);
 
-						variables[LinuxCNC::eG92VariableBase + 6] = Emc2Units(this->previous[6]) - Emc2Units(this->u);
-						variables[LinuxCNC::eG92VariableBase + 7] = Emc2Units(this->previous[7]) - Emc2Units(this->v);
-						variables[LinuxCNC::eG92VariableBase + 8] = Emc2Units(this->previous[8]) - Emc2Units(this->w);
+						emc_variables[eG92VariableBase + 6] = Emc2Units(this->previous[6]) - Emc2Units(this->u);
+						emc_variables[eG92VariableBase + 7] = Emc2Units(this->previous[7]) - Emc2Units(this->v);
+						emc_variables[eG92VariableBase + 8] = Emc2Units(this->previous[8]) - Emc2Units(this->w);
 						break;
 
 					case LinuxCNC::stG92_1:
@@ -1407,24 +1454,24 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						this->current_coordinate_system = csUndefined;
 
 						// Disable the G92 offset function.
-						variables[eG92Enabled] = 0.0;
+						emc_variables[eG92Enabled] = 0.0;
 
 						// Reset the G92 offsets to all zero.
 						for (int i=eG92VariableBase; i<eG92VariableBase+9; i++)
 						{
-							variables[i] = 0.0;
+							emc_variables[i] = 0.0;
 						}
 
 						break;
 
 					case LinuxCNC::stG92_2:
 						// Disable the G92 offset function but don't reset the offsets in the memory locations.
-						variables[eG92Enabled] = 0.0;
+						emc_variables[eG92Enabled] = 0.0;
 						break;
 
 					case LinuxCNC::stG92_3:
 						// Re-Enable the G92 offset function and don't change the offsets in the memory locations.
-						variables[eG92Enabled] = 1.0;
+						emc_variables[eG92Enabled] = 1.0;
 						break;
 
 					case LinuxCNC::stAxis:
