@@ -77,6 +77,9 @@ template <typename Iter, typename Skipper = qi::blank_type>
 	// mathematical expressions and variables.
 	void AddMotionArgument(std::vector<char> c, LinuxCNC::Variables::SymbolId_t symbol_id)
 	{
+		std::string name;
+		std::copy( c.begin(), c.end(), std::inserter(name,name.begin()));
+
 		if (c.size() == 1)
 		{
 			switch (c[0])
@@ -84,16 +87,38 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			case 'x':	this->x = Value(symbol_id); this->x_specified = true; break;
 			case 'y':	this->y = Value(symbol_id); this->y_specified = true; break;
 			case 'z':	this->z = Value(symbol_id); this->z_specified = true; break;
+
+			case 'a':	this->a = Value(symbol_id); this->a_specified = true; break;
+			case 'b':	this->b = Value(symbol_id); this->b_specified = true; break;
+			case 'c':	this->c = Value(symbol_id); this->c_specified = true; break;
+
+			case 'u':	this->u = Value(symbol_id); this->u_specified = true; break;
+			case 'v':	this->v = Value(symbol_id); this->v_specified = true; break;
+			case 'w':	this->w = Value(symbol_id); this->w_specified = true; break;
+
+			case 'l':	this->l = Value(symbol_id); this->l_specified = true; break;
+			case 'p':	this->p = Value(symbol_id); this->p_specified = true; break;
+			case 'r':	this->r = Value(symbol_id); this->q_specified = true; break;
+			case 'q':	this->q = Value(symbol_id); this->r_specified = true; break;
+
+			case 'i':	this->i = Value(symbol_id); this->i_specified = true; break;
+			case 'j':	this->j = Value(symbol_id); this->j_specified = true; break;
+			case 'k':	this->k = Value(symbol_id); this->k_specified = true; break;
+
+			default:
+				{
+					QString warning;
+					warning = QString::fromAscii("Unexpected motion argument '") + QString::fromStdString(name) + QString::fromAscii("' found");
+					pLinuxCNC->AddWarning(warning);
+				}
+				break;
 			}
 		}
-	}
-
-	/// Just for debugging.
-	void Print()
-	{
-		for (LinuxCNC::MotionArguments_t::const_iterator itArg = motion_arguments.begin(); itArg != motion_arguments.end(); itArg++)
+		else
 		{
-			qDebug("%c=%lf\n", itArg->first, variables[itArg->second]);
+			QString warning;
+			warning = QString::fromAscii("Invalid motion argument '") + QString::fromStdString(name) + QString::fromAscii("' found");
+			pLinuxCNC->AddWarning(warning);
 		}
 	}
 
@@ -135,9 +160,17 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 		current_coordinate_system = LinuxCNC::csG53;
 		modal_coordinate_system = LinuxCNC::csG54;
-		units = 1.0;	// Metric by default.
+		
 		plane = LinuxCNC::eXYPlane;
 		tool_length_offset = 0.0;
+
+		// The 'units' are 1.0 for metric and 25.4 for imperial. These are the units of the
+		// current graphics.  It's used for the graphics that represents tool movements.
+		units = 1.0;	// Metric by default. TODO Take this from some application settings.
+
+		// The 'emc2 variables units' indicates what units are relevant to the linuxcnc.var
+		// variables file read in at startup.
+		m_emc2_variables_units = LinuxCNC::eMetric;	// TODO Take this from some application settings.
 
 		InitializeGCodeVariables();
 
@@ -547,6 +580,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		
 		LinuxCNC::Variables	variables;	// Symbol table that holds both GCode variables and any transient numbers found in the program.
 
+		LinuxCNC::eUnits_t m_emc2_variables_units;
+
 		// Argument values specified within this block.  These are in 'parse units'.
 		double x;
 		double y;
@@ -603,970 +638,1012 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		// i.e. the second argument to the template indicates the 'type' returned by the rule.  This defines the type of qi::_val
 		
 
-			double Emc2Units(const double value_in_parse_units)
-			{
-				double value_in_mm = value_in_parse_units * this->units;
+		double Emc2Units(const double value_in_parse_units)
+		{
+			double value_in_mm = value_in_parse_units * this->units;
 
-				switch (PROGRAM->m_emc2_variables_units)
+			switch (this->m_emc2_variables_units)
+			{
+				case LinuxCNC::eImperial:
+					return(value_in_mm / 25.4); // imperial - inches
+
+				case LinuxCNC::eMetric:
+				default:
+					return(value_in_mm);
+			}
+		}
+
+		// Heeks uses millimeters
+		double HeeksUnits( const double value_in_emc2_units )
+		{
+			switch (this->m_emc2_variables_units)
+			{
+				case LinuxCNC::eImperial:
+					return(value_in_emc2_units * 25.4);
+
+
+				case LinuxCNC::eMetric:
+				default:
+					return(value_in_emc2_units);
+			}
+		}
+
+		double ParseUnits( const double value_in_emc2_units )
+		{
+			double value_in_mm = HeeksUnits( value_in_emc2_units );
+			return( value_in_mm / this->units );
+		}
+
+		double ParseUnitsFromHeeksUnits( const double value_in_heeks_units )
+		{
+			double value_in_mm = value_in_heeks_units;	// always.
+			return( value_in_mm / this->units );
+		}
+
+
+		/**
+			When the GCode switches from metric to imperial (or vice-versa) we need
+			to change the values in out ParseState_t structure to the new standards
+			so that we're comparing 'apples with apples' when interpreting
+			subsequent coordinates.
+		 */
+		void SwitchParseUnits( const int metric )
+		{
+			if (metric)
+			{
+				if (this->units == 25.4)
 				{
-					case CProgram::eImperial:
-						return(value_in_mm / 25.4); // imperial - inches
+					// Need to adjust the existing settings from imperial to metric.
 
-					case CProgram::eMetric:
-					default:
-						return(value_in_mm);
-				}
-			}
+					this->x *= 25.4;
+					this->y *= 25.4;
+					this->z *= 25.4;
 
-			// Heeks uses millimeters
-			double HeeksUnits( const double value_in_emc2_units )
-			{
-				switch (PROGRAM->m_emc2_variables_units)
-				{
-					case CProgram::eImperial:
-						return(value_in_emc2_units * 25.4);
+					/*
+					Do not adjust a,b or c values as these are rotational units (degrees) rather than linear units
+					this->a *= 25.4;
+					this->b *= 25.4;
+					this->c *= 25.4;
+					*/
 
+					this->u *= 25.4;
+					this->v *= 25.4;
+					this->w *= 25.4;
 
-					case CProgram::eMetric:
-					default:
-						return(value_in_emc2_units);
-				}
-			}
+					this->i *= 25.4;
+					this->j *= 25.4;
+					this->k *= 25.4;
 
-			double ParseUnits( const double value_in_emc2_units )
-			{
-				double value_in_mm = HeeksUnits( value_in_emc2_units );
-				return( value_in_mm / this->units );
-			}
+					this->l *= 25.4;
+					this->p *= 25.4;
+					this->q *= 25.4;
+					this->r *= 25.4;
 
-			double ParseUnitsFromHeeksUnits( const double value_in_heeks_units )
-			{
-				double value_in_mm = value_in_heeks_units;	// always.
-				return( value_in_mm / this->units );
-			}
-
-
-			/**
-				When the GCode switches from metric to imperial (or vice-versa) we need
-				to change the values in out ParseState_t structure to the new standards
-				so that we're comparing 'apples with apples' when interpreting
-				subsequent coordinates.
-			 */
-			void SwitchParseUnits( const int metric )
-			{
-				if (metric)
-				{
-					if (this->units == 25.4)
+					for (::size_t i=0; i<sizeof(this->previous)/sizeof(this->previous[0]); i++)
 					{
-						// Need to adjust the existing settings from imperial to metric.
-
-						this->x *= 25.4;
-						this->y *= 25.4;
-						this->z *= 25.4;
-
-						/*
-						Do not adjust a,b or c values as these are rotational units (degrees) rather than linear units
-						this->a *= 25.4;
-						this->b *= 25.4;
-						this->c *= 25.4;
-						*/
-
-						this->u *= 25.4;
-						this->v *= 25.4;
-						this->w *= 25.4;
-
-						this->i *= 25.4;
-						this->j *= 25.4;
-						this->k *= 25.4;
-
-						this->l *= 25.4;
-						this->p *= 25.4;
-						this->q *= 25.4;
-						this->r *= 25.4;
-
-						for (::size_t i=0; i<sizeof(this->previous)/sizeof(this->previous[0]); i++)
-						{
-							this->previous[i] *= 25.4;
-						}
-
-						this->feed_rate *= 25.4;
+						this->previous[i] *= 25.4;
 					}
 
-					this->units = 1.0;  // Switch to metric
+					this->feed_rate *= 25.4;
 				}
-				else
+
+				this->units = 1.0;  // Switch to metric
+			}
+			else
+			{
+				if (this->units == 1.0)
 				{
-					if (this->units == 1.0)
+					// Need to adjust the existing settings from metric to imperial.
+
+					this->x /= 25.4;
+					this->y /= 25.4;
+					this->z /= 25.4;
+
+					/*
+					Do not adjust a,b or c values as these are rotational units (degrees) rather than linear units
+					this->a /= 25.4;
+					this->b /= 25.4;
+					this->c /= 25.4;
+					*/
+
+					this->u /= 25.4;
+					this->v /= 25.4;
+					this->w /= 25.4;
+
+					this->i /= 25.4;
+					this->j /= 25.4;
+					this->k /= 25.4;
+
+					this->l /= 25.4;
+					this->p /= 25.4;
+					this->q /= 25.4;
+					this->r /= 25.4;
+
+					for (::size_t i=0; i<sizeof(this->previous)/sizeof(this->previous[0]); i++)
 					{
-						// Need to adjust the existing settings from metric to imperial.
-
-						this->x /= 25.4;
-						this->y /= 25.4;
-						this->z /= 25.4;
-
-						/*
-						Do not adjust a,b or c values as these are rotational units (degrees) rather than linear units
-						this->a /= 25.4;
-						this->b /= 25.4;
-						this->c /= 25.4;
-						*/
-
-						this->u /= 25.4;
-						this->v /= 25.4;
-						this->w /= 25.4;
-
-						this->i /= 25.4;
-						this->j /= 25.4;
-						this->k /= 25.4;
-
-						this->l /= 25.4;
-						this->p /= 25.4;
-						this->q /= 25.4;
-						this->r /= 25.4;
-
-						for (::size_t i=0; i<sizeof(this->previous)/sizeof(this->previous[0]); i++)
-						{
-							this->previous[i] /= 25.4;
-						}
-
-						this->feed_rate /= 25.4;
+						this->previous[i] /= 25.4;
 					}
 
-					this->units = 25.4;  // Switch to imperial
+					this->feed_rate /= 25.4;
 				}
+
+				this->units = 25.4;  // Switch to imperial
 			}
+		}
 
 
-			void AddSymbol( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const char *name, const double value )
-			{
-				if ((name == NULL) || (*name == '\0'))
-				{
-					int id = variables.new_id();
-					variables[id] = value;
-					returned_symbol_id = id;
-					return;
-				}
-				else
-				{
-					double unused = variables[name];	// This either finds or creates an entry.
-					returned_symbol_id = variables.hash(name);
-					return;
-				}
-			}
-
-			// The +(qi::char_) rule produces a std::vector<char> argument.  Convert that into
-			// a std::string and then add the rule 'by name'.  i.e. use the Variables::Hash() method
-			// to produce an integer that represents this 'name' and add the symbol against
-			// that integer.  Return the integer used as the symbol ID in the returned_symbol_id
-			// argument so that it's assigned to the qi::_val variable within the grammar.
-			void AddSymbolByName( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, std::vector<char> name )
-			{
-				std::string _name;
-				std::copy( name.begin(), name.end(), std::inserter( _name, _name.begin() ) );
-				AddSymbol( returned_symbol_id, _name.c_str(), 0.0 );
-			}
-
-			void AddIntegerSymbol( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int value )
+		void AddSymbol( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const char *name, const double value )
+		{
+			if ((name == NULL) || (*name == '\0'))
 			{
 				int id = variables.new_id();
-				variables[id] = double(value);
+				variables[id] = value;
 				returned_symbol_id = id;
+				return;
 			}
-
-
-			// Either find an existing symbol with this name and return it's ID or
-			// add a new symbol with this name.
-			int Symbol( const char *name )
+			else
 			{
-				if ((name == NULL) || (*name == '\0'))
-				{
-					int id = variables.new_id();
-					variables[id] = 0.0;
-					return(id);
-				}
-				else
-				{
-					double unused = variables[name];	// This either finds or creates an entry.
-					return(variables.hash(name));
-				}
+				double unused = variables[name];	// This either finds or creates an entry.
+				returned_symbol_id = variables.hash(name);
+				return;
 			}
+		}
 
-			
+		// The +(qi::char_) rule produces a std::vector<char> argument.  Convert that into
+		// a std::string and then add the rule 'by name'.  i.e. use the Variables::Hash() method
+		// to produce an integer that represents this 'name' and add the symbol against
+		// that integer.  Return the integer used as the symbol ID in the returned_symbol_id
+		// argument so that it's assigned to the qi::_val variable within the grammar.
+		void AddSymbolByName( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, std::vector<char> name )
+		{
+			std::string _name;
+			std::copy( name.begin(), name.end(), std::inserter( _name, _name.begin() ) );
+			AddSymbol( returned_symbol_id, _name.c_str(), 0.0 );
+		}
 
-
-			void LHSequivalenttoRHS(bool & returned_boolean, const int lhs, const int rhs)
-			{
-				returned_boolean = ( variables[lhs] == variables[rhs] );
-			}
-
-			void LHSnotequaltoRHS(bool & returned_boolean, const int lhs, const int rhs)
-			{
-				returned_boolean = ( variables[lhs] != variables[rhs] );
-			}
-
-			void LHSgreaterthanRHS(bool & returned_boolean, const int lhs, const int rhs)
-			{
-				returned_boolean = ( variables[lhs] > variables[rhs] );
-			}
-
-			void LHSlessthanRHS(bool & returned_boolean, const int lhs, const int rhs)
-			{
-				returned_boolean = ( variables[lhs] < variables[rhs] );
-			}
+		void AddIntegerSymbol( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int value )
+		{
+			int id = variables.new_id();
+			variables[id] = double(value);
+			returned_symbol_id = id;
+		}
 
 
-			void LHSplusRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+		// Either find an existing symbol with this name and return it's ID or
+		// add a new symbol with this name.
+		int Symbol( const char *name )
+		{
+			if ((name == NULL) || (*name == '\0'))
 			{
 				int id = variables.new_id();
-				variables[id] = variables[lhs] + variables[rhs];
-				returned_symbol_id = id;
+				variables[id] = 0.0;
+				return(id);
+			}
+			else
+			{
+				double unused = variables[name];	// This either finds or creates an entry.
+				return(variables.hash(name));
+			}
+		}
+
+		
+
+
+		void LHSequivalenttoRHS(bool & returned_boolean, const int lhs, const int rhs)
+		{
+			returned_boolean = ( variables[lhs] == variables[rhs] );
+		}
+
+		void LHSnotequaltoRHS(bool & returned_boolean, const int lhs, const int rhs)
+		{
+			returned_boolean = ( variables[lhs] != variables[rhs] );
+		}
+
+		void LHSgreaterthanRHS(bool & returned_boolean, const int lhs, const int rhs)
+		{
+			returned_boolean = ( variables[lhs] > variables[rhs] );
+		}
+
+		void LHSlessthanRHS(bool & returned_boolean, const int lhs, const int rhs)
+		{
+			returned_boolean = ( variables[lhs] < variables[rhs] );
+		}
+
+
+		void LHSplusRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+		{
+			int id = variables.new_id();
+			variables[id] = variables[lhs] + variables[rhs];
+			returned_symbol_id = id;
+		}
+
+		void LHSminusRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+		{
+			int id = variables.new_id();
+			variables[id] = variables[lhs] - variables[rhs];
+			returned_symbol_id = id;
+		}
+
+		void LHStimesRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+		{
+			int id = variables.new_id();
+			variables[id] = variables[lhs] * variables[rhs];
+			returned_symbol_id = id;
+		}
+
+		void LHSdividedbyRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+		{
+			int id = variables.new_id();
+			if (variables[rhs] == 0.0)
+			{
+				// We don't want to get into too much trouble just for backplotting.
+				variables[id] = DBL_MAX;
+			}
+			else
+			{
+				variables[id] = variables[lhs] / variables[rhs];
 			}
 
-			void LHSminusRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+			returned_symbol_id = id;
+		}
+
+
+		void LHSassignmentfromRHS( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs )
+		{
+			variables[lhs] = variables[rhs];
+			returned_symbol_id = lhs;
+		}
+
+
+		double Value(const int name)
+		{
+			return( variables[name] );
+		}
+
+
+		const char * StringFromDouble(const double name)
+		{
+			std::ostringstream ossName;
+			ossName << name;
+
+			string_tokens.push_back(ossName.str());
+			return(string_tokens.back().c_str());
+		}
+
+
+		const char *StringDuplication( const char *value )
+		{
+			string_tokens.push_back(value);
+			return(string_tokens.back().c_str());
+		}
+
+		double radians_to_degrees( const double radians )
+		{
+			double a = radians;
+			return( (radians / (2.0 * M_PI)) * 360.0 );
+		}
+
+		double degrees_to_radians( const double degrees )
+		{
+			double a = degrees;
+			return( (degrees / 360.0) * (2.0 * M_PI) );
+		}
+
+
+		void ASin(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		{
+			int id=variables.new_id();
+			variables[id] = radians_to_degrees( asin(degrees_to_radians(variables[symbol_id] )) );
+			returned_symbol_id = id;
+		}
+
+		void ACos(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		{
+			int id=variables.new_id();
+			variables[id] = radians_to_degrees( acos(degrees_to_radians(variables[symbol_id] )) );
+			returned_symbol_id = id;
+		}
+
+		void ATan(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+		{
+			int id=variables.new_id();
+			double radians = atan2(variables[lhs], variables[rhs]);
+			variables[id] = radians_to_degrees( radians );
+			returned_symbol_id = id;
+		}
+
+		void Sin(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		{
+			int id=variables.new_id();
+			variables[id] = radians_to_degrees( sin(degrees_to_radians(variables[symbol_id] )) );
+			returned_symbol_id = id;
+		}
+
+		void Cos(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		{
+			int id=variables.new_id();
+			variables[id] = radians_to_degrees( cos(degrees_to_radians(variables[symbol_id] )) );
+			returned_symbol_id = id;
+		}
+
+		void Tan(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		{
+			int id=variables.new_id();
+			variables[id] = radians_to_degrees( tan(degrees_to_radians(variables[symbol_id] )) );
+			returned_symbol_id = id;
+		}
+
+		void AbsoluteValue(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		{
+			int id=variables.new_id();
+			variables[id] = abs(variables[symbol_id]);
+			returned_symbol_id = id;
+		}
+
+		void	Sqrt(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		{
+			int id=variables.new_id();
+			variables[id] = sqrt(variables[symbol_id]);
+			returned_symbol_id = id;
+		}
+
+		void	Exp(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		{
+			int id=variables.new_id();
+			variables[id] = exp((variables[symbol_id]));
+			returned_symbol_id = id;
+		}
+
+		void	Fix(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		{
+			int id=variables.new_id();
+			variables[id] = int(floor(((variables[symbol_id]))));
+			returned_symbol_id = id;
+		}
+
+		void	Fup(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		{
+			int id=variables.new_id();
+			variables[id] = int(ceil(((variables[symbol_id]))));
+			returned_symbol_id = id;
+		}
+
+		void	Round(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		{
+			int id=variables.new_id();
+			variables[id] = int(((variables[symbol_id])));
+			returned_symbol_id = id;
+		}
+
+		void	Ln(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		{
+			int id=variables.new_id();
+			variables[id] = log(variables[symbol_id]);
+			returned_symbol_id = id;
+		}
+
+		void Exists(bool return_value, const int symbol_id)
+		{
+			return_value = variables.exists(symbol_id);
+		}
+
+
+		/**
+			Adjust the value for the active coordinate system.  The parameter_offset is 0 for x, 1 for y etc.
+			We want to arrange the GCode so that the G54 (the first relative coordinate system) lines up
+			with the HeeksCAD drawing coordinate system.  All other coordinates are moved around that
+			relative position.  We're using the fact that the gcode_variables map was initialized
+			from the emc.var file to set the offsets of the various coordinate systems.
+
+			The parameter_offset is added to the modal_coordinate_system base number (eg: 5221 for G54)
+			to indicate which variable within that coordinate system we're referring to.  eg: 0 = x,
+			1 = y etc.
+		 */
+		double adjust( const int parameter_offset, const double value_in_parse_units )
+		{
+			double value_in_emc2_units = Emc2Units(value_in_parse_units);
+			double tool_length_offset = 0.0;
+
+			if (parameter_offset == 2)
 			{
-				int id = variables.new_id();
-				variables[id] = variables[lhs] - variables[rhs];
-				returned_symbol_id = id;
+				// We're adjusting a Z coordinate so add the tool length offset
+				tool_length_offset = this->tool_length_offset;
 			}
 
-			void LHStimesRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+			if (parameter_offset >= 9)
 			{
-				int id = variables.new_id();
-				variables[id] = variables[lhs] * variables[rhs];
-				returned_symbol_id = id;
+				qDebug("Parameter offset must be less than 9.  It is %d instead\n", parameter_offset);
+				return( HeeksUnits(value_in_emc2_units) );
 			}
 
-			void LHSdividedbyRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+			double g54_offset = variables[LinuxCNC::eG54VariableBase + parameter_offset];
+			double g92_offset = variables[LinuxCNC::eG92VariableBase + parameter_offset];
+
+			if (variables[LinuxCNC::eG92Enabled] > 0.0)
 			{
-				int id = variables.new_id();
-				if (variables[rhs] == 0.0)
+				// Copy the values from the gcode_variables into the local cache.
+				return(HeeksUnits(value_in_emc2_units - g54_offset + g92_offset + tool_length_offset));
+			}
+
+			if (this->current_coordinate_system == LinuxCNC::csG53)
+			{
+				// We need to move the point so that it's relavitve to the eG54 coordinate system.
+				return(HeeksUnits(value_in_emc2_units - g54_offset + tool_length_offset));
+			}
+
+			int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->modal_coordinate_system - 1) * 20);
+			int name = coordinate_system_offset + parameter_offset;
+
+			return(HeeksUnits(value_in_emc2_units - g54_offset + variables[name] + tool_length_offset));
+		}
+
+		// Utility method for easy shorthand later.
+		bool Specified(const char name) const
+		{
+			if (motion_arguments.find(name) == motion_arguments.end()) return(false);
+			return(true);
+		}
+
+		/**
+			We've accumulated all the command line arguments as well as the statement
+			type for this line (block).  Go ahead and adjust any of the command line
+			arguments based on current machine settings and generate the graphics
+			that represent this tool movement.
+		 */
+		void ProcessBlock()
+		{
+			qDebug("Processing block\n");
+			ResetForEndOfBlock();
+
+			if (this->statement_type == LinuxCNC::stUndefined)
+			{
+				switch (this->previous_statement_type)
 				{
-					// We don't want to get into too much trouble just for backplotting.
-					variables[id] = DBL_MAX;
-				}
-				else
-				{
-					variables[id] = variables[lhs] / variables[rhs];
-				}
-
-				returned_symbol_id = id;
-			}
-
-
-			void LHSassignmentfromRHS( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs )
-			{
-				variables[lhs] = variables[rhs];
-				returned_symbol_id = lhs;
-			}
-
-
-			double Value(const int name)
-			{
-				return( variables[name] );
-			}
-
-
-			const char * StringFromDouble(const double name)
-			{
-				std::ostringstream ossName;
-				ossName << name;
-
-				string_tokens.push_back(ossName.str());
-				return(string_tokens.back().c_str());
-			}
-
-
-			const char *StringDuplication( const char *value )
-			{
-				string_tokens.push_back(value);
-				return(string_tokens.back().c_str());
-			}
-
-			double radians_to_degrees( const double radians )
-			{
-				double a = radians;
-				return( (radians / (2.0 * M_PI)) * 360.0 );
-			}
-
-			double degrees_to_radians( const double degrees )
-			{
-				double a = degrees;
-				return( (degrees / 360.0) * (2.0 * M_PI) );
-			}
-
-
-			void ASin(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
-			{
-				int id=variables.new_id();
-				variables[id] = radians_to_degrees( asin(degrees_to_radians(variables[symbol_id] )) );
-				returned_symbol_id = id;
-			}
-
-			void ACos(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
-			{
-				int id=variables.new_id();
-				variables[id] = radians_to_degrees( acos(degrees_to_radians(variables[symbol_id] )) );
-				returned_symbol_id = id;
-			}
-
-			void ATan(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
-			{
-				int id=variables.new_id();
-				double radians = atan2(variables[lhs], variables[rhs]);
-				variables[id] = radians_to_degrees( radians );
-				returned_symbol_id = id;
-			}
-
-			void Sin(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
-			{
-				int id=variables.new_id();
-				variables[id] = radians_to_degrees( sin(degrees_to_radians(variables[symbol_id] )) );
-				returned_symbol_id = id;
-			}
-
-			void Cos(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
-			{
-				int id=variables.new_id();
-				variables[id] = radians_to_degrees( cos(degrees_to_radians(variables[symbol_id] )) );
-				returned_symbol_id = id;
-			}
-
-			void Tan(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
-			{
-				int id=variables.new_id();
-				variables[id] = radians_to_degrees( tan(degrees_to_radians(variables[symbol_id] )) );
-				returned_symbol_id = id;
-			}
-
-			void AbsoluteValue(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
-			{
-				int id=variables.new_id();
-				variables[id] = abs(variables[symbol_id]);
-				returned_symbol_id = id;
-			}
-
-			void	Sqrt(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
-			{
-				int id=variables.new_id();
-				variables[id] = sqrt(variables[symbol_id]);
-				returned_symbol_id = id;
-			}
-
-			void	Exp(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
-			{
-				int id=variables.new_id();
-				variables[id] = exp((variables[symbol_id]));
-				returned_symbol_id = id;
-			}
-
-			void	Fix(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
-			{
-				int id=variables.new_id();
-				variables[id] = int(floor(((variables[symbol_id]))));
-				returned_symbol_id = id;
-			}
-
-			void	Fup(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
-			{
-				int id=variables.new_id();
-				variables[id] = int(ceil(((variables[symbol_id]))));
-				returned_symbol_id = id;
-			}
-
-			void	Round(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
-			{
-				int id=variables.new_id();
-				variables[id] = int(((variables[symbol_id])));
-				returned_symbol_id = id;
-			}
-
-			void	Ln(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
-			{
-				int id=variables.new_id();
-				variables[id] = log(variables[symbol_id]);
-				returned_symbol_id = id;
-			}
-
-			void Exists(bool return_value, const int symbol_id)
-			{
-				return_value = variables.exists(symbol_id);
-			}
-
-
-			/**
-				Adjust the value for the active coordinate system.  The parameter_offset is 0 for x, 1 for y etc.
-				We want to arrange the GCode so that the G54 (the first relative coordinate system) lines up
-				with the HeeksCAD drawing coordinate system.  All other coordinates are moved around that
-				relative position.  We're using the fact that the gcode_variables map was initialized
-				from the emc.var file to set the offsets of the various coordinate systems.
-
-				The parameter_offset is added to the modal_coordinate_system base number (eg: 5221 for G54)
-				to indicate which variable within that coordinate system we're referring to.  eg: 0 = x,
-				1 = y etc.
-			 */
-			double adjust( const int parameter_offset, const double value_in_parse_units )
-			{
-				double value_in_emc2_units = Emc2Units(value_in_parse_units);
-				double tool_length_offset = 0.0;
-
-				if (parameter_offset == 2)
-				{
-					// We're adjusting a Z coordinate so add the tool length offset
-					tool_length_offset = this->tool_length_offset;
-				}
-
-				if (parameter_offset >= 9)
-				{
-					qDebug("Parameter offset must be less than 9.  It is %d instead\n", parameter_offset);
-					return( HeeksUnits(value_in_emc2_units) );
-				}
-
-				double g54_offset = variables[LinuxCNC::eG54VariableBase + parameter_offset];
-				double g92_offset = variables[LinuxCNC::eG92VariableBase + parameter_offset];
-
-				if (variables[LinuxCNC::eG92Enabled] > 0.0)
-				{
-					// Copy the values from the gcode_variables into the local cache.
-					return(HeeksUnits(value_in_emc2_units - g54_offset + g92_offset + tool_length_offset));
-				}
-
-				if (this->current_coordinate_system == LinuxCNC::csG53)
-				{
-					// We need to move the point so that it's relavitve to the eG54 coordinate system.
-					return(HeeksUnits(value_in_emc2_units - g54_offset + tool_length_offset));
-				}
-
-				int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->modal_coordinate_system - 1) * 20);
-				int name = coordinate_system_offset + parameter_offset;
-
-				return(HeeksUnits(value_in_emc2_units - g54_offset + variables[name] + tool_length_offset));
-			}
-
-			// Utility method for easy shorthand later.
-			bool Specified(const char name) const
-			{
-				if (motion_arguments.find(name) == motion_arguments.end()) return(false);
-				return(true);
-			}
-
-			/**
-				We've accumulated all the command line arguments as well as the statement
-				type for this line (block).  Go ahead and adjust any of the command line
-				arguments based on current machine settings and generate the graphics
-				that represent this tool movement.
-			 */
-			void ProcessBlock()
-			{
-				qDebug("Processing block\n");
-				Print();
-				ResetForEndOfBlock();
-	
-				if (this->statement_type == LinuxCNC::stUndefined)
-				{
-					switch (this->previous_statement_type)
-					{
-						// If it's one of the 'modal' commands then we don't actually NEED to see
-						// that command again in the next block.  We could just be given the next
-						// set of coordinates for the same command.  In this case, keep the
-						// statement type as it is.  If another is seen, it will be overridden.
-						case LinuxCNC::stProbe:
-						case LinuxCNC::stFeed:
-						case LinuxCNC::stArcClockwise:
-						case LinuxCNC::stArcCounterClockwise:
-						case LinuxCNC::stDrilling:
-						case LinuxCNC::stBoring:
-						case LinuxCNC::stTapping:
-							this->statement_type = this->previous_statement_type;	// Reinstate the previous statement type.
-						break;
-					}
-				} // End if - then
-
-
-				if (::size_t(this->line_offset) < this->machine_program->getMachineProgram()->size())
-				{
-					GCode::GraphicalReference graphics(this->machine_program);
-					graphics.Index( this->line_offset );
-					graphics.CoordinateSystem(this->modal_coordinate_system);
-
-					switch (this->statement_type)
-					{
-					case LinuxCNC::stUndefined:
-						break;
-
-					case LinuxCNC::stDataSetting:
-						// The G10 statement has been specified.  Look at the L argument to see what needs to be set.
-						if (this->l_specified && this->p_specified)
-						{
-							if (this->l == 20)
-							{
-								// We need to make the current coordinate be whatever the arguments say they are.  i.e.
-								// adjust the appropriate coordinate system offset accordingly.
-
-								int coordinate_system = this->p;
-
-								if (this->x_specified)
-								{
-									int parameter_offset = 0;	// x
-									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->p - 1) * 20);
-									int name = coordinate_system_offset + parameter_offset;
-									double offset_in_heeks_units = HeeksUnits( variables[name] );
-									double offset_in_emc2_units = Emc2Units( this->x ) - variables[name];
-									variables[name] = variables[name] + offset_in_emc2_units;
-								}
-
-								if (this->y_specified)
-								{
-									int parameter_offset = 1;	// y
-									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->p - 1) * 20);
-									int name = coordinate_system_offset + parameter_offset;
-									double offset_in_heeks_units = HeeksUnits( variables[name] );
-									double offset_in_emc2_units = Emc2Units( this->y ) - variables[name];
-									variables[name] = variables[name] + offset_in_emc2_units;
-								}
-
-								if (this->z_specified)
-								{
-									int parameter_offset = 2;	// z
-									int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->p - 1) * 20);
-									int name = coordinate_system_offset + parameter_offset;
-									double offset_in_heeks_units = HeeksUnits( variables[name] );
-									double offset_in_emc2_units = Emc2Units( this->z ) - variables[name];
-									variables[name] = variables[name] + offset_in_emc2_units;
-								}
-							}
-						}
-						break;
-
-					case LinuxCNC::stToolLengthEnabled:
-						// The Z parameters given determine where we should think
-						// we are right now.
-						// this->tool_length_offset = this->k - ParseUnits(variables[eG54VariableBase+2]);
-						/*
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line z=\"") << adjust(2,this->z) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-							*/
-						break;
-
-					case LinuxCNC::stToolLengthDisabled:
-						// The Z parameters given determine where we should think
-						// we are right now.
-						this->tool_length_offset = 0.0;
-						/*
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line z=\"") << adjust(2,this->previous[2]) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-							*/
-						break;
-
-					case LinuxCNC::stRapid:
-						/*
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line ");
-						if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
-						if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
-						if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
-						xml << _T("/>\n")
-							<< _T("</path>\n");
-							*/
-						break;
-
-					case LinuxCNC::stFeed:
-						/*
-						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line ");
-						if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
-						if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
-						if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
-						xml << _T("/>\n")
-							<< _T("</path>\n");
-							*/
-						if (this->feed_rate <= 0.0) 
-						{
-							QString warning;
-							warning = QString::fromAscii("Zero feed rate found for feed movement - line ") + this->line_number;
-							pLinuxCNC->AddWarning(warning);
-						}
-						break;
-
+					// If it's one of the 'modal' commands then we don't actually NEED to see
+					// that command again in the next block.  We could just be given the next
+					// set of coordinates for the same command.  In this case, keep the
+					// statement type as it is.  If another is seen, it will be overridden.
 					case LinuxCNC::stProbe:
-						/*
-						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line ");
-						if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
-						if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
-						if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
-						xml << _T("/>\n")
-							<< _T("</path>\n");
-							*/
-
-						// Assume that the furthest point of probing tripped the switch.  Store this location
-						// as though we found our probed object here.
-						variables[LinuxCNC::eG38_2VariableBase + 0] = ParseUnitsFromHeeksUnits(adjust(0,this->x));
-						variables[LinuxCNC::eG38_2VariableBase + 1] = ParseUnitsFromHeeksUnits(adjust(1,this->y));
-						variables[LinuxCNC::eG38_2VariableBase + 2] = ParseUnitsFromHeeksUnits(adjust(2,this->z));
-
-						variables[LinuxCNC::eG38_2VariableBase + 3] = adjust(3,this->a);
-						variables[LinuxCNC::eG38_2VariableBase + 4] = adjust(4,this->b);
-						variables[LinuxCNC::eG38_2VariableBase + 5] = adjust(5,this->c);
-
-						variables[LinuxCNC::eG38_2VariableBase + 6] = ParseUnitsFromHeeksUnits(adjust(6,this->u));
-						variables[LinuxCNC::eG38_2VariableBase + 7] = ParseUnitsFromHeeksUnits(adjust(7,this->v));
-						variables[LinuxCNC::eG38_2VariableBase + 8] = ParseUnitsFromHeeksUnits(adjust(8,this->w));
-
-						if (this->feed_rate <= 0.0) 
-						{
-							QString warning;
-							warning = QString::fromAscii("Zero feed rate found for probe movement - line ") + this->line_number;
-							pLinuxCNC->AddWarning(warning);
-						}
-						break;
-
+					case LinuxCNC::stFeed:
 					case LinuxCNC::stArcClockwise:
-						/*
-						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<arc x=\"") << adjust(0,this->x) << _T("\" ")
-							<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-							<< _T("z=\"") << adjust(1,this->z) << _T("\" ")
-							<< _T("i=\"") << HeeksUnits(Emc2Units(this->i)) << _T("\" ")
-							<< _T("j=\"") << HeeksUnits(Emc2Units(this->j)) << _T("\" ")
-							<< _T("k=\"") << HeeksUnits(Emc2Units(this->k)) << _T("\" ")
-							<< _T("d=\"-1\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						*/
-							{
-								// Confirm that the previous location, the center-point and the final location all make
-								// sense for an arc movement.  If we have a rounding error then we want to know it.
-								gp_Pnt start(this->previous[0], this->previous[1], this->previous[2]);
-								gp_Pnt end(this->x, this->y, this->z);
-								gp_Pnt centre(this->i + this->previous[0], this->j + this->previous[1], this->k + this->previous[2]);
-
-								switch (this->plane)
-								{
-								case LinuxCNC::eXYPlane:
-									start  = gp_Pnt(this->previous[0],                  this->previous[1],                  0.0);
-									end    = gp_Pnt(this->x,                            this->y,                            0.0);
-									centre = gp_Pnt(this->i + this->previous[0], this->j + this->previous[1], 0.0);
-									break;
-
-								case LinuxCNC::eXZPlane:
-									start  = gp_Pnt(this->previous[0],                  0.0, this->previous[2]);
-									end    = gp_Pnt(this->x,                            0.0, this->y);
-									centre = gp_Pnt(this->i + this->previous[0], 0.0, this->k + this->previous[2]);
-									break;
-
-								case LinuxCNC::eYZPlane:
-									start  = gp_Pnt(0.0, this->previous[1],                  this->previous[2]);
-									end    = gp_Pnt(0.0, this->y,                            this->y);
-									centre = gp_Pnt(0.0, this->j + this->previous[1], this->k + this->previous[2]);
-									break;
-								} // End switch
-
-								double error = fabs(fabs(centre.Distance(end)) - fabs(start.Distance(centre)));
-								double tolerance = 1.0 / pow(10, double(ToolPath::RequiredDecimalPlaces()));
-								if (error > tolerance)
-								{
-									double magnitude = (fabs(error) - fabs(tolerance)) * pow(10, double(Python::RequiredDecimalPlaces()-1));
-									if (magnitude > 1.0)
-									{
-										wxString msg;
-										msg << _T("Clockwise arc offset between start and centre does not match that between centre and end.");
-										// msg << _T(" error is ") << error << _T(" line ") << this->line_number;
-										popup_warnings.insert(msg.c_str());
-									}
-								}
-							}
-
-							if (this->feed_rate <= 0.0) popup_warnings.insert(_("Zero feed rate found for arc movement"));
-						break;
-
 					case LinuxCNC::stArcCounterClockwise:
-						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<arc x=\"") << adjust(0,this->x) << _T("\" ")
-							<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-							<< _T("z=\"") << adjust(1,this->z) << _T("\" ")
-							<< _T("i=\"") << HeeksUnits(Emc2Units(this->i)) << _T("\" ")
-							<< _T("j=\"") << HeeksUnits(Emc2Units(this->j)) << _T("\" ")
-							<< _T("k=\"") << HeeksUnits(Emc2Units(this->k)) << _T("\" ")
-							<< _T("d=\"1\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
+					case LinuxCNC::stDrilling:
+					case LinuxCNC::stBoring:
+					case LinuxCNC::stTapping:
+						this->statement_type = this->previous_statement_type;	// Reinstate the previous statement type.
+					break;
+				}
+			} // End if - then
 
+
+			if (::size_t(this->line_offset) < ::size_t(this->machine_program->getMachineProgram()->size()))
+			{
+				GCode::GraphicalReference graphics(this->machine_program);
+				graphics.Index( this->line_offset );
+				graphics.CoordinateSystem(this->modal_coordinate_system);
+
+				switch (this->statement_type)
+				{
+				case LinuxCNC::stUndefined:
+					break;
+
+				case LinuxCNC::stDataSetting:
+					// The G10 statement has been specified.  Look at the L argument to see what needs to be set.
+					if (this->l_specified && this->p_specified)
+					{
+						if (this->l == 20)
+						{
+							// We need to make the current coordinate be whatever the arguments say they are.  i.e.
+							// adjust the appropriate coordinate system offset accordingly.
+
+							int coordinate_system = this->p;
+
+							if (this->x_specified)
 							{
-								// Confirm that the previous location, the center-point and the final location all make
-								// sense for an arc movement.  If we have a rounding error then we want to know it.
-								gp_Pnt start(this->previous[0], this->previous[1], this->previous[2]);
-								gp_Pnt end(this->x, this->y, this->z);
-								gp_Pnt centre(this->i + this->previous[0], this->j + this->previous[1], this->k + this->previous[2]);
+								int parameter_offset = 0;	// x
+								int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->p - 1) * 20);
+								int name = coordinate_system_offset + parameter_offset;
+								double offset_in_heeks_units = HeeksUnits( variables[name] );
+								double offset_in_emc2_units = Emc2Units( this->x ) - variables[name];
+								variables[name] = variables[name] + offset_in_emc2_units;
+							}
 
-								switch (this->plane)
+							if (this->y_specified)
+							{
+								int parameter_offset = 1;	// y
+								int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->p - 1) * 20);
+								int name = coordinate_system_offset + parameter_offset;
+								double offset_in_heeks_units = HeeksUnits( variables[name] );
+								double offset_in_emc2_units = Emc2Units( this->y ) - variables[name];
+								variables[name] = variables[name] + offset_in_emc2_units;
+							}
+
+							if (this->z_specified)
+							{
+								int parameter_offset = 2;	// z
+								int coordinate_system_offset = LinuxCNC::eG54VariableBase + ((this->p - 1) * 20);
+								int name = coordinate_system_offset + parameter_offset;
+								double offset_in_heeks_units = HeeksUnits( variables[name] );
+								double offset_in_emc2_units = Emc2Units( this->z ) - variables[name];
+								variables[name] = variables[name] + offset_in_emc2_units;
+							}
+						}
+					}
+					break;
+
+				case LinuxCNC::stToolLengthEnabled:
+					// The Z parameters given determine where we should think
+					// we are right now.
+					// this->tool_length_offset = this->k - ParseUnits(variables[eG54VariableBase+2]);
+					/*
+					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line z=\"") << adjust(2,this->z) << _T("\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+						*/
+					break;
+
+				case LinuxCNC::stToolLengthDisabled:
+					// The Z parameters given determine where we should think
+					// we are right now.
+					this->tool_length_offset = 0.0;
+					/*
+					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line z=\"") << adjust(2,this->previous[2]) << _T("\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+						*/
+					break;
+
+				case LinuxCNC::stRapid:
+					/*
+					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line ");
+					if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
+					if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
+					if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
+					xml << _T("/>\n")
+						<< _T("</path>\n");
+						*/
+					break;
+
+				case LinuxCNC::stFeed:
+					/*
+					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line ");
+					if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
+					if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
+					if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
+					xml << _T("/>\n")
+						<< _T("</path>\n");
+						*/
+					if (this->feed_rate <= 0.0) 
+					{
+						QString warning;
+						warning = QString::fromAscii("Zero feed rate found for feed movement - line ") + this->line_number;
+						pLinuxCNC->AddWarning(warning);
+					}
+					break;
+
+				case LinuxCNC::stProbe:
+					/*
+					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line ");
+					if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
+					if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
+					if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
+					xml << _T("/>\n")
+						<< _T("</path>\n");
+						*/
+
+					// Assume that the furthest point of probing tripped the switch.  Store this location
+					// as though we found our probed object here.
+					variables[LinuxCNC::eG38_2VariableBase + 0] = ParseUnitsFromHeeksUnits(adjust(0,this->x));
+					variables[LinuxCNC::eG38_2VariableBase + 1] = ParseUnitsFromHeeksUnits(adjust(1,this->y));
+					variables[LinuxCNC::eG38_2VariableBase + 2] = ParseUnitsFromHeeksUnits(adjust(2,this->z));
+
+					variables[LinuxCNC::eG38_2VariableBase + 3] = adjust(3,this->a);
+					variables[LinuxCNC::eG38_2VariableBase + 4] = adjust(4,this->b);
+					variables[LinuxCNC::eG38_2VariableBase + 5] = adjust(5,this->c);
+
+					variables[LinuxCNC::eG38_2VariableBase + 6] = ParseUnitsFromHeeksUnits(adjust(6,this->u));
+					variables[LinuxCNC::eG38_2VariableBase + 7] = ParseUnitsFromHeeksUnits(adjust(7,this->v));
+					variables[LinuxCNC::eG38_2VariableBase + 8] = ParseUnitsFromHeeksUnits(adjust(8,this->w));
+
+					if (this->feed_rate <= 0.0) 
+					{
+						QString warning;
+						warning = QString::fromAscii("Zero feed rate found for probe movement - line ") + this->line_number;
+						pLinuxCNC->AddWarning(warning);
+					}
+					break;
+
+				case LinuxCNC::stArcClockwise:
+					/*
+					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<arc x=\"") << adjust(0,this->x) << _T("\" ")
+						<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
+						<< _T("z=\"") << adjust(1,this->z) << _T("\" ")
+						<< _T("i=\"") << HeeksUnits(Emc2Units(this->i)) << _T("\" ")
+						<< _T("j=\"") << HeeksUnits(Emc2Units(this->j)) << _T("\" ")
+						<< _T("k=\"") << HeeksUnits(Emc2Units(this->k)) << _T("\" ")
+						<< _T("d=\"-1\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+					*/
+						{
+							// Confirm that the previous location, the center-point and the final location all make
+							// sense for an arc movement.  If we have a rounding error then we want to know it.
+							gp_Pnt start(this->previous[0], this->previous[1], this->previous[2]);
+							gp_Pnt end(this->x, this->y, this->z);
+							gp_Pnt centre(this->i + this->previous[0], this->j + this->previous[1], this->k + this->previous[2]);
+
+							switch (this->plane)
+							{
+							case LinuxCNC::eXYPlane:
+								start  = gp_Pnt(this->previous[0],                  this->previous[1],                  0.0);
+								end    = gp_Pnt(this->x,                            this->y,                            0.0);
+								centre = gp_Pnt(this->i + this->previous[0], this->j + this->previous[1], 0.0);
+								break;
+
+							case LinuxCNC::eXZPlane:
+								start  = gp_Pnt(this->previous[0],                  0.0, this->previous[2]);
+								end    = gp_Pnt(this->x,                            0.0, this->y);
+								centre = gp_Pnt(this->i + this->previous[0], 0.0, this->k + this->previous[2]);
+								break;
+
+							case LinuxCNC::eYZPlane:
+								start  = gp_Pnt(0.0, this->previous[1],                  this->previous[2]);
+								end    = gp_Pnt(0.0, this->y,                            this->y);
+								centre = gp_Pnt(0.0, this->j + this->previous[1], this->k + this->previous[2]);
+								break;
+							} // End switch
+
+							
+							double error = fabs(fabs(centre.Distance(end)) - fabs(start.Distance(centre)));
+							double tolerance = pLinuxCNC->Tolerance();
+							if (error > pLinuxCNC->Tolerance())
+							{
+								double magnitude = (fabs(error) - fabs(tolerance)) * pow(10, double(pLinuxCNC->RequiredDecimalPlaces()-1));
+								if (magnitude > 1.0)
 								{
-								case LinuxCNC::eXYPlane:
-									start  = gp_Pnt(this->previous[0],                  this->previous[1],                  0.0);
-									end    = gp_Pnt(this->x,                            this->y,                            0.0);
-									centre = gp_Pnt(this->i + this->previous[0], this->j + this->previous[1], 0.0);
-									break;
-
-								case LinuxCNC::eXZPlane:
-									start  = gp_Pnt(this->previous[0],                  0.0, this->previous[2]);
-									end    = gp_Pnt(this->x,                            0.0, this->y);
-									centre = gp_Pnt(this->i + this->previous[0], 0.0, this->k + this->previous[2]);
-									break;
-
-								case LinuxCNC::eYZPlane:
-									start  = gp_Pnt(0.0, this->previous[1],                  this->previous[2]);
-									end    = gp_Pnt(0.0, this->y,                            this->y);
-									centre = gp_Pnt(0.0, this->j + this->previous[1], this->k + this->previous[2]);
-									break;
-								} // End switch
-
-								double error = fabs(fabs(centre.Distance(end)) - fabs(start.Distance(centre)));
-								double tolerance = 1.0 / pow(10, double(ToolPath::RequiredDecimalPlaces()));
-								if (error > tolerance)
-								{
-									double magnitude = (fabs(error) - fabs(tolerance)) * pow(10, double(ToolPath::RequiredDecimalPlaces()-1));
-									if (magnitude > 1.0)
-									{
-										wxString msg;
-										msg << _T("Counter-Clockwise arc offset between start and centre does not match that between centre and end.");
-										// msg << _T(" error is ") << error << _T(" line ") << this->line_number;
-										popup_warnings.insert(msg.c_str());
-									}
+									pLinuxCNC->AddWarning(QString::fromAscii("Clockwise arc offset between start and centre does not match that between centre and end."));
 								}
 							}
-							if (this->feed_rate <= 0.0) popup_warnings.insert(_("Zero feed rate found for arc movement"));
-						break;
-
-					case LinuxCNC::stBoring:
-					case LinuxCNC::stDrilling:
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
-							<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line z=\"") << adjust(2,this->z) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						this->z = this->r;	// We end up at the clearance (r) position.
-						if (this->feed_rate <= 0.01) popup_warnings.insert(_("Zero feed rate found for drilling movement"));
-						break;
-
-					case LinuxCNC::stTapping:
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
-							<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line z=\"") << adjust(2,this->z) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						this->z = this->r;	// We end up at the clearance (r) position.
-						if (this->feed_rate <= 0.0) popup_warnings.insert(_("Zero feed rate found for tapping movement"));
-						break;
-
-
-					case LinuxCNC::stG28:
-						// The saved position can be found in variables 5161 to 5169.
-						this->x = ParseUnits(emc_variables[ eG28VariableBase + 0 ] - emc_variables[ eG54VariableBase + 0 ]);
-						this->y = ParseUnits(emc_variables[ eG28VariableBase + 1 ] - emc_variables[ eG54VariableBase + 1 ]);
-						this->z = ParseUnits(emc_variables[ eG28VariableBase + 2 ] - emc_variables[ eG54VariableBase + 2 ]);
-						this->a = ParseUnits(emc_variables[ eG28VariableBase + 3 ] - emc_variables[ eG54VariableBase + 3 ]);
-						this->b = ParseUnits(emc_variables[ eG28VariableBase + 4 ] - emc_variables[ eG54VariableBase + 4 ]);
-						this->c = ParseUnits(emc_variables[ eG28VariableBase + 5 ] - emc_variables[ eG54VariableBase + 5 ]);
-						this->u = ParseUnits(emc_variables[ eG28VariableBase + 6 ] - emc_variables[ eG54VariableBase + 6 ]);
-						this->v = ParseUnits(emc_variables[ eG28VariableBase + 7 ] - emc_variables[ eG54VariableBase + 7 ]);
-						this->w = ParseUnits(emc_variables[ eG28VariableBase + 8 ] - emc_variables[ eG54VariableBase + 8 ]);
-
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
-							<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-							<< _T("z=\"") << adjust(2,this->z) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						break;
-
-					case LinuxCNC::stG30:
-						// The saved position can be found in variables 5181 to 5189.
-						this->x = ParseUnits(emc_variables[ eG30VariableBase + 0 ] - emc_variables[ eG54VariableBase + 0 ]);
-						this->y = ParseUnits(emc_variables[ eG30VariableBase + 1 ] - emc_variables[ eG54VariableBase + 1 ]);
-						this->z = ParseUnits(emc_variables[ eG30VariableBase + 2 ] - emc_variables[ eG54VariableBase + 2 ]);
-						this->a = ParseUnits(emc_variables[ eG30VariableBase + 3 ] - emc_variables[ eG54VariableBase + 3 ]);
-						this->b = ParseUnits(emc_variables[ eG30VariableBase + 4 ] - emc_variables[ eG54VariableBase + 4 ]);
-						this->c = ParseUnits(emc_variables[ eG30VariableBase + 5 ] - emc_variables[ eG54VariableBase + 5 ]);
-						this->u = ParseUnits(emc_variables[ eG30VariableBase + 6 ] - emc_variables[ eG54VariableBase + 6 ]);
-						this->v = ParseUnits(emc_variables[ eG30VariableBase + 7 ] - emc_variables[ eG54VariableBase + 7 ]);
-						this->w = ParseUnits(emc_variables[ eG30VariableBase + 8 ] - emc_variables[ eG54VariableBase + 8 ]);
-
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
-							<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-							<< _T("z=\"") << adjust(2,this->z) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						break;
-
-					case LinuxCNC::stG92:
-						// Make the axis values just read in become the current machine position by
-						// figuring out what these values are (in machine coordinates) and adding
-						// the offsets into a new set of coordinate system variables.  That's so
-						// we can use the adjust() routine to allow for them in subsequent
-						// commands.  This must occur until we find a G92.1 command which turns
-						// this 'temporary coordinate system' functionality off.
-						this->current_coordinate_system = csG92;
-						emc_variables[eG92Enabled] = 1.0;
-
-						emc_variables[eG92VariableBase + 0] = Emc2Units(this->previous[0]) - Emc2Units(this->x);
-						emc_variables[eG92VariableBase + 1] = Emc2Units(this->previous[1]) - Emc2Units(this->y);
-						emc_variables[eG92VariableBase + 2] = Emc2Units(this->previous[2]) - Emc2Units(this->z);
-
-						emc_variables[eG92VariableBase + 3] = Emc2Units(this->previous[3]) - Emc2Units(this->a);
-						emc_variables[eG92VariableBase + 4] = Emc2Units(this->previous[4]) - Emc2Units(this->b);
-						emc_variables[eG92VariableBase + 5] = Emc2Units(this->previous[5]) - Emc2Units(this->c);
-
-						emc_variables[eG92VariableBase + 6] = Emc2Units(this->previous[6]) - Emc2Units(this->u);
-						emc_variables[eG92VariableBase + 7] = Emc2Units(this->previous[7]) - Emc2Units(this->v);
-						emc_variables[eG92VariableBase + 8] = Emc2Units(this->previous[8]) - Emc2Units(this->w);
-						break;
-
-					case LinuxCNC::stG92_1:
-						// Turn off the 'temporary coordinate system' functionality.
-						this->current_coordinate_system = csUndefined;
-
-						// Disable the G92 offset function.
-						emc_variables[eG92Enabled] = 0.0;
-
-						// Reset the G92 offsets to all zero.
-						for (int i=eG92VariableBase; i<eG92VariableBase+9; i++)
-						{
-							emc_variables[i] = 0.0;
 						}
 
-						break;
+						if (this->feed_rate <= 0.0) pLinuxCNC->AddWarning(QString::fromAscii("Zero feed rate found for arc movement"));
+					break;
 
-					case LinuxCNC::stG92_2:
-						// Disable the G92 offset function but don't reset the offsets in the memory locations.
-						emc_variables[eG92Enabled] = 0.0;
-						break;
-
-					case LinuxCNC::stG92_3:
-						// Re-Enable the G92 offset function and don't change the offsets in the memory locations.
-						emc_variables[eG92Enabled] = 1.0;
-						break;
-
-					case LinuxCNC::stAxis:
-						// Nothing extra special to do here.
-						break;
-
-					} // End switch
-
-					xml << _T("</ncblock>\n");
-				}
-
-			} // End AddToHeeks() routine
-
-
-			void ResetForEndOfBlock()
-			{
-				/*
-				FILE *fp = fopen("c:\\temp\\david.log","a+t");
-				fprintf(fp,"%s\n", this->line_number);
-				fprintf(fp,"%s\n", variables.log().c_str());
-				fclose(fp);
-				*/
-
-				this->previous_statement_type = this->statement_type;
-				this->statement_type = LinuxCNC::stUndefined;
-
-				std::copy( motion_arguments.begin(), motion_arguments.end(), std::inserter( previous_motion_arguments, previous_motion_arguments.begin()));
-				motion_arguments.clear();
-			} // End ResetForEndOfBlock() routine
-
-
-
-
-			/**
-				Initialize all nine variables from this base number to the value given.
-			 */
-			void InitOneCoordinateSystem( const int base, const double value )
-			{
-				for (int var=base; var<=base + 8; var++)
-				{
-					variables[var] = value;
-				}
-			}
-
-			void InitializeGCodeVariables()
-			{
-				InitOneCoordinateSystem(LinuxCNC::eG38_2VariableBase, 0.0);
-				InitOneCoordinateSystem(LinuxCNC::eG28VariableBase, 0.0);
-				InitOneCoordinateSystem(LinuxCNC::eG30VariableBase, 0.0);
-				InitOneCoordinateSystem(LinuxCNC::eG92VariableBase, 0.0);
-
-				// Coordinate system number (1 = G54, 2=G55 etc.)
-				{
-					variables[LinuxCNC::eCoordinateSystemInUse] = 1.0;
-				}
-
-				/*
-				const wxChar *not_used = _("Not Used");
-				if (PROGRAM->m_emc2_variables_file_name != not_used)
-				{
-					FILE *fp = fopen(PROGRAM->m_emc2_variables_file_name.utf8_str(),"r");
-					if (fp == NULL)
-					{
-						wxString error;
-						error << _("Could not open ") << PROGRAM->m_emc2_variables_file_name << _(" for reading. Would you like to turn off the use of the EMC2 variables file?");
-						int answer = wxMessageBox( error, _("EMC2 Variables File"), wxYES_NO );
-						if (answer == wxYES)
+				case LinuxCNC::stArcCounterClockwise:
+					/*
+					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<arc x=\"") << adjust(0,this->x) << _T("\" ")
+						<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
+						<< _T("z=\"") << adjust(1,this->z) << _T("\" ")
+						<< _T("i=\"") << HeeksUnits(Emc2Units(this->i)) << _T("\" ")
+						<< _T("j=\"") << HeeksUnits(Emc2Units(this->j)) << _T("\" ")
+						<< _T("k=\"") << HeeksUnits(Emc2Units(this->k)) << _T("\" ")
+						<< _T("d=\"1\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+					*/
 						{
-							PROGRAM->SetEmc2VariablesFileName( not_used );
-						} // End if - then
-					}
-					else
-					{
-						char buf[1024];
-						memset( buf, '\0', sizeof(buf) );
-						while (fgets(buf, sizeof(buf)-1, fp) != NULL)
-						{
-							std::string line(buf);
-							std::string::size_type offset=line.find_first_of("\t ");
-							if (offset != std::string::npos)
+							// Confirm that the previous location, the center-point and the final location all make
+							// sense for an arc movement.  If we have a rounding error then we want to know it.
+							gp_Pnt start(this->previous[0], this->previous[1], this->previous[2]);
+							gp_Pnt end(this->x, this->y, this->z);
+							gp_Pnt centre(this->i + this->previous[0], this->j + this->previous[1], this->k + this->previous[2]);
+
+							switch (this->plane)
 							{
-								std::string name = line.substr(0, offset);
-								while (isspace(line[offset])) offset++;
-								std::string value = line.substr(offset);
+							case LinuxCNC::eXYPlane:
+								start  = gp_Pnt(this->previous[0],                  this->previous[1],                  0.0);
+								end    = gp_Pnt(this->x,                            this->y,                            0.0);
+								centre = gp_Pnt(this->i + this->previous[0], this->j + this->previous[1], 0.0);
+								break;
 
-								variables[name.c_str()] = atof(value.c_str());
-							} // End if - then
-						} // End while
-						fclose(fp);
-						fp = NULL;
-					} // End if - then
-				} // End if - then
-				*/
+							case LinuxCNC::eXZPlane:
+								start  = gp_Pnt(this->previous[0],                  0.0, this->previous[2]);
+								end    = gp_Pnt(this->x,                            0.0, this->y);
+								centre = gp_Pnt(this->i + this->previous[0], 0.0, this->k + this->previous[2]);
+								break;
 
+							case LinuxCNC::eYZPlane:
+								start  = gp_Pnt(0.0, this->previous[1],                  this->previous[2]);
+								end    = gp_Pnt(0.0, this->y,                            this->y);
+								centre = gp_Pnt(0.0, this->j + this->previous[1], this->k + this->previous[2]);
+								break;
+							} // End switch
+
+							double error = fabs(fabs(centre.Distance(end)) - fabs(start.Distance(centre)));
+							double tolerance = pLinuxCNC->Tolerance();
+							if (error > pLinuxCNC->Tolerance())
+							{
+								double magnitude = (fabs(error) - fabs(tolerance)) * pow(10, double(pLinuxCNC->RequiredDecimalPlaces()-1));
+								if (magnitude > 1.0)
+								{
+									pLinuxCNC->AddWarning(QString::fromAscii("Counter-clockwise arc offset between start and centre does not match that between centre and end."));
+								}
+							}
+						}
+
+						if (this->feed_rate <= 0.0) pLinuxCNC->AddWarning(QString::fromAscii("Zero feed rate found for arc movement"));
+					break;
+
+				case LinuxCNC::stBoring:
+				case LinuxCNC::stDrilling:
+					/*
+					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
+						<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line z=\"") << adjust(2,this->z) << _T("\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+					*/
+					this->z = this->r;	// We end up at the clearance (r) position.
+					if (this->feed_rate <= 0.0) pLinuxCNC->AddWarning(QString::fromAscii("Zero feed rate found for arc movement"));
+					break;
+
+				case LinuxCNC::stTapping:
+					/*
+					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
+						<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line z=\"") << adjust(2,this->z) << _T("\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+					*/
+					this->z = this->r;	// We end up at the clearance (r) position.
+					if (this->feed_rate <= 0.0) pLinuxCNC->AddWarning(QString::fromAscii("Zero feed rate found for arc movement"));
+					break;
+
+
+				case LinuxCNC::stG28:
+					// The saved position can be found in variables 5161 to 5169.
+					this->x = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 0 ] - variables[ LinuxCNC::eG54VariableBase + 0 ]);
+					this->y = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 1 ] - variables[ LinuxCNC::eG54VariableBase + 1 ]);
+					this->z = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 2 ] - variables[ LinuxCNC::eG54VariableBase + 2 ]);
+					this->a = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 3 ] - variables[ LinuxCNC::eG54VariableBase + 3 ]);
+					this->b = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 4 ] - variables[ LinuxCNC::eG54VariableBase + 4 ]);
+					this->c = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 5 ] - variables[ LinuxCNC::eG54VariableBase + 5 ]);
+					this->u = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 6 ] - variables[ LinuxCNC::eG54VariableBase + 6 ]);
+					this->v = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 7 ] - variables[ LinuxCNC::eG54VariableBase + 7 ]);
+					this->w = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 8 ] - variables[ LinuxCNC::eG54VariableBase + 8 ]);
+
+					/*
+					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
+						<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
+						<< _T("z=\"") << adjust(2,this->z) << _T("\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+					*/
+					break;
+
+				case LinuxCNC::stG30:
+					// The saved position can be found in variables 5181 to 5189.
+					this->x = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 0 ] - variables[ LinuxCNC::eG54VariableBase + 0 ]);
+					this->y = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 1 ] - variables[ LinuxCNC::eG54VariableBase + 1 ]);
+					this->z = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 2 ] - variables[ LinuxCNC::eG54VariableBase + 2 ]);
+					this->a = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 3 ] - variables[ LinuxCNC::eG54VariableBase + 3 ]);
+					this->b = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 4 ] - variables[ LinuxCNC::eG54VariableBase + 4 ]);
+					this->c = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 5 ] - variables[ LinuxCNC::eG54VariableBase + 5 ]);
+					this->u = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 6 ] - variables[ LinuxCNC::eG54VariableBase + 6 ]);
+					this->v = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 7 ] - variables[ LinuxCNC::eG54VariableBase + 7 ]);
+					this->w = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 8 ] - variables[ LinuxCNC::eG54VariableBase + 8 ]);
+
+					/*
+					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+						<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
+						<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
+						<< _T("z=\"") << adjust(2,this->z) << _T("\" ")
+						<< _T("/>\n")
+						<< _T("</path>\n");
+					*/
+					break;
+
+				case LinuxCNC::stG92:
+					// Make the axis values just read in become the current machine position by
+					// figuring out what these values are (in machine coordinates) and adding
+					// the offsets into a new set of coordinate system variables.  That's so
+					// we can use the adjust() routine to allow for them in subsequent
+					// commands.  This must occur until we find a G92.1 command which turns
+					// this 'temporary coordinate system' functionality off.
+					this->current_coordinate_system = LinuxCNC::csG92;
+					variables[LinuxCNC::eG92Enabled] = 1.0;
+
+					variables[LinuxCNC::eG92VariableBase + 0] = Emc2Units(this->previous[0]) - Emc2Units(this->x);
+					variables[LinuxCNC::eG92VariableBase + 1] = Emc2Units(this->previous[1]) - Emc2Units(this->y);
+					variables[LinuxCNC::eG92VariableBase + 2] = Emc2Units(this->previous[2]) - Emc2Units(this->z);
+
+					variables[LinuxCNC::eG92VariableBase + 3] = Emc2Units(this->previous[3]) - Emc2Units(this->a);
+					variables[LinuxCNC::eG92VariableBase + 4] = Emc2Units(this->previous[4]) - Emc2Units(this->b);
+					variables[LinuxCNC::eG92VariableBase + 5] = Emc2Units(this->previous[5]) - Emc2Units(this->c);
+
+					variables[LinuxCNC::eG92VariableBase + 6] = Emc2Units(this->previous[6]) - Emc2Units(this->u);
+					variables[LinuxCNC::eG92VariableBase + 7] = Emc2Units(this->previous[7]) - Emc2Units(this->v);
+					variables[LinuxCNC::eG92VariableBase + 8] = Emc2Units(this->previous[8]) - Emc2Units(this->w);
+					break;
+
+				case LinuxCNC::stG92_1:
+					// Turn off the 'temporary coordinate system' functionality.
+					this->current_coordinate_system = LinuxCNC::csUndefined;
+
+					// Disable the G92 offset function.
+					variables[LinuxCNC::eG92Enabled] = 0.0;
+
+					// Reset the G92 offsets to all zero.
+					for (int i=LinuxCNC::eG92VariableBase; i<LinuxCNC::eG92VariableBase+9; i++)
+					{
+						variables[i] = 0.0;
+					}
+
+					break;
+
+				case LinuxCNC::stG92_2:
+					// Disable the G92 offset function but don't reset the offsets in the memory locations.
+					variables[LinuxCNC::eG92Enabled] = 0.0;
+					break;
+
+				case LinuxCNC::stG92_3:
+					// Re-Enable the G92 offset function and don't change the offsets in the memory locations.
+					variables[LinuxCNC::eG92Enabled] = 1.0;
+					break;
+
+				case LinuxCNC::stAxis:
+					// Nothing extra special to do here.
+					break;
+
+				} // End switch
+
+				// xml << _T("</ncblock>\n");
 			}
+
+		} // End AddToHeeks() routine
+
+
+		void ResetForEndOfBlock()
+		{
+			/*
+			FILE *fp = fopen("c:\\temp\\david.log","a+t");
+			fprintf(fp,"%s\n", this->line_number);
+			fprintf(fp,"%s\n", emc_variables.log().c_str());
+			fclose(fp);
+			*/
+
+			this->previous_statement_type = this->statement_type;
+			this->statement_type = LinuxCNC::stUndefined;
+
+			this->line_number = 0;
+
+			this->previous[0] = this->x;
+			this->previous[1] = this->y;
+			this->previous[2] = this->z;
+			this->previous[3] = this->a;
+			this->previous[4] = this->b;
+			this->previous[5] = this->c;
+			this->previous[6] = this->u;
+			this->previous[7] = this->v;
+			this->previous[8] = this->w;
+
+			this->l = 0.0;
+			this->p = 0.0;
+			this->r = 0.0;
+			this->q = 0.0;
+
+			this->i = 0.0;
+			this->j = 0.0;
+			this->k = 0.0;
+
+			this->x_specified = 0;
+			this->y_specified = 0;
+			this->z_specified = 0;
+
+			this->a_specified = 0;
+			this->b_specified = 0;
+			this->c_specified = 0;
+
+			this->u_specified = 0;
+			this->v_specified = 0;
+			this->w_specified = 0;
+
+			this->i_specified = 0;
+			this->j_specified = 0;
+			this->k_specified = 0;
+
+			this->l_specified = 0;
+			this->p_specified = 0;
+			this->q_specified = 0;
+			this->r_specified = 0;
+
+		} // End ResetForEndOfBlock() routine
+
+
+
+		/**
+			Initialize all nine variables from this base number to the value given.
+		 */
+		void InitOneCoordinateSystem( const int base, const double value )
+		{
+			for (int var=base; var<=base + 8; var++)
+			{
+				variables[var] = value;
+			}
+		}
+
+		void InitializeGCodeVariables()
+		{
+			InitOneCoordinateSystem(LinuxCNC::eG38_2VariableBase, 0.0);
+			InitOneCoordinateSystem(LinuxCNC::eG28VariableBase, 0.0);
+			InitOneCoordinateSystem(LinuxCNC::eG30VariableBase, 0.0);
+			InitOneCoordinateSystem(LinuxCNC::eG92VariableBase, 0.0);
+
+			// Coordinate system number (1 = G54, 2=G55 etc.)
+			{
+				variables[LinuxCNC::eCoordinateSystemInUse] = 1.0;
+			}
+
+			/*
+			const wxChar *not_used = _("Not Used");
+			if (PROGRAM->m_emc2_variables_file_name != not_used)
+			{
+				FILE *fp = fopen(PROGRAM->m_emc2_variables_file_name.utf8_str(),"r");
+				if (fp == NULL)
+				{
+					wxString error;
+					error << _("Could not open ") << PROGRAM->m_emc2_variables_file_name << _(" for reading. Would you like to turn off the use of the EMC2 variables file?");
+					int answer = wxMessageBox( error, _("EMC2 Variables File"), wxYES_NO );
+					if (answer == wxYES)
+					{
+						PROGRAM->SetEmc2VariablesFileName( not_used );
+					} // End if - then
+				}
+				else
+				{
+					char buf[1024];
+					memset( buf, '\0', sizeof(buf) );
+					while (fgets(buf, sizeof(buf)-1, fp) != NULL)
+					{
+						std::string line(buf);
+						std::string::size_type offset=line.find_first_of("\t ");
+						if (offset != std::string::npos)
+						{
+							std::string name = line.substr(0, offset);
+							while (isspace(line[offset])) offset++;
+							std::string value = line.substr(offset);
+
+							variables[name.c_str()] = atof(value.c_str());
+						} // End if - then
+					} // End while
+					fclose(fp);
+					fp = NULL;
+				} // End if - then
+			} // End if - then
+			*/
+		}
 
 };
 

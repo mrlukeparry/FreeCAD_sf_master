@@ -70,6 +70,11 @@ public:
 		eYZPlane
 	} ePlane_t;
 
+	typedef enum {
+		eMetric = 0,
+		eImperial
+	} eUnits_t;
+
 public:
     GCode(MachineProgram *machine_program);
     ~GCode();
@@ -79,9 +84,14 @@ public:
 	virtual bool Parse() = 0;
 	void AddWarning(const QString warning);
 
+	double Tolerance() const { return(tolerance); }
+	int RequiredDecimalPlaces() const { return(required_decimal_places); }
+
 public:
 	MachineProgram *machine_program;
 	QStringList	warnings;
+	double tolerance;
+	int required_decimal_places;
 
 	// Define a type representing the index into the QStringList contained within the MachineProgram object.
 	// We will assign specific graphics to these for later reference.

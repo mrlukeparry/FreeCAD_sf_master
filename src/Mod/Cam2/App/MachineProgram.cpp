@@ -98,7 +98,7 @@ QStringList *MachineProgram::getErrors() {
 	return this->errors;
 }
 
-ToolPath *getToolPath()
+ToolPath *MachineProgram::getToolPath()
 {
 	if (this->toolPath != NULL)
 	{

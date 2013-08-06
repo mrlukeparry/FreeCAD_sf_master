@@ -24,7 +24,7 @@
 #define MACHINEPROGRAM_H_
 
 #include <QStringList>
-
+#include <TPG/ToolPath.h>
 
 namespace Cam {
 

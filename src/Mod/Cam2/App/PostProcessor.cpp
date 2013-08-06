@@ -76,7 +76,7 @@ PostProcessorInst::~PostProcessorInst() {
 MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postprocessor)
 {
 	// Define a new MachineProgram object to contain the GCode (stdout from the Python program)
-	MachineProgram *machine_program = new MachineProgram;
+	MachineProgram *machine_program = new MachineProgram(toolpath);
 
 	// Lock the 'Global Interpreter Lock' so that we're not interrupted during our execution.
 	Base::PyGILStateLocker locker;	

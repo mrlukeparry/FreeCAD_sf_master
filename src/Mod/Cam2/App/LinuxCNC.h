@@ -40,8 +40,6 @@ public:
     LinuxCNC(MachineProgram *machine_program);
     ~LinuxCNC();
 
-	MachineProgram *GetMachineProgram();
-
 public:
 	virtual bool Parse();
 

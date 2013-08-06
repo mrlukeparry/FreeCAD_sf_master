@@ -43,9 +43,19 @@ std::ostringstream CamExport GCode_GrammarDebugOutputBuffer;
 
 GCode::GCode(MachineProgram *machine_program)
 {
+	required_decimal_places = 3;
+	tolerance = 1.0 / pow(10.0, double(required_decimal_places));
+
 	if (machine_program != NULL)
 	{
 		this->machine_program = machine_program->grab();	// Let the MachineProgram object know we're watching.
+
+		// Get a reference to the ToolPath object so we can calculate the required tolerance.  Once calculated,
+		// discard the ToolPath reference and keep the answer instead.
+		ToolPath *toolPath = this->machine_program->getToolPath();
+		this->required_decimal_places = toolPath->RequiredDecimalPlaces();
+		this->tolerance = 1.0 / pow(10, double(toolPath->RequiredDecimalPlaces()));
+		toolPath->release();
 	}
 	else
 	{
