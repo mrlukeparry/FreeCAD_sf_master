@@ -80,7 +80,6 @@ public:
     ~GCode();
 
 public:
-	typedef std::vector<Part::Feature *> Geometry_t;
 	virtual bool Parse() = 0;
 
 	// These hold warnings found during parsing.  eg: Do we have a G01 feed movement without ever having seen a feedrate defined.
@@ -129,8 +128,10 @@ public:
 		eCoordinateSystems_t coordinate_system;
 	};
 
-	typedef std::vector<GraphicalReference> SingleToolPathSequence_t;
-	typedef std::map< MachineProgramIndex_t, SingleToolPathSequence_t > Graphics_t;
+	typedef std::vector<GraphicalReference> SingleCommandGeometry_t;
+	typedef std::map< MachineProgramIndex_t, SingleCommandGeometry_t > Geometry_t;
+
+	Geometry_t	geometry;
 
 }; // End GCode class definition.
 

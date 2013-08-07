@@ -1196,6 +1196,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					break;
 
 				case LinuxCNC::stRapid:
+					// Create a line that represents this rapid movement.
 					/*
 					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 						<< _T("<line ");
