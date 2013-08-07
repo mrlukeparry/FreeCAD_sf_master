@@ -82,8 +82,11 @@ public:
 public:
 	typedef std::vector<Part::Feature *> Geometry_t;
 	virtual bool Parse() = 0;
+
+	// These hold warnings found during parsing.  eg: Do we have a G01 feed movement without ever having seen a feedrate defined.
 	void AddWarning(const QString warning);
 
+	// These are initialized from the ToolPath object that's associated with the MachineProgram object passed into the constructor.
 	double Tolerance() const { return(tolerance); }
 	int RequiredDecimalPlaces() const { return(required_decimal_places); }
 
@@ -126,7 +129,8 @@ public:
 		eCoordinateSystems_t coordinate_system;
 	};
 
-	typedef std::map< MachineProgramIndex_t, GraphicalReference > Graphics_t;
+	typedef std::vector<GraphicalReference> SingleToolPathSequence_t;
+	typedef std::map< MachineProgramIndex_t, SingleToolPathSequence_t > Graphics_t;
 
 }; // End GCode class definition.
 
