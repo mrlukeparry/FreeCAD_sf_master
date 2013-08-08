@@ -104,7 +104,7 @@ public:
 		tool movements defined by the GCode contained in the MachineProgram object.
 		We will end up with a list of such graphical elements.
 	 */
-	class GraphicalReference
+	class CamExport GraphicalReference
 	{
 	public:
 		GraphicalReference(MachineProgram *machine_program);
