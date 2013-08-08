@@ -157,6 +157,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		// Use member variables of the structure for long-lived variables instead.
 
 		this->pLinuxCNC = pLinuxCNC;
+		this->machine_program = pLinuxCNC->machine_program;
 
 		current_coordinate_system = LinuxCNC::csG53;
 		modal_coordinate_system = LinuxCNC::csG54;
@@ -1094,6 +1095,9 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		{
 			qDebug("Processing block\n");
 			ResetForEndOfBlock();
+			if (! this->machine_program) return;
+			QStringList *pPython = this->machine_program->getMachineProgram();
+			if (pPython == NULL) return;
 
 			if (this->statement_type == LinuxCNC::stUndefined)
 			{
@@ -1676,6 +1680,7 @@ bool LinuxCNC::Parse()
 	if ((qi::phrase_parse(begin, gcode.end(), parser, qi::blank)) && (begin == gcode.end()))
 	{
 		qDebug("last line number %d\n", parser.line_number );
+		qDebug("%s\n", this->machine_program->TraceProgramLinkages().toAscii().constData());
 	}
 	else
 	{
