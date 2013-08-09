@@ -20,14 +20,14 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _DRAWINGGUI_QGRAPHICSITEMVIEWCOLLECTION_H
-#define _DRAWINGGUI_QGRAPHICSITEMVIEWCOLLECTION_H
+#ifndef DRAWINGGUI_QGraphicsItemViewOrthographic_H
+#define DRAWINGGUI_QGraphicsItemViewOrthographic_H
 
 #include <QGraphicsItemGroup>
 #include <QObject>
 #include <App/PropertyLinks.h>
 
-#include "QGraphicsItemView.h"
+#include "QGraphicsItemViewCollection.h"
 
 QT_BEGIN_NAMESPACE
 class QGraphicsScene;
@@ -36,25 +36,25 @@ QT_END_NAMESPACE
 
 namespace Drawing {
 class FeatureView;
-class FeatureViewCollection;
 }
 
 namespace DrawingGui
 {
 
-class DrawingGuiExport  QGraphicsItemViewCollection : public QGraphicsItemView
+class DrawingGuiExport QGraphicsItemViewOrthographic : public QGraphicsItemViewCollection
 {
     Q_OBJECT
 
 public:
-    QGraphicsItemViewCollection(const QPoint &position, QGraphicsScene *scene);
-    ~QGraphicsItemViewCollection();
+    QGraphicsItemViewOrthographic(const QPoint &position, QGraphicsScene *scene);
+    ~QGraphicsItemViewOrthographic();
 
-    enum {Type = QGraphicsItem::UserType + 110};
+    enum {Type = QGraphicsItem::UserType + 113};
     int type() const { return Type;}
 
+    void alignTo(QGraphicsItemViewOrthographic *, const QString &alignment);
+
     virtual void updateView(bool update = false);
-    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
 
 Q_SIGNALS:
   void dirty();
@@ -62,8 +62,10 @@ Q_SIGNALS:
 protected:
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
+private:
+  QGraphicsItem *origin;
 };
 
 } // namespace DrawingViewGui
 
-#endif // _DRAWINGGUI_QGRAPHICSITEMVIEWCOLLECTION_H
+#endif // DRAWINGGUI_QGraphicsItemViewOrthographic_H

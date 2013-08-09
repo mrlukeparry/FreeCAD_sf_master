@@ -109,6 +109,11 @@ int FeaturePage::addView(App::DocumentObject *docObj)
     if(!docObj->isDerivedFrom(Drawing::FeatureView::getClassTypeId()))
         return -1; //Doc Object must be derived from a Part Feature
 
+    const std::vector<App::DocumentObject *> vals = Views.getValues();
+    std::vector<App::DocumentObject *> newVals(vals);
+    newVals.push_back(docObj);
+    Views.setValues(newVals);
+
     if(docObj->getTypeId().isDerivedFrom(Drawing::FeatureViewCollection::getClassTypeId())) {
         // Add child views recursively to the page feature
         Drawing::FeatureViewCollection *collection = dynamic_cast<Drawing::FeatureViewCollection *>(docObj);
@@ -118,11 +123,6 @@ int FeaturePage::addView(App::DocumentObject *docObj)
         }
     }
 
-    const std::vector<App::DocumentObject *> vals = Views.getValues();
-
-    std::vector<App::DocumentObject *> newVals(vals);
-    newVals.push_back(docObj);
-    Views.setValues(newVals);
     Views.touch();
     return Views.getSize();
 }

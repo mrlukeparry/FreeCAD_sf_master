@@ -102,7 +102,7 @@ App::DocumentObjectExecReturn *FeatureViewCollection::execute(void)
     const std::vector<App::DocumentObject *> &views = Views.getValues();
     for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
         App::DocumentObject *docObj = *it;
-        if(docObj->getClassTypeId().isDerivedFrom(Drawing::FeatureView::getClassTypeId())) {
+        if(docObj->getTypeId().isDerivedFrom(Drawing::FeatureView::getClassTypeId())) {
             Drawing::FeatureView *view = dynamic_cast<Drawing::FeatureView *>(*it);
 
             // Set scale factor of each view

@@ -52,7 +52,7 @@ QGraphicsItemViewPart::QGraphicsItemViewPart(const QPoint &pos, QGraphicsScene *
     setHandlesChildEvents(false);
     pen.setColor(QColor(150,150,150));
 
-    setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    //setCacheMode(QGraphicsItem::DeviceCoordinateCache);
     setAcceptHoverEvents(true);
     setFlag(QGraphicsItem::ItemIsMovable, true);
 }
@@ -179,7 +179,7 @@ void QGraphicsItemViewPart::updateView(bool update)
        viewPart->Scale.isTouched() ||
        viewPart->ShowHiddenLines.isTouched()){
 
-        Base::Console().Log("Drawing View Shapes need redrawing");
+        Base::Console().Log("Drawing View Shapes need redrawing %s\n", viewPart->getNameInDocument());
 
         // Identify what changed to prevent complete redraw
         QList<QGraphicsItem *> items = this->childItems();
@@ -312,6 +312,9 @@ void QGraphicsItemViewPart::drawViewPart()
 
           // Edges and Vertexs must be transformed to the ViewPart's coordinate system
           item->moveBy(this->x(), this->y());
+          QPointF posRef(0.,0.);
+          QPointF mapPos = item->mapToItem(this, posRef);
+          item->moveBy(-mapPos.x(), -mapPos.y());
           if(part->ShowHiddenLines.getValue()) {
               Base::Console().Log("show hidden");
               item->setShowHidden(true);
@@ -434,8 +437,10 @@ void QGraphicsItemViewPart::drawViewPart()
           prepareGeometryChange();
 
           bbox = box;
-          this->addToGroup(graphicsItem);
+          //Base::Console().Log("parent<ac> offset < %f, %f> \n", this->parentItem()->pos().x(), this->parentItem()->pos().y());
+          //Base::Console().Log("parent offset < %f, %f> \n", this->parentOffset().x(), this->parentOffset().y());
 
+          this->addToGroup(graphicsItem);
           // Don't allow selection for any edges with no references
           if(refs.at(i) > 0) {
               graphicsItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
@@ -460,13 +465,21 @@ void QGraphicsItemViewPart::drawViewPart()
           QPainterPath path;
           item->setBrush(vertBrush);
           path.addEllipse(-2 ,-2, 4, 4);
+
+
+          QPointF posRef(0.,0.);
+          QPointF mapPos = item->mapToItem(this, posRef);
+
+
           item->setPath(path);
           item->setPos(myVertex->pnt.fX, myVertex->pnt.fY);
+          item->moveBy(-mapPos.x(), -mapPos.y());
           if(vertRefs.at(i) > 0)
               item->setFlag(QGraphicsItem::ItemIsSelectable, true);
 
+
           // Edges and Vertexs must be transformed to the ViewPart's coordinate system
-          item->moveBy(this->x(), this->y());
+          //item->moveBy(this->x(), this->y());
           this->addToGroup(item);
     }
 }
@@ -638,18 +651,18 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
         }
 
         QList<QGraphicsItem *> items = this->childItems();
-          for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
+        for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
 
-              QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
-              QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
-              if(edge) {
-                  edge->setHighlighted(isSelected());
-              } else if(vert){
-                  QBrush brush = vert->brush();
-                  brush.setColor(color);
-                  vert->setBrush(brush);
-              }
-          }
+            QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+            QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
+            if(edge) {
+                edge->setHighlighted(isSelected());
+            } else if(vert){
+                QBrush brush = vert->brush();
+                brush.setColor(color);
+                vert->setBrush(brush);
+            }
+        }
         update();
     }
     return QGraphicsItemView::itemChange(change, value);

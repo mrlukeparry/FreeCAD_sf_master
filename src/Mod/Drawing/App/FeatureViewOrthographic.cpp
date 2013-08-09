@@ -71,7 +71,7 @@ void FeatureViewOrthographic::onChanged(const App::Property* prop)
         prop == &Type ||
         prop == &Scale){
           if (!this->isRestoring()) {
-              this->touch();
+              this->execute();
           }
     }
     Drawing::FeatureViewCollection::onChanged(prop);

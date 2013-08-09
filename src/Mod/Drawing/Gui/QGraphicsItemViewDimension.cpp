@@ -486,6 +486,10 @@ void QGraphicsItemViewDimension::draw()
         Base::Vector3d  par3 = labelPos + dir * (w / 2 + margin);
         Base::Vector3d  par4 = p2  + norm * length;
 
+        // Add a small margin
+        //p1_ += norm * margin * 0.5;
+       // p2  += norm * margin * 0.5;
+
         bool flipTriang = false;
 
         Base::Vector3d del1 = (par3-par1);
@@ -513,9 +517,7 @@ void QGraphicsItemViewDimension::draw()
             }
         }
 
-        // Add a small margin
-        p1 += norm * margin * 0.5;
-        p2 += norm * margin * 0.5;
+
 
         // Perp Lines
         QPainterPath path;

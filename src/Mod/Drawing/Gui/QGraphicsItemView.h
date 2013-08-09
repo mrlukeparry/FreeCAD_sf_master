@@ -52,6 +52,11 @@ public:
 
     const char * getViewName() const;
     void setViewFeature(Drawing::FeatureView *obj);
+    void setLocked(bool state = true) { this->locked = true; }
+
+    QPointF parentOffset();
+
+    void alignTo(QGraphicsItem *, const QString &alignment);
     Drawing::FeatureView * getViewObject() const;
     virtual void updateView(bool update = false);
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
@@ -63,6 +68,9 @@ protected:
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
   Drawing::FeatureView *viewObj;
   std::string viewName;
+
+  QHash<QString, QGraphicsItem *> alignHash;
+  bool locked;
 
 };
 

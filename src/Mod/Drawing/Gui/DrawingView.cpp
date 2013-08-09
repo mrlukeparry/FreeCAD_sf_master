@@ -299,6 +299,9 @@ int DrawingView::attachView(App::DocumentObject *obj)
     } else if (obj->getTypeId().isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId()) ) {
         Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(obj);
         qview = m_view->addViewPart(viewPart);
+    } else if (obj->getTypeId().isDerivedFrom(Drawing::FeatureViewOrthographic::getClassTypeId()) ) {
+        Drawing::FeatureViewOrthographic *view = dynamic_cast<Drawing::FeatureViewOrthographic *>(obj);
+        qview = m_view->addViewOrthographic(view);
     } else if (obj->getTypeId().isDerivedFrom(Drawing::FeatureViewCollection::getClassTypeId()) ) {
         Drawing::FeatureViewCollection *collection = dynamic_cast<Drawing::FeatureViewCollection *>(obj);
         qview =  m_view->addFeatureView(collection);

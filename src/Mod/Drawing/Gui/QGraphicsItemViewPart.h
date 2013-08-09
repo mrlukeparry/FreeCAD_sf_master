@@ -63,6 +63,7 @@ public:
     virtual void draw();
 
 Q_SIGNALS:
+  void selected(bool state);
   void dirty();
 
 public:

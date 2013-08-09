@@ -75,8 +75,7 @@ short FeatureViewPart::mustExecute() const
        Scale.isTouched())
           return 1;
     else
-        return 0;
-//     return Drawing::FeatureView::mustExecute();
+        return Drawing::FeatureView::mustExecute();
 }
 
 FeatureViewPart::~FeatureViewPart()

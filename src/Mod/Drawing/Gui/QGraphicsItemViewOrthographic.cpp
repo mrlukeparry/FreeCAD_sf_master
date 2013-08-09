@@ -38,48 +38,71 @@
 #include <Gui/Selection.h>
 #include <Gui/Command.h>
 
-#include "../App/FeatureViewCollection.h"
-#include "QGraphicsItemViewCollection.h"
+#include "../App/FeatureOrthoView.h"
+
+#include "QGraphicsItemViewOrthographic.h"
 
 using namespace DrawingGui;
 
-QGraphicsItemViewCollection::QGraphicsItemViewCollection(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemView(pos, scene)
+QGraphicsItemViewOrthographic::QGraphicsItemViewOrthographic(const QPoint &pos, QGraphicsScene *scene)
+    :QGraphicsItemViewCollection(pos, scene)
 {
     this->setFlags(QGraphicsItem::ItemIsSelectable);
     this->setPos(pos);
-
-    setHandlesChildEvents(false);
-
-    setCacheMode(QGraphicsItem::DeviceCoordinateCache);
-    setAcceptHoverEvents(true);
-    setFlag(QGraphicsItem::ItemIsMovable, true);
+    origin = new QGraphicsItemGroup();
+    origin->setParentItem(this);
 }
 
-QGraphicsItemViewCollection::~QGraphicsItemViewCollection()
+QGraphicsItemViewOrthographic::~QGraphicsItemViewOrthographic()
 {
 
 }
 
-QVariant QGraphicsItemViewCollection::itemChange(GraphicsItemChange change, const QVariant &value)
+QVariant QGraphicsItemViewOrthographic::itemChange(GraphicsItemChange change, const QVariant &value)
 {
-    return QGraphicsItemGroup::itemChange(change, value);
-}
+    if(change == ItemChildAddedChange && scene()) {
 
-void QGraphicsItemViewCollection::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
-{
-    if(scene() && this == scene()->mouseGrabberItem()) {
-        Gui::Command::openCommand("Drag View");
-        Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", this->getViewObject()->getNameInDocument(), this->x());
-        Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", this->getViewObject()->getNameInDocument(), this->y());
-        Gui::Command::commitCommand();
-        Gui::Command::updateActive();
+        // Child Feature View has been added
+
+        // TODO child must be intiailised before adding to containing parent
+         QGraphicsItem *item = value.value<QGraphicsItem*>();
+
+         QGraphicsItemView *view = 0;
+         view = dynamic_cast<QGraphicsItemView *>(item);
+
+         if(view) {
+            Drawing::FeatureView *fView = view->getViewObject();
+            if(fView->getTypeId().isDerivedFrom(Drawing::FeatureOrthoView::getClassTypeId())) {
+
+                Drawing::FeatureOrthoView *orthoView = static_cast<Drawing::FeatureOrthoView *>(fView);
+                QString type = QString::fromAscii(orthoView->Type.getValueAsString());
+                if(type == QString::fromAscii("Top") ||
+                   type == QString::fromAscii("Bottom") ||
+                   type == QString::fromAscii("Back")) {
+                    view->alignTo(origin, QString::fromAscii("Vertical"));
+                } else if(type == QString::fromAscii("Front")) {
+                    view->setLocked(true);
+                } else {
+                    view->alignTo(origin, QString::fromAscii("Horizontal"));
+                }
+            }
+
+         }
     }
-    QGraphicsItem::mouseReleaseEvent(event);
+    return QGraphicsItemView::itemChange(change, value);
 }
 
-void QGraphicsItemViewCollection::updateView(bool update)
+#if 0
+QGraphicsItemViewOrthographic::mousePressEvent ( QGraphicsSceneMouseEvent * event )
 {
-    return QGraphicsItemView::updateView(update);
+    QGraphicsItem::mousePressEvent(event);
+    event->ignore();
+}
+#endif
+
+void QGraphicsItemViewOrthographic::updateView(bool update)
+{
+    return QGraphicsItemViewCollection::updateView(update);
 }
 
-#include "moc_QGraphicsItemViewCollection.cpp"
+#include "moc_QGraphicsItemViewOrthographic.cpp"

@@ -50,13 +50,16 @@
 #include "../App/Geometry.h"
 #include "../App/FeaturePage.h"
 #include "../App/FeatureViewCollection.h"
-#include "../App/FeatureViewPart.h"
 #include "../App/FeatureViewDimension.h"
+#include "../App/FeatureViewOrthographic.h"
+#include "../App/FeatureViewPart.h"
 
 #include "QGraphicsItemViewCollection.h"
+#include "QGraphicsItemViewDimension.h"
+#include "QGraphicsItemViewOrthographic.h"
 #include "QGraphicsItemViewPart.h"
 #include "QGraphicsItemViewSection.h"
-#include "QGraphicsItemViewDimension.h"
+
 #include "CanvasView.h"
 
 using namespace DrawingGui;
@@ -125,7 +128,10 @@ int CanvasView::addView(QGraphicsItemView * view) {
 
     if(parent) {
         // Transfer the child vierw to the parent
-        view->setPos(parent->pos());
+        QPointF posRef(0.,0.);
+        QPointF mapPos = view->mapToItem(parent, posRef);
+        view->moveBy(-mapPos.x(), -mapPos.y());
+
         parent->addToGroup(view);
         //update coordinate system
     }
@@ -148,6 +154,15 @@ QGraphicsItemView * CanvasView::addViewSection(Drawing::FeatureViewPart *part)
 
     this->addView(viewSection);
     return viewSection;
+}
+
+QGraphicsItemView * CanvasView::addViewOrthographic(Drawing::FeatureViewOrthographic *view) {
+    // This essentially adds a null view feature to ensure view size is consistent
+    QGraphicsItemViewCollection *qview = new  QGraphicsItemViewOrthographic(QPoint(0,0), this->scene());
+    qview->setViewFeature(view);
+
+    this->addView(qview);
+    return qview;
 }
 
 QGraphicsItemView * CanvasView::addFeatureView(Drawing::FeatureView *view)
@@ -222,11 +237,15 @@ QGraphicsItemView * CanvasView::findParent(QGraphicsItemView *view) const
         QGraphicsItemViewCollection *grp = 0;
         grp = dynamic_cast<QGraphicsItemViewCollection *>(*it);
         if(grp) {
-            Drawing::FeatureViewCollection *collection = dynamic_cast<Drawing::FeatureViewCollection *>(view->getViewObject());
-            std::vector<App::DocumentObject *> objs = collection->Views.getValues();
-            for( std::vector<App::DocumentObject *>::iterator it = objs.begin(); it != objs.end(); ++it) {
-                if(strcmp(myView->getNameInDocument(), (*it)->getNameInDocument()) == 0)
-                    return grp;
+            Drawing::FeatureViewCollection *collection = 0;
+            collection = dynamic_cast<Drawing::FeatureViewCollection *>(grp->getViewObject());
+            if(collection) {
+                std::vector<App::DocumentObject *> objs = collection->Views.getValues();
+                for( std::vector<App::DocumentObject *>::iterator it = objs.begin(); it != objs.end(); ++it) {
+                    if(strcmp(myView->getNameInDocument(), (*it)->getNameInDocument()) == 0)
+
+                        return grp;
+                }
             }
         }
      }

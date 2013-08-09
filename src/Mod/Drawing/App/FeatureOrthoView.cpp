@@ -114,6 +114,7 @@ App::DocumentObjectExecReturn *FeatureOrthoView::execute(void)
         Direction.setValue(0., 0., -1.);
         XAxisDirection.setValue(1., 0., 0);
     }
+
     return Drawing::FeatureViewPart::execute();
 }
 

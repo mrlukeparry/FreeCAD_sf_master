@@ -43,10 +43,14 @@
 
 using namespace DrawingGui;
 
-QGraphicsItemView::QGraphicsItemView(const QPoint &pos, QGraphicsScene *scene) :QGraphicsItemGroup()
+QGraphicsItemView::QGraphicsItemView(const QPoint &pos, QGraphicsScene *scene)
+    :QGraphicsItemGroup(),
+     locked(false)
 {
     this->setFlags(QGraphicsItem::ItemIsSelectable);
+    this->setFlag(QGraphicsItem::ItemSendsScenePositionChanges, true);
     this->setPos(pos);
+
 
     //Add object to scene
     scene->addItem(this);
@@ -57,8 +61,48 @@ QGraphicsItemView::~QGraphicsItemView()
 
 }
 
+ QPointF QGraphicsItemView::parentOffset() {
+     QPointF pos(0.,0.);
+     if(this->parentItem()) {
+         QGraphicsItemView *item = dynamic_cast<QGraphicsItemView *>(this->parentItem());
+         pos += item->parentOffset();
+     } else {
+         return this->pos();
+     }
+     return pos;
+ }
+
+void QGraphicsItemView::alignTo(QGraphicsItem *item, const QString &alignment)
+{
+    alignHash.clear();
+    alignHash.insert(alignment, item);
+}
+
 QVariant QGraphicsItemView::itemChange(GraphicsItemChange change, const QVariant &value)
 {
+    if(change == ItemPositionChange && scene()) {
+        // value is the new position.
+        QPointF newPos = value.toPointF();
+
+        if(this->locked){
+            newPos.setX(this->pos().x());
+            newPos.setY(this->pos().y());
+        }
+
+        // TODO  find a better data structure for this
+        if(alignHash.size() == 1) {
+            QGraphicsItem *item = alignHash.begin().value();
+            QString alignMode = alignHash.begin().key();
+
+            if(alignMode == QString::fromAscii("Vertical")) {
+                newPos.setX(item->pos().x());
+            } else if(alignMode == QString::fromAscii("Horizontal")) {
+                newPos.setY(item->pos().y());
+            }
+        }
+
+        return newPos;
+    }
     return QGraphicsItemGroup::itemChange(change, value);
 }
 
@@ -69,7 +113,7 @@ void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
         Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", this->getViewObject()->getNameInDocument(), this->x());
         Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", this->getViewObject()->getNameInDocument(), this->y());
         Gui::Command::commitCommand();
-        Gui::Command::updateActive();
+        //Gui::Command::updateActive();
     }
     QGraphicsItem::mouseReleaseEvent(event);
 }
