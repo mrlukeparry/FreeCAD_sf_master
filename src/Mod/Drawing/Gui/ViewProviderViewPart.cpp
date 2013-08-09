@@ -120,7 +120,6 @@ std::vector<App::DocumentObject*> ViewProviderViewPart::claimChildren(void) cons
 
 void ViewProviderViewPart::updateData(const App::Property*)
 {
-    Base::Console().Log("Update View");
 }
 
 Drawing::FeatureViewPart* ViewProviderViewPart::getViewPart() const

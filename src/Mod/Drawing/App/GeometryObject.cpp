@@ -577,9 +577,6 @@ void GeometryObject::extractVerts(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, H
     TopExp::MapShapes(S, TopAbs_EDGE, anIndices);
     TopExp::MapShapes(S, TopAbs_VERTEX, anvIndices);
 
-    Base::Console().Log("Num Vertices: %i",  anvIndices.Extent());
-    Base::Console().Log("Num edges: %i",  anIndices.Extent());
-
     int edgeNum = anIndices.Extent();
     // Load the edge
     if(ie < 0) {
@@ -856,8 +853,6 @@ void GeometryObject::createWire(const TopoDS_Shape &input, std::vector<DrawingGe
         xp.Next();
         ep.v2 = BRep_Tool::Pnt(TopoDS::Vertex(xp.Current()));
         ep.edge = edgeList.front();
-
-        Base::Console().Log("<%f %f %f>, <%f %f %f> \n", ep.v1.X(),ep.v1.Y(),ep.v1.Z(), ep.v2.X(),ep.v2.Y(),ep.v2.Z());
 
         mkWire.Add(edgeList.front());
         edgeList.pop_front();

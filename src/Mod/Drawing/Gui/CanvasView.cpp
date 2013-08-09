@@ -129,11 +129,14 @@ int CanvasView::addView(QGraphicsItemView * view) {
     if(parent) {
         // Transfer the child vierw to the parent
         QPointF posRef(0.,0.);
+        QPointF viewPos(view->getViewObject()->X.getValue(),
+                        view->getViewObject()->Y.getValue());
         QPointF mapPos = view->mapToItem(parent, posRef);
         view->moveBy(-mapPos.x(), -mapPos.y());
 
         parent->addToGroup(view);
-        //update coordinate system
+        view->setPos(viewPos); //update with relative position inside new coord system
+
     }
     return views.size();
 }

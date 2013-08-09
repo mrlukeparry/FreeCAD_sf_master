@@ -61,17 +61,6 @@ QGraphicsItemView::~QGraphicsItemView()
 
 }
 
- QPointF QGraphicsItemView::parentOffset() {
-     QPointF pos(0.,0.);
-     if(this->parentItem()) {
-         QGraphicsItemView *item = dynamic_cast<QGraphicsItemView *>(this->parentItem());
-         pos += item->parentOffset();
-     } else {
-         return this->pos();
-     }
-     return pos;
- }
-
 void QGraphicsItemView::alignTo(QGraphicsItem *item, const QString &alignment)
 {
     alignHash.clear();

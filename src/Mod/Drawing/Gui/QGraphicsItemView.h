@@ -54,8 +54,6 @@ public:
     void setViewFeature(Drawing::FeatureView *obj);
     void setLocked(bool state = true) { this->locked = true; }
 
-    QPointF parentOffset();
-
     void alignTo(QGraphicsItem *, const QString &alignment);
     Drawing::FeatureView * getViewObject() const;
     virtual void updateView(bool update = false);
