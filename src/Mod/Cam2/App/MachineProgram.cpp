@@ -85,6 +85,8 @@ void MachineProgram::clear() {
         this->errors->clear();
     else
         this->errors = new QStringList();
+
+	this->indices.clear();
 }
 
 /**
