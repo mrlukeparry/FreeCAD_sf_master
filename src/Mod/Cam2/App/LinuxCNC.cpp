@@ -438,17 +438,18 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|		(ascii::no_case[qi::lit("G91")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stPreparation ) ]
 			;
 
-		MCodes =	(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("0")]])	// M00 - Pause Program
-			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("1")]])	// M01
+		MCodes =	(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("0")])	// M00 - Pause Program
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("1")])	// M01
 			// Add M02 (end of program) as its own rule as its location is quite specific.
-			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("3")]])	// M03 - turn spindle clockwise
-			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("4")]])	// M04 - turn spindle counter-clockwise
-			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("5")]])	// M05 - stop spindle
-			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("6")]])	// M06 - enable selected tool
-			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("7")]])	// M07 - mist coolant on
-			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("8")]])	// M08 - flood coolant on
-			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("9")]])	// M09 - coolant off
-			|		(qi::lexeme[ascii::no_case[qi::lit("M")]                                  >> qi::repeat(1,1)[qi::lit("60")]])	// M60
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("3")])	// M03 - turn spindle clockwise
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("4")])	// M04 - turn spindle counter-clockwise
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("5")])	// M05 - stop spindle
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("6")])	// M06 - enable selected tool
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("7")])	// M07 - mist coolant on
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("8")])	// M08 - flood coolant on
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("9")])	// M09 - coolant off
+			|		(ascii::no_case[qi::lit("M60")])	// M60
+			// |		(ascii::no_case[qi::lit("M66")] +(MotionArgument))	// M66 - test digital signal
 			;
 
 		EndOfProgram = (qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("2")]])	// M02 - end of program
