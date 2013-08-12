@@ -193,6 +193,30 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		G03 = qi::lexeme[ascii::no_case[qi::lit("G")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::lit("3")];
 		G04 = qi::lexeme[ascii::no_case[qi::lit("G")] >> qi::repeat(0,1)[qi::char_("0")] >> qi::lit("4")];
 
+		CoordinateSystems =
+				(ascii::no_case[qi::lit("G53")])
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetCurrentCoordinateSystem, phx::ref(*this), LinuxCNC::csG53) ]
+			|	(ascii::no_case[qi::lit("G54")])
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetModalCoordinateSystem, phx::ref(*this), LinuxCNC::csG54) ]
+			|	(ascii::no_case[qi::lit("G55")])
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetModalCoordinateSystem, phx::ref(*this), LinuxCNC::csG55) ]
+			|	(ascii::no_case[qi::lit("G56")])
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetModalCoordinateSystem, phx::ref(*this), LinuxCNC::csG56) ]
+			|	(ascii::no_case[qi::lit("G57")])
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetModalCoordinateSystem, phx::ref(*this), LinuxCNC::csG57) ]
+			|	(ascii::no_case[qi::lit("G58")])
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetModalCoordinateSystem, phx::ref(*this), LinuxCNC::csG58) ]
+			|	(ascii::no_case[qi::lit("G59.1")])
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetModalCoordinateSystem, phx::ref(*this), LinuxCNC::csG59_1) ]
+			|	(ascii::no_case[qi::lit("G59.2")])
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetModalCoordinateSystem, phx::ref(*this), LinuxCNC::csG59_2) ]
+			|	(ascii::no_case[qi::lit("G59.3")])
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetModalCoordinateSystem, phx::ref(*this), LinuxCNC::csG59_3) ]
+			|	(ascii::no_case[qi::lit("G59")])
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetModalCoordinateSystem, phx::ref(*this), LinuxCNC::csG59) ]
+			;
+
+
 		// A newline character represents an 'end of block' in RS274.  We must have gathered up all of our
 		// command line arguments as well as identified the dominant statement type at this point.  Go ahead
 		// and generate any graphics that represents the tool's movement as a result of this command.
@@ -201,15 +225,15 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			;
 
 		// Register statement type values for these.
-		G43   =(ascii::no_case[qi::lit("G43")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stToolLengthEnabled ) ];
 		G43_1 =(ascii::no_case[qi::lit("G43.1")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stToolLengthEnabled ) ];
-		G49   =(ascii::no_case[qi::lit("G49")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stToolLengthDisabled ) ];
+		G43   =(ascii::no_case[qi::lit("G43")])   [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stToolLengthEnabled ) ];
+		G49   =(ascii::no_case[qi::lit("G49")])   [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stToolLengthDisabled ) ];
 
 		// These won't result in extra graphics but they will change some 'variables' used
 		// to store the state of the machine.  These 'variables' will also be used to adjust
 		// any position arguments specified in subsequent movement commands.
-		ToolLengthOffset = (G43 >> +(MotionArgument))
-			|				(G43_1 >> +(MotionArgument))
+		ToolLengthOffset =  (G43_1 >> +(MotionArgument))
+			|				(G43   >> +(MotionArgument))
 			|				(G49)
 			;
 
@@ -224,17 +248,17 @@ template <typename Iter, typename Skipper = qi::blank_type>
 				|	((ascii::no_case[qi::lit("G33.1")]) >> +(MotionArgument))
 						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stFeed ) ]
 
-				|	((ascii::no_case[qi::lit("G33.2")]) >> +(MotionArgument))
-						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stFeed ) ]
+				|	((ascii::no_case[qi::lit("G38.2")]) >> +(MotionArgument))
+						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stProbe ) ]
 
-				|	((ascii::no_case[qi::lit("G33.3")]) >> +(MotionArgument))
-						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stFeed ) ]
+				|	((ascii::no_case[qi::lit("G38.3")]) >> +(MotionArgument))
+						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stProbe ) ]
 
-				|	((ascii::no_case[qi::lit("G33.4")]) >> +(MotionArgument))
-						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stFeed ) ]
+				|	((ascii::no_case[qi::lit("G38.4")]) >> +(MotionArgument))
+						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stProbe ) ]
 
-				|	((ascii::no_case[qi::lit("G33.5")]) >> +(MotionArgument))
-						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stFeed ) ]
+				|	((ascii::no_case[qi::lit("G38.5")]) >> +(MotionArgument))
+						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stProbe ) ]
 
 				|	((ascii::no_case[qi::lit("G33")]) >> +(MotionArgument))
 						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stFeed ) ]
@@ -265,13 +289,13 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					(ascii::no_case[qi::lit("G28.1")]) // Save current position.
 						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stG28 ) ]
 
-				|	((ascii::no_case[qi::lit("G28")]) >> +(MotionArgument))
+				|	((ascii::no_case[qi::lit("G28")]) >> *(MotionArgument))
 						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stG28 ) ]
 
 				|	(ascii::no_case[qi::lit("G30.1")]) // Save current position.
 						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stG30 ) ]
 
-				|	(ascii::no_case[qi::lit("G30")])
+				|	((ascii::no_case[qi::lit("G30")]) >> *(MotionArgument))
 						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stG30 ) ]
 
 				|	(ascii::no_case[qi::lit("G92.1")])
@@ -300,6 +324,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Plane, phx::ref(*this), LinuxCNC::eXZPlane ) ]
 			|		(ascii::no_case[qi::lit("G19")])
 						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Plane, phx::ref(*this), LinuxCNC::eYZPlane ) ]
+			;
+
+		PathControlMode = 
+					(ascii::no_case[qi::lit("G61.1")])
+			|		(ascii::no_case[qi::lit("G61")])
+			|		(ascii::no_case[qi::lit("G64")] >> +(MotionArgument))
 			;
 
 		// Any time we refer to a floating point number, we use this MathematicalExpression rule instead.  This allows
@@ -402,7 +432,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		Boolean = (ascii::no_case[qi::lit("EXISTS")] >> qi::lit("[") >> Variable >> qi::lit("]"))
 				[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::Exists, phx::ref(*this), qi::_val, qi::_1) ] // call this->Exists(_val, _1);
 
-			|	(qi::lit("[") >> Comparison >> qi::lit("]"))
+			|	(Comparison)
 			|	(qi::lit("[") >> Comparison >> ascii::no_case[qi::lit("AND")] >> Comparison >> qi::lit("]"))
 			|	(qi::lit("[") >> Comparison >> ascii::no_case[qi::lit("OR")] >> Comparison >> qi::lit("]"))
 			|	(qi::lit("[") >> Boolean >> ascii::no_case[qi::lit("OR")] >> Boolean >> qi::lit("]"))
@@ -425,6 +455,11 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|		(qi::lit("#") >> qi::lit("<") >> +(ascii::no_case[qi::char_("a-z0-9_")]) >> qi::lit(">"))
 						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::AddSymbolByName, phx::ref(*this), qi::_val, qi::_1 ) ]
 			;
+
+		Assignment = 
+					(Variable >> qi::lit("=") >> MathematicalExpression)
+						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::LHSassignmentfromRHS, phx::ref(*this), qi::_val, qi::_1, qi::_2 ) ]
+			;
 			
 		Spindle =	(ascii::no_case[qi::lit("S")] >> MathematicalExpression)
 						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stPreparation ) ]
@@ -446,7 +481,9 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|		(ascii::no_case[qi::lit("G91")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stPreparation ) ]
 			;
 
-		MCodes =	(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("0")])	// M00 - Pause Program
+		MCodes =	((ascii::no_case[qi::lit("M66")]) >> +(MotionArgument))	// M66 - test digital signal
+			|		(ascii::no_case[qi::lit("M60")])	// M60
+			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("0")])	// M00 - Pause Program
 			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("1")])	// M01
 			// Add M02 (end of program) as its own rule as its location is quite specific.
 			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("3")])	// M03 - turn spindle clockwise
@@ -456,8 +493,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("7")])	// M07 - mist coolant on
 			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("8")])	// M08 - flood coolant on
 			|		(qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::lit("9")])	// M09 - coolant off
-			|		(ascii::no_case[qi::lit("M60")])	// M60
-			// |		(ascii::no_case[qi::lit("M66")] +(MotionArgument))	// M66 - test digital signal
 			;
 
 		ProgramFlow = (qi::lexeme[(ascii::no_case[qi::lit("O")] >> qi::int_)] >> (ascii::no_case[qi::lit("IF")] >> Boolean))
@@ -472,10 +507,13 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ProcessBlock, phx::ref(*this) ) ]	// call this->EndOfBlock()
 			;
 
+		ToolSelection = (ascii::no_case[qi::lit("T")] >> qi::int_)
+					[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stToolChange ) ]
+			;
+
 		RS274 = (LineNumberRule)
 			|	(Motion)
 			|	(Comment)
-			|	(Spindle >> *(MCodes))
 			|	(Spindle)
 			|	(MCodes)
 			|	(NonModalCodes)
@@ -483,8 +521,13 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|	(Boolean)
 			|	(DistanceMode)
 			|	(ToolLengthOffset)
+			|	(Assignment)
 			|	(Units)
 			|	(PlaneSelection)
+			|	(PathControlMode)
+			|	(CoordinateSystems)
+			|	(ToolSelection)
+			|	(ProgramFlow)
 			|	(EndOfProgram)
 			;
 
@@ -529,12 +572,14 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		BOOST_SPIRIT_DEBUG_NODE(MotionArgument);
 		BOOST_SPIRIT_DEBUG_NODE(LineNumberRule);
 		BOOST_SPIRIT_DEBUG_NODE(MathematicalExpression);
+		BOOST_SPIRIT_DEBUG_NODE(Assignment);
 		BOOST_SPIRIT_DEBUG_NODE(Functions);
 		BOOST_SPIRIT_DEBUG_NODE(Comment);
 		BOOST_SPIRIT_DEBUG_NODE(RS274);
 		BOOST_SPIRIT_DEBUG_NODE(Expression);
 		BOOST_SPIRIT_DEBUG_NODE(Spindle);
 		BOOST_SPIRIT_DEBUG_NODE(MCodes);
+		BOOST_SPIRIT_DEBUG_NODE(CoordinateSystems);
 		BOOST_SPIRIT_DEBUG_NODE(EndOfBlock);
 		BOOST_SPIRIT_DEBUG_NODE(EndOfProgram);
 		BOOST_SPIRIT_DEBUG_NODE(FeedRate);
@@ -549,6 +594,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		BOOST_SPIRIT_DEBUG_NODE(Units);
 		BOOST_SPIRIT_DEBUG_NODE(ToolLengthOffset);
 		BOOST_SPIRIT_DEBUG_NODE(PlaneSelection);
+		BOOST_SPIRIT_DEBUG_NODE(PathControlMode);
+		BOOST_SPIRIT_DEBUG_NODE(ToolSelection);
 		BOOST_SPIRIT_DEBUG_NODE(ProgramFlow);
 	}
 
@@ -565,12 +612,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		qi::rule<Iter, Skipper> Motion, ToolLengthOffset, DistanceMode, Units;
 		qi::rule<Iter, Skipper> MotionArgument;
 		qi::rule<Iter, int(), Skipper> LineNumberRule;
-		qi::rule<Iter, LinuxCNC::Variables::SymbolId_t(), Skipper> MathematicalExpression, Variable, Functions;
+		qi::rule<Iter, LinuxCNC::Variables::SymbolId_t(), Skipper> MathematicalExpression, Variable, Functions, Assignment;
 		qi::rule<Iter, Skipper> Comment;
 		qi::rule<Iter, Skipper> RS274;
 		qi::rule<Iter, Skipper> Expression;
-		qi::rule<Iter, Skipper> Spindle, FeedRate, PlaneSelection;
-		qi::rule<Iter, Skipper> MCodes, NonModalCodes, ProgramFlow;
+		qi::rule<Iter, Skipper> Spindle, FeedRate, PlaneSelection, PathControlMode, ToolSelection;
+		qi::rule<Iter, Skipper> MCodes, NonModalCodes, ProgramFlow, CoordinateSystems;
 		qi::rule<Iter, Skipper> EndOfBlock, EndOfProgram;
 		qi::rule<Iter, bool(), Skipper> Boolean, Comparison;
 
@@ -673,6 +720,11 @@ template <typename Iter, typename Skipper = qi::blank_type>
 				default:
 					return(value_in_mm);
 			}
+		}
+
+		void Debug(const char *message)
+		{
+			qDebug("%s\n", message);
 		}
 
 		// Heeks uses millimeters
@@ -813,6 +865,16 @@ template <typename Iter, typename Skipper = qi::blank_type>
 				returned_symbol_id = variables.hash(name);
 				return;
 			}
+		}
+
+		void SetCurrentCoordinateSystem( LinuxCNC::eCoordinateSystems_t coordinate_system )
+		{
+			this->current_coordinate_system = coordinate_system;
+		}
+
+		void SetModalCoordinateSystem( LinuxCNC::eCoordinateSystems_t coordinate_system )
+		{
+			this->modal_coordinate_system = coordinate_system;
 		}
 
 		// The +(qi::char_) rule produces a std::vector<char> argument.  Convert that into
