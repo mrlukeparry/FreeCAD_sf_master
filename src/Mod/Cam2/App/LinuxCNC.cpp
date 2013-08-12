@@ -157,6 +157,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		// Use member variables of the structure for long-lived variables instead.
 
 		this->pLinuxCNC = pLinuxCNC;
+		this->machine_program = this->pLinuxCNC->machine_program;
 
 		current_coordinate_system = LinuxCNC::csG53;
 		modal_coordinate_system = LinuxCNC::csG54;
@@ -450,6 +451,14 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			|		(qi::lexeme[ascii::no_case[qi::lit("M")]                                  >> qi::repeat(1,1)[qi::lit("60")]])	// M60
 			;
 
+		ProgramFlow = (qi::lexeme[(ascii::no_case[qi::lit("O")] >> qi::int_)] >> (ascii::no_case[qi::lit("IF")] >> Boolean))
+			|		  (qi::lexeme[(ascii::no_case[qi::lit("O")] >> qi::int_)] >> (ascii::no_case[qi::lit("ELSE")] ))
+			|		  (qi::lexeme[(ascii::no_case[qi::lit("O")] >> qi::int_)] >> (ascii::no_case[qi::lit("ENDIF")] ))
+			|		  (qi::lexeme[(ascii::no_case[qi::lit("O")] >> qi::int_)] >> (ascii::no_case[qi::lit("DO")] ))
+			|		  (qi::lexeme[(ascii::no_case[qi::lit("O")] >> qi::int_)] >> (ascii::no_case[qi::lit("WHILE")] >> Boolean))
+			|		  (qi::lexeme[(ascii::no_case[qi::lit("O")] >> qi::int_)] >> (ascii::no_case[qi::lit("ENDWHILE")] ))
+			;
+
 		EndOfProgram = (qi::lexeme[ascii::no_case[qi::lit("M")] >> qi::repeat(0,1)[qi::lit("0")] >> qi::repeat(1,1)[qi::lit("2")]])	// M02 - end of program
 							[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::ProcessBlock, phx::ref(*this) ) ]	// call this->EndOfBlock()
 			;
@@ -528,6 +537,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		BOOST_SPIRIT_DEBUG_NODE(DistanceMode);
 		BOOST_SPIRIT_DEBUG_NODE(Units);
 		BOOST_SPIRIT_DEBUG_NODE(ToolLengthOffset);
+		BOOST_SPIRIT_DEBUG_NODE(ProgramFlow);
 	}
 
 	public:
@@ -548,7 +558,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		qi::rule<Iter, Skipper> RS274;
 		qi::rule<Iter, Skipper> Expression;
 		qi::rule<Iter, Skipper> Spindle, FeedRate;
-		qi::rule<Iter, Skipper> MCodes, NonModalCodes;
+		qi::rule<Iter, Skipper> MCodes, NonModalCodes, ProgramFlow;
 		qi::rule<Iter, Skipper> EndOfBlock, EndOfProgram;
 		qi::rule<Iter, bool(), Skipper> Boolean, Comparison;
 
@@ -1093,7 +1103,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		void ProcessBlock()
 		{
 			qDebug("Processing block\n");
-			ResetForEndOfBlock();
 
 			if (this->statement_type == LinuxCNC::stUndefined)
 			{
@@ -1523,7 +1532,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 				// xml << _T("</ncblock>\n");
 			}
 
-		} // End AddToHeeks() routine
+			ResetForEndOfBlock();
+		} // End ProcessBlock() routine
 
 
 		void ResetForEndOfBlock()

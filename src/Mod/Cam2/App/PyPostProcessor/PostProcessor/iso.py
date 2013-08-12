@@ -76,6 +76,7 @@ class Creator(nc.Creator):
 	self.gcode_is_metric = True
 	self.machine_is_metric = False	# Needed when looking at machine variables such as #5063
 	self.current_workplane = 1;	# G54 by default.
+	self.loop_number = 100		# To name while loops in a unique way.
 
         
     ############################################################################
@@ -187,10 +188,13 @@ class Creator(nc.Creator):
     ############################################################################
     ##  Internals
 
+    def write_feedrate(self):
+        self.write(self.f)
+
     def write_blocknum(self):
         self.write((self.BLOCK() % self.n) + self.SPACE())
         self.n += 10
-        
+    
     ############################################################################
     ##  Programs
 
@@ -231,7 +235,6 @@ class Creator(nc.Creator):
 
         self.write_blocknum()
         self.write(self.PROGRAM_END() + '\n')
-
 
     ############################################################################
     ##  Subprograms
@@ -341,7 +344,6 @@ class Creator(nc.Creator):
 
         self.write('\n')
 
-
     ############################################################################
     ##  Datums
     
@@ -355,23 +357,38 @@ class Creator(nc.Creator):
         if ((id >= 7) and (id <= 9)):
             self.write_blocknum()
             self.write( ((self.WORKPLANE() % (6 + self.WORKPLANE_BASE())) + ('.%i' % (id - 6))) + '\t (Select Relative Coordinate System)\n')
-        
+      
+    def work_offset(self, workplane, x=None, y=None, z=None, a=None, b=None, c=None, xy_plane_rotation=None ):
+        pass
+
     ############################################################################
     ##  Rates + Modes
 
     def feedrate(self, f):
-        self.write_blocknum()
-	self.write(self.FEEDRATE() + self.ffmt.string(f) + '\n')
-	self.f = f
+        self.f = self.SPACE() + self.FEEDRATE() + self.ffmt.string(f)
+        self.fhv = False
+
+    def feedrate_hv(self, fh, fv):
+        self.fh = fh
+        self.fv = fv
+        self.fhv = True
+	self.calc_feedrate_hv( fh, fv )
+
+    def calc_feedrate_hv(self, h, v):
+        if math.fabs(v) > math.fabs(h * 2):
+            # some horizontal, so it should be fine to use the horizontal feed rate
+            self.f = self.SPACE() + self.FEEDRATE() + self.ffmt.string(self.fv)
+        else:
+            # not much, if any horizontal component, so use the vertical feed rate
+            self.f = self.SPACE() + self.FEEDRATE() + self.ffmt.string(self.fh)
 
     def spindle(self, s, clockwise):
-	self.s = s
-        if s <= 0.0:
+        if s == 0.0:
             self.write_blocknum()
             self.write(self.SPINDLE_STOPPED() + '\n')
 	    return
 
-        if clockwise == True:
+        if (clockwise == True or clockwise == 'True'):
             self.write_blocknum()
             self.write('S' + str(s) + self.SPACE() + self.SPINDLE_CW() + '\n')
         else:
@@ -676,9 +693,6 @@ class Creator(nc.Creator):
     # revert it.  I must set the mode so that I can be sure the values I'm passing in make
     # sense to the end-machine.
     #
-    # retract_mode = 0 indicates rapid retract
-    # retract_mdoe = 1 indicates feed rate retract
-    #
     def drill(self, x=None, y=None, z=None, depth=None, standoff=None, dwell=None, peck_depth=None, retract_mode=None, clearance_height=None):
         if (standoff == None):        
         # This is a bad thing.  All the drilling cycles need a retraction (and starting) height.        
@@ -710,10 +724,12 @@ class Creator(nc.Creator):
     # Set the retraction point to the 'standoff' distance above the starting z height.        
         retract_height = z + standoff        
         if (x != None):        
+            dx = x - self.x        
             self.write(self.SPACE() + self.X() + (self.fmt.string(x)))        
             self.x = x 
        
         if (y != None):        
+            dy = y - self.y        
             self.write(self.SPACE() + self.Y() + (self.fmt.string(y)))        
             self.y = y
                       
@@ -723,6 +739,7 @@ class Creator(nc.Creator):
         self.z = (z + standoff)            # We want to remember where z is at the end (at the top of the hole)
 
         self.write(self.SPACE() + self.RETRACT(self.fmt, retract_height))
+           
         self.write('\n')
        
 	self.rapid(z=clearance_height)
@@ -830,6 +847,17 @@ class Creator(nc.Creator):
 
         self.write('\n')
 
+    def BEST_POSSIBLE_SPEED(self, motion_blending_tolerance, naive_cam_tolerance): 
+	    statement = 'G64'
+
+	    if (motion_blending_tolerance > 0):
+		    statement += ' P ' + str(motion_blending_tolerance)
+
+	    if (naive_cam_tolerance > 0):
+		    statement += ' Q ' + str(naive_cam_tolerance)
+
+	    return(statement)
+            
     def set_path_control_mode(self, mode, motion_blending_tolerance, naive_cam_tolerance ):
         self.write_blocknum()
         if (mode == 0):

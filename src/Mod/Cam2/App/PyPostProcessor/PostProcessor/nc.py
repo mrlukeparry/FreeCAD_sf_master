@@ -133,10 +133,6 @@ class Creator:
         """End the program"""
         raise RuntimeError( __name__ + ' not implemented' )
 
-    def flush_nc(self):
-        """Flush all pending codes"""
-        raise RuntimeError( __name__ + ' not implemented' )
-
     ############################################################################
     ##  Subprograms
 
@@ -161,6 +157,10 @@ class Creator:
 
     def metric(self):
         """Set metric units"""
+        raise RuntimeError( __name__ + ' not implemented' )
+
+    def machine_units_metric(self, is_metric):
+        """Define machine units just in case we want to look at the machine variable values"""
         raise RuntimeError( __name__ + ' not implemented' )
 
     def absolute(self):
@@ -190,8 +190,12 @@ class Creator:
     ############################################################################
     ##  Tools
 
-    def tool_change(self, id):
+    def tool_change(self, id, description=None):
         """Change the tool"""
+        raise RuntimeError( __name__ + ' not implemented' )
+
+    def predefined_position(self, type):
+        """Move to pre-defined location (G28 or G30)"""
         raise RuntimeError( __name__ + ' not implemented' )
 
     def tool_defn(self, id, name='', radius=None, length=None, gradient=None):
@@ -203,6 +207,10 @@ class Creator:
         raise RuntimeError( __name__ + ' not implemented' )
 
     def offset_length(self, id, length=None):
+        """Set tool length offsetting"""
+        raise RuntimeError( __name__ + ' not implemented' )
+
+    def measure_and_offset_tool(self, distance=None, switch_offset_variable_name=None, fixture_offset_variable_name=None, feed_rate=None, use_m66_to_confirm_probe_state=None, m66_input_pin_number=None ):
         """Set tool length offsetting"""
         raise RuntimeError( __name__ + ' not implemented' )
 
@@ -223,6 +231,9 @@ class Creator:
 
     def clearanceplane(self,z=None):
         """set clearance plane"""
+        raise RuntimeError( __name__ + ' not implemented' )
+
+    def work_offset(self, workplane, x=None, y=None, z=None, a=None, b=None, c=None, xy_plane_rotation=None ):
         raise RuntimeError( __name__ + ' not implemented' )
 
     ############################################################################
@@ -385,10 +396,27 @@ class Creator:
 				 intersection_variable_x=None, \
 				 intersection_variable_y=None, \
 				 probe_offset_x_component=None, \
-				 probe_offset_y_component=None ):
+				 probe_offset_y_component=None, \
+				 use_m66_to_confirm_probe_state=None, \
+				 m66_input_pin_number=None ):
         raise RuntimeError( __name__ + ' not implemented' )
 
-    def probe_downward_point(self, x=None, y=None, depth=None, intersection_variable_z=None):
+    def probe_grid(self, x_increment=None, \
+		    	x_count=None, \
+			y_increment=None, \
+			y_count=None, \
+			z_safety=None, \
+			z_probe=None, \
+			feed_rate=None, filename=None):
+        raise RuntimeError( __name__ + ' not implemented' )
+
+    def probe_downward_point(self, depth=None, \
+		    		intersection_variable_z=None, \
+				touch_off_as_z=None, \
+				rapid_down_to_height=None, \
+				feedrate=None, \
+				use_m66_to_confirm_probe_state=None, \
+				m66_input_pin_number=None):
         raise RuntimeError( __name__ + ' not implemented' )
 
     def report_probe_results(self, 	x1=None, y1=None, z1=None, \
@@ -407,6 +435,9 @@ class Creator:
         raise RuntimeError( __name__ + ' not implemented' )
 
     def log_message(self, message=None):
+        raise RuntimeError( __name__ + ' not implemented' )
+
+    def message(self, text=None):
         raise RuntimeError( __name__ + ' not implemented' )
 
     def close_log_file(self):
@@ -495,9 +526,6 @@ def program_stop(optional=False):
 def program_end():
     creator.program_end()
 
-def flush_nc():
-    creator.flush_nc()
-
 ############################################################################
 ##  Subprograms
 
@@ -520,6 +548,9 @@ def imperial():
 def metric():
     creator.metric()
 
+def machine_units_metric(is_metric):
+    creator.machine_units_metric(is_metric)
+
 def absolute():
     creator.absolute()
 
@@ -541,8 +572,11 @@ def remove_temporary_origin():
 ############################################################################
 ##  Tools
 
-def tool_change(id):
-    creator.tool_change(id)
+def tool_change(id, description=None):
+    creator.tool_change(id, description)
+
+def predefined_position(type):
+    creator.predefined_position(type)
 
 def tool_defn(id, name='', radius=None, length=None, gradient=None):
     creator.tool_defn(id, name, radius, length, gradient)
@@ -552,6 +586,9 @@ def offset_radius(id, radius=None):
 
 def offset_length(id, length=None):
     creator.offset_length(id, length)
+
+def measure_and_offset_tool(distance=None, switch_offset_variable_name=None, fixture_offset_variable_name=None, feed_rate=None, use_m66_to_confirm_probe_state=None, m66_input_pin_number=None ):
+    creator.measure_and_offset_tool(distance, switch_offset_variable_name, fixture_offset_variable_name, feed_rate, use_m66_to_confirm_probe_state, m66_input_pin_number )
 
 ############################################################################
 ##  Datums
@@ -567,6 +604,9 @@ def workplane(id):
 
 def clearanceplane(z=None):
     creator.clearanceplane(z)
+
+def work_offset(workplane, x=None, y=None, z=None, a=None, b=None, c=None, xy_plane_rotation=None ):
+    creator.work_offset( workplane, x, y, z, a, b, c, xy_plane_rotation )
 
 ############################################################################
 ##  APT360 like Transformation Definitions
@@ -702,13 +742,14 @@ def variable(id):
 def variable_set(id, value):
     creator.variable_set(id, value)
 
-def probe_single_point(point_along_edge_x=None, point_along_edge_y=None, depth=None, retracted_point_x=None, retracted_point_y=None, destination_point_x=None, destination_point_y=None, intersection_variable_x=None, intersection_variable_y=None, probe_offset_x_component=None, probe_offset_y_component=None ):
+def probe_single_point(point_along_edge_x=None, point_along_edge_y=None, depth=None, retracted_point_x=None, retracted_point_y=None, destination_point_x=None, destination_point_y=None, intersection_variable_x=None, intersection_variable_y=None, probe_offset_x_component=None, probe_offset_y_component=None, use_m66_to_confirm_probe_state=None, m66_input_pin_number=None ):
+    creator.probe_single_point(point_along_edge_x, point_along_edge_y, depth, retracted_point_x, retracted_point_y, destination_point_x, destination_point_y, intersection_variable_x, intersection_variable_y, probe_offset_x_component, probe_offset_y_component, use_m66_to_confirm_probe_state, m66_input_pin_number )
 
-    creator.probe_single_point(point_along_edge_x, point_along_edge_y, depth, retracted_point_x, retracted_point_y, destination_point_x, destination_point_y, intersection_variable_x, intersection_variable_y, probe_offset_x_component, probe_offset_y_component )
+def probe_grid(x_increment=None, x_count=None, y_increment=None, y_count=None, z_safety=None, z_probe=None, feed_rate=None, filename=None):
+    creator.probe_grid(x_increment, x_count, y_increment, y_count, z_safety, z_probe, feed_rate, filename)
 
-
-def probe_downward_point(x=None, y=None, depth=None, intersection_variable_z=None):
-    creator.probe_downward_point(x, y, depth, intersection_variable_z)
+def probe_downward_point(depth=None, intersection_variable_z=None, touch_off_as_z=None, rapid_down_to_height=None, feedrate=None, use_m66_to_confirm_probe_state=None, m66_input_pin_number=None):
+    creator.probe_downward_point(depth, intersection_variable_z, touch_off_as_z, rapid_down_to_height, feedrate, use_m66_to_confirm_probe_state, m66_input_pin_number)
 
 
 def report_probe_results(x1=None, y1=None, z1=None, x2=None, y2=None, z2=None, x3=None, y3=None, z3=None, x4=None, y4=None, z4=None, x5=None, y5=None, z5=None, x6=None, y6=None, z6=None, xml_file_name=None ):
@@ -722,6 +763,9 @@ def log_coordinate(x=None, y=None, z=None):
 
 def log_message(message=None):
     creator.log_message(message)
+
+def message(text=None):
+    creator.message(text)
 
 def close_log_file():
     creator.close_log_file()
