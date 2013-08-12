@@ -207,15 +207,6 @@ class Creator(nc.Creator):
         for _coordinate_system_number in range(1,10):
             self.work_offset(workplane=_coordinate_system_number, xy_plane_rotation=0.0)
 
-    def program_begin(self, id, name=''):
-	if len(name) > 0:
-        	self.write((self.PROGRAM() % id) + self.SPACE() + (self.COMMENT(name)))
-        	self.write('\n')
-
-	for _coordinate_system_number in range(1,10):
-		self.work_offset(workplane=_coordinate_system_number, xy_plane_rotation=0.0)
-
-
     def program_stop(self, optional=False):
         self.write_blocknum()
         if (optional) : 

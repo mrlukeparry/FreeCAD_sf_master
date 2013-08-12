@@ -53,9 +53,9 @@ protected:
 	 */
 	typedef QStringList::size_type MachineProgramOffset_t;
 	typedef QStringList::size_type ToolPathOffset_t;
-	typedef std::multimap< ToolPathOffset_t, MachineProgramOffset_t > Index_t;
+	typedef std::multimap< ToolPathOffset_t, MachineProgramOffset_t > Indices_t;
 
-	Index_t	index;
+	Indices_t	indices;
 
     int refcnt;
     virtual ~MachineProgram();
@@ -118,6 +118,12 @@ public:
         if (refcnt == 0)
             delete this;
     }
+
+	/**
+		Follow the indices that match the Python code found in the ToolPath object with the GCode found
+		in this MachineProgram object.  Log these linkages to a QString for debugging purposes only.
+	*/
+	QString TraceProgramLinkages() const;
 
 public:
 	friend QString CamExport operator<< ( QString & buf, const MachineProgram & machine_program );

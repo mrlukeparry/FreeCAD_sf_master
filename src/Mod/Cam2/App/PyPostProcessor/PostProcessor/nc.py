@@ -121,7 +121,7 @@ class Creator:
     ############################################################################
     ##  Programs
 
-    def program_begin(self, id, name=''):
+    def program_begin(self, id, comment=''):
         """Begin a program"""
         raise RuntimeError( __name__ + ' not implemented' )
 
