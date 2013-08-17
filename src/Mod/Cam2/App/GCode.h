@@ -37,6 +37,7 @@
 
 #include <Mod/Cam2/App/MachineProgram.h>
 #include <Mod/Part/App/PartFeature.h>
+#include <TopoDS_Edge.hxx>
 
 extern std::ostringstream CamExport GCode_GrammarDebugOutputBuffer;
 
@@ -76,7 +77,7 @@ public:
 	} eUnits_t;
 
 public:
-    GCode(MachineProgram *machine_program);
+    GCode(MachineProgram *machine_program, TPGFeature* rpgFeature);
     ~GCode();
 
 public:
@@ -94,6 +95,7 @@ public:
 	QStringList	warnings;
 	double tolerance;
 	int required_decimal_places;
+	TPGFeature* tpgFeature;	// The owning object into which we place our results.
 
 	// Define a type representing the index into the QStringList contained within the MachineProgram object.
 	// We will assign specific graphics to these for later reference.
@@ -104,13 +106,22 @@ public:
 		tool movements defined by the GCode contained in the MachineProgram object.
 		We will end up with a list of such graphical elements.
 	 */
-	class CamExport GraphicalReference
+	class CamExport ToolMovement
 	{
 	public:
-		GraphicalReference(MachineProgram *machine_program);
-		~GraphicalReference();
-		GraphicalReference( const GraphicalReference & rhs );
-		GraphicalReference & operator= ( const GraphicalReference & rhs );
+		typedef enum
+		{
+			eRapid,
+			eFeed,
+			eArcClockwise,
+			eArcCounterClockwise
+		} eMovement_t;
+
+	public:
+		ToolMovement(MachineProgram *machine_program);
+		~ToolMovement();
+		ToolMovement( const ToolMovement & rhs );
+		ToolMovement & operator= ( const ToolMovement & rhs );
 
 		void Index(const MachineProgramIndex_t index) { machine_program_index = index; }
 		MachineProgramIndex_t Index() const { return(machine_program_index); }
@@ -118,17 +129,25 @@ public:
 		void PartFeature( Part::Feature *part_feature ) { this->part_feature = part_feature; }
 		Part::Feature *PartFeature() const { return(this->part_feature); }
 
+		void Edge( TopoDS_Edge edge ) { this->edge = edge; }
+		TopoDS_Edge Edge() { return(this->edge); }
+
 		void CoordinateSystem( const eCoordinateSystems_t value ) { this->coordinate_system = value; }
 		eCoordinateSystems_t CoordinateSystem() const { return(this->coordinate_system); }
+
+		void Type( const eMovement_t type ) { this->type = type; }
+		eMovement_t Type() const { return(this->type); }
 
 	private:
 		MachineProgram *machine_program;
 		MachineProgramIndex_t machine_program_index;
+		TopoDS_Edge	edge;
 		Part::Feature *part_feature;	// graphical element - line, arc etc.
 		eCoordinateSystems_t coordinate_system;
+		eMovement_t type;
 	};
 
-	typedef std::vector<GraphicalReference> SingleCommandGeometry_t;
+	typedef std::vector<ToolMovement> SingleCommandGeometry_t;
 	typedef std::map< MachineProgramIndex_t, SingleCommandGeometry_t > Geometry_t;
 
 	Geometry_t	geometry;

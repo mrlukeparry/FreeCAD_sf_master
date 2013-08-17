@@ -34,6 +34,7 @@
 
 #include "Features/CamFeature.h"
 #include "PostProcessor.h"
+#include "Graphics/Paths.h"
 
 #include "LinuxCNC.h"	// For DEBUG only.  We need to move the GCode parsing out to somewhere else.
 
@@ -85,14 +86,27 @@ bool CamManagerInst::runTPGByName(const char *FeatName, App::Document* document 
 		return false;
 	}
 
+	/*
+	{
+		Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+		TopoDS_Edge line = Cam::Edge( Cam::Point(0.0, 0.0, 0.0), Cam::Point(100.0, 0.0, 0.0) );
+		gcFeature->Shape.setValue(line);
+	}
+
+	{
+		Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+		TopoDS_Edge line = Cam::Edge( Cam::Point(0.0, 0.0, 0.0), Cam::Point(100.0, 0.0, 0.0) );
+		gcFeature->Shape.setValue(line);
+	}
+	*/
+
 	// get TPGFeature
 	App::DocumentObject *docObj = doc->getObject(FeatName);
 	if(docObj && docObj->isDerivedFrom(Cam::TPGFeature::getClassTypeId())) {
 		Cam::TPGFeature *tpgFeature = dynamic_cast<Cam::TPGFeature *>(docObj);
 		if (tpgFeature) {
-
 			// queue the TPG to run
-			return queueTPGRun(tpgFeature->getTPG(), tpgFeature->getTPGSettings());
+			return queueTPGRun(tpgFeature->getTPG(), tpgFeature->getTPGSettings(), tpgFeature);
 		}
 	}
 	Base::Console().Error("TPG run error: Feature '%s' does not appear to be a TPGFeature!\n", FeatName);
@@ -102,7 +116,7 @@ bool CamManagerInst::runTPGByName(const char *FeatName, App::Document* document 
 /**
  * Add a TPG to the TPG Runner Queue.  First call will start the tpgRunnerThread.
  */
-bool CamManagerInst::queueTPGRun(TPG* tpg, TPGSettings* settings) {
+bool CamManagerInst::queueTPGRun(TPG* tpg, TPGSettings* settings, Cam::TPGFeature *tpgFeature) {
 
 	tpgRunnerQueueMutex.lock(); // exploit this lock to make starting runner thread 'thread-safe'.
 	// start the thread if needed
@@ -112,7 +126,7 @@ bool CamManagerInst::queueTPGRun(TPG* tpg, TPGSettings* settings) {
 
 	// add the tpg to the processing queue
 	if (tpg != NULL && settings != NULL) {
-		TPGRunnerItem* tpgRun = new TPGRunnerItem(tpg, settings->clone());
+		TPGRunnerItem* tpgRun = new TPGRunnerItem(tpg, settings->clone(), tpgFeature);
 		tpgRunnerQueue.push(tpgRun);
 		tpgRunnerQueueMutex.unlock();
 		return true;
@@ -187,7 +201,7 @@ void CamManagerInst::tpgRunnerThreadMain() {
 				gcode << *machine_program;
 				qDebug("%s\n", gcode.toAscii().constData());
 
-				LinuxCNC parser(machine_program);
+				LinuxCNC parser(machine_program, tpgRun->tpgFeature);
 				if (parser.Parse())
 				{
 					qDebug("GCode parsed OK\n");

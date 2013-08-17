@@ -37,7 +37,7 @@ namespace Cam
 class CamExport LinuxCNC : public GCode
 {
 public:
-    LinuxCNC(MachineProgram *machine_program);
+    LinuxCNC(MachineProgram *machine_program, TPGFeature* tpgFeature);
     ~LinuxCNC();
 
 public:

@@ -52,10 +52,11 @@ protected:
 	/// Storage class for TPG's to run
 	class TPGRunnerItem {
 	public:
-		TPGRunnerItem(TPG* tpg, TPGSettings* settings) {this->tpg = tpg; this->settings = settings;}
+		TPGRunnerItem(TPG* tpg, TPGSettings* settings, TPGFeature *tpgFeature) {this->tpg = tpg; this->settings = settings; this->tpgFeature = tpgFeature;}
 		~TPGRunnerItem() { if (this->settings) this->settings->release(); }
 		TPG* tpg;
 		TPGSettings* settings;
+		TPGFeature* tpgFeature;
 	};
 	/// the thread that processes tpg run requests
 	boost::thread* tpgRunnerThread;
@@ -66,7 +67,7 @@ protected:
 	/// flag to tell thread to stay alive
 	bool tpgRunnerKeepAlive;
 	/// method to add a TPG to the TPG Runner Queue
-	bool queueTPGRun(TPG* tpg, TPGSettings* settings);
+	bool queueTPGRun(TPG* tpg, TPGSettings* settings, TPGFeature *tpgFeature);
 	/// the main function used for the tpgRunnerThread
 	void tpgRunnerThreadMain();
 

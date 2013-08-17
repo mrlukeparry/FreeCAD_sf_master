@@ -41,7 +41,7 @@ using namespace Cam;
 // to offer.  If we fail to parse the GCode, we will want to know why.
 std::ostringstream CamExport GCode_GrammarDebugOutputBuffer;
 
-GCode::GCode(MachineProgram *machine_program)
+GCode::GCode(MachineProgram *machine_program, TPGFeature* tpgFeature)
 {
 	required_decimal_places = 3;
 	tolerance = 1.0 / pow(10.0, double(required_decimal_places));
@@ -61,6 +61,8 @@ GCode::GCode(MachineProgram *machine_program)
 	{
 		this->machine_program = NULL;	// Make sure we know we don't have a valid pointer.
 	}
+
+	this->tpgFeature = tpgFeature;
 }
 
 GCode::~GCode()
@@ -77,28 +79,31 @@ void GCode::AddWarning(const QString warning)
 	warnings << warning;
 }
 
-GCode::GraphicalReference::GraphicalReference(MachineProgram *machine_program)
+GCode::ToolMovement::ToolMovement(MachineProgram *machine_program)
 {
 	this->machine_program = machine_program->grab();
 	this->part_feature = NULL;
+	this->type = eRapid;
 }
 
-GCode::GraphicalReference::~GraphicalReference()
+GCode::ToolMovement::~ToolMovement()
 {
 	this->machine_program->release();
 }
 
-GCode::GraphicalReference::GraphicalReference( const GCode::GraphicalReference & rhs )
+GCode::ToolMovement::ToolMovement( const GCode::ToolMovement & rhs )
 {
 	if (this != &rhs)
 	{
 		this->machine_program = rhs.machine_program->grab();
 		this->machine_program_index = rhs.machine_program_index;
 		this->part_feature = rhs.part_feature;
+		this->edge = rhs.edge;
+		this->type = rhs.type;
 	}
 }
 
-GCode::GraphicalReference & GCode::GraphicalReference::operator=( const GCode::GraphicalReference & rhs )
+GCode::ToolMovement & GCode::ToolMovement::operator=( const GCode::ToolMovement & rhs )
 {
 	if (this != &rhs)
 	{
@@ -106,6 +111,8 @@ GCode::GraphicalReference & GCode::GraphicalReference::operator=( const GCode::G
 		this->machine_program = rhs.machine_program->grab();
 		this->machine_program_index = rhs.machine_program_index;
 		this->part_feature = rhs.part_feature;
+		this->edge = rhs.edge;
+		this->type = rhs.type;
 	}
 
 	return(*this);

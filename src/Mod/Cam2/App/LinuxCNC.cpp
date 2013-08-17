@@ -25,6 +25,9 @@
 #ifndef _PreComp_
 #endif
 
+#include <App/Document.h>
+#include <App/Application.h>
+
 #include <sstream>
 #include <math.h>
 
@@ -34,6 +37,7 @@
 
 #include "LinuxCNC.h"
 #include "TPG/ToolPath.h"
+#include "Graphics/Paths.h"
 
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
@@ -43,7 +47,7 @@
 #include <gp_Pnt.hxx>
 
 using namespace Cam;
-LinuxCNC::LinuxCNC(MachineProgram *machine_program) : GCode(machine_program)
+LinuxCNC::LinuxCNC(MachineProgram *machine_program, TPGFeature* rpgFeature) : GCode(machine_program, rpgFeature)
 {
 }
 
@@ -164,6 +168,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		
 		plane = LinuxCNC::eXYPlane;
 		tool_length_offset = 0.0;
+
+		line_offset = 0;
 
 		// The 'units' are 1.0 for metric and 25.4 for imperial. These are the units of the
 		// current graphics.  It's used for the graphics that represents tool movements.
@@ -1209,7 +1215,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 			if (::size_t(this->line_offset) < ::size_t(this->machine_program->getMachineProgram()->size()))
 			{
-				GCode::GraphicalReference graphics(this->machine_program);
+				GCode::ToolMovement graphics(this->machine_program);
 				graphics.Index( this->line_offset );
 				graphics.CoordinateSystem(this->modal_coordinate_system);
 
@@ -1287,33 +1293,56 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					break;
 
 				case LinuxCNC::stRapid:
-					// Create a line that represents this rapid movement.
-					/*
-					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line ");
-					if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
-					if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
-					if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
-					xml << _T("/>\n")
-						<< _T("</path>\n");
-						*/
+					{
+						// Create a line that represents this rapid movement.
+						GCode::SingleCommandGeometry_t movement;
+						GCode::ToolMovement step(graphics);
+						Cam::Point from( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
+						Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+						step.Edge( Cam::Edge( from, to ) );
+						step.Type( GCode::ToolMovement::eRapid );
+						movement.push_back(step);
+						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+
+						/*
+						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+							<< _T("<line ");
+						if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
+						if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
+						if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
+						xml << _T("/>\n")
+							<< _T("</path>\n");
+							*/
+					}
 					break;
 
 				case LinuxCNC::stFeed:
-					/*
-					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line ");
-					if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
-					if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
-					if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
-					xml << _T("/>\n")
-						<< _T("</path>\n");
-						*/
-					if (this->feed_rate <= 0.0) 
 					{
-						QString warning;
-						warning = QString::fromAscii("Zero feed rate found for feed movement - line ") + this->line_number;
-						pLinuxCNC->AddWarning(warning);
+						GCode::SingleCommandGeometry_t movement;
+						GCode::ToolMovement step(graphics);
+						Cam::Point from( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
+						Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+						step.Edge( Cam::Edge( from, to ) );
+						step.Type( GCode::ToolMovement::eFeed );
+						movement.push_back(step);
+						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+
+						
+						/*
+						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+							<< _T("<line ");
+						if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
+						if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
+						if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
+						xml << _T("/>\n")
+							<< _T("</path>\n");
+							*/
+						if (this->feed_rate <= 0.0) 
+						{
+							QString warning;
+							warning = QString::fromAscii("Zero feed rate found for feed movement - line ") + this->line_number;
+							pLinuxCNC->AddWarning(warning);
+						}
 					}
 					break;
 
@@ -1465,27 +1494,70 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 				case LinuxCNC::stBoring:
 				case LinuxCNC::stDrilling:
-					/*
-					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
-						<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line z=\"") << adjust(2,this->z) << _T("\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-					*/
-					this->z = this->r;	// We end up at the clearance (r) position.
-					if (this->feed_rate <= 0.0) pLinuxCNC->AddWarning(QString::fromAscii("Zero feed rate found for arc movement"));
+					{
+						GCode::SingleCommandGeometry_t movement;
+						
+						
+
+						{
+							Cam::Point from( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
+							Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->previous[2]) );
+							GCode::ToolMovement step(graphics);
+							step.Edge( Cam::Edge( from, to ) );
+							step.Type( GCode::ToolMovement::eRapid );
+							movement.push_back(step);
+						}
+
+						{
+							Cam::Point from  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->previous[2]) );
+							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->r) );
+							GCode::ToolMovement step(graphics);
+							step.Edge( Cam::Edge( from, to ) );
+							step.Type( GCode::ToolMovement::eRapid );
+							movement.push_back(step);
+						}
+
+						{
+							Cam::Point from( adjust(0, this->x), adjust(1, this->y), adjust(2, this->r) );
+							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+							GCode::ToolMovement step(graphics);
+							step.Edge( Cam::Edge( from, to ) );
+							step.Type( GCode::ToolMovement::eFeed );
+							movement.push_back(step);
+						}
+
+						{
+							Cam::Point from( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->r) );
+							GCode::ToolMovement step(graphics);
+							step.Edge( Cam::Edge( from, to ) );
+							step.Type( GCode::ToolMovement::eRapid );
+							movement.push_back(step);
+						}
+						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+
+						/*
+						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+							<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
+							<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
+							<< _T("/>\n")
+							<< _T("</path>\n");
+						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+							<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
+							<< _T("/>\n")
+							<< _T("</path>\n");
+						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+							<< _T("<line z=\"") << adjust(2,this->z) << _T("\" ")
+							<< _T("/>\n")
+							<< _T("</path>\n");
+						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
+							<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
+							<< _T("/>\n")
+							<< _T("</path>\n");
+						*/
+						this->z = this->r;	// We end up at the clearance (r) position.
+						if (this->feed_rate <= 0.0) pLinuxCNC->AddWarning(QString::fromAscii("Zero feed rate found for arc movement"));
+					}
 					break;
 
 				case LinuxCNC::stTapping:
@@ -1631,6 +1703,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			this->statement_type = LinuxCNC::stUndefined;
 
 			this->line_number = 0;
+			this->line_offset += 1;
 
 			this->previous[0] = this->x;
 			this->previous[1] = this->y;
