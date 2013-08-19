@@ -88,6 +88,8 @@ public:
 	 */
 	bool runTPGByName(const char *FeatName, App::Document* document = NULL);
 
+	bool runPostProcessByName(const char *FeatName, App::Document *document = NULL);
+
 	// CLI Internal API (i.e. Non-GUI)
 	/**
 	 * Updates the progress of TPG processing

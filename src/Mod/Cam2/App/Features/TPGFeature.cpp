@@ -128,7 +128,7 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
 }
 
 /**
- * Get a reference to the TPG the implements this TPG Feature.
+ * Get a reference to the TPG that implements this TPG Feature.
  * Will load the TPG instance if not set already.
  */
 TPG* TPGFeature::getTPG() {

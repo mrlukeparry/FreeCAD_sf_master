@@ -471,7 +471,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stPreparation ) ]
 			;
 
-		FeedRate =	(ascii::no_case[qi::lit("F")] >> MathematicalExpression)
+		FeedRate =	(ascii::no_case[qi::lit("F")] >> MathematicalExpression) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetFeedRate, phx::ref(*this), qi::_1 ) ]
 			|		(ascii::no_case[qi::lit("G93")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stPreparation ) ]
 			|		(ascii::no_case[qi::lit("G94")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stPreparation ) ]
 			|		(ascii::no_case[qi::lit("G95")]) [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::StatementType, phx::ref(*this),  LinuxCNC::stPreparation ) ]
@@ -1121,6 +1121,11 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			return_value = variables.exists(symbol_id);
 		}
 
+		void SetFeedRate(LinuxCNC::Variables::SymbolId_t id)
+		{
+			this->feed_rate = variables[id];
+			StatementType( LinuxCNC::stPreparation );
+		}
 
 		/**
 			Adjust the value for the active coordinate system.  The parameter_offset is 0 for x, 1 for y etc.
@@ -1304,6 +1309,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 
+						App::Document *doc = App::GetApplication().getActiveDocument();
+						Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+						gcFeature->Shape.setValue(step.Edge());
+
 						/*
 						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 							<< _T("<line ");
@@ -1327,6 +1336,9 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 
+						App::Document *doc = App::GetApplication().getActiveDocument();
+						Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+						gcFeature->Shape.setValue(step.Edge());
 						
 						/*
 						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
