@@ -995,22 +995,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		}
 
 
-		const char * StringFromDouble(const double name)
-		{
-			std::ostringstream ossName;
-			ossName << name;
-
-			string_tokens.push_back(ossName.str());
-			return(string_tokens.back().c_str());
-		}
-
-
-		const char *StringDuplication( const char *value )
-		{
-			string_tokens.push_back(value);
-			return(string_tokens.back().c_str());
-		}
-
 		double radians_to_degrees( const double radians )
 		{
 			double a = radians;
@@ -1174,13 +1158,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			int name = coordinate_system_offset + parameter_offset;
 
 			return(HeeksUnits(value_in_emc2_units - g54_offset + variables[name] + tool_length_offset));
-		}
-
-		// Utility method for easy shorthand later.
-		bool Specified(const char name) const
-		{
-			if (motion_arguments.find(name) == motion_arguments.end()) return(false);
-			return(true);
 		}
 
 		/**
