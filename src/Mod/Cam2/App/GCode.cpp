@@ -34,6 +34,8 @@
 
 #include "GCode.h"
 
+#include <App/Document.h>
+#include <App/Application.h>
 
 using namespace Cam;
 
@@ -89,17 +91,17 @@ GCode::ToolMovement::ToolMovement(MachineProgram *machine_program)
 GCode::ToolMovement::~ToolMovement()
 {
 	this->machine_program->release();
+	// if (this->part_feature) delete this->part_feature;
 }
 
 GCode::ToolMovement::ToolMovement( const GCode::ToolMovement & rhs )
 {
 	if (this != &rhs)
 	{
-		this->machine_program = rhs.machine_program->grab();
-		this->machine_program_index = rhs.machine_program_index;
-		this->part_feature = rhs.part_feature;
-		this->edge = rhs.edge;
-		this->type = rhs.type;
+		this->machine_program = NULL;
+		this->part_feature = NULL;
+
+		*this = rhs;	// Call the assignment operator.
 	}
 }
 
@@ -110,7 +112,7 @@ GCode::ToolMovement & GCode::ToolMovement::operator=( const GCode::ToolMovement 
 		if (this->machine_program) this->machine_program->release();
 		this->machine_program = rhs.machine_program->grab();
 		this->machine_program_index = rhs.machine_program_index;
-		this->part_feature = rhs.part_feature;
+		this->PartFeature( rhs.part_feature );
 		this->edge = rhs.edge;
 		this->type = rhs.type;
 	}
@@ -118,3 +120,23 @@ GCode::ToolMovement & GCode::ToolMovement::operator=( const GCode::ToolMovement 
 	return(*this);
 }
 
+void GCode::ToolMovement::Edge(TopoDS_Edge edge)
+{
+	this->edge = edge;
+
+	App::Document *doc = App::GetApplication().getActiveDocument();
+	Part::Feature *part_feature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+	part_feature->Shape.setValue(edge);
+	this->PartFeature( part_feature );
+}
+
+
+void GCode::ToolMovement::PartFeature(Part::Feature *part_feature)
+{
+	if (this->part_feature)
+	{
+		// delete this->part_feature;
+	}
+
+	this->part_feature = part_feature;
+}

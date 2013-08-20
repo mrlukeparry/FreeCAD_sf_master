@@ -126,10 +126,10 @@ public:
 		void Index(const MachineProgramIndex_t index) { machine_program_index = index; }
 		MachineProgramIndex_t Index() const { return(machine_program_index); }
 
-		void PartFeature( Part::Feature *part_feature ) { this->part_feature = part_feature; }
+		void PartFeature( Part::Feature *part_feature );
 		Part::Feature *PartFeature() const { return(this->part_feature); }
 
-		void Edge( TopoDS_Edge edge ) { this->edge = edge; }
+		void Edge( TopoDS_Edge edge );
 		TopoDS_Edge Edge() { return(this->edge); }
 
 		void CoordinateSystem( const eCoordinateSystems_t value ) { this->coordinate_system = value; }

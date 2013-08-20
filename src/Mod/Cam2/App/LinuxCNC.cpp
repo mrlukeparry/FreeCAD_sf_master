@@ -1306,10 +1306,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
 						step.Edge( Cam::Edge( from, to ) );
 						step.Type( GCode::ToolMovement::eRapid );
-						App::Document *doc = App::GetApplication().getActiveDocument();
-						Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-						gcFeature->Shape.setValue(step.Edge());
-						step.PartFeature( gcFeature );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 
@@ -1333,10 +1329,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
 						step.Edge( Cam::Edge( from, to ) );
 						step.Type( GCode::ToolMovement::eFeed );
-						App::Document *doc = App::GetApplication().getActiveDocument();
-						Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-						gcFeature->Shape.setValue(step.Edge());
-						step.PartFeature( gcFeature );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 						
@@ -1366,10 +1358,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
 						step.Edge( Cam::Edge( from, to ) );
 						step.Type( GCode::ToolMovement::eFeed );
-						App::Document *doc = App::GetApplication().getActiveDocument();
-						Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-						gcFeature->Shape.setValue(step.Edge());
-						step.PartFeature( gcFeature );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 					}
@@ -1445,10 +1433,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						TopoDS_Edge edge = Cam::Edge( start, end, circle );
 						step.Edge(edge);
 						step.Type( GCode::ToolMovement::eFeed );
-						App::Document *doc = App::GetApplication().getActiveDocument();
-						Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-						gcFeature->Shape.setValue(step.Edge());
-						step.PartFeature( gcFeature );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 					}
@@ -1549,10 +1533,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						TopoDS_Edge edge = Cam::Edge( start, end, circle );
 						step.Edge(edge);
 						step.Type( GCode::ToolMovement::eFeed );
-						App::Document *doc = App::GetApplication().getActiveDocument();
-						Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-						gcFeature->Shape.setValue(step.Edge());
-						step.PartFeature( gcFeature );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 					}
@@ -1622,10 +1602,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
-							App::Document *doc = App::GetApplication().getActiveDocument();
-							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-							gcFeature->Shape.setValue(step.Edge());
-							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 
@@ -1635,10 +1611,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
-							App::Document *doc = App::GetApplication().getActiveDocument();
-							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-							gcFeature->Shape.setValue(step.Edge());
-							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 
@@ -1648,10 +1620,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eFeed );
-							App::Document *doc = App::GetApplication().getActiveDocument();
-							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-							gcFeature->Shape.setValue(step.Edge());
-							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 
@@ -1661,10 +1629,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
-							App::Document *doc = App::GetApplication().getActiveDocument();
-							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-							gcFeature->Shape.setValue(step.Edge());
-							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
@@ -1703,10 +1667,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
-							App::Document *doc = App::GetApplication().getActiveDocument();
-							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-							gcFeature->Shape.setValue(step.Edge());
-							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 
@@ -1716,10 +1676,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
-							App::Document *doc = App::GetApplication().getActiveDocument();
-							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-							gcFeature->Shape.setValue(step.Edge());
-							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 
@@ -1729,10 +1685,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eFeed );
-							App::Document *doc = App::GetApplication().getActiveDocument();
-							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-							gcFeature->Shape.setValue(step.Edge());
-							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 
@@ -1742,10 +1694,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eFeed );
-							App::Document *doc = App::GetApplication().getActiveDocument();
-							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-							gcFeature->Shape.setValue(step.Edge());
-							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
@@ -1796,10 +1744,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
-							App::Document *doc = App::GetApplication().getActiveDocument();
-							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-							gcFeature->Shape.setValue(step.Edge());
-							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 
@@ -1836,10 +1780,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
-							App::Document *doc = App::GetApplication().getActiveDocument();
-							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-							gcFeature->Shape.setValue(step.Edge());
-							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 
