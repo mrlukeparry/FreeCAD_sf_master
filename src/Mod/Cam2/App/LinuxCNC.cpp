@@ -1187,6 +1187,80 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			return(HeeksUnits(value_in_emc2_units - g54_offset + variables[name] + tool_length_offset));
 		}
 
+		Cam::Point PreviousLocation()
+		{
+			double x = adjust(0, this->previous[0]);
+			double y = adjust(1, this->previous[1]);
+			double z = adjust(2, this->previous[2]);
+
+			return(Cam::Point( x, y, z ));
+		}
+
+		/**
+			Use the previous location's X, Y and Z values initially and then
+			replace each with those specified within this command.  If each is
+			not specified then the equivalent previous value is used.  This allows
+			for modal commands where all of the X, Y and Z values are NOT specified
+			on every command line.
+		 */
+		Cam::Point NewLocation()
+		{
+			double x = adjust(0, this->previous[0]);
+			double y = adjust(1, this->previous[1]);
+			double z = adjust(2, this->previous[2]);
+
+			if (this->x_specified) x = adjust(0, this->x);
+			if (this->y_specified) y = adjust(1, this->y);
+			if (this->z_specified) z = adjust(2, this->z);
+
+			return(Cam::Point( x, y, z ));
+		}
+
+		double PX()
+		{
+			double x = adjust(0, this->previous[0]);
+			return(x);
+		}
+
+		double X()
+		{
+			double x = PX();
+			if (this->x_specified) x = adjust(0, this->x);
+			return(x);
+		}
+
+		double PY()
+		{
+			double y = adjust(1, this->previous[1]);
+			return(y);
+		}
+
+		double Y()
+		{
+			double y = PY();
+			if (this->y_specified) y = adjust(1, this->y);
+			return(y);
+		}
+
+		double PZ()
+		{
+			double z = adjust(2, this->previous[2]);
+			return(z);
+		}
+
+		double Z()
+		{
+			double z = PZ();
+			if (this->z_specified) z = adjust(2, this->z);
+			return(z);
+		}
+
+		double R()
+		{
+			double r = HeeksUnits(Emc2Units(this->r));
+			return(r);
+		}
+
 		/**
 			We've accumulated all the command line arguments as well as the statement
 			type for this line (block).  Go ahead and adjust any of the command line
@@ -1306,9 +1380,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						// Create a line that represents this rapid movement.
 						GCode::SingleCommandGeometry_t movement;
 						GCode::ToolMovement step(graphics);
-						Cam::Point from( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
-						Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
-						step.Edge( Cam::Edge( from, to ) );
+						step.Edge( Cam::Edge( PreviousLocation(), NewLocation() ) );
 						step.Type( GCode::ToolMovement::eRapid );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
@@ -1329,9 +1401,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					{
 						GCode::SingleCommandGeometry_t movement;
 						GCode::ToolMovement step(graphics);
-						Cam::Point from( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
-						Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
-						step.Edge( Cam::Edge( from, to ) );
+						step.Edge( Cam::Edge( PreviousLocation(), NewLocation() ) );
 						step.Type( GCode::ToolMovement::eFeed );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
@@ -1358,9 +1428,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					{
 						GCode::SingleCommandGeometry_t movement;
 						GCode::ToolMovement step(graphics);
-						Cam::Point from( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
-						Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
-						step.Edge( Cam::Edge( from, to ) );
+						step.Edge( Cam::Edge( PreviousLocation(), NewLocation() ) );
 						step.Type( GCode::ToolMovement::eFeed );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
@@ -1402,8 +1470,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						GCode::SingleCommandGeometry_t movement;
 						GCode::ToolMovement step(graphics);
 
-						gp_Pnt start(adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]));
-						gp_Pnt end(adjust(0, this->x), adjust(1, this->y), adjust(2, this->z));
+						gp_Pnt start(PreviousLocation().Location());
+						gp_Pnt end(NewLocation().Location());
 						gp_Pnt centre(adjust(0, this->i + this->previous[0]), adjust(1, this->j + this->previous[1]), adjust(2, this->k + this->previous[2]));
 
 						gp_Pnt orthogonal_start;
@@ -1456,8 +1524,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						{
 							// Confirm that the previous location, the center-point and the final location all make
 							// sense for an arc movement.  If we have a rounding error then we want to know it.
-							gp_Pnt start(this->previous[0], this->previous[1], this->previous[2]);
-							gp_Pnt end(this->x, this->y, this->z);
+							gp_Pnt start(PreviousLocation().Location());
+							gp_Pnt end(NewLocation().Location());
 							gp_Pnt centre(this->i + this->previous[0], this->j + this->previous[1], this->k + this->previous[2]);
 
 							switch (this->plane)
@@ -1502,8 +1570,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						GCode::SingleCommandGeometry_t movement;
 						GCode::ToolMovement step(graphics);
 
-						gp_Pnt start(adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]));
-						gp_Pnt end(adjust(0, this->x), adjust(1, this->y), adjust(2, this->z));
+						gp_Pnt start(PreviousLocation().Location());
+						gp_Pnt end(NewLocation().Location());
 						gp_Pnt centre(adjust(0, this->i + this->previous[0]), adjust(1, this->j + this->previous[1]), adjust(2, this->k + this->previous[2]));
 
 						gp_Pnt orthogonal_start;
@@ -1555,9 +1623,9 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						{
 							// Confirm that the previous location, the center-point and the final location all make
 							// sense for an arc movement.  If we have a rounding error then we want to know it.
-							gp_Pnt start(this->previous[0], this->previous[1], this->previous[2]);
-							gp_Pnt end(this->x, this->y, this->z);
-							gp_Pnt centre(this->i + this->previous[0], this->j + this->previous[1], this->k + this->previous[2]);
+							gp_Pnt start(PreviousLocation().Location());
+							gp_Pnt end(NewLocation().Location());
+							gp_Pnt centre(adjust(0, this->i + this->previous[0]), adjust(1, this->j + this->previous[1]), adjust(2, this->k + this->previous[2]));
 
 							switch (this->plane)
 							{
@@ -1601,8 +1669,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						GCode::SingleCommandGeometry_t movement;
 
 						{
-							Cam::Point from( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
-							Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->previous[2]) );
+							Cam::Point from( PreviousLocation() );
+							Cam::Point to( X(), Y(), PZ() );
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
@@ -1610,8 +1678,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						}
 
 						{
-							Cam::Point from  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->previous[2]) );
-							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->r) );
+							Cam::Point from( X(), Y(), PZ() );
+							Cam::Point to( X(), Y(), R() );
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
@@ -1619,8 +1687,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						}
 
 						{
-							Cam::Point from( adjust(0, this->x), adjust(1, this->y), adjust(2, this->r) );
-							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+							Cam::Point from( X(), Y(), R());
+							Cam::Point to( NewLocation() );
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eFeed );
@@ -1628,8 +1696,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						}
 
 						{
-							Cam::Point from( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
-							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->r) );
+							Cam::Point from( NewLocation() );
+							Cam::Point to( X(), Y(), R() );
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
@@ -1666,8 +1734,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						GCode::SingleCommandGeometry_t movement;
 
 						{
-							Cam::Point from( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
-							Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->previous[2]) );
+							Cam::Point from( PreviousLocation() );
+							Cam::Point to  ( X(), Y(), PZ() );
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
@@ -1675,8 +1743,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						}
 
 						{
-							Cam::Point from  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->previous[2]) );
-							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->r) );
+							Cam::Point from  ( X(), Y(), PZ() );
+							Cam::Point to( X(), Y(), R() );
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
@@ -1684,8 +1752,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						}
 
 						{
-							Cam::Point from( adjust(0, this->x), adjust(1, this->y), adjust(2, this->r) );
-							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+							Cam::Point from( X(), Y(), R() );
+							Cam::Point to( NewLocation() );
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eFeed );
@@ -1693,8 +1761,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						}
 
 						{
-							Cam::Point from( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
-							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->r) );
+							Cam::Point from( NewLocation() );
+							Cam::Point to( X(), Y(), R() );
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eFeed );
@@ -1743,8 +1811,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						GCode::SingleCommandGeometry_t movement;
 
 						{
-							Cam::Point from  ( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
-							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+							Cam::Point from  ( PreviousLocation() );
+							Cam::Point to( NewLocation() );
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
@@ -1779,8 +1847,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						GCode::SingleCommandGeometry_t movement;
 
 						{
-							Cam::Point from  ( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
-							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+							Cam::Point from  ( PreviousLocation() );
+							Cam::Point to( NewLocation() );
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
