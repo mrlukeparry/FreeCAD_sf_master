@@ -86,9 +86,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 		if (c.size() == 1)
 		{
-			switch (c[0])
+			switch (tolower(c[0]))
 			{
 			case 'x':	this->x = Value(symbol_id); this->x_specified = true; break;
+
 			case 'y':	this->y = Value(symbol_id); this->y_specified = true; break;
 			case 'z':	this->z = Value(symbol_id); this->z_specified = true; break;
 
@@ -179,6 +180,28 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		// variables file read in at startup.
 		m_emc2_variables_units = LinuxCNC::eMetric;	// TODO Take this from some application settings.
 
+		this->statement_type = LinuxCNC::stUndefined;
+
+		this->previous[0] = this->x = 0.0;
+		this->previous[1] = this->y = 0.0;
+		this->previous[2] = this->z = 0.0;
+		this->previous[3] = this->a = 0.0;
+		this->previous[4] = this->b = 0.0;
+		this->previous[5] = this->c = 0.0;
+		this->previous[6] = this->u = 0.0;
+		this->previous[7] = this->v = 0.0;
+		this->previous[8] = this->w = 0.0;
+
+		this->l = 0.0;
+		this->p = 0.0;
+		this->r = 0.0;
+		this->q = 0.0;
+
+		this->i = 0.0;
+		this->j = 0.0;
+		this->k = 0.0;
+
+		ResetForEndOfBlock();
 		InitializeGCodeVariables();
 
 		// N110 - i.e. use qi::lexeme to avoid qi::space_type skipper which allows the possibility of interpreting 'N 110'.  We don't want spaces here.
@@ -1283,12 +1306,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
 						step.Edge( Cam::Edge( from, to ) );
 						step.Type( GCode::ToolMovement::eRapid );
-						movement.push_back(step);
-						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
-
 						App::Document *doc = App::GetApplication().getActiveDocument();
 						Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
 						gcFeature->Shape.setValue(step.Edge());
+						step.PartFeature( gcFeature );
+						movement.push_back(step);
+						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 
 						/*
 						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
@@ -1310,12 +1333,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
 						step.Edge( Cam::Edge( from, to ) );
 						step.Type( GCode::ToolMovement::eFeed );
-						movement.push_back(step);
-						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
-
 						App::Document *doc = App::GetApplication().getActiveDocument();
 						Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
 						gcFeature->Shape.setValue(step.Edge());
+						step.PartFeature( gcFeature );
+						movement.push_back(step);
+						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 						
 						/*
 						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
@@ -1336,6 +1359,20 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					break;
 
 				case LinuxCNC::stProbe:
+					{
+						GCode::SingleCommandGeometry_t movement;
+						GCode::ToolMovement step(graphics);
+						Cam::Point from( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
+						Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+						step.Edge( Cam::Edge( from, to ) );
+						step.Type( GCode::ToolMovement::eFeed );
+						App::Document *doc = App::GetApplication().getActiveDocument();
+						Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+						gcFeature->Shape.setValue(step.Edge());
+						step.PartFeature( gcFeature );
+						movement.push_back(step);
+						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+					}
 					/*
 					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 						<< _T("<line ");
@@ -1369,6 +1406,53 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					break;
 
 				case LinuxCNC::stArcClockwise:
+					{
+						GCode::SingleCommandGeometry_t movement;
+						GCode::ToolMovement step(graphics);
+
+						gp_Pnt start(adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]));
+						gp_Pnt end(adjust(0, this->x), adjust(1, this->y), adjust(2, this->z));
+						gp_Pnt centre(adjust(0, this->i + this->previous[0]), adjust(1, this->j + this->previous[1]), adjust(2, this->k + this->previous[2]));
+
+						gp_Pnt orthogonal_start;
+						gp_Pnt orthogonal_centre;
+
+						gp_Circ circle;
+						switch (this->plane)
+						{
+						case GCode::eXYPlane:
+							orthogonal_start  = gp_Pnt(adjust(0, this->previous[0]),    adjust(1, this->previous[1]),  adjust(2, 0.0));
+							orthogonal_centre = gp_Pnt(adjust(0, this->i + this->previous[0]),	adjust(1, this->j + this->previous[1]),	adjust(2, 0.0));
+							circle.SetAxis(gp_Ax1(gp_Pnt(0.0,0.0,0.0), gp_Dir(0.0, 0.0, -1.0)));
+							break;
+
+						case GCode::eXZPlane:
+							orthogonal_start  = gp_Pnt(adjust(0, this->previous[0]), adjust(1, 0.0), adjust(2, this->previous[2]));
+							orthogonal_centre = gp_Pnt(adjust(0, this->i + this->previous[0]),	adjust(1, 0.0), adjust(2, this->k + this->previous[2]));
+							circle.SetAxis(gp_Ax1(gp_Pnt(0.0,0.0,0.0), gp_Dir(0.0, -1.0, 0.0)));
+							break;
+
+						case GCode::eYZPlane:
+							orthogonal_start  = gp_Pnt(adjust(0, 0.0), adjust(1, this->previous[1]), adjust(2, this->previous[2]));
+							orthogonal_centre = gp_Pnt(adjust(0, 0.0), adjust(1, this->j + this->previous[1]),	adjust(2, this->k + this->previous[2]));
+							circle.SetAxis(gp_Ax1(gp_Pnt(0.0,0.0,0.0), gp_Dir(-1.0, 0.0, 0.0)));
+							break;
+						} // End switch
+
+						circle.SetLocation(centre);
+						circle.SetRadius(orthogonal_start.Distance(orthogonal_centre));
+
+						TopoDS_Edge edge = Cam::Edge( start, end, circle );
+						step.Edge(edge);
+						step.Type( GCode::ToolMovement::eFeed );
+						App::Document *doc = App::GetApplication().getActiveDocument();
+						Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+						gcFeature->Shape.setValue(step.Edge());
+						step.PartFeature( gcFeature );
+						movement.push_back(step);
+						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+					}
+
 					/*
 					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 						<< _T("<arc x=\"") << adjust(0,this->x) << _T("\" ")
@@ -1426,6 +1510,52 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					break;
 
 				case LinuxCNC::stArcCounterClockwise:
+					{
+						GCode::SingleCommandGeometry_t movement;
+						GCode::ToolMovement step(graphics);
+
+						gp_Pnt start(adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]));
+						gp_Pnt end(adjust(0, this->x), adjust(1, this->y), adjust(2, this->z));
+						gp_Pnt centre(adjust(0, this->i + this->previous[0]), adjust(1, this->j + this->previous[1]), adjust(2, this->k + this->previous[2]));
+
+						gp_Pnt orthogonal_start;
+						gp_Pnt orthogonal_centre;
+
+						gp_Circ circle;
+						switch (this->plane)
+						{
+						case GCode::eXYPlane:
+							orthogonal_start  = gp_Pnt(adjust(0, this->previous[0]),    adjust(1, this->previous[1]),  adjust(2, 0.0));
+							orthogonal_centre = gp_Pnt(adjust(0, this->i + this->previous[0]),	adjust(1, this->j + this->previous[1]),	adjust(2, 0.0));
+							circle.SetAxis(gp_Ax1(gp_Pnt(0.0,0.0,0.0), gp_Dir(0.0, 0.0, +1.0)));
+							break;
+
+						case GCode::eXZPlane:
+							orthogonal_start  = gp_Pnt(adjust(0, this->previous[0]), adjust(1, 0.0), adjust(2, this->previous[2]));
+							orthogonal_centre = gp_Pnt(adjust(0, this->i + this->previous[0]),	adjust(1, 0.0), adjust(2, this->k + this->previous[2]));
+							circle.SetAxis(gp_Ax1(gp_Pnt(0.0,0.0,0.0), gp_Dir(0.0, +1.0, 0.0)));
+							break;
+
+						case GCode::eYZPlane:
+							orthogonal_start  = gp_Pnt(adjust(0, 0.0), adjust(1, this->previous[1]), adjust(2, this->previous[2]));
+							orthogonal_centre = gp_Pnt(adjust(0, 0.0), adjust(1, this->j + this->previous[1]),	adjust(2, this->k + this->previous[2]));
+							circle.SetAxis(gp_Ax1(gp_Pnt(0.0,0.0,0.0), gp_Dir(+1.0, 0.0, 0.0)));
+							break;
+						} // End switch
+
+						circle.SetLocation(centre);
+						circle.SetRadius(orthogonal_start.Distance(orthogonal_centre));
+
+						TopoDS_Edge edge = Cam::Edge( start, end, circle );
+						step.Edge(edge);
+						step.Type( GCode::ToolMovement::eFeed );
+						App::Document *doc = App::GetApplication().getActiveDocument();
+						Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+						gcFeature->Shape.setValue(step.Edge());
+						step.PartFeature( gcFeature );
+						movement.push_back(step);
+						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+					}
 					/*
 					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 						<< _T("<arc x=\"") << adjust(0,this->x) << _T("\" ")
@@ -1485,8 +1615,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 				case LinuxCNC::stDrilling:
 					{
 						GCode::SingleCommandGeometry_t movement;
-						
-						
 
 						{
 							Cam::Point from( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
@@ -1494,6 +1622,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
+							App::Document *doc = App::GetApplication().getActiveDocument();
+							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+							gcFeature->Shape.setValue(step.Edge());
+							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 
@@ -1503,6 +1635,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
+							App::Document *doc = App::GetApplication().getActiveDocument();
+							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+							gcFeature->Shape.setValue(step.Edge());
+							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 
@@ -1512,6 +1648,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eFeed );
+							App::Document *doc = App::GetApplication().getActiveDocument();
+							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+							gcFeature->Shape.setValue(step.Edge());
+							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 
@@ -1521,6 +1661,10 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							GCode::ToolMovement step(graphics);
 							step.Edge( Cam::Edge( from, to ) );
 							step.Type( GCode::ToolMovement::eRapid );
+							App::Document *doc = App::GetApplication().getActiveDocument();
+							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+							gcFeature->Shape.setValue(step.Edge());
+							step.PartFeature( gcFeature );
 							movement.push_back(step);
 						}
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
@@ -1550,6 +1694,63 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					break;
 
 				case LinuxCNC::stTapping:
+					{
+						GCode::SingleCommandGeometry_t movement;
+
+						{
+							Cam::Point from( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
+							Cam::Point to  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->previous[2]) );
+							GCode::ToolMovement step(graphics);
+							step.Edge( Cam::Edge( from, to ) );
+							step.Type( GCode::ToolMovement::eRapid );
+							App::Document *doc = App::GetApplication().getActiveDocument();
+							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+							gcFeature->Shape.setValue(step.Edge());
+							step.PartFeature( gcFeature );
+							movement.push_back(step);
+						}
+
+						{
+							Cam::Point from  ( adjust(0, this->x), adjust(1, this->y), adjust(2, this->previous[2]) );
+							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->r) );
+							GCode::ToolMovement step(graphics);
+							step.Edge( Cam::Edge( from, to ) );
+							step.Type( GCode::ToolMovement::eRapid );
+							App::Document *doc = App::GetApplication().getActiveDocument();
+							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+							gcFeature->Shape.setValue(step.Edge());
+							step.PartFeature( gcFeature );
+							movement.push_back(step);
+						}
+
+						{
+							Cam::Point from( adjust(0, this->x), adjust(1, this->y), adjust(2, this->r) );
+							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+							GCode::ToolMovement step(graphics);
+							step.Edge( Cam::Edge( from, to ) );
+							step.Type( GCode::ToolMovement::eFeed );
+							App::Document *doc = App::GetApplication().getActiveDocument();
+							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+							gcFeature->Shape.setValue(step.Edge());
+							step.PartFeature( gcFeature );
+							movement.push_back(step);
+						}
+
+						{
+							Cam::Point from( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->r) );
+							GCode::ToolMovement step(graphics);
+							step.Edge( Cam::Edge( from, to ) );
+							step.Type( GCode::ToolMovement::eFeed );
+							App::Document *doc = App::GetApplication().getActiveDocument();
+							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+							gcFeature->Shape.setValue(step.Edge());
+							step.PartFeature( gcFeature );
+							movement.push_back(step);
+						}
+						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+					}
+
 					/*
 					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 						<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
@@ -1586,6 +1787,24 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					this->v = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 7 ] - variables[ LinuxCNC::eG54VariableBase + 7 ]);
 					this->w = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 8 ] - variables[ LinuxCNC::eG54VariableBase + 8 ]);
 
+					{
+						GCode::SingleCommandGeometry_t movement;
+
+						{
+							Cam::Point from  ( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
+							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+							GCode::ToolMovement step(graphics);
+							step.Edge( Cam::Edge( from, to ) );
+							step.Type( GCode::ToolMovement::eRapid );
+							App::Document *doc = App::GetApplication().getActiveDocument();
+							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+							gcFeature->Shape.setValue(step.Edge());
+							step.PartFeature( gcFeature );
+							movement.push_back(step);
+						}
+
+						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+					}
 					/*
 					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
 						<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
@@ -1607,6 +1826,25 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					this->u = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 6 ] - variables[ LinuxCNC::eG54VariableBase + 6 ]);
 					this->v = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 7 ] - variables[ LinuxCNC::eG54VariableBase + 7 ]);
 					this->w = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 8 ] - variables[ LinuxCNC::eG54VariableBase + 8 ]);
+
+					{
+						GCode::SingleCommandGeometry_t movement;
+
+						{
+							Cam::Point from  ( adjust(0, this->previous[0]), adjust(1, this->previous[1]), adjust(2, this->previous[2]) );
+							Cam::Point to( adjust(0, this->x), adjust(1, this->y), adjust(2, this->z) );
+							GCode::ToolMovement step(graphics);
+							step.Edge( Cam::Edge( from, to ) );
+							step.Type( GCode::ToolMovement::eRapid );
+							App::Document *doc = App::GetApplication().getActiveDocument();
+							Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+							gcFeature->Shape.setValue(step.Edge());
+							step.PartFeature( gcFeature );
+							movement.push_back(step);
+						}
+
+						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+					}
 
 					/*
 					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
