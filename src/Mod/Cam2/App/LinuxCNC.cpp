@@ -89,7 +89,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			switch (tolower(c[0]))
 			{
 			case 'x':	this->x = Value(symbol_id); this->x_specified = true; break;
-
 			case 'y':	this->y = Value(symbol_id); this->y_specified = true; break;
 			case 'z':	this->z = Value(symbol_id); this->z_specified = true; break;
 
@@ -103,8 +102,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 			case 'l':	this->l = Value(symbol_id); this->l_specified = true; break;
 			case 'p':	this->p = Value(symbol_id); this->p_specified = true; break;
-			case 'r':	this->r = Value(symbol_id); this->q_specified = true; break;
-			case 'q':	this->q = Value(symbol_id); this->r_specified = true; break;
+			case 'r':	this->r = Value(symbol_id); this->r_specified = true; break;
+			case 'q':	this->q = Value(symbol_id); this->q_specified = true; break;
 
 			case 'i':	this->i = Value(symbol_id); this->i_specified = true; break;
 			case 'j':	this->j = Value(symbol_id); this->j_specified = true; break;
@@ -736,6 +735,9 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		// i.e. the second argument to the template indicates the 'type' returned by the rule.  This defines the type of qi::_val
 		
 
+		// EMC2 units are defined via a setting (TODO Make this statement true)
+		// It defines the units for which values in the 'variables' symbol table
+		// are relevant.
 		double Emc2Units(const double value_in_parse_units)
 		{
 			double value_in_mm = value_in_parse_units * this->units;
@@ -771,6 +773,8 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			}
 		}
 
+		// The Parse Units are defined by any G20 or G21 commands seen.  i.e. they're the
+		// units for which the various command arguments are specified in.
 		double ParseUnits( const double value_in_emc2_units )
 		{
 			double value_in_mm = HeeksUnits( value_in_emc2_units );
