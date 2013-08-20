@@ -1187,34 +1187,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			return(HeeksUnits(value_in_emc2_units - g54_offset + variables[name] + tool_length_offset));
 		}
 
-		Cam::Point PreviousLocation()
-		{
-			double x = adjust(0, this->previous[0]);
-			double y = adjust(1, this->previous[1]);
-			double z = adjust(2, this->previous[2]);
-
-			return(Cam::Point( x, y, z ));
-		}
-
-		/**
-			Use the previous location's X, Y and Z values initially and then
-			replace each with those specified within this command.  If each is
-			not specified then the equivalent previous value is used.  This allows
-			for modal commands where all of the X, Y and Z values are NOT specified
-			on every command line.
-		 */
-		Cam::Point NewLocation()
-		{
-			double x = adjust(0, this->previous[0]);
-			double y = adjust(1, this->previous[1]);
-			double z = adjust(2, this->previous[2]);
-
-			if (this->x_specified) x = adjust(0, this->x);
-			if (this->y_specified) y = adjust(1, this->y);
-			if (this->z_specified) z = adjust(2, this->z);
-
-			return(Cam::Point( x, y, z ));
-		}
 
 		double PX()
 		{
@@ -1260,6 +1232,24 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			double r = HeeksUnits(Emc2Units(this->r));
 			return(r);
 		}
+
+		Cam::Point PreviousLocation()
+		{
+			return(Cam::Point( PX(), PY(), PZ() ));
+		}
+
+		/**
+			Use the previous location's X, Y and Z values initially and then
+			replace each with those specified within this command.  If each is
+			not specified then the equivalent previous value is used.  This allows
+			for modal commands where all of the X, Y and Z values are NOT specified
+			on every command line.
+		 */
+		Cam::Point NewLocation()
+		{
+			return(Cam::Point( X(), Y(), Z() ));
+		}
+
 
 		/**
 			We've accumulated all the command line arguments as well as the statement
