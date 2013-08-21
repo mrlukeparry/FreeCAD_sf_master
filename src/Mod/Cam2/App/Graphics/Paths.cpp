@@ -6,12 +6,15 @@
 
 #include <App/Application.h>
 #include <App/Document.h>
+#include <Mod/Part/App/PartFeature.h>
+#include <Mod/Part/App/PrimitiveFeature.h>
 
 #include <exception>
 
 #include <BRep_Builder.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
 #include <TopoDS_Vertex.hxx>
 #include <BRepAlgoAPI_Common.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
@@ -1286,10 +1289,29 @@ void Cam::Paths::Add(const QStringList input_geometry_names)
 void Cam::Paths::Add( const Part::Feature *link )
 {
 	if (!link) return;
-    if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) return;
-    const TopoDS_Shape& shape = static_cast<const Part::Feature*>(link)->Shape.getShape()._Shape;
-    if (shape.IsNull()) return;
-	Add(shape);
+    if (link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
+	{
+		const TopoDS_Shape& shape = static_cast<const Part::Feature*>(link)->Shape.getShape()._Shape;
+		if (shape.IsNull() == false) 
+		{
+			Add(shape);
+		}
+	}
+	/*
+	else if (link->getTypeId().isDerivedFrom(Sketcher::SketchObject::getClassTypeId()))
+	{
+		// It must be a vertex contained within a sketch.
+
+		const Sketcher::SketchObject *sketch = dynamic_cast<const Sketcher::SketchObject *>(link);
+		if (sketch)
+		{
+			const std::vector<Part::Geometry *> &getInternalGeometry(void) const { return Geometry.getValues(); }
+
+			BRepBuilderAPI_MakeVertex make_vertex(gp_Pnt(part_vertex->X.getValue(), part_vertex->Y.getValue(), part_vertex->Z.getValue()));
+			Add(make_vertex.Vertex());
+		}
+	}
+	*/
 }
 
 void Cam::Paths::Add(const TopoDS_Vertex vertex)
