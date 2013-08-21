@@ -62,8 +62,8 @@ public:
 
     /// Methods for creating external interface to attach input to each TPG
     // [TODO] eventually this could be an APP::Property link list but doesn't make sens
-	typedef std::vector<Part::Feature *> InputGeometry_t;
-    // void setInputGeometry(const InputGeometry_t & vals); //Unsure whether we should convert this in here;
+    void addInputGeometry(const QString & object_name);
+	QStringList getInputGeometry();
 //    void setBoundingBox(const Base::BoundBox3d & bbox) { inputBBox = bbox; }
 
     /// Methods for obtaining output the output
@@ -100,7 +100,7 @@ protected:
     TPG *tpg;
     TPGSettings *tpgSettings;
 //    Base::BoundBox3d inputBBox;
-    // InputGeometry_t inputGeometry;
+    QStringList inputGeometry;
     
     virtual void onDocumentRestored();
 };

@@ -1259,8 +1259,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		 */
 		void ProcessBlock()
 		{
-			qDebug("Processing block\n");
-
 			if (! this->machine_program) return;
 			QStringList *pPython = this->machine_program->getMachineProgram();
 			if (pPython == NULL) return;

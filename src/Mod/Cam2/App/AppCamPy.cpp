@@ -183,7 +183,7 @@ static PyObject *test(PyObject *self, PyObject *args)
 //	Cam::PyTPGManager().test();
     Cam::TPGFactory().scanPlugins();
     Cam::TPGDescriptorCollection *plugins = Cam::TPGFactory().getDescriptors();
-	for (int i = 0; i < plugins->size(); i++)
+	for (::size_t i = 0; i < plugins->size(); i++)
 		plugins->at(i)->print();
 
 	if (plugins->size() > 0)
@@ -197,7 +197,7 @@ static PyObject *test(PyObject *self, PyObject *args)
             printf(" '%s'\n", ts(desc));
             // test the pyTPG API
             vector<QString> actions = tpg->getActions();
-            for (int i = 0; i < actions.size(); i++) {
+			for (::size_t i = 0; i < actions.size(); i++) {
                 printf(" - Action: %s\n", ts(actions[i]));
                 Cam::TPGSettings *settings = tpg->getSettingDefinitions();
                 settings->print();
