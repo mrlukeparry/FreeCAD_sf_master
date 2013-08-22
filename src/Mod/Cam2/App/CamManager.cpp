@@ -158,7 +158,7 @@ bool CamManagerInst::runPostProcessByName(const char *FeatName, App::Document* d
 				if (! toolpath)
 				{
 					// We must not have executed the TPG already.  Do so now.
-					tpg->run(tpgFeature->getTPGSettings(), tpgFeature->getInputGeometry(), QString::fromAscii("default"));
+					tpg->run(tpgFeature->getTPGSettings(), QString::fromAscii("default"));
 					toolpath = tpg->getToolPath();
 				}
 
@@ -278,7 +278,7 @@ void CamManagerInst::tpgRunnerThreadMain() {
 			updatedTPGState(tpgRun->tpg->getName(), Cam::TPG::RUNNING, 0);
 
 			Base::Console().Message("Running TPG: %s\n", tpgRun->tpg->getName().toAscii().constData());
-			tpgRun->tpg->run(tpgRun->settings, tpgRun->tpgFeature->getInputGeometry(), QString::fromAscii("default"));
+			tpgRun->tpg->run(tpgRun->settings, QString::fromAscii("default"));
 			Base::Console().Message("Finished TPG: %s\n", tpgRun->tpg->getName().toAscii().constData());
 
 			updatedTPGState(tpgRun->tpg->getName(), Cam::TPG::FINISHED, 100);

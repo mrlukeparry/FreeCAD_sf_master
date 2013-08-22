@@ -97,6 +97,11 @@ public:
      * stay open until this instance is released.
      */
     void setPlugin(CppTPGPlugin* plugin);
+
+	/*
+	 * Inherited from TPG::initialiseSettings()
+	 */
+	virtual void initialiseSettings();
 };
 
 

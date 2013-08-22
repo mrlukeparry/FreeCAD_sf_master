@@ -49,17 +49,6 @@ TPGFeature::TPGFeature() {
 
     tpg = NULL;
     tpgSettings = NULL; //new TPGSettings();
-
-	// Just as a hack for now, find all input object names and pass them in as input geometry.
-	App::Document *document = App::GetApplication().getActiveDocument();
-	if (document)
-	{
-		std::vector<DocumentObject*> input_geometry = document->getObjectsOfType(Part::Feature::getClassTypeId());
-		for (std::vector<DocumentObject *>::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
-		{
-			this->addInputGeometry(QString::fromAscii((*itGeometry)->getNameInDocument()));
-		}
-	}
 }
 
 //// TODO not sure if this is actually needed anymore.
@@ -142,18 +131,6 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
 }
 
 
-void TPGFeature::addInputGeometry(const QString & object_name)
-{
-	if (this->inputGeometry.indexOf(object_name) < 0)
-	{
-		this->inputGeometry.push_back(object_name);
-	}
-}
-
-QStringList TPGFeature::getInputGeometry()
-{
-	return(this->inputGeometry);
-}
 
 /**
  * Get a reference to the TPG that implements this TPG Feature.

@@ -47,12 +47,14 @@ public:
      *
      * Note: the return will change once the TP Language has been set in stone
      */
-    virtual void run(TPGSettings *settings, QStringList input_geometry_names, QString action);
+    virtual void run(TPGSettings *settings, QString action);
 
     /**
      * Returns the toolpath from the last
      */
     virtual ToolPath *getToolPath();
+
+	virtual void initialiseSettings();
 
 private:
 	// Declare some static settings names once here so that they're consistent

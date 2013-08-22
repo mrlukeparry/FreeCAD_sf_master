@@ -30,11 +30,14 @@
 #include <Mod/Part/App/PrimitiveFeature.h>
 
 #include <App/Document.h>
+#include <App/DocumentObject.h>
 #include <App/Application.h>
 
 #include "CppExampleTPG.h"
 #include "Graphics/Paths.h"
 #include <Mod/Cam2/App/GCode.h>
+
+#include <QRegExp>
 
 #define myID   "95744f1e-360f-11e2-bcd3-08002734b94f"
 #define myName "Example CPP TPG"
@@ -126,11 +129,34 @@ CppExampleTPG::CppExampleTPG()
     QString qaction = QS("default");
     actions.push_back(qaction);
 
-    settings = new TPGSettings();
-    settings->addSettingDefinition(qaction, new TPGSettingDefinition("geometry", "Geometry", "Cam::TextBox", "Box01", "", "The input geometry that should be cut"));
+	this->initialiseSettings();
 
-	// TODO - Figure out how to use a 'length' property so that these values can be expressed in whatever units are configured
-	// for use.
+	// Just as a hack for now, find all input object names and pass them in as input geometry.
+	App::Document *document = App::GetApplication().getActiveDocument();
+	if (document)
+	{
+		std::vector<App::DocumentObject*> input_geometry = document->getObjectsOfType(Part::Feature::getClassTypeId());
+		for (std::vector<App::DocumentObject *>::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
+		{
+			QString value = settings->getValue(qaction, settingName_Geometry());
+			value.append(QString::fromAscii(" "));
+			value.append(QString::fromAscii((*itGeometry)->getNameInDocument()));
+			settings->setValue(qaction, settingName_Geometry(), value);
+		}
+	}
+}
+
+CppExampleTPG::~CppExampleTPG() {
+    
+}
+
+
+/* virtual */ void CppExampleTPG::initialiseSettings()
+{
+	QString qaction = QS("default");
+
+	CppTPG::initialiseSettings();	// Allow the ancestors to add their own settings first.
+
 	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), 
 																	 SettingName_Depth.toAscii().constData(),
 																	 "Cam::TextBox", 
@@ -191,26 +217,19 @@ CppExampleTPG::CppExampleTPG()
 																	 "mm/min",
 																	 "Feed Rate."));
 
-    settings->addSettingDefinition(qaction, new TPGSettingDefinition("tool", "Tool", "Cam::TextBox", "Tool01", "", "The tool to use for cutting"));
     TPGSettingDefinition* speed = settings->addSettingDefinition(qaction, new TPGSettingDefinition("speed", "Speed", "Cam::Radio", "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
     speed->addOption("fast", "Fast");
     speed->addOption("normal", "Normal");
     speed->addOption("slow", "Slow");
+
 }
-
-CppExampleTPG::~CppExampleTPG() {
-    
-}
-
-
-
 
 /**
  * Run the TPG to generate the ToolPath code.
  *
  * Note: the return will change once the TP Language has been set in stone
  */
-void CppExampleTPG::run(TPGSettings *settings, QStringList input_geometry_names, QString action= QString::fromAscii(""))
+void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAscii(""))
 {
     qDebug("This is where the TPG would generate the tool-path! \n");
 	if (this->toolpath != NULL)
@@ -221,8 +240,10 @@ void CppExampleTPG::run(TPGSettings *settings, QStringList input_geometry_names,
 
 	// Look at the list of object names and see if we can use any of them as input geometry.
 	// If so, arrange them into the Cam::Paths object for use later.
+	QString geometry = settings->getValue(action, QString::fromAscii("geometry"));
+	
 	Cam::Paths paths;
-	paths.Add( input_geometry_names );
+	paths.Add( geometry.split(QRegExp(QString::fromAscii("[ ,]")), QString::SkipEmptyParts) );
 
 	// Now generate a new toolpath.
 	this->toolpath = new ToolPath(this);

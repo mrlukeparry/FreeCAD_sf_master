@@ -304,16 +304,15 @@ TPGSettings *TPGPython::getSettingDefinitions()
  *
  * Note: the return will change once the TP Language has been set in store
  */
-void TPGPython::run(TPGSettings *settings, QStringList input_geometry, QString action)
+void TPGPython::run(TPGSettings *settings, QString action)
 {
 	PyObject *inst = getInst();
 	if (inst != NULL)
 	{
         PyGILState_STATE state = PyGILState_Ensure();
 		PyObject *actionArg = QStringToPythonUC(action);
-		PyObject *inputGeometryArg = QStringListToPythonUCList(input_geometry);
 		PyObject *settingsArg = PyList_New(0); //TODO: Populate the settings once the TPGSettings class is implemented
-		PyObject *result = PyObject_CallMethod(inst, "run", "(OOO)", actionArg, inputGeometryArg, settingsArg);
+		PyObject *result = PyObject_CallMethod(inst, "run", "(OOO)", actionArg, settingsArg);
 		if (result != NULL)
 		{
 			Py_DecRef(result);
@@ -324,7 +323,6 @@ void TPGPython::run(TPGSettings *settings, QStringList input_geometry, QString a
 					action.toAscii().constData());
 
 		Py_XDECREF(actionArg);
-		Py_XDECREF(inputGeometryArg);
 		Py_XDECREF(settingsArg);
         PyGILState_Release(state);
 	}

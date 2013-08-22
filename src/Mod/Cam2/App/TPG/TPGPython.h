@@ -60,7 +60,7 @@ public:
      *
      * Note: the return will change once the TP Language has been set in store
      */
-    virtual void run(TPGSettings *settings, QStringList input_geometry_names, QString action);
+    virtual void run(TPGSettings *settings, QString action);
 
     /**
      * Returns the toolpath from the last
