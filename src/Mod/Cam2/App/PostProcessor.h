@@ -46,6 +46,7 @@ namespace Cam {
 	private:
 		MachineProgram* machine_program;
 		QString buffer;
+		QStringList::size_type toolpath_index;	// Which line of the toolpath QStringList did this machine_program code come from?
 
 	public:
 		PythonStdout(MachineProgram *machine_program)
@@ -55,6 +56,11 @@ namespace Cam {
 		~PythonStdout()
 		{
 			this->machine_program->release();
+		}
+
+		void ToolPathIndex(QStringList::size_type index)
+		{
+			this->toolpath_index = index;
 		}
 
 		static void init_type(void);    // announce properties and methods
@@ -76,6 +82,7 @@ namespace Cam {
 	private:
 		MachineProgram* machine_program;
 		QString buffer;
+		QStringList::size_type toolpath_index;	// Which line of the toolpath QStringList did this machine_program code come from?
 
 	public:
 		PythonStderr(MachineProgram *machine_program)
@@ -85,6 +92,11 @@ namespace Cam {
 		~PythonStderr()
 		{
 			this->machine_program->release();
+		}
+
+		void ToolPathIndex(QStringList::size_type index)
+		{
+			this->toolpath_index = index;
 		}
 
 		static void init_type(void);    // announce properties and methods

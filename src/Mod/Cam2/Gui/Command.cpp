@@ -131,6 +131,35 @@ bool CmdCamRunTPG::isActive(void)
     return hasActiveDocument();
 }
 
+
+//===========================================================================
+// CmdCamPostProcess
+//===========================================================================
+DEF_STD_CMD_A(CmdCamPostProcess);
+
+CmdCamPostProcess::CmdCamPostProcess()
+  :Command("Cam_PostProcess")
+{
+    sAppModule    = "Cam";
+    sGroup        = QT_TR_NOOP("Cam");
+    sMenuText     = QT_TR_NOOP("Post Process");
+    sToolTipText  = QT_TR_NOOP("Executes toolpath to (re)produce its Machine Program");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Cam_PostProcess";
+}
+
+void CmdCamPostProcess::activated(int iMsg)
+{
+    CamGui::UIManager().PostProcess();
+}
+
+bool CmdCamPostProcess::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+
 //===========================================================================
 // CmdCamWatchHighlight
 //===========================================================================
@@ -170,5 +199,6 @@ void CreateCamCommands()
     rcCmdMgr.addCommand(new CmdCamFeature());
     rcCmdMgr.addCommand(new CmdCamTPGFeature());
     rcCmdMgr.addCommand(new CmdCamRunTPG());
+	rcCmdMgr.addCommand(new CmdCamPostProcess());
     rcCmdMgr.addCommand(new CmdCamWatchHighlight());
 }

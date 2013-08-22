@@ -60,7 +60,7 @@ public:
      *
      * Note: the return will change once the TP Language has been set in store
      */
-    virtual void run(TPGSettings *settings, QString);
+    virtual void run(TPGSettings *settings, QString action);
 
     /**
      * Returns the toolpath from the last
@@ -77,6 +77,10 @@ protected:
 
     QString PythonUCToQString(PyObject *obj);
     PyObject *QStringToPythonUC(const QString &str);
+
+	PyObject *QStringListToPythonUCList(const QStringList &string_list);
+	QStringList PythonUCListToQStringList(PyObject *obj);
+
 
     /**
      * Creates an instance of cls and stores it in inst if it doesn't exist

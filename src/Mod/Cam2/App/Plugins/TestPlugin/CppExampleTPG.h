@@ -54,6 +54,8 @@ public:
      */
     virtual ToolPath *getToolPath();
 
+	virtual void initialiseSettings();
+
 private:
 	// Declare some static settings names once here so that they're consistent
 	// throughout the various TPG references to them.

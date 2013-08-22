@@ -59,6 +59,7 @@ TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescrip
 
 TPG::~TPG()
 {
+	if (this->settings) this->settings->release();
 }
 
 void TPG::initialise(TPGFeature *feat)
@@ -83,7 +84,26 @@ void TPG::initialise(TPGFeature *feat)
 
 void TPG::initialiseSettings()
 {
+	if (this->settings == NULL)
+	{
+		QString action = QString::fromAscii("default");
+		this->settings = new TPGSettings();
+		settings->addSettingDefinition(action, 
+										new TPGSettingDefinition(settingName_Geometry().toAscii().constData(), 
+										"Geometry", "Cam::TextBox", "Box01", "", "The input geometry that should be cut"));
 
+		settings->addSettingDefinition(action, new TPGSettingDefinition("tool", "Tool", "Cam::TextBox", "Tool01", "", "The tool to use for cutting"));
+	}
+}
+
+QString TPG::settingName_Geometry() const
+{
+	return(QString::fromAscii("geometry"));
+}
+
+QString TPG::settingName_Tool() const
+{
+	return(QString::fromAscii("tool"));
 }
 
 //void TPG::stop()

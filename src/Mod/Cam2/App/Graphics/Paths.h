@@ -15,6 +15,7 @@
 #include <gp_Pln.hxx>
 #include <BRepBuilderAPI_Copy.hxx>
 #include <TopoDS.hxx>
+#include <TopoDS_Vertex.hxx>
 #include <Bnd_Box.hxx>
 #include <gp_Circ.hxx>
 
@@ -200,10 +201,9 @@ namespace Cam
 	{
 	public:
 		Path(const TopoDS_Edge edge);
-
 		Path & operator= ( const Path & rhs );
 		Path( const Path & rhs );
-		
+
 		TopoDS_Edge Edge() const;
 
 		Standard_Real StartParameter() const;
@@ -375,9 +375,10 @@ namespace Cam
 		Path Next() const;
 		void Add(const Path path);
 		void Add(const Part::Feature *pFeature);
-		void Add(const TPGFeature::InputGeometry_t input_geometry);
+		void Add(const QStringList input_geometry);
 		void Add(const TopoDS_Shape shape);
 		void Add(const TopoDS_Edge edge);
+		void Add(const TopoDS_Vertex vertex);
 		void Add(const TopoDS_Wire wire, const gp_Pln reference_plane, const double maximum_distance);
 		void Add(area::CArea &area);
 		bool Join( std::vector<ContiguousPath>::iterator lhs, std::vector<ContiguousPath>::iterator rhs );
@@ -403,7 +404,10 @@ namespace Cam
 
 	protected:
 		std::vector<ContiguousPath> m_contiguous_paths;
+		std::vector<TopoDS_Vertex>	m_vertices;	// for point data - separate from the contiguous path objects
 		bool		m_is_forwards;
+
+		mutable std::auto_ptr<Locations_t> m_pPointLocationData;	// cache to save re-calculation when possible.
 	}; // End Paths class definition.
 
 

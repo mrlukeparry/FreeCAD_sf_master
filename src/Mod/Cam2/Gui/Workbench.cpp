@@ -87,6 +87,7 @@ Gui::MenuItem* Workbench::setupMenuBar() const
 	*cam << "Cam_TPGFeature";
 	*cam << "Separator";
 	*cam << "Cam_RunTPG";
+	*cam << "Cam_PostProcess";
 
     return root;
 }
@@ -101,6 +102,7 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
 	*cam << "Cam_TPGFeature";
 	*cam << "Separator";
 	*cam << "Cam_RunTPG";
+	*cam << "Cam_PostProcess";
 
     return root;
 }

@@ -225,7 +225,40 @@ class Creator(iso.Creator):
 		if (xml_file_name != None):
 			self.write_blocknum()
 			self.write('(LOGCLOSE)\n')
-	
+
+	def confirm_probe_input(self, want_it_to_be_tripped, use_m66_to_confirm_probe_state=None, m66_input_pin_number=None ):
+		if ((use_m66_to_confirm_probe_state != None) and \
+		    ((use_m66_to_confirm_probe_state == True) or (use_m66_to_confirm_probe_state == 'True'))) and \
+		    (m66_input_pin_number != None):
+
+	        	self.comment('Confirm the probe state before we begin probing')
+
+			_do_loop_number = self.loop_number
+			self.loop_number = self.loop_number+1
+			_if_loop_number = self.loop_number
+			self.loop_number = self.loop_number+1
+
+			self.write('#<counter_' + self.fmt.string(_do_loop_number) + '> = 0\n')
+			self.write('O' + self.fmt.string(_do_loop_number) + ' DO\n')
+			self.write('#<counter_' + self.fmt.string(_do_loop_number) + '> = [#<counter_' + self.fmt.string(_do_loop_number) + '> + 1]\n')
+			self.write('M66 P' + self.fmt.string(m66_input_pin_number) + ' L 0\t(Test motion.digital-in-0' + self.fmt.string(m66_input_pin_number) + ')\n')
+
+			if want_it_to_be_tripped == True:
+				self.write('O' + self.fmt.string(_if_loop_number) + ' IF [#5399 EQ 0]\n')
+				self.message('The probe is NOT currently tripped.  Give it a wiggle and press cycle start to continue')
+			else:
+				self.write('O' + self.fmt.string(_if_loop_number) + ' IF [#5399 NE 0]\n')
+				self.message('The probe is already tripped.  Give it a wiggle and press cycle start to continue')
+
+			self.program_stop(optional=False)
+			self.write('M66 P ' + self.fmt.string(m66_input_pin_number) + ' L 0\t(Test motion.digital-in-0' + self.fmt.string(m66_input_pin_number) + ')\n')
+			self.write('O' + self.fmt.string(_if_loop_number) + ' ENDIF\n')
+
+			if want_it_to_be_tripped == True:
+				self.write('O' + self.fmt.string(_do_loop_number) + ' WHILE [[#5399 EQ 0] AND [#<counter_' + self.fmt.string(_do_loop_number) + '> LT 10]]\n')
+			else:
+				self.write('O' + self.fmt.string(_do_loop_number) + ' WHILE [[#5399 NE 0] AND [#<counter_' + self.fmt.string(_do_loop_number) + '> LT 10]]\n')
+
 	# This routine uses the G92 coordinate system offsets to establish a temporary coordinate
 	# system at the machine's current position.  It can then use absolute coordinates relative
 	# to this position which makes coding easy.  It then moves to the 'point along edge' which
@@ -235,24 +268,44 @@ class Creator(iso.Creator):
 	# into the 'intersection variable' variables.  Finally the machine moves back to the
 	# original location.  This is important so that the results of multiple calls to this
 	# routine may be compared meaningfully.
+	#
+	# If 'use_m66_to_confirm_probe_state' is True then the code assumes that (for LinuxCNC at least)
+	# the probe's input signal has been tied to the input pin as per the "M66 Wait on Input"
+	# section of http://linuxcnc.org/docs/html/gcode/m-code.html#sec:M66-Input-Control
+	#
+	# i.e. something like;
+	# net signal-name motion.digital-in-00 <= parport.0.pin10-in
+	#
 	def probe_single_point(self, \
 		point_along_edge_x=None, point_along_edge_y=None, depth=None, \
 		retracted_point_x=None, retracted_point_y=None, \
 		destination_point_x=None, destination_point_y=None, \
 		intersection_variable_x=None, intersection_variable_y=None, \
-		probe_offset_x_component=None, probe_offset_y_component=None ):
+		probe_offset_x_component=None, probe_offset_y_component=None, \
+		use_m66_to_confirm_probe_state=None, \
+		m66_input_pin_number=None ):
+
 		self.set_temporary_origin(x=0.0, y=0.0, z=0.0)
+
+		if (self.fhv) : self.calc_feedrate_hv(1, 0)
+		self.write_blocknum()
+		self.write_feedrate()
+		self.write('\t(Set the feed rate for probing)\n')
 
 		self.rapid(point_along_edge_x,point_along_edge_y)
 		self.rapid(retracted_point_x,retracted_point_y)
-		self.feed(z=depth)
+		self.feed(z=-1.0 * depth)
+
+		self.confirm_probe_input(False, use_m66_to_confirm_probe_state, m66_input_pin_number )
 
 		self.write_blocknum()
 		self.write((self.PROBE_TOWARDS_WITH_SIGNAL() + (' X ' + (self.fmt.string(destination_point_x)) + ' Y ' + (self.fmt.string(destination_point_y)) ) + ('\t(Probe towards our destination point)\n')))
         
+		self.confirm_probe_input(True, use_m66_to_confirm_probe_state, m66_input_pin_number )
+
 	        self.comment('Back off the workpiece and re-probe more slowly')
 		self.write_blocknum()
-		self.write((self.PROBE_AWAY_WITHOUT_SIGNAL() + (' X 0.0 ') + ' Y 0.0 ') + ('\t(Move back away until the probe untrips)\n'))
+		self.write((self.PROBE_AWAY_WITHOUT_SIGNAL() + (' X ' + self.fmt.string(retracted_point_x) + ' ') + ' Y ' + self.fmt.string(retracted_point_y) + ' ') + ('\t(Move back away until the probe untrips)\n'))
 
 	        self.write_blocknum();
 		self.write(self.RAPID())
@@ -261,6 +314,8 @@ class Creator(iso.Creator):
 
 		self.write_blocknum()
 		self.write(self.FEEDRATE() + self.ffmt.string(self.fh / 2.0) + '\n')
+
+		self.confirm_probe_input(False, use_m66_to_confirm_probe_state, m66_input_pin_number )
 
 		self.write_blocknum()
 		self.write((self.PROBE_TOWARDS_WITH_SIGNAL() + (' X ' + (self.fmt.string(destination_point_x)) + ' Y ' + (self.fmt.string(destination_point_y)) ) + ('\t(Probe towards our destination point)\n')))
@@ -279,12 +334,12 @@ class Creator(iso.Creator):
 		self.remove_temporary_origin()
 
 
-	def probe_downward_point(self, depth=None, intersection_variable_z=None, touch_off_as_z=None, rapid_down_to_height=None, feedrate=None):
+	def probe_downward_point(self, depth=None, intersection_variable_z=None, touch_off_as_z=None, rapid_down_to_height=None, feedrate=None,	use_m66_to_confirm_probe_state=None, m66_input_pin_number=None ):
 		"""
 		This routine starts at the machine's current location and probes down (in Z) for the depth specified.
 		It stores the RELATIVE coordinate in the variable name specified (as a GCode variable such as #<G54_offset>).
 		i.e. since we're using the relative coordinate system (G92), the Z value stored in the #5063 variable
-		(in linuxcnc at least) is in those relative coordinates as opposed to machine or G54 coordinates.
+		(in emc2 at least) is in those relative coordinates as opposed to machine or G54 coordinates.
 
 		If the touch_off_as_z variable is given then the current coordinate system (G54, G55 etc.) has its Z offset set
 		to the probed point's location as the 'touch_off_as_z' value.  eg: 0.0
@@ -292,19 +347,39 @@ class Creator(iso.Creator):
 		because we don't want to trip the probe during this movement.  As an alternative, we rapid down to this height
 		above the probed point and use the G10 L20 command to tell it that we are now at the 'rapid_down_to_height' above
 		the zero point for the specified coordinat system.
+	
+		If 'use_m66_to_confirm_probe_state' is True then the code assumes that (for LinuxCNC at least)
+		the probe's input signal has been tied to the input pin as per the "M66 Wait on Input"
+		section of http://linuxcnc.org/docs/html/gcode/m-code.html#sec:M66-Input-Control
+
+		i.e. something like;
+		net signal-name motion.digital-in-00 <= parport.0.pin10-in
 		"""
 
 		self.set_temporary_origin(x=0.0, y=0.0, z=0.0)
 
 		self.feedrate( feedrate )
+		self.write_blocknum()
+		self.write_feedrate()
+		self.write('\n')
+
+		self.confirm_probe_input(False, use_m66_to_confirm_probe_state, m66_input_pin_number )
 
 		self.write_blocknum()
 		self.write((self.PROBE_TOWARDS_WITH_SIGNAL() + ' Z ' + (self.fmt.string(depth)) + ('\t(Probe towards our destination point)\n')))
+
+		self.confirm_probe_input(True, use_m66_to_confirm_probe_state, m66_input_pin_number )
+
 	        self.comment('Back off the workpiece and re-probe more slowly')
 		self.write_blocknum()
 		self.write((self.PROBE_AWAY_WITHOUT_SIGNAL() + (' Z 0.0 ') + ('\t(Move back away until the probe untrips)\n')))
 
 		self.feedrate( feedrate / 2.0 )
+		self.write_blocknum()
+		self.write_feedrate()
+		self.write('\n')
+
+		self.confirm_probe_input(False, use_m66_to_confirm_probe_state, m66_input_pin_number )
 
 		self.write_blocknum()
 		self.write((self.PROBE_TOWARDS_WITH_SIGNAL() + ' Z ' + (self.fmt.string(depth)) + ('\t(Probe towards our destination point)\n')))
@@ -439,12 +514,16 @@ class Creator(iso.Creator):
 		self.write_blocknum()
 		self.write('#' + id + ' = ' + value + '\n')
 
-	def measure_and_offset_tool(self, distance=None, switch_offset_variable_name=None, fixture_offset_variable_name=None, feed_rate=None ):
+	def measure_and_offset_tool(self, distance=None, switch_offset_variable_name=None, fixture_offset_variable_name=None, feed_rate=None, \
+					use_m66_to_confirm_probe_state=None, \
+					m66_input_pin_number=None ):
 	        self.write_blocknum()
 		self.write(self.DISABLE_TOOL_LENGTH_COMPENSATION() + ' (Turn OFF tool length compensation)\n');
 		self.tool_length_compenstation_enabled = False
 
 		self.set_temporary_origin(x=0.0, y=0.0, z=0.0)
+
+		self.confirm_probe_input(False, use_m66_to_confirm_probe_state, m66_input_pin_number )
 
 		# Probe downwards until we hit the tool length measurement switch
 		self.write_blocknum()

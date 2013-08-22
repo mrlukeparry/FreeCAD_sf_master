@@ -29,14 +29,25 @@
 #include <TPG/CppTPGDescriptor.h>
 #include <Mod/Part/App/PrimitiveFeature.h>
 
+#include <App/Document.h>
+#include <App/DocumentObject.h>
+#include <App/Application.h>
+
 #include "CppExampleTPG.h"
 #include "Graphics/Paths.h"
+#include <Mod/Cam2/App/GCode.h>
+
+#include <QRegExp>
 
 #define myID   "95744f1e-360f-11e2-bcd3-08002734b94f"
 #define myName "Example CPP TPG"
 #define myDesc "A simple example CPP TPG to demonstrating how to create one. "
 
 
+#include <boost/spirit/include/classic_core.hpp>
+#include <boost/spirit/include/classic_increment_actor.hpp>
+
+using namespace BOOST_SPIRIT_CLASSIC_NS;
 
 /**
  * Implement the Cpp shared library interface functions
@@ -118,11 +129,34 @@ CppExampleTPG::CppExampleTPG()
     QString qaction = QS("default");
     actions.push_back(qaction);
 
-    settings = new TPGSettings();
-    settings->addSettingDefinition(qaction, new TPGSettingDefinition("geometry", "Geometry", "Cam::TextBox", "Box01", "", "The input geometry that should be cut"));
+	this->initialiseSettings();
 
-	// TODO - Figure out how to use a 'length' property so that these values can be expressed in whatever units are configured
-	// for use.
+	// Just as a hack for now, find all input object names and pass them in as input geometry.
+	App::Document *document = App::GetApplication().getActiveDocument();
+	if (document)
+	{
+		std::vector<App::DocumentObject*> input_geometry = document->getObjectsOfType(Part::Feature::getClassTypeId());
+		for (std::vector<App::DocumentObject *>::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
+		{
+			QString value = settings->getValue(qaction, settingName_Geometry());
+			value.append(QString::fromAscii(" "));
+			value.append(QString::fromAscii((*itGeometry)->getNameInDocument()));
+			settings->setValue(qaction, settingName_Geometry(), value);
+		}
+	}
+}
+
+CppExampleTPG::~CppExampleTPG() {
+    
+}
+
+
+/* virtual */ void CppExampleTPG::initialiseSettings()
+{
+	QString qaction = QS("default");
+
+	CppTPG::initialiseSettings();	// Allow the ancestors to add their own settings first.
+
 	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), 
 																	 SettingName_Depth.toAscii().constData(),
 																	 "Cam::TextBox", 
@@ -183,19 +217,12 @@ CppExampleTPG::CppExampleTPG()
 																	 "mm/min",
 																	 "Feed Rate."));
 
-    settings->addSettingDefinition(qaction, new TPGSettingDefinition("tool", "Tool", "Cam::TextBox", "Tool01", "", "The tool to use for cutting"));
     TPGSettingDefinition* speed = settings->addSettingDefinition(qaction, new TPGSettingDefinition("speed", "Speed", "Cam::Radio", "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
     speed->addOption("fast", "Fast");
     speed->addOption("normal", "Normal");
     speed->addOption("slow", "Slow");
+
 }
-
-CppExampleTPG::~CppExampleTPG() {
-    
-}
-
-
-
 
 /**
  * Run the TPG to generate the ToolPath code.
@@ -210,6 +237,13 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 		qDebug("Releasing previously generated toolpath\n");
 		this->toolpath->release();	// release the previous copy and generate a new one.
 	}
+
+	// Look at the list of object names and see if we can use any of them as input geometry.
+	// If so, arrange them into the Cam::Paths object for use later.
+	QString geometry = settings->getValue(action, QString::fromAscii("geometry"));
+	
+	Cam::Paths paths;
+	paths.Add( geometry.split(QRegExp(QString::fromAscii("[ ,]")), QString::SkipEmptyParts) );
 
 	// Now generate a new toolpath.
 	this->toolpath = new ToolPath(this);
@@ -233,8 +267,8 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	// imperial) so that the Python/GCode is generated using the correct resolution.
 
 	python.RequiredDecimalPlaces(3);	// assume metric.
-	python << "print 'hello world\\n'\n";
 
+	/*
 	python << "rapid(x=" << 12.3456789 << ")\n";
 	python << "feed(x=" << 4 << ")\n";
 
@@ -273,14 +307,17 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	python << "comment(" << python.PythonString("this one has (something in brackets) within it.") << ")\n";
 	python << "comment(" << python.PythonString("'this one already has single quotes bounding it'") << ")\n";
 	python << "comment(" << python.PythonString("\"this one already has double quotes bounding it\"") << ")\n";
+	*/
 
 	// Define a couple of intersecting lines just to play with the drilling cycle code.  This is
 	// really to test the calling of the Python code held in the ToolPath through to the GCode
 	// held in the MachineProgram.
 
+	/*
 	Cam::Paths paths;
 	paths.Add( Cam::Edge( Cam::Point(0.0, 0.0, 0.0), Cam::Point(100.0, 0.0, 0.0) ) );
 	paths.Add( Cam::Edge( Cam::Point(50.0, 0.0, 0.0), Cam::Point(50.0, 100.0, 0.0) ) );
+	*/
 
 	double units = 1.0;	// TODO Get some setting that indicates metric or imperial units for GCode.
 	// For now, figure out the units by looking at the resolution of the Python code.
@@ -349,6 +386,224 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 
 	python << "end_canned_cycle()\n";
 
+	/*
+	python << "# coding=CP1252\n";
+	python << "#English language or it's variant detected in Microsoft Windows\n";
+	python << "import sys\n";
+	python << "sys.path.insert(0,'C:\\David\\src\\jdcnc\\heekscnc')\n";
+	python << "import math\n";
+	python << "from nc.nc import *\n";
+	python << "import nc.hm50\n";
+	*/
+
+	/*
+	python << "program_begin(123, 'Generated by JDCNC version 0 17 133 - Monday 12 August 2013 - 09:45:38')\n";
+	python << "absolute()\n";
+	python << "metric()\n";
+	python << "set_plane(0)\n";
+	python << "machine_units_metric(False)\n";
+
+	python << "set_path_control_mode(2,0.001,0.001)\n";
+	python << "comment('Feeds and Speeds set for machining Mild Steel')\n";
+	python << "#(1.6 mm HSS Drill Bit (for M2 x 0.4 tap))\n";
+	python << "tool_defn( id=25, name='1.6 mm HSS Drill Bit (for M2 x 0.4 tap)', radius=0.8, length=15, gradient=0)\n";
+	python << "#(3 mm HSS Drill Bit)\n";
+	python << "tool_defn( id=27, name='3 mm HSS Drill Bit', radius=1.5, length=20, gradient=0)\n";
+	python << "#(3.3 mm HSS Drill Bit (for M4 x 0.7 tap hole))\n";
+	python << "tool_defn( id=28, name='3.3 mm HSS Drill Bit (for M4 x 0.7 tap hole)', radius=1.65, length=25, gradient=0)\n";
+	python << "#(4.2 mm HSS Drill Bit (for 5mm tapping))\n";
+	python << "tool_defn( id=4, name='4.2 mm HSS Drill Bit (for 5mm tapping)', radius=2.1, length=65, gradient=0)\n";
+	python << "#(5 mm HSS Drill Bit (for M6 x 1 tapping))\n";
+	python << "tool_defn( id=35, name='5 mm HSS Drill Bit (for M6 x 1 tapping)', radius=2.5, length=40, gradient=0)\n";
+	python << "#(5.15937 mm (13/64\") HSS Drill Bit)\n";
+	python << "tool_defn( id=31, name='5.15937 mm (13/64\") HSS Drill Bit', radius=2.58, length=63.5, gradient=0)\n";
+	python << "#(5.5 mm HSS Drill Bit)\n";
+	python << "tool_defn( id=5, name='5.5 mm HSS Drill Bit', radius=2.75, length=65, gradient=0)\n";
+	python << "#(6 mm HSS Drill Bit)\n";
+	python << "tool_defn( id=33, name='6 mm HSS Drill Bit', radius=3, length=50, gradient=0)\n";
+	python << "#(6.35 mm (1/4\") HSS Drill Bit)\n";
+	python << "tool_defn( id=12, name='6.35 mm (1/4\") HSS Drill Bit', radius=3.175, length=63.5, gradient=0)\n";
+	python << "#(6.8 mm HSS Drill Bit (for M8x1.25 tap hole))\n";
+	python << "tool_defn( id=20, name='6.8 mm HSS Drill Bit (for M8x1.25 tap hole)', radius=3.4, length=63.5, gradient=0)\n";
+	python << "#(8 mm HSS Drill Bit)\n";
+	python << "tool_defn( id=30, name='8 mm HSS Drill Bit', radius=4, length=63.5, gradient=0)\n";
+	python << "#(8.5 mm HSS Drill Bit (for 10mm tap))\n";
+	python << "tool_defn( id=15, name='8.5 mm HSS Drill Bit (for 10mm tap)', radius=4.25, length=40, gradient=0)\n";
+	python << "#(9.525 mm (3/8\") HSS Drill Bit)\n";
+	python << "tool_defn( id=37, name='9.525 mm (3/8\") HSS Drill Bit', radius=4.763, length=63.5, gradient=0)\n";
+	python << "#(10 mm HSS Drill Bit)\n";
+	python << "tool_defn( id=17, name='10 mm HSS Drill Bit', radius=5, length=63.5, gradient=0)\n";
+	python << "#(12.7 mm (1/2\") HSS Drill Bit)\n";
+	python << "tool_defn( id=6, name='12.7 mm (1/2\") HSS Drill Bit', radius=6.35, length=110, gradient=0)\n";
+	python << "#(Size #4 (1/8\"=3.17mm) HSS Centre Drill Bit)\n";
+	python << "tool_defn( id=3, name='Size #4 (1/8\"=3.17mm) HSS Centre Drill Bit', radius=1.588, length=53.975, gradient=0)\n";
+	python << "#(6 mm HSS End Mill)\n";
+	python << "tool_defn( id=7, name='6 mm HSS End Mill', radius=3, length=25, gradient=-0.02)\n";
+	python << "#(6 mm HSS Long Series End Mill)\n";
+	python << "tool_defn( id=11, name='6 mm HSS Long Series End Mill', radius=3, length=35, gradient=-0.02)\n";
+	python << "#(10 mm HSS Roughing End Mill)\n";
+	python << "tool_defn( id=8, name='10 mm HSS Roughing End Mill', radius=5, length=20, gradient=-0.02)\n";
+	python << "#(45 degree HSS Chamfering Bit)\n";
+	python << "tool_defn( id=10, name='45 degree HSS Chamfering Bit', radius=6.25, length=63.5, gradient=0)\n";
+	python << "#(M4 x 0.7 mm coarse Tap Tool)\n";
+	python << "tool_defn( id=29, name='M4 x 0.7 mm coarse Tap Tool', radius=2, length=25, gradient=0)\n";
+	python << "#(1/4 x 20 UNC Tap Tool)\n";
+	python << "tool_defn( id=32, name='1/4 x 20 UNC Tap Tool', radius=3.175, length=20, gradient=0)\n";
+	python << "#(Tool Length Switch)\n";
+	python << "tool_defn( id=1, name='Tool Length Switch', radius=6.35, length=63.5, gradient=0)\n";
+	python << "#(Touch Probe)\n";
+	python << "tool_defn( id=2, name='Touch Probe', radius=1.455, length=50, gradient=0)\n";
+	python << "#(16 mm Carbide End Mill)\n";
+	python << "tool_defn( id=9, name='16 mm Carbide End Mill', radius=8, length=55, gradient=-0.02)\n";
+	python << "#(M5 x 0.8 mm coarse Tap Tool)\n";
+	python << "tool_defn( id=13, name='M5 x 0.8 mm coarse Tap Tool', radius=2.5, length=63.5, gradient=0)\n";
+	python << "#(Boring head)\n";
+	python << "tool_defn( id=14, name='Boring head', radius=16, length=63.5, gradient=0)\n";
+	python << "#(M10 x 1.25mm fine Tap Tool)\n";
+	python << "tool_defn( id=16, name='M10 x 1.25mm fine Tap Tool', radius=5, length=63.5, gradient=0)\n";
+	python << "#(20 mm Carbide End Mill)\n";
+	python << "tool_defn( id=18, name='20 mm Carbide End Mill', radius=10, length=15.875, gradient=-0.02)\n";
+	python << "#(45 degree Carbide Insert Chamfering Bit)\n";
+	python << "tool_defn( id=19, name='45 degree Carbide Insert Chamfering Bit', radius=12.5, length=63.5, gradient=0)\n";
+	python << "#(M8 x 1.25mm coarse Tap Tool)\n";
+	python << "tool_defn( id=21, name='M8 x 1.25mm coarse Tap Tool', radius=4, length=63.5, gradient=0)\n";
+	python << "#(0.79375 mm (1/32\") Carbide End Mill)\n";
+	python << "tool_defn( id=22, name='0.79375 mm (1/32\") Carbide End Mill', radius=0.397, length=63.5, gradient=-0.02)\n";
+	python << "#(0.5 mm Carbide End Mill)\n";
+	python << "tool_defn( id=23, name='0.5 mm Carbide End Mill', radius=0.25, length=63.5, gradient=-0.02)\n";
+	python << "#(100 mm Carbide End Mill)\n";
+	python << "tool_defn( id=24, name='100 mm Carbide End Mill', radius=50, length=63.5, gradient=-0.02)\n";
+	python << "#(M2 x 0.4 mm coarse Tap Tool)\n";
+	python << "tool_defn( id=26, name='M2 x 0.4 mm coarse Tap Tool', radius=1, length=15, gradient=0)\n";
+	python << "#(2 mm Carbide End Mill)\n";
+	python << "tool_defn( id=36, name='2 mm Carbide End Mill', radius=1, length=20, gradient=-0.02)\n";
+	python << "#(M6 x 1 mm coarse Tap Tool)\n";
+	python << "tool_defn( id=34, name='M6 x 1 mm coarse Tap Tool', radius=3, length=63.5, gradient=0)\n";
+	python << "set_plane(0)\n";
+	python << "work_offset(workplane=1, xy_plane_rotation=0.0)\n";
+	python << "message('Confirm that the tool length switch position has been marked with G28.1')\n";
+	python << "program_stop(optional=False)\n";
+	python << "message('Confirm that the X,Y touch-off point for G54 has been MANUALLY set <Bottom left corner of flat plate>')\n";
+	python << "program_stop(optional=False)\n";
+	python << "comment('tool change to Touch Probe')\n";
+	python << "tool_change(id=2, description='Tool change to Touch Probe')\n";
+	python << "feedrate(300)\n";
+	python << "comment('Move back up to machine safety height')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "predefined_position(type='G28')\n";
+	python << "comment('Move back up to machine safety height')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "comment('Probe to find the height of the tool length switch.  NOTE: We MUST do this from the machine safety height for consistency across fixtures')\n";
+	python << "probe_downward_point(depth=-300, intersection_variable_z='<tool_length_switch_offset>', feedrate=300, use_m66_to_confirm_probe_state='True', m66_input_pin_number=0)\n";
+	python << "comment('Move back up to machine safety height')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "workplane(1)\n";
+	python << "feedrate(300)\n";
+	python << "comment('Probing for height of G54 fixture')\n";
+	python << "comment('Move back up to machine safety height')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "workplane(1)\n";
+	python << "rapid(x=0,y=0)\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "probe_downward_point(depth=-300, intersection_variable_z='<G54_fixture_height_offset>', touch_off_as_z=0, rapid_down_to_height=5, feedrate=300, use_m66_to_confirm_probe_state='True', m66_input_pin_number=0)\n";
+	python << "comment('Move back up to machine safety height')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "workplane(1)\n";
+	python << "rapid(x=0,y=0)\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "workplane(1)\n";
+	python << "comment('Move to safe Z height and then to G28 location')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "predefined_position(type='G28')\n";
+	python << "comment('tool change to Size #4 (1/8\"=3.17mm) HSS Centre Drill Bit')\n";
+	python << "tool_change( id=3, description='Tool change to Size #4 (1/8\"=3.17mm) HSS Centre Drill Bit')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "measure_and_offset_tool(distance=300, switch_offset_variable_name='<tool_length_switch_offset>', fixture_offset_variable_name='<G54_fixture_height_offset>', feed_rate=300)\n";
+	python << "comment('Move back up to safety height before continuing with program')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "workplane(1)\n";
+	python << "message('Press cycle start when ready to continue with Size #4 (1/8\"=3.17mm) HSS Centre Drill Bit')\n";
+	python << "program_stop(optional=False)\n";
+	python << "comment('Move above the touch-off point for G54')\n";
+	python << "workplane(1)\n";
+	python << "rapid(x=0, y=0)\n";
+	python << "spindle(s=1300, clockwise=True)\n";
+	python << "feedrate_hv(0, 55.809)\n";
+	python << "drill(x=120.18, y=94.352, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=99.62, y=92, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=99.648, y=68.009, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=99.62, y=40, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=120.627, y=39.881, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=180.214, y=39.881, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=197.903, y=40, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=197.845, y=68.456, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=197.903, y=92, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=180.438, y=91.896, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=241, y=112, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=240, y=20, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=59.923, y=37.425, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=21, y=20, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=20, y=112, z=0, depth=1, standoff=2, dwell=0, peck_depth=0, retract_mode=0, clearance_height=20)\n";
+	python << "end_canned_cycle()\n";
+	python << "spindle(s=0, clockwise=False)\n";
+	python << "comment('Move to safe Z height and then to G28 location')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "predefined_position(type='G28')\n";
+	python << "comment('tool change to 6.35 mm (1/4\") HSS Drill Bit')\n";
+	python << "tool_change( id=12, description='Tool change to 6.35 mm (1/4\") HSS Drill Bit')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "measure_and_offset_tool(distance=300, switch_offset_variable_name='<tool_length_switch_offset>', fixture_offset_variable_name='<G54_fixture_height_offset>', feed_rate=300)\n";
+	python << "comment('Move back up to safety height before continuing with program')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "workplane(1)\n";
+	python << "message('Press cycle start when ready to continue with 6.35 mm (1/4\") HSS Drill Bit')\n";
+	python << "program_stop(optional=False)\n";
+	python << "comment('Move above the touch-off point for G54')\n";
+	python << "workplane(1)\n";
+	python << "rapid(x=0, y=0)\n";
+	python << "spindle(s=1126.211, clockwise=True)\n";
+	python << "feedrate_hv(0, 75.51)\n";
+	python << "drill(x=120.18, y=94.352, z=0, depth=10, standoff=2, dwell=0, peck_depth=3.175, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=99.648, y=68.009, z=0, depth=10, standoff=2, dwell=0, peck_depth=3.175, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=120.627, y=39.881, z=0, depth=10, standoff=2, dwell=0, peck_depth=3.175, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=180.214, y=39.881, z=0, depth=10, standoff=2, dwell=0, peck_depth=3.175, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=197.845, y=68.456, z=0, depth=10, standoff=2, dwell=0, peck_depth=3.175, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=180.438, y=91.896, z=0, depth=10, standoff=2, dwell=0, peck_depth=3.175, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=241, y=112, z=0, depth=10, standoff=2, dwell=0, peck_depth=3.175, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=240, y=20, z=0, depth=10, standoff=2, dwell=0, peck_depth=3.175, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=59.923, y=37.425, z=0, depth=10, standoff=2, dwell=0, peck_depth=3.175, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=21, y=20, z=0, depth=10, standoff=2, dwell=0, peck_depth=3.175, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=20, y=112, z=0, depth=10, standoff=2, dwell=0, peck_depth=3.175, retract_mode=0, clearance_height=20)\n";
+	python << "end_canned_cycle()\n";
+	python << "spindle(s=0, clockwise=False)\n";
+	python << "comment('Move to safe Z height and then to G28 location')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "predefined_position(type='G28')\n";
+	python << "comment('tool change to 5.15937 mm (13/64\") HSS Drill Bit')\n";
+	python << "tool_change( id=31, description='Tool change to 5.15937 mm (13/64\") HSS Drill Bit')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "measure_and_offset_tool(distance=300, switch_offset_variable_name='<tool_length_switch_offset>', fixture_offset_variable_name='<G54_fixture_height_offset>', feed_rate=300)\n";
+	python << "comment('Move back up to safety height before continuing with program')\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "workplane(1)\n";
+	python << "message('Press cycle start when ready to continue with 5.15937 mm (13/64\") HSS Drill Bit')\n";
+	python << "program_stop(optional=False)\n";
+	python << "comment('Move above the touch-off point for G54')\n";
+	python << "workplane(1)\n";
+	python << "rapid(x=0, y=0)\n";
+	python << "spindle(s=1243.042, clockwise=True)\n";
+	python << "feedrate_hv(0, 65.317)\n";
+	python << "drill(x=99.62, y=92, z=0, depth=10, standoff=2, dwell=0, peck_depth=2.58, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=197.903, y=92, z=0, depth=10, standoff=2, dwell=0, peck_depth=2.58, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=197.903, y=40, z=0, depth=10, standoff=2, dwell=0, peck_depth=2.58, retract_mode=0, clearance_height=20)\n";
+	python << "drill(x=99.62, y=40, z=0, depth=10, standoff=2, dwell=0, peck_depth=2.58, retract_mode=0, clearance_height=20)\n";
+	python << "end_canned_cycle()\n";
+	python << "spindle(s=0, clockwise=False)\n";
+	python << "rapid(z=10, machine_coordinates=True)\n";
+	python << "program_end()\n";
+	*/
+
+
 
 	/*
 	// Generate some graphics, convert it into the libArea representation and generate
@@ -382,7 +637,6 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	python << "#tool_change( id=1)\n";
 	python << "spindle(7000)\n";
 	python << "feedrate_hv(6889.76378, 7)\n";
-	python << "flush_nc()\n";
 	python << "clearance = float(1.25)\n";
 	python << "rapid_safety_space = float(0.07874015748)\n";
 	python << "start_depth = float(0)\n";

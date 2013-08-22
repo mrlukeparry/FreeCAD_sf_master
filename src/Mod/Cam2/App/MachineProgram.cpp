@@ -28,10 +28,11 @@
 
 namespace Cam {
 
-MachineProgram::MachineProgram() {
+MachineProgram::MachineProgram(ToolPath *toolPath) {
     refcnt = 1;
     machineProgram = new QStringList();
 	errors = new QStringList();
+	this->toolPath = toolPath->grab();	// Keep a reference to the toolpath object used to create this MachineProgram object.
 }
 
 MachineProgram::~MachineProgram() {
@@ -44,17 +45,24 @@ MachineProgram::~MachineProgram() {
 	{
 		delete this->errors;
 	}
+
+	if (this->toolPath != NULL)
+	{
+		this->toolPath->release();
+		this->toolPath = NULL;
+	}
 }
 
 /**
  * Add a single Machine command to the Program
  */
-void MachineProgram::addMachineCommand(QString mc) {
+void MachineProgram::addMachineCommand(QString mc, QStringList::size_type toolpath_offset) {
     if (this->machineProgram == NULL)
         this->machineProgram = new QStringList();
 
 	if (mc.endsWith(QString::fromAscii("\n"))) mc.remove(mc.size()-1, 1);	// Strip off the newline character.
     this->machineProgram->push_back(mc);
+	this->indices.insert( std::make_pair( toolpath_offset, this->machineProgram->size()-1 ) );
 }
 
 void MachineProgram::addErrorString(QString error_string) {
@@ -77,6 +85,8 @@ void MachineProgram::clear() {
         this->errors->clear();
     else
         this->errors = new QStringList();
+
+	this->indices.clear();
 }
 
 /**
@@ -90,6 +100,17 @@ QStringList *MachineProgram::getErrors() {
 	return this->errors;
 }
 
+ToolPath *MachineProgram::getToolPath()
+{
+	if (this->toolPath != NULL)
+	{
+		return(this->toolPath->grab());
+	}
+	else
+	{
+		return(NULL);
+	}
+}
 
 /* friend */ QString operator<< ( QString & buf, const MachineProgram & machine_program )
 {
@@ -102,6 +123,38 @@ QStringList *MachineProgram::getErrors() {
 		}
 	}
 	return(buf);
+}
+
+
+QString MachineProgram::TraceProgramLinkages() const
+{
+	std::ostringstream result;
+
+	std::set< ToolPathOffset_t > toolpath_offsets;
+	for (Indices_t::const_iterator itIndex = indices.begin(); itIndex != indices.end(); itIndex++)
+	{
+		toolpath_offsets.insert( itIndex->first );
+	}
+
+	result << "<LINKS>\n";
+	for (std::set< ToolPathOffset_t >::const_iterator itToolPathOffset = toolpath_offsets.begin(); itToolPathOffset != toolpath_offsets.end(); itToolPathOffset++)
+	{
+		result	<< "\t<LINK>\n"
+					<< "\t\t<TOOLPATH INDEX=\"" << *itToolPathOffset << "\">" << (*(toolPath->getToolPath()))[*itToolPathOffset].toAscii().constData() << "</TOOLPATH>\n"
+					<< "\t\t<MACHINE>\n";
+
+		for (Indices_t::const_iterator itIndex = indices.lower_bound(*itToolPathOffset); itIndex != indices.upper_bound(*itToolPathOffset); itIndex++)
+		{
+			result 	<< "\t\t\t<INDEX=\"" << itIndex->second << "\">" << (*machineProgram)[itIndex->second].toAscii().constData() << "</INDEX>\n";
+		} // End for
+
+
+		result	<< "\t\t</MACHINE>\n"
+				<< "\t</LINK>\n";
+	} // End for
+	result << "</LINKS>\n";
+
+	return(QString::fromStdString(result.str()));
 }
 
 
