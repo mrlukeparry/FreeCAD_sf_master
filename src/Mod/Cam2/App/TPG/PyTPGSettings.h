@@ -66,4 +66,9 @@ typedef struct  {
     Cam::TPGSettings *settings;
 } cam_PyTPGSettings;
 
+/**
+ * Wrapper function to create new PyTPGSettings objects from c++
+ */
+extern PyObject* PyTPGSettings_New(Cam::TPGSettings* settings);
+
 #endif /* PYTPGSETTINGS_H_ */

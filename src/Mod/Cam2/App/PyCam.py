@@ -83,14 +83,14 @@ class PyTPGBase(object):
 
         return Cam.TPGSettings()
         
-    def run(self, action, settings=[]):
+    def run(self, settings, toolpath, action):
         '''Runs the selected action and returns the resulting TP'''
         raise UnimplementedTPError(action) # The run() method of this TP hasn't been implemented
     
-    def getToolPath(self):
-        '''Gets a reference to the current ToolPath.  This can be called while 
-        the run method is being executed in another thread to see the progress'''
-        return self._toolPath
+#     def getToolPath(self):
+#         '''Gets a reference to the current ToolPath.  This can be called while 
+#         the run method is being executed in another thread to see the progress'''
+#         return self._toolPath
     
     ## Python to C++ API ##
     # Call these methods to obtain/send data from/to the C++ side

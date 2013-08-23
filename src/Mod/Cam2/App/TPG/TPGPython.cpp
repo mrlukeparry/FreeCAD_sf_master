@@ -304,15 +304,20 @@ TPGSettings *TPGPython::getSettingDefinitions()
  *
  * Note: the return will change once the TP Language has been set in store
  */
-void TPGPython::run(TPGSettings *settings, QString action)
+void TPGPython::run(TPGSettings *settings, ToolPath *toolpath, QString action)
 {
 	PyObject *inst = getInst();
 	if (inst != NULL)
 	{
         PyGILState_STATE state = PyGILState_Ensure();
+
+        // format other args
+        PyObject *toolpathArg = PyToolPath_New(toolpath);
+        PyObject *settingsArg = PyTPGSettings_New(settings);
 		PyObject *actionArg = QStringToPythonUC(action);
-		PyObject *settingsArg = PyList_New(0); //TODO: Populate the settings once the TPGSettings class is implemented
-		PyObject *result = PyObject_CallMethod(inst, "run", "(OOO)", actionArg, settingsArg);
+
+		// run python method
+		PyObject *result = PyObject_CallMethod(inst, "run", "(OOO)", settingsArg, toolpathArg, actionArg);
 		if (result != NULL)
 		{
 			Py_DecRef(result);
@@ -322,29 +327,31 @@ void TPGPython::run(TPGSettings *settings, QString action)
 			printf("Failed to run pyAction: %s\n",
 					action.toAscii().constData());
 
+		// cleanup
+        Py_XDECREF(toolpathArg);
+        Py_XDECREF(settingsArg);
 		Py_XDECREF(actionArg);
-		Py_XDECREF(settingsArg);
         PyGILState_Release(state);
 	}
 	//TODO: make error
 }
 
-/**
- * Returns the toolpath from the last (or current) tool-path run
- */
-ToolPath *TPGPython::getToolPath() {
-    PyObject *inst = getInst();
-    ToolPath *res = NULL;
-    if (inst != NULL) {
-        PyGILState_STATE state = PyGILState_Ensure();
-        PyObject *result = PyObject_CallMethod(inst, "getToolPath", "");
-        if (result != NULL) {
-            if (typeid(result) == typeid(cam_PyToolPath)) {
-                res = ((cam_PyToolPath*) result)->tp;
-            }
-            Py_DecRef(result);
-        }
-        PyGILState_Release(state);
-    }
-    return res;
-}
+///**
+// * Returns the toolpath from the last (or current) tool-path run
+// */
+//ToolPath *TPGPython::getToolPath() {
+//    PyObject *inst = getInst();
+//    ToolPath *res = NULL;
+//    if (inst != NULL) {
+//        PyGILState_STATE state = PyGILState_Ensure();
+//        PyObject *result = PyObject_CallMethod(inst, "getToolPath", "");
+//        if (result != NULL) {
+//            if (typeid(result) == typeid(cam_PyToolPath)) {
+//                res = ((cam_PyToolPath*) result)->tp;
+//            }
+//            Py_DecRef(result);
+//        }
+//        PyGILState_Release(state);
+//    }
+//    return res;
+//}
