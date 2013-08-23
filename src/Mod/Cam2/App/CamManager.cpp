@@ -126,20 +126,6 @@ bool CamManagerInst::runPostProcessByName(const char *FeatName, App::Document* d
 		return false;
 	}
 
-	/*
-	{
-		Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-		TopoDS_Edge line = Cam::Edge( Cam::Point(0.0, 0.0, 0.0), Cam::Point(100.0, 0.0, 0.0) );
-		gcFeature->Shape.setValue(line);
-	}
-
-	{
-		Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-		TopoDS_Edge line = Cam::Edge( Cam::Point(0.0, 0.0, 0.0), Cam::Point(100.0, 0.0, 0.0) );
-		gcFeature->Shape.setValue(line);
-	}
-	*/
-
 	// get TPGFeature
 	App::DocumentObject *docObj = doc->getObject(FeatName);
 	if(docObj && docObj->isDerivedFrom(Cam::TPGFeature::getClassTypeId())) {

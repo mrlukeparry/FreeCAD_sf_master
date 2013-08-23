@@ -54,6 +54,11 @@ public:
      */
     virtual ToolPath *getToolPath();
 
+	/**
+	 * Add the settings required by this ToolPath Generator.  This method
+	 * also calls the CppTPG::initialiseSettings() method so that those
+	 * associated with all TPGs (such as Geometry and Tool) are included
+	 */
 	virtual void initialiseSettings();
 
 private:
