@@ -50,5 +50,12 @@ void CppTPG::setPlugin(CppTPGPlugin* plugin) {
     this->plugin = plugin->grab();
 }
 
+/* virtual */ void CppTPG::initialiseSettings()
+{
+	TPG::initialiseSettings();
 }
+
+
+} // End Cam namespace
+
 

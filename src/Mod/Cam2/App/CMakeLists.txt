@@ -122,6 +122,8 @@ SOURCE_GROUP("Plugins" FILES ${PLUGINS_SRCS})
 SET(CamModule_SRCS
     AppCam.cpp
     AppCamPy.cpp
+    LinuxCNC.cpp
+    LinuxCNC.h
     GCode.cpp
     GCode.h
     MachineSettings.cpp

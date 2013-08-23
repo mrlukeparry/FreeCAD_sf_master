@@ -197,6 +197,39 @@ bool UIManagerInst::RunTPG() {
 	return true;
 }
 
+
+/**
+ * Executes the selected TPG(s) Tool Path to (re)produce its Machine Program.
+ */
+bool UIManagerInst::PostProcess() {
+
+    // make unique list of selected objects
+    std::vector<Gui::SelectionSingleton::SelObj> objs = Gui::Selection().getSelection(App::GetApplication().getActiveDocument()->getName());
+    std::set<App::DocumentObject*> selDocObjs;
+    for (std::vector<Gui::SelectionSingleton::SelObj>::iterator it = objs.begin(); it != objs.end(); ++it)
+    	selDocObjs.insert(it->pObject);
+
+    // check all objects are TPG's
+    for (std::set<App::DocumentObject*>::const_iterator it = selDocObjs.begin(); it != selDocObjs.end(); ++it) {
+    	if (!(*it)->isDerivedFrom(Cam::TPGFeature::getClassTypeId())) {
+    		QMessageBox msgBox;
+			msgBox.setText(QObject::tr("Your selection contains more than just TPG's"));
+			msgBox.setInformativeText(QObject::tr("Please only select TPG's"));
+			msgBox.setStandardButtons(QMessageBox::Ok);
+			int ret = msgBox.exec();
+			return false;
+    	}
+    }
+
+    // run TPG's
+    for (std::set<App::DocumentObject*>::const_iterator it = selDocObjs.begin(); it != selDocObjs.end(); ++it) {
+		Cam::CamManager().runPostProcessByName((*it)->getNameInDocument());
+    }
+	return true;
+}
+
+
+
 bool UIManagerInst::WatchHighlight() {
 
 //	Base::Console().Message("WatchHighlight: start\n");

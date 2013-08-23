@@ -4,11 +4,17 @@
 #include "Paths.h"
 #include "CDouble.h"
 
+#include <App/Application.h>
+#include <App/Document.h>
+#include <Mod/Part/App/PartFeature.h>
+#include <Mod/Part/App/PrimitiveFeature.h>
+
 #include <exception>
 
 #include <BRep_Builder.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
 #include <TopoDS_Vertex.hxx>
 #include <BRepAlgoAPI_Common.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
@@ -1255,13 +1261,25 @@ bool Cam::ContiguousPath::Add(Cam::Path path)
 }
 
 
-void Cam::Paths::Add(const TPGFeature::InputGeometry_t input_geometry)
+void Cam::Paths::Add(const QStringList input_geometry_names)
 {
 	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
 
-	for (TPGFeature::InputGeometry_t::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
+	App::Document *document = App::GetApplication().getActiveDocument();
+	if (document)
 	{
-		Add( (*itGeometry) );
+		for (QStringList::size_type i=0; i<input_geometry_names.size(); i++)
+		{
+			App::DocumentObject *object = document->getObject(input_geometry_names[i].toAscii().constData());
+			if(object && object->isDerivedFrom(Part::Feature::getClassTypeId())) 
+			{
+				Part::Feature *part_feature = dynamic_cast<Part::Feature *>(object);
+				if (part_feature)
+				{
+					Add(part_feature);
+				}
+			}
+		}
 	}
 }
 
@@ -1275,10 +1293,35 @@ void Cam::Paths::Add( const Part::Feature *link )
 	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
 
 	if (!link) return;
-    if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) return;
-    const TopoDS_Shape& shape = static_cast<const Part::Feature*>(link)->Shape.getShape()._Shape;
-    if (shape.IsNull()) return;
-	Add(shape);
+    if (link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
+	{
+		const TopoDS_Shape& shape = static_cast<const Part::Feature*>(link)->Shape.getShape()._Shape;
+		if (shape.IsNull() == false) 
+		{
+			Add(shape);
+		}
+	}
+	/*
+	else if (link->getTypeId().isDerivedFrom(Sketcher::SketchObject::getClassTypeId()))
+	{
+		// It must be a vertex contained within a sketch.
+
+		const Sketcher::SketchObject *sketch = dynamic_cast<const Sketcher::SketchObject *>(link);
+		if (sketch)
+		{
+			const std::vector<Part::Geometry *> &getInternalGeometry(void) const { return Geometry.getValues(); }
+
+			BRepBuilderAPI_MakeVertex make_vertex(gp_Pnt(part_vertex->X.getValue(), part_vertex->Y.getValue(), part_vertex->Z.getValue()));
+			Add(make_vertex.Vertex());
+		}
+	}
+	*/
+}
+
+void Cam::Paths::Add(const TopoDS_Vertex vertex)
+{
+	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
+	m_vertices.push_back(vertex);
 }
 
 void Cam::Paths::Add(const TopoDS_Shape shape)
@@ -1291,6 +1334,10 @@ void Cam::Paths::Add(const TopoDS_Shape shape)
 
 		switch (shape_type)
 		{
+		case TopAbs_VERTEX:
+			Add(TopoDS::Vertex(shape));
+			break;
+
 		case TopAbs_EDGE:
 			Add(Path(TopoDS::Edge(shape)));
 			break;
@@ -1313,6 +1360,8 @@ void Cam::Paths::Add(const TopoDS_Shape shape)
 
 void Paths::Add(const TopoDS_Edge edge)
 {
+	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
+
 	if (IsValid(edge))
 	{
 		Add(Path(edge));
@@ -1322,6 +1371,8 @@ void Paths::Add(const TopoDS_Edge edge)
 
 void Paths::Add(const TopoDS_Wire wire, const gp_Pln reference_plane, const double maximum_distance)
 {
+	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
+
 	CDouble allowable_distance = fabs(maximum_distance);
 	if (IsValid(wire))
 	{
@@ -2084,16 +2135,38 @@ TopoDS_Wire Cam::ContiguousPath::Wire() const
 	BRepBuilderAPI_MakeWire wire_maker;
 	for (std::vector<Path>::const_iterator itPath = m_paths.begin(); itPath != m_paths.end(); itPath++)
 	{
-		wire_maker.Add( itPath->Edge() );
+		TopoDS_Edge edge = itPath->Edge();
+		if (Cam::IsValid(edge))
+		{
+			wire_maker.Add( edge );
+		}
 	}
 
-    ShapeFix_Wire fix;
-    fix.Load( wire_maker.Wire() );
-    fix.FixReorder();
-	fix.FixConnected();
-	fix.FixClosed();
+	wire_maker.Build();
+	if (wire_maker.IsDone())
+	{
+		TopoDS_Wire wire = wire_maker.Wire();
+		if (Cam::IsValid(wire))
+		{
+			ShapeFix_Wire fix;
+			fix.Load( wire );
+			fix.FixReorder();
+			fix.FixConnected();
+			fix.FixClosed();
 
-	return(fix.Wire());
+			return(fix.Wire());
+		}
+		else
+		{
+			TopoDS_Wire empty;
+			return(empty);
+		}
+	}
+	else
+	{
+		TopoDS_Wire empty;
+		return(empty);
+	}
 }
 
 
@@ -2374,30 +2447,42 @@ gp_Pln Cam::ContiguousPath::Plane() const
 {
 	if (m_plane.get()) return(*m_plane);
 	
-	BRepBuilderAPI_FindPlane findPlane(Wire(), Cam::GetTolerance());
-	if (!findPlane.Found())
+	TopoDS_Wire wire = Wire();
+	if (Cam::IsValid(wire))
+	{
+		BRepBuilderAPI_FindPlane findPlane(wire, Cam::GetTolerance());
+		if (!findPlane.Found())
+		{
+			m_plane = std::auto_ptr<gp_Pln>(new gp_Pln(gp_Ax3(gp::XOY())));	// Default to XY plane
+			m_plane->Translate(gp_Vec(m_plane->Location(), StartPoint().Location())); // But at the same height as the linear element.
+			return(*m_plane);
+		}
+		else
+		{
+			Handle(Geom_Plane) hPlane = findPlane.Plane();
+			m_plane = std::auto_ptr<gp_Pln>(new gp_Pln(hPlane->Pln()));	// Default to XY plane
+
+			// If this plane's 'normal' direction (typically the 'z' axis) is pointing in the negative
+			// 'z' direction then reverse the plane and use that.
+
+			if (m_plane->Axis().Direction().Z() < 0.0)
+			{
+				gp_Ax1 ax1 = m_plane->Axis();
+				ax1.Reverse();
+				m_plane->SetAxis( ax1 );
+			}
+
+			return(*m_plane);
+		}
+	}
+	else
 	{
 		m_plane = std::auto_ptr<gp_Pln>(new gp_Pln(gp_Ax3(gp::XOY())));	// Default to XY plane
 		m_plane->Translate(gp_Vec(m_plane->Location(), StartPoint().Location())); // But at the same height as the linear element.
 		return(*m_plane);
 	}
-	else
-	{
-		Handle(Geom_Plane) hPlane = findPlane.Plane();
-		m_plane = std::auto_ptr<gp_Pln>(new gp_Pln(hPlane->Pln()));	// Default to XY plane
-
-		// If this plane's 'normal' direction (typically the 'z' axis) is pointing in the negative
-		// 'z' direction then reverse the plane and use that.
-
-		if (m_plane->Axis().Direction().Z() < 0.0)
-		{
-			gp_Ax1 ax1 = m_plane->Axis();
-			ax1.Reverse();
-			m_plane->SetAxis( ax1 );
-		}
-
-		return(*m_plane);
-	}
+	
+	
 }
 
 
@@ -2719,6 +2804,9 @@ TopoDS_Edge Edge( const TopoDS_Edge original_edge, const Standard_Real start_u, 
 				return(trimmed_edge);
 			}
 			break;
+
+		case GeomAbs_OtherCurve:
+			return(empty);
 		}
 
 		return(empty);
@@ -3617,6 +3705,12 @@ Paths::Locations_t Paths::PointLocationData(const Point reference_location_for_s
 			distinct_locations.insert( *(points_for_this_path.begin()) );
 		}
 	}
+
+	// Add any vertices contained in this object.
+	for (std::vector<TopoDS_Vertex>::const_iterator itVertex = m_vertices.begin(); itVertex != m_vertices.end(); itVertex++)
+	{
+		distinct_locations.insert( Cam::Point(BRep_Tool::Pnt(*itVertex)) );
+	} // End for
 
 	m_pPointLocationData = std::auto_ptr<Paths::Locations_t>(new Paths::Locations_t());
 	std::copy( distinct_locations.begin(), distinct_locations.end(), std::inserter( *m_pPointLocationData, m_pPointLocationData->begin() ));

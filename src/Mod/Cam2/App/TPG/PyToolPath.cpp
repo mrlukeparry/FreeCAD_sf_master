@@ -86,7 +86,7 @@ static PyObject *
 PyToolPath_addToolPath (cam_PyToolPath* self, PyObject* args) {
 
     const char *command;
-    int sts;
+    // int sts;
 
     if (!PyArg_ParseTuple(args, "s", &command)) {
         PyErr_SetString(PyExc_TypeError, "Single String or Unicode argument expected");

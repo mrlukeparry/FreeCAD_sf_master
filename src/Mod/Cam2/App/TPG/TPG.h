@@ -90,6 +90,9 @@ public:
     virtual void initialise(TPGFeature *feat);
     virtual void initialiseSettings();
 
+	QString settingName_Geometry() const;	// Used by all TPG objects.
+	QString settingName_Tool() const;
+
     // TPG API methods.  Used by the CAM workbench to run the TPG
 
     /**
@@ -104,12 +107,14 @@ public:
      */
     virtual TPGSettings *getSettingDefinitions();
 
+	
+
     /**
      * Run the TPG to generate the ToolPath code.
      *
      * Note: the return will change once the TP Language has been set in store
      */
-    virtual void run(TPGSettings *settings, QString action);
+	virtual void run(TPGSettings *settings, QString action);
 
     /**
      * Returns the toolpath from the last run

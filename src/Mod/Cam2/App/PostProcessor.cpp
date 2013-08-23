@@ -76,7 +76,7 @@ PostProcessorInst::~PostProcessorInst() {
 MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postprocessor)
 {
 	// Define a new MachineProgram object to contain the GCode (stdout from the Python program)
-	MachineProgram *machine_program = new MachineProgram;
+	MachineProgram *machine_program = new MachineProgram(toolpath);
 
 	// Lock the 'Global Interpreter Lock' so that we're not interrupted during our execution.
 	Base::PyGILStateLocker locker;	
@@ -95,17 +95,23 @@ MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postpro
 	qDebug("%s\n", tool_path.toAscii().constData());
 
 	// Execute the Python code line-by-line...
+	QStringList::size_type i=0;
 	try
 	{
 		QStringList *lines = toolpath->getToolPath();
-		for (QStringList::size_type i=0; i<lines->size(); i++)
+		for (i=0; i<lines->size(); i++)
 		{
-			Base::Interpreter().runString(lines->at(i).toAscii().constData());
+			// Seed the PythonStdout object with the line offset from the toolpath QStringList
+			// so that we can tie the generated GCode with the lines in the toolpath (Python) scrip.
+			out->ToolPathIndex( QStringList::size_type(i) );
+			err->ToolPathIndex( QStringList::size_type(i) );
+			
+			Base::Interpreter().runString(lines->at(i).toAscii().constData());			
 		}
 	}
 	catch(Base::PyException & error)
 	{
-		qCritical("%s\n", error.what());	// send the exception message to the build environment's output
+		qCritical("Error found at line %d\n%s\n%s\n", i+1, toolpath->getToolPath()->at(i).toAscii().constData(), error.what());	// send the exception message to the build environment's output
 		machine_program->addErrorString(QString::fromAscii(error.what()));	// as well as to the machine program to indicate a failure has occured.
 	}
 
@@ -130,7 +136,7 @@ Py::Object PythonStdout::write(const Py::Tuple& args)
 				buffer += QString::fromUtf8(string);
 				if (buffer.endsWith(QString::fromAscii("\n")))
 				{
-					this->machine_program->addMachineCommand(buffer);
+					this->machine_program->addMachineCommand(buffer, this->toolpath_index);
 					buffer.clear();
 				}
                 Py_DECREF(unicode);
@@ -146,7 +152,7 @@ Py::Object PythonStdout::write(const Py::Tuple& args)
 			// a single line in buffer.
 			if (buffer.endsWith(QString::fromAscii("\n")))
 			{
-				this->machine_program->addMachineCommand(buffer);
+				this->machine_program->addMachineCommand(buffer, this->toolpath_index);
 				buffer.clear();
 			}
         }
@@ -202,7 +208,7 @@ Py::Object PythonStderr::write(const Py::Tuple& args)
                 const char* string = PyString_AsString(unicode);
 				if (buffer.endsWith(QString::fromAscii("\n")))
 				{
-					this->machine_program->addMachineCommand(buffer);
+					this->machine_program->addMachineCommand(buffer, this->toolpath_index);
 					buffer.clear();
 				}
                 Py_DECREF(unicode);
@@ -214,7 +220,7 @@ Py::Object PythonStderr::write(const Py::Tuple& args)
 			buffer += QString::fromStdString(string);
             if (buffer.endsWith(QString::fromAscii("\n")))
 			{
-				this->machine_program->addMachineCommand(buffer);
+				this->machine_program->addMachineCommand(buffer, this->toolpath_index);
 				buffer.clear();
 			}
         }

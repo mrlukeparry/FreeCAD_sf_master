@@ -26,19 +26,134 @@
 #include <App/PropertyStandard.h>
 #include <PreCompiled.h>
 
+// NOTE: These BOOST SPIRIT DEBUG macros MUST be defined BEFORE the include
+// files.  Otherwise the default values, defined within the include files,
+// will be used instead.
+
+#ifndef BOOST_SPIRIT_DEBUG
+	#define BOOST_SPIRIT_DEBUG
+	#define BOOST_SPIRIT_DEBUG_OUT GCode_GrammarDebugOutputBuffer
+#endif
+
+#include <Mod/Cam2/App/MachineProgram.h>
+#include <Mod/Part/App/PartFeature.h>
+#include <TopoDS_Edge.hxx>
+
+extern std::ostringstream CamExport GCode_GrammarDebugOutputBuffer;
+
+///////////////////////////////////////////////////////////////////////////////
 /// Base class
 namespace Cam
 {
 
 class CamExport GCode
 {
+public:
+	typedef enum {
+		csUndefined = -1,
+		csG53 = 0,
+		csG54,
+		csG55,
+		csG56,
+		csG57,
+		csG58,
+		csG59,
+		csG59_1,
+		csG59_2,
+		csG59_3,
+		csG92,
+		csG92_1
+	} eCoordinateSystems_t;
+
+	typedef enum {
+		eXYPlane = 0,
+		eXZPlane,
+		eYZPlane
+	} ePlane_t;
+
+	typedef enum {
+		eMetric = 0,
+		eImperial
+	} eUnits_t;
 
 public:
-    GCode();
+    GCode(MachineProgram *machine_program, TPGFeature* rpgFeature);
     ~GCode();
 
-protected:
-};
+public:
+	virtual bool Parse() = 0;
+
+	// These hold warnings found during parsing.  eg: Do we have a G01 feed movement without ever having seen a feedrate defined.
+	void AddWarning(const QString warning);
+
+	// These are initialized from the ToolPath object that's associated with the MachineProgram object passed into the constructor.
+	double Tolerance() const { return(tolerance); }
+	int RequiredDecimalPlaces() const { return(required_decimal_places); }
+
+public:
+	MachineProgram *machine_program;
+	QStringList	warnings;
+	double tolerance;
+	int required_decimal_places;
+	TPGFeature* tpgFeature;	// The owning object into which we place our results.
+
+	// Define a type representing the index into the QStringList contained within the MachineProgram object.
+	// We will assign specific graphics to these for later reference.
+	typedef QStringList::size_type MachineProgramIndex_t;
+
+	/**
+		Define a class that contains a single graphical element representing
+		tool movements defined by the GCode contained in the MachineProgram object.
+		We will end up with a list of such graphical elements.
+	 */
+	class CamExport ToolMovement
+	{
+	public:
+		typedef enum
+		{
+			eRapid,
+			eFeed,
+			eArcClockwise,
+			eArcCounterClockwise
+		} eMovement_t;
+
+	public:
+		ToolMovement(MachineProgram *machine_program);
+		~ToolMovement();
+		ToolMovement( const ToolMovement & rhs );
+		ToolMovement & operator= ( const ToolMovement & rhs );
+
+		void Index(const MachineProgramIndex_t index) { machine_program_index = index; }
+		MachineProgramIndex_t Index() const { return(machine_program_index); }
+
+		void PartFeature( Part::Feature *part_feature );
+		Part::Feature *PartFeature() const { return(this->part_feature); }
+
+		void Edge( TopoDS_Edge edge );
+		TopoDS_Edge Edge() { return(this->edge); }
+
+		void CoordinateSystem( const eCoordinateSystems_t value ) { this->coordinate_system = value; }
+		eCoordinateSystems_t CoordinateSystem() const { return(this->coordinate_system); }
+
+		void Type( const eMovement_t type ) { this->type = type; }
+		eMovement_t Type() const { return(this->type); }
+
+	private:
+		MachineProgram *machine_program;
+		MachineProgramIndex_t machine_program_index;
+		TopoDS_Edge	edge;
+		Part::Feature *part_feature;	// graphical element - line, arc etc.
+		eCoordinateSystems_t coordinate_system;
+		eMovement_t type;
+	};
+
+	typedef std::vector<ToolMovement> SingleCommandGeometry_t;
+	typedef std::map< MachineProgramIndex_t, SingleCommandGeometry_t > Geometry_t;
+
+	Geometry_t	geometry;
+
+}; // End GCode class definition.
+
 
 } //namespace Cam
 #endif //CAM_GCODE_H

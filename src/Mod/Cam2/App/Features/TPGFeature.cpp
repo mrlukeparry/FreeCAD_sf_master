@@ -34,6 +34,9 @@
 #include "TPGFeature.h"
 #include "../TPG/TPGFactory.h"
 
+#include <App/Document.h>
+#include <App/Application.h>
+
 using namespace Cam;
 
 PROPERTY_SOURCE(Cam::TPGFeature, App::DocumentObject)
@@ -127,8 +130,10 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
     return App::DocumentObject::StdReturn;
 }
 
+
+
 /**
- * Get a reference to the TPG the implements this TPG Feature.
+ * Get a reference to the TPG that implements this TPG Feature.
  * Will load the TPG instance if not set already.
  */
 TPG* TPGFeature::getTPG() {

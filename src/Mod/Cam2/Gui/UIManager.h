@@ -97,6 +97,10 @@ public:
    */
   bool RunTPG();
   /**
+   * Executes the selected TPG(s) to (re)produce its Machine Program from the Tool Path.
+   */
+  bool PostProcess();
+  /**
    * Debugging Command for testing.
    * TODO: remove this Command when no long needed
    */

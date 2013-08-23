@@ -79,6 +79,29 @@ QString TPGPython::PythonUCToQString(PyObject *obj)
 	return QString();
 }
 
+
+PyObject *TPGPython::QStringListToPythonUCList(const QStringList &string_list)
+{
+	PyObject *py_string_list = PyList_New(string_list.size());
+	for (QStringList::size_type i=0; i<string_list.size(); i++)
+	{
+		PyList_SET_ITEM(py_string_list, i, PyString_FromString(string_list.at(i).toAscii().constData()));
+	}
+	return(py_string_list);
+}
+
+QStringList TPGPython::PythonUCListToQStringList(PyObject *obj)
+{
+	QStringList string_list;
+	for (Py_ssize_t i=0; i<PyList_Size(obj); i++)
+	{
+		PyObject *entry = PyList_GetItem(obj, i);
+		string_list.append(PythonUCToQString(PyList_GetItem(obj, i)));
+	}
+	return(string_list);
+}
+
+
 /**
  * Creates an instance of cls and stores it in inst if it doesn't exist
  */
@@ -289,8 +312,7 @@ void TPGPython::run(TPGSettings *settings, QString action)
         PyGILState_STATE state = PyGILState_Ensure();
 		PyObject *actionArg = QStringToPythonUC(action);
 		PyObject *settingsArg = PyList_New(0); //TODO: Populate the settings once the TPGSettings class is implemented
-		PyObject *result = PyObject_CallMethod(inst, "run", "(OO)", actionArg,
-				settingsArg);
+		PyObject *result = PyObject_CallMethod(inst, "run", "(OOO)", actionArg, settingsArg);
 		if (result != NULL)
 		{
 			Py_DecRef(result);
