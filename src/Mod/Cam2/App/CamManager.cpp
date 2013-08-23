@@ -154,12 +154,13 @@ bool CamManagerInst::runPostProcessByName(const char *FeatName, App::Document* d
 				// for now because I don't know how to work around the user interface stuff well enough
 				// to actually do this.
 
-				ToolPath *toolpath = tpg->getToolPath();	// copy (and add reference counter to) the ToolPath object.
-				if (! toolpath)
+				ToolPath *toolpath = new ToolPath(tpg);
+				if (toolpath)
 				{
+				    qDebug("Running TPG\n");
 					// We must not have executed the TPG already.  Do so now.
-					tpg->run(tpgFeature->getTPGSettings(), QString::fromAscii("default"));
-					toolpath = tpg->getToolPath();
+				    // AR: Logic changed (probably just remove all this test code)
+					tpg->run(tpgFeature->getTPGSettings(), toolpath, QString::fromAscii("default"));
 				}
 
 				if (toolpath)
@@ -278,7 +279,8 @@ void CamManagerInst::tpgRunnerThreadMain() {
 			updatedTPGState(tpgRun->tpg->getName(), Cam::TPG::RUNNING, 0);
 
 			Base::Console().Message("Running TPG: %s\n", tpgRun->tpg->getName().toAscii().constData());
-			tpgRun->tpg->run(tpgRun->settings, QString::fromAscii("default"));
+			ToolPath *toolpath = new ToolPath(tpgRun->tpg);
+			tpgRun->tpg->run(tpgRun->settings, toolpath, QString::fromAscii("default"));
 			Base::Console().Message("Finished TPG: %s\n", tpgRun->tpg->getName().toAscii().constData());
 
 			updatedTPGState(tpgRun->tpg->getName(), Cam::TPG::FINISHED, 100);
@@ -291,6 +293,8 @@ void CamManagerInst::tpgRunnerThreadMain() {
 			tpgRun = NULL;
 			// TODO Signal the main instance that we've completed the toolpath generation. Only when
 			// this is done can we post process them into actual GCode.
+
+            toolpath->release();
 		}
 		else {
 			#ifdef WIN32

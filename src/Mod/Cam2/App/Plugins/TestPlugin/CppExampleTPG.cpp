@@ -229,14 +229,14 @@ CppExampleTPG::~CppExampleTPG() {
  *
  * Note: the return will change once the TP Language has been set in stone
  */
-void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAscii(""))
+void CppExampleTPG::run(TPGSettings *settings, ToolPath *toolpath, QString action= QString::fromAscii(""))
 {
     qDebug("This is where the TPG would generate the tool-path! \n");
-	if (this->toolpath != NULL)
-	{
-		qDebug("Releasing previously generated toolpath\n");
-		this->toolpath->release();	// release the previous copy and generate a new one.
-	}
+//	if (this->toolpath != NULL)
+//	{
+//		qDebug("Releasing previously generated toolpath\n");
+//		this->toolpath->release();	// release the previous copy and generate a new one.
+//	}
 
 	// Look at the list of object names and see if we can use any of them as input geometry.
 	// If so, arrange them into the Cam::Paths object for use later.
@@ -246,8 +246,8 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 	paths.Add( geometry.split(QRegExp(QString::fromAscii("[ ,]")), QString::SkipEmptyParts) );
 
 	// Now generate a new toolpath.
-	this->toolpath = new ToolPath(this);
-	ToolPath &python = *(this->toolpath);	// for readability only.
+//	this->toolpath = new ToolPath(this);
+	ToolPath &python = *(toolpath);	// for readability only.
 
 	// TODO We really need to define which machine post processor is used at the CamFeature
 	// level (or above would be better)  We DO NOT want this import to remain in the TPG itself.
@@ -679,17 +679,17 @@ void CppExampleTPG::run(TPGSettings *settings, QString action= QString::fromAsci
 }
 
 
-/* virtual */ ToolPath *CppExampleTPG::getToolPath()
-{
-	if (this->toolpath)
-	{
-		return(this->toolpath->grab());
-	}
-	else
-	{
-		return(NULL);
-	}
-}
+///* virtual */ ToolPath *CppExampleTPG::getToolPath()
+//{
+//	if (this->toolpath)
+//	{
+//		return(this->toolpath->grab());
+//	}
+//	else
+//	{
+//		return(NULL);
+//	}
+//}
 
 
 } /* namespace Cam */
