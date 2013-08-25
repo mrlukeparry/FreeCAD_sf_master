@@ -60,7 +60,6 @@ class CamExport ToolPath {
 
 protected:
     TPG *source;
-    QStringList *toolpath;
 	QString line_buffer;		// an accumulation of multiple operator<< calls for a single line until we find a newline character at the end.
 	unsigned int required_decimal_places;	// need 3 for metric and 4 for imperial so that arc definitions are valid.
 
@@ -68,6 +67,7 @@ protected:
     virtual ~ToolPath();
 
 public:
+    QStringList *toolpath;
     ToolPath(TPG* source);
 
     /**
@@ -110,8 +110,11 @@ public:
      */
     void release() {
         refcnt--;
-        if (refcnt == 0)
+        if (refcnt == 0) {
+            qDebug("Freeing: %p\n", this);
             delete this;
+            delete this;
+        }
     }
 
 public:

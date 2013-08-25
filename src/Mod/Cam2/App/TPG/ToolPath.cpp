@@ -280,7 +280,7 @@ ToolPath & ToolPath::operator<< ( const int value )
 {
 	if (tool_path.toolpath)
 	{
-		for (QStringList::const_iterator itString = tool_path.toolpath->begin(); itString != tool_path.toolpath->end(); itString++)
+		for (QStringList::const_iterator itString = tool_path.toolpath->constBegin(); itString != tool_path.toolpath->constEnd(); itString++)
 		{
 			buf.append(*itString);
 			buf.append(QString::fromAscii("\n"));

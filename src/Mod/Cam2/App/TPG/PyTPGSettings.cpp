@@ -540,6 +540,16 @@ static PyObject *PyTPGSettings_getActions (cam_PyTPGSettings* self, PyObject* ar
 //}
 
 /**
- * Method table for PyToolPath python type
+ * Wrapper function to create new PyTPGSettings objects from c++
  */
+extern PyObject* PyTPGSettings_New(Cam::TPGSettings* settings) {
+    cam_PyTPGSettings *self;
+
+    self = (cam_PyTPGSettings *)PyTPGSettingsType.tp_alloc(&PyTPGSettingsType, 0);
+    if (self != NULL) {
+        self->settings = settings->grab();
+    }
+
+    return (PyObject *)self;
+}
 

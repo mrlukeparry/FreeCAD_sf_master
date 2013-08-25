@@ -114,12 +114,12 @@ public:
      *
      * Note: the return will change once the TP Language has been set in store
      */
-	virtual void run(TPGSettings *settings, QString action);
+	virtual void run(TPGSettings *settings, ToolPath *toolpath, QString action);
 
-    /**
-     * Returns the toolpath from the last run
-     */
-    virtual ToolPath *getToolPath() = 0;
+//    /**
+//     * Returns the toolpath from the last run
+//     */
+//    virtual ToolPath *getToolPath() = 0;
 
     virtual QString getId() { return id; }
     virtual QString getName() { return name; }

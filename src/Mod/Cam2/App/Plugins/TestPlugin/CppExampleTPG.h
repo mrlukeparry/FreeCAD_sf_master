@@ -28,6 +28,7 @@
 #include <TPG/CppTPG.h>
 #include <TPG/TPGFactory.h>
 #include <TPG/TPGSettings.h>
+#include <TPG/ToolPath.h>
 
 namespace Cam {
 
@@ -47,12 +48,12 @@ public:
      *
      * Note: the return will change once the TP Language has been set in stone
      */
-    virtual void run(TPGSettings *settings, QString action);
+    virtual void run(TPGSettings *settings, ToolPath *toolpath, QString action);
 
-    /**
-     * Returns the toolpath from the last
-     */
-    virtual ToolPath *getToolPath();
+//    /**
+//     * Returns the toolpath from the last
+//     */
+//    virtual ToolPath *getToolPath();
 
 	/**
 	 * Add the settings required by this ToolPath Generator.  This method

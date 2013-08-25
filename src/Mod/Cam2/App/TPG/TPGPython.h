@@ -25,6 +25,7 @@
 #define CAM_TPGPYTHON_H
 
 #include "TPG.h"
+#include "ToolPath.h"
 
 extern void Message(const char*);
 
@@ -60,12 +61,12 @@ public:
      *
      * Note: the return will change once the TP Language has been set in store
      */
-    virtual void run(TPGSettings *settings, QString action);
+    virtual void run(TPGSettings *settings, ToolPath *toolpath, QString action);
 
-    /**
-     * Returns the toolpath from the last
-     */
-    virtual ToolPath *getToolPath();
+//    /**
+//     * Returns the toolpath from the last
+//     */
+//    virtual ToolPath *getToolPath();
 
     virtual QString getId();
     virtual QString getName();

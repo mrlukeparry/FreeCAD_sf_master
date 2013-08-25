@@ -150,4 +150,25 @@ static PyTypeObject PyToolPathType = {
 };
 
 
+extern PyTypeObject *PyToolPath_Type() {
+    return &PyToolPathType;
+}
+
+
+/**
+ * Wrapper function to create new instances of PyToolPath objects from c++
+ */
+extern PyObject* PyToolPath_New(Cam::ToolPath *tp) {
+
+    cam_PyToolPath *self;
+
+    self = (cam_PyToolPath *)PyToolPathType.tp_alloc(&PyToolPathType, 0);
+    if (self != NULL) {
+        self->tp = tp->grab();
+    }
+
+    return (PyObject *)self;
+}
+
+
 //} /* namespace Cam */
