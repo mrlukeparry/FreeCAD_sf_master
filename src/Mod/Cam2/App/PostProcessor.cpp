@@ -81,6 +81,10 @@ MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postpro
 	// Lock the 'Global Interpreter Lock' so that we're not interrupted during our execution.
 	Base::PyGILStateLocker locker;	
 
+	// Remember where stdout and stderr was pointing before we start so that we can reinstate them later.
+	PyObject *original_stdout = PySys_GetObject("stdout");
+	PyObject *original_stderr = PySys_GetObject("stderr");
+
 	// Redirect stdout and stderr from the Python interpreter so that it ends up
 	// within the MachineProgram object.
 	PythonStdout* out = new PythonStdout(machine_program);
@@ -114,6 +118,9 @@ MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postpro
 		qCritical("Error found at line %d\n%s\n%s\n", i+1, toolpath->getToolPath()->at(i).toAscii().constData(), error.what());	// send the exception message to the build environment's output
 		machine_program->addErrorString(QString::fromAscii(error.what()));	// as well as to the machine program to indicate a failure has occured.
 	}
+
+	if (original_stdout != NULL) PySys_SetObject("stdout", original_stdout);
+	if (original_stderr != NULL) PySys_SetObject("stderr", original_stderr);
 
 	// Always return the machine_program which includes both gcode and any errors that were seen.  It's up
 	// to the calling routine to look to see if any errors occured by looking at this machine_program object.
