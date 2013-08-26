@@ -132,6 +132,11 @@ PyTPGSettingDefinition_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 
 /**
  * Python initialiser
+ *
+ * NOTE: The ASCII values available for the TPGSettingDefinition::type are effectively
+ *       defined here.  eg: "Cam::Text" converts to Cam::TPGSettingDefinition::SettingType_Text in
+ *       this routine.  If values are added to the Cam::TPGSettingDefinition::SettingType enumeration
+ *       then the corresponding values MUST be added here as well.
  */
 static int
 PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, PyObject *kwds) {

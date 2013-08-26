@@ -34,10 +34,9 @@ add_subdirectory(Inspection)
 add_subdirectory(Arch)
 
 add_subdirectory(Assembly)
-add_subdirectory(Cam2)
 
 if(FREECAD_BUILD_CAM)
-    add_subdirectory(Cam)
+    add_subdirectory(Cam2)
 endif(FREECAD_BUILD_CAM)
 #if(FREECAD_BUILD_FEM)
     add_subdirectory(Fem)

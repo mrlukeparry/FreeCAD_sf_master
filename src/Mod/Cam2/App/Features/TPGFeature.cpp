@@ -142,6 +142,12 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
     return App::DocumentObject::StdReturn;
 }
 
+/**
+	Called by the App::Property framework just before a property is changed.
+	We want this because our PropTPGSettings member is a map of string properties.
+	We can only figure out which of the properties embedded within the
+	PropTPGSettings map changed by comparing the old and new maps.
+ */
 void TPGFeature::onBeforeChange(const App::Property* prop)
 {
 	if (prop == &PropTPGSettings)
@@ -159,6 +165,19 @@ void TPGFeature::onBeforeChange(const App::Property* prop)
 }
 
 
+/**
+	Figure out which of our property types changed and signal the underlying
+	TPGSettings object accordingly.
+
+	This method is called by the App::Property framework automatically just
+	after a property has changed.
+
+	It's possible that we store some settings in a member variable OTHER than
+	the PropTPGSettings member.  If that's the case then this method is the
+	place where the association is made.  i.e. we need to figure out which
+	member variable holds the modified setting and signal the underlying
+	TPGSettings object accordingly.
+ */
 void TPGFeature::onChanged(const App::Property* prop)
 {
 	if (prop == &PropTPGSettings)
