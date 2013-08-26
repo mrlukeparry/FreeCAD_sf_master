@@ -62,6 +62,8 @@ public:
 	 */
 	virtual void initialiseSettings();
 
+	virtual void onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value );
+
 private:
 	// Declare some static settings names once here so that they're consistent
 	// throughout the various TPG references to them.

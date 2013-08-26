@@ -30,6 +30,7 @@
 #include "ui_CamProjectDockWindow.h"
 #include "CamProjectDockWindow.h"
 #include "UIManager.h"
+#include "../App/TPG/TPGSettings.h"
 
 namespace CamGui {
 
@@ -90,16 +91,14 @@ bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool save
         bool failure = false;
         std::vector<Cam::TPGSettingDefinition*> settings = newSettings->getSettings();
         std::vector<Cam::TPGSettingDefinition*>::iterator it = settings.begin();
-        QString camTextBox = QString::fromUtf8("Cam::TextBox");
-        QString camRadio = QString::fromUtf8("Cam::Radio");
         for (; it != settings.end(); ++it)
         {
             Cam::TPGSettingDefinition* setting = *it;
             if (setting != NULL)
             {
-                if (camTextBox.compare(setting->type) == 0)
+				if (setting->type == Cam::TPGSettingDefinition::SettingType_Text)
                     comp = new CamTextBoxComponent();
-                else if (camRadio.compare(setting->type) == 0)
+				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Radio)
                     comp = new CamRadioComponent();
                 else
                     continue;

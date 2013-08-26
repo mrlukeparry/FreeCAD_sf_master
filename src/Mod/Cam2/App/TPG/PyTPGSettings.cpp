@@ -132,6 +132,11 @@ PyTPGSettingDefinition_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 
 /**
  * Python initialiser
+ *
+ * NOTE: The ASCII values available for the TPGSettingDefinition::type are effectively
+ *       defined here.  eg: "Cam::Text" converts to Cam::TPGSettingDefinition::SettingType_Text in
+ *       this routine.  If values are added to the Cam::TPGSettingDefinition::SettingType enumeration
+ *       then the corresponding values MUST be added here as well.
  */
 static int
 PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, PyObject *kwds) {
@@ -149,7 +154,12 @@ PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, Py
 		return -1;
 	}
 
-	self->setting = new Cam::TPGSettingDefinition(name, label, type, defaultvalue, units, helptext);
+	QString qsType = QString::fromAscii(type);
+	Cam::TPGSettingDefinition::SettingType data_type = Cam::TPGSettingDefinition::SettingType_Text;
+	if (qsType == QString::fromAscii("Cam::Text")) data_type = Cam::TPGSettingDefinition::SettingType_Text;
+	else if (qsType == QString::fromAscii("Cam::Radio")) data_type = Cam::TPGSettingDefinition::SettingType_Radio;
+
+	self->setting = new Cam::TPGSettingDefinition(name, label, data_type, defaultvalue, units, helptext);
     return 0;
 }
 

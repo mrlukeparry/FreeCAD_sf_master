@@ -26,6 +26,9 @@
 
 #include <PreCompiled.h>	// we need the __declspec(dllexport) macros for the Windows build
 
+#include <App/PropertyLinks.h>
+#include <App/PropertyStandard.h>
+
 namespace Cam {
 class CamExport TPGSettingOption;
 class CamExport TPGSettingDefinition;
@@ -69,6 +72,21 @@ public:
  */
 class CamExport TPGSettingDefinition
 {
+public:
+	/**
+		Define an enumeration for the types of settings we support.
+
+		NOTE: If any values are added/removed from this enumeration then
+		their corresponding ASCII equivalents (used via the Python interface)
+		must also be updated.  Such values are defined within the
+		PyTPGSettingDefinition_init() method of the PyTPGSettings.cpp file.
+	 */
+	typedef enum
+	{
+		SettingType_Text = 0,	// Values of this type are stored in TPGFeature::PropTPGSettings
+		SettingType_Radio		// Values of this type are stored in TPGFeature::PropTPGSettings
+	} SettingType;
+
 protected:
 
 	/// reference counter
@@ -86,7 +104,7 @@ public:
 	//(<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>)
 	QString name;
 	QString label;
-	QString type;
+	SettingType type;
 	QString defaultvalue;
 	QString units;
 	QString helptext;
@@ -94,8 +112,8 @@ public:
 
 //	QString value; // deprecated: now uses FreeCAD data structure which is contained in TPGSettings.tpgFeature
 
-	TPGSettingDefinition(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext);
-	TPGSettingDefinition(QString name, QString label, QString type, QString defaultvalue, QString units, QString helptext);
+	TPGSettingDefinition(const char *name, const char *label, const SettingType  type, const char *defaultvalue, const char *units, const char *helptext);
+	TPGSettingDefinition(QString name, QString label, SettingType type, QString defaultvalue, QString units, QString helptext);
 	TPGSettingDefinition();
 
 	~TPGSettingDefinition();
@@ -133,7 +151,14 @@ public:
     QString getFullname();
 };
 
-  // Class stores hash of settings for managing each independant TPG
+/** 
+	Class stores hash of settings for managing each independant TPG
+
+	This class mostly just holds a map of TPGSettingDefinition objects.
+	The TPGSettingDefinition objects hold data 'about' the setting but
+	the value itself is stored in one of the member variables contained
+	within the owning TPGFeature object.
+ */
 class CamExport TPGSettings
 {
 
@@ -143,6 +168,14 @@ public:
 
     void initialise() {};
     void loadSettings() {};
+
+	/**
+		called when any one of the settings contained within the TPGFeature::PropTPGSettings 
+		member variable changes.  These are called from the TPGFeature::onBeforeChange() and
+		TPGFeature::onChanged() methods respectively.
+	 */
+	void onBeforePropTPGSettingsChange(const App::PropertyMap* prop);
+	void onPropTPGSettingsChanged(const App::PropertyMap* prop);
 
 	/**
 	 * Perform a deep copy of this class
@@ -233,6 +266,13 @@ protected:
 
     /// make a namespaced name (from <action>::<name>)
     QString makeName(QString action, QString name) const;
+
+private:
+	// NOTE: ONLY used to determine which properties changed in a single update.  i.e. this
+	// value is quite transient.  It only makes sense when comparing the values written
+	// between the onBeforePropTPGSettingsChange() and onPropTPGSettingsChanged() method
+	// calls.
+	std::map<std::string,std::string>	previous_tpg_properties_version;
 };
 
 } //namespace Cam

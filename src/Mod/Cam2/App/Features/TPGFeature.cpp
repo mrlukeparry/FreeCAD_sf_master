@@ -121,6 +121,18 @@ TPGFeature::~TPGFeature()
 //        stop();
 //    //TODO should we wait till the tpg has finished
 //    tpg->release(); // Will internally call destructor and safely stop this
+
+	if (tpg != NULL)
+	{
+		tpg->release();
+		tpg = NULL;
+	}
+
+	if (tpgSettings != NULL)
+	{
+		tpgSettings->release();
+		tpgSettings = NULL;
+	}
 }
 
 App::DocumentObjectExecReturn *TPGFeature::execute(void)
@@ -128,6 +140,58 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
     Base::Console().Log("Running Feature \n");
 //    this->run();
     return App::DocumentObject::StdReturn;
+}
+
+/**
+	Called by the App::Property framework just before a property is changed.
+	We want this because our PropTPGSettings member is a map of string properties.
+	We can only figure out which of the properties embedded within the
+	PropTPGSettings map changed by comparing the old and new maps.
+ */
+void TPGFeature::onBeforeChange(const App::Property* prop)
+{
+	if (prop == &PropTPGSettings)
+	{
+		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
+		if (property_map)
+		{
+			// Let the tpgSettings object know that something is about to change.
+			if (tpgSettings != NULL)
+			{
+				tpgSettings->onBeforePropTPGSettingsChange(property_map);
+			}
+		}
+	}
+}
+
+
+/**
+	Figure out which of our property types changed and signal the underlying
+	TPGSettings object accordingly.
+
+	This method is called by the App::Property framework automatically just
+	after a property has changed.
+
+	It's possible that we store some settings in a member variable OTHER than
+	the PropTPGSettings member.  If that's the case then this method is the
+	place where the association is made.  i.e. we need to figure out which
+	member variable holds the modified setting and signal the underlying
+	TPGSettings object accordingly.
+ */
+void TPGFeature::onChanged(const App::Property* prop)
+{
+	if (prop == &PropTPGSettings)
+	{
+		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
+		if (property_map)
+		{
+			// Let the tpgSettings object know that something changed.
+			if (tpgSettings != NULL)
+			{
+				tpgSettings->onPropTPGSettingsChanged(property_map);
+			}
+		}
+	}
 }
 
 
@@ -141,14 +205,6 @@ TPG* TPGFeature::getTPG() {
 		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()));
 	return tpg;
 }
-
-/*
-void TPGFeature::setInputGeometry(const std::vector<Part::Feature *> & vals)
-{
-	inputGeometry.clear();
-	std::copy( vals.begin(), vals.end(), std::inserter( inputGeometry, inputGeometry.begin() ) );
-}
-*/
 
 
 /**

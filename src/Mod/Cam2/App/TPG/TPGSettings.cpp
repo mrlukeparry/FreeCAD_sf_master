@@ -48,19 +48,19 @@ const char* ts(QString *str)
 
 ////////// TPGSetting //////////
 
-TPGSettingDefinition::TPGSettingDefinition(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext)
+TPGSettingDefinition::TPGSettingDefinition(const char *name, const char *label, const SettingType type, const char *defaultvalue, const char *units, const char *helptext)
 {
 	this->refcnt = 1;
     this->parent = NULL;
 
 	this->name = QString::fromAscii(name);
 	this->label = QString::fromAscii(label);
-	this->type = QString::fromAscii(type);
+	this->type = type;
 	this->defaultvalue = QString::fromAscii(defaultvalue);
 	this->units = QString::fromAscii(units);
 	this->helptext = QString::fromAscii(helptext);
 }
-TPGSettingDefinition::TPGSettingDefinition(QString name, QString label, QString type, QString defaultvalue, QString units, QString helptext)
+TPGSettingDefinition::TPGSettingDefinition(QString name, QString label, SettingType type, QString defaultvalue, QString units, QString helptext)
 {
 	this->refcnt = 1;
     this->parent = NULL;
@@ -80,7 +80,9 @@ TPGSettingDefinition::TPGSettingDefinition() {
 TPGSettingDefinition::~TPGSettingDefinition() {
     QList<TPGSettingOption*>::iterator it = this->options.begin();
     for (; it != this->options.end(); ++it)
+	{
         delete *it;
+	}
     options.clear();
 }
 
@@ -118,10 +120,10 @@ void TPGSettingDefinition::addOption(const char *id, const char *label) {
 
 void TPGSettingDefinition::print()
 {
-	qDebug("  - (%s, %s, %s, %s, %s, %s)\n",
+	qDebug("  - (%s, %s, %d, %s, %s, %s)\n",
 			name.toAscii().constData(),
 			label.toAscii().constData(),
-			type.toAscii().constData(),
+			type,
 			defaultvalue.toAscii().constData(),
 			units.toAscii().constData(),
 			helptext.toAscii().constData());
@@ -217,7 +219,7 @@ TPGSettings* TPGSettings::clone()
 TPGSettingDefinition* TPGSettings::addSettingDefinition(QString action, TPGSettingDefinition* setting) {
 
 	if (setting != NULL) {
-		QString qname = action + QString::fromAscii("::") + setting->name;
+		QString qname = makeName(action, setting->name);
 
 		// store reference to setting
 		settingDefs.push_back(setting->grab());
@@ -422,5 +424,55 @@ QString TPGSettings::makeName(QString action, QString name) const {
 	result.append(name);
 	return result;
 }
+
+
+/**
+	Keep a copy of the properties map before any changes occur so that we can
+	compare it with the map of modified settings.  Only by comparing these two
+	can we figure out which one of the settings changed.
+ */
+void TPGSettings::onBeforePropTPGSettingsChange(const App::PropertyMap* property_map)
+{
+	if (property_map != NULL)
+	{
+		this->previous_tpg_properties_version.clear();
+
+		std::copy( property_map->getValues().begin(), property_map->getValues().end(),
+			std::inserter( this->previous_tpg_properties_version, this->previous_tpg_properties_version.begin() ) );
+
+		// qDebug("TPGSettings::onBeforePropTPGSettingsChange(%s) called\n", property_map->getName());
+	}
+}
+
+/**
+	Called when one of the TPGFeature::PropTPGSettings values changes.
+ */
+void TPGSettings::onPropTPGSettingsChanged(const App::PropertyMap* property_map)
+{
+	// One of the settings has changed.  Figure out which one and let any interested parties know.
+	if (tpgFeature != NULL)
+	{
+		TPG *tpg = tpgFeature->getTPG();
+		if (tpg)
+		{
+			tpg->grab();
+
+			// qDebug("TPGSettings::onPropTPGSettingsChanged() called\n");
+			for (std::map<QString, TPGSettingDefinition*>::iterator itSettingsDef = settingDefsMap.begin(); itSettingsDef != settingDefsMap.end(); itSettingsDef++)
+			{
+				std::string name = itSettingsDef->first.toStdString();
+				std::string previous_value = this->previous_tpg_properties_version[name];
+				std::string new_value = itSettingsDef->second->getValue().toStdString();
+
+				if (new_value != previous_value)
+				{
+					tpg->onChanged( itSettingsDef->second, QString::fromStdString(previous_value), QString::fromStdString(new_value));
+				}
+			}
+			tpg->release();
+		}
+	}
+}
+
 
 } // end namespace Cam

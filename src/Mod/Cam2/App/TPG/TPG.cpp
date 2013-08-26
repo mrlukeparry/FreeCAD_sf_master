@@ -90,9 +90,11 @@ void TPG::initialiseSettings()
 		this->settings = new TPGSettings();
 		settings->addSettingDefinition(action, 
 										new TPGSettingDefinition(settingName_Geometry().toAscii().constData(), 
-										"Geometry", "Cam::TextBox", "Box01", "", "The input geometry that should be cut"));
+										"Geometry", TPGSettingDefinition::SettingType_Text, "Box01", "", "The input geometry that should be cut"));
 
-		settings->addSettingDefinition(action, new TPGSettingDefinition("tool", "Tool", "Cam::TextBox", "Tool01", "", "The tool to use for cutting"));
+		settings->addSettingDefinition(action, 
+										new TPGSettingDefinition(settingName_Tool().toAscii().constData(), 
+										"Tool", TPGSettingDefinition::SettingType_Text, "Tool01", "", "The tool to use for cutting"));
 	}
 }
 
@@ -179,4 +181,13 @@ void TPG::release() {
 	else if (state == LOADED)
 		return QString::fromAscii("Loaded");
 	return QString::fromAscii("Undefined");
+}
+
+
+/* virtual */ void TPG::onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value)
+{
+	qDebug("TPG::onChanged(%s changed from %s to %s)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				previous_value.toAscii().constData(), 
+				new_value.toAscii().constData());
 }

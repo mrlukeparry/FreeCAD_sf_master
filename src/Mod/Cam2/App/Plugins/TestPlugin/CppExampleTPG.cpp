@@ -159,28 +159,28 @@ CppExampleTPG::~CppExampleTPG() {
 
 	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), 
 																	 SettingName_Depth.toAscii().constData(),
-																	 "Cam::TextBox", 
+																	 TPGSettingDefinition::SettingType_Text, 
 																	 "10.0",
 																	 "mm",
 																	 "Distance from the current Z location to the bottom of the hole.  Must be positive"));
 
 	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Standoff.toAscii().constData(), 
 																	 SettingName_Standoff.toAscii().constData(),
-																	 "Cam::TextBox", 
+																	 TPGSettingDefinition::SettingType_Text, 
 																	 "5.0",
 																	 "mm",
 																	 "Distance above the drilling point location to retract to following the drilling cycle."));
 
 	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Dwell.toAscii().constData(), 
 																	 SettingName_Dwell.toAscii().constData(),
-																	 "Cam::TextBox", 
+																	 TPGSettingDefinition::SettingType_Text, 
 																	 "0.0",
 																	 "seconds",
 																	 "Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'"));
 
 	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_PeckDepth.toAscii().constData(), 
 																	 SettingName_PeckDepth.toAscii().constData(),
-																	 "Cam::TextBox", 
+																	 TPGSettingDefinition::SettingType_Text, 
 																	 "5.0",
 																	 "mm",
 																	 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled."));
@@ -191,33 +191,33 @@ CppExampleTPG::~CppExampleTPG() {
 	retract_mode << eRapidRetract;	// Use the conversion method to retrieve the string used for retraction.
 	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_RetractMode.toAscii().constData(), 
 																	 SettingName_RetractMode.toAscii().constData(),
-																	 "Cam::TextBox", 
+																	 TPGSettingDefinition::SettingType_Text, 
 																	 retract_mode.toAscii().constData(),
 																	 "mode",
 																	 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate."));
 
 	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Clearance.toAscii().constData(), 
 																	 SettingName_Clearance.toAscii().constData(),
-																	 "Cam::TextBox", 
+																	 TPGSettingDefinition::SettingType_Text, 
 																	 "30.0",
 																	 "mm",
 																	 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece."));
 
 	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_SpindleSpeed.toAscii().constData(), 
 																	 SettingName_SpindleSpeed.toAscii().constData(),
-																	 "Cam::TextBox", 
+																	 TPGSettingDefinition::SettingType_Text, 
 																	 "700",
 																	 "RPM",
 																	 "Spindle Speed."));
 
 	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_FeedRate.toAscii().constData(), 
 																	 SettingName_FeedRate.toAscii().constData(),
-																	 "Cam::TextBox", 
+																	 TPGSettingDefinition::SettingType_Text, 
 																	 "55",
 																	 "mm/min",
 																	 "Feed Rate."));
 
-    TPGSettingDefinition* speed = settings->addSettingDefinition(qaction, new TPGSettingDefinition("speed", "Speed", "Cam::Radio", "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
+	TPGSettingDefinition* speed = settings->addSettingDefinition(qaction, new TPGSettingDefinition("speed", "Speed", TPGSettingDefinition::SettingType_Radio, "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
     speed->addOption("fast", "Fast");
     speed->addOption("normal", "Normal");
     speed->addOption("slow", "Slow");
@@ -676,6 +676,17 @@ void CppExampleTPG::run(TPGSettings *settings, ToolPath *toolpath, QString actio
 	// it again from the whole GCode program (for highlighting etc.)
 	tpg_reference.replace(QString::fromAscii("TpgBegin"), QString::fromAscii("TpgEnd"));
 	python << "comment(" << python.PythonString(tpg_reference) << ")\n";
+}
+
+
+/* virtual */ void CppExampleTPG::onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value )
+{
+	qDebug("CppExampleTPG::onChanged(%s changed from %s to %s)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				previous_value.toAscii().constData(), 
+				new_value.toAscii().constData());
+
+	CppTPG::onChanged( tpgSettingDefinition, previous_value, new_value );
 }
 
 

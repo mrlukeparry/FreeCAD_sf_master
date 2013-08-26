@@ -102,6 +102,8 @@ public:
 	 * Inherited from TPG::initialiseSettings()
 	 */
 	virtual void initialiseSettings();
+
+	virtual void onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value);
 };
 
 

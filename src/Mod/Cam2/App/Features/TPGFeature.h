@@ -60,10 +60,6 @@ public:
     App::PropertyString        PluginId;
     App::PropertyMap           PropTPGSettings;
 
-    /// Methods for creating external interface to attach input to each TPG
-    // [TODO] eventually this could be an APP::Property link list but doesn't make sens
-    void addInputGeometry(const QString & object_name);
-	QStringList getInputGeometry();
 //    void setBoundingBox(const Base::BoundBox3d & bbox) { inputBBox = bbox; }
 
     /// Methods for obtaining output the output
@@ -74,6 +70,9 @@ public:
     const char* getViewProviderName(void) const {
         return "CamGui::ViewProviderTPGFeature";
     }
+
+	void onBeforeChange(const App::Property* prop);
+	void onChanged(const App::Property* prop);
 
     void initialise() {};
 
@@ -100,7 +99,6 @@ protected:
     TPG *tpg;
     TPGSettings *tpgSettings;
 //    Base::BoundBox3d inputBBox;
-    QStringList inputGeometry;
     
     virtual void onDocumentRestored();
 };
