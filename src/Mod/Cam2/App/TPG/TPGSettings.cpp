@@ -48,19 +48,19 @@ const char* ts(QString *str)
 
 ////////// TPGSetting //////////
 
-TPGSettingDefinition::TPGSettingDefinition(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext)
+TPGSettingDefinition::TPGSettingDefinition(const char *name, const char *label, const SettingType type, const char *defaultvalue, const char *units, const char *helptext)
 {
 	this->refcnt = 1;
     this->parent = NULL;
 
 	this->name = QString::fromAscii(name);
 	this->label = QString::fromAscii(label);
-	this->type = QString::fromAscii(type);
+	this->type = type;
 	this->defaultvalue = QString::fromAscii(defaultvalue);
 	this->units = QString::fromAscii(units);
 	this->helptext = QString::fromAscii(helptext);
 }
-TPGSettingDefinition::TPGSettingDefinition(QString name, QString label, QString type, QString defaultvalue, QString units, QString helptext)
+TPGSettingDefinition::TPGSettingDefinition(QString name, QString label, SettingType type, QString defaultvalue, QString units, QString helptext)
 {
 	this->refcnt = 1;
     this->parent = NULL;
@@ -120,10 +120,10 @@ void TPGSettingDefinition::addOption(const char *id, const char *label) {
 
 void TPGSettingDefinition::print()
 {
-	qDebug("  - (%s, %s, %s, %s, %s, %s)\n",
+	qDebug("  - (%s, %s, %d, %s, %s, %s)\n",
 			name.toAscii().constData(),
 			label.toAscii().constData(),
-			type.toAscii().constData(),
+			type,
 			defaultvalue.toAscii().constData(),
 			units.toAscii().constData(),
 			helptext.toAscii().constData());

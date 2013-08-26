@@ -72,6 +72,13 @@ public:
  */
 class CamExport TPGSettingDefinition
 {
+public:
+	typedef enum
+	{
+		SettingType_Text = 0,
+		SettingType_Radio
+	} SettingType;
+
 protected:
 
 	/// reference counter
@@ -89,7 +96,7 @@ public:
 	//(<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>)
 	QString name;
 	QString label;
-	QString type;
+	SettingType type;
 	QString defaultvalue;
 	QString units;
 	QString helptext;
@@ -97,8 +104,8 @@ public:
 
 //	QString value; // deprecated: now uses FreeCAD data structure which is contained in TPGSettings.tpgFeature
 
-	TPGSettingDefinition(const char *name, const char *label, const char *type, const char *defaultvalue, const char *units, const char *helptext);
-	TPGSettingDefinition(QString name, QString label, QString type, QString defaultvalue, QString units, QString helptext);
+	TPGSettingDefinition(const char *name, const char *label, const SettingType  type, const char *defaultvalue, const char *units, const char *helptext);
+	TPGSettingDefinition(QString name, QString label, SettingType type, QString defaultvalue, QString units, QString helptext);
 	TPGSettingDefinition();
 
 	~TPGSettingDefinition();

@@ -149,7 +149,12 @@ PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, Py
 		return -1;
 	}
 
-	self->setting = new Cam::TPGSettingDefinition(name, label, type, defaultvalue, units, helptext);
+	QString qsType = QString::fromAscii(type);
+	Cam::TPGSettingDefinition::SettingType data_type = Cam::TPGSettingDefinition::SettingType_Text;
+	if (qsType == QString::fromAscii("Cam::Text")) data_type = Cam::TPGSettingDefinition::SettingType_Text;
+	else if (qsType == QString::fromAscii("Cam::Radio")) data_type = Cam::TPGSettingDefinition::SettingType_Radio;
+
+	self->setting = new Cam::TPGSettingDefinition(name, label, data_type, defaultvalue, units, helptext);
     return 0;
 }
 

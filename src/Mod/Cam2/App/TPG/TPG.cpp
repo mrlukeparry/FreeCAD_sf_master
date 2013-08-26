@@ -90,11 +90,11 @@ void TPG::initialiseSettings()
 		this->settings = new TPGSettings();
 		settings->addSettingDefinition(action, 
 										new TPGSettingDefinition(settingName_Geometry().toAscii().constData(), 
-										"Geometry", "Cam::TextBox", "Box01", "", "The input geometry that should be cut"));
+										"Geometry", TPGSettingDefinition::SettingType_Text, "Box01", "", "The input geometry that should be cut"));
 
 		settings->addSettingDefinition(action, 
 										new TPGSettingDefinition(settingName_Tool().toAscii().constData(), 
-										"Tool", "Cam::TextBox", "Tool01", "", "The tool to use for cutting"));
+										"Tool", TPGSettingDefinition::SettingType_Text, "Tool01", "", "The tool to use for cutting"));
 	}
 }
 
