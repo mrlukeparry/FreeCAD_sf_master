@@ -182,3 +182,12 @@ void TPG::release() {
 		return QString::fromAscii("Loaded");
 	return QString::fromAscii("Undefined");
 }
+
+
+/* virtual */ void TPG::onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value)
+{
+	qDebug("TPG::onChanged(%s changed from %s to %s)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				previous_value.toAscii().constData(), 
+				new_value.toAscii().constData());
+}

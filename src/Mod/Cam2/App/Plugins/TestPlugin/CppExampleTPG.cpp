@@ -679,6 +679,17 @@ void CppExampleTPG::run(TPGSettings *settings, ToolPath *toolpath, QString actio
 }
 
 
+/* virtual */ void CppExampleTPG::onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value )
+{
+	qDebug("CppExampleTPG::onChanged(%s changed from %s to %s)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				previous_value.toAscii().constData(), 
+				new_value.toAscii().constData());
+
+	CppTPG::onChanged( tpgSettingDefinition, previous_value, new_value );
+}
+
+
 ///* virtual */ ToolPath *CppExampleTPG::getToolPath()
 //{
 //	if (this->toolpath)

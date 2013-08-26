@@ -149,7 +149,11 @@ void TPGFeature::onBeforeChange(const App::Property* prop)
 		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
 		if (property_map)
 		{
-			onBeforePropTPGSettingsChange(property_map);
+			// Let the tpgSettings object know that something is about to change.
+			if (tpgSettings != NULL)
+			{
+				tpgSettings->onBeforePropTPGSettingsChange(property_map);
+			}
 		}
 	}
 }
@@ -162,29 +166,15 @@ void TPGFeature::onChanged(const App::Property* prop)
 		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
 		if (property_map)
 		{
-			onPropTPGSettingsChanged(property_map);
+			// Let the tpgSettings object know that something changed.
+			if (tpgSettings != NULL)
+			{
+				tpgSettings->onPropTPGSettingsChanged(property_map);
+			}
 		}
 	}
 }
 
-void TPGFeature::onBeforePropTPGSettingsChange(const App::PropertyMap* property_map)
-{
-	// Let the tpgSettings object know that something is about to change.
-	if (tpgSettings != NULL)
-	{
-		tpgSettings->onBeforePropTPGSettingsChange(property_map);
-	}
-}
-
-
-void TPGFeature::onPropTPGSettingsChanged(const App::PropertyMap* property_map)
-{
-	// Let the tpgSettings object know that something changed.
-	if (tpgSettings != NULL)
-	{
-		tpgSettings->onPropTPGSettingsChanged(property_map);
-	}
-}
 
 
 /**

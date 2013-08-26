@@ -55,6 +55,15 @@ void CppTPG::setPlugin(CppTPGPlugin* plugin) {
 	TPG::initialiseSettings();
 }
 
+/* virtual */ void CppTPG::onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value )
+{
+	qDebug("CppTPG::onChanged(%s changed from %s to %s)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				previous_value.toAscii().constData(), 
+				new_value.toAscii().constData());
+
+	TPG::onChanged( tpgSettingDefinition, previous_value, new_value );
+}
 
 } // End Cam namespace
 

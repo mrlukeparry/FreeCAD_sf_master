@@ -107,7 +107,7 @@ public:
      */
     virtual TPGSettings *getSettingDefinitions();
 
-	
+	virtual void onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value);
 
     /**
      * Run the TPG to generate the ToolPath code.

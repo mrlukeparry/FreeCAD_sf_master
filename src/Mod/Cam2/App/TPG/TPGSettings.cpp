@@ -426,6 +426,11 @@ QString TPGSettings::makeName(QString action, QString name) const {
 }
 
 
+/**
+	Keep a copy of the properties map before any changes occur so that we can
+	compare it with the map of modified settings.  Only by comparing these two
+	can we figure out which one of the settings changed.
+ */
 void TPGSettings::onBeforePropTPGSettingsChange(const App::PropertyMap* property_map)
 {
 	if (property_map != NULL)
@@ -439,29 +444,34 @@ void TPGSettings::onBeforePropTPGSettingsChange(const App::PropertyMap* property
 	}
 }
 
-
+/**
+	Called when one of the TPGFeature::PropTPGSettings values changes.
+ */
 void TPGSettings::onPropTPGSettingsChanged(const App::PropertyMap* property_map)
 {
 	// One of the settings has changed.  Figure out which one and let any interested parties know.
-
-	// qDebug("TPGSettings::onPropTPGSettingsChanged() called\n");
-	for (std::map<QString, TPGSettingDefinition*>::iterator itSettingsDef = settingDefsMap.begin(); itSettingsDef != settingDefsMap.end(); itSettingsDef++)
+	if (tpgFeature != NULL)
 	{
-		std::string name = itSettingsDef->first.toStdString();
-		std::string previous_value = this->previous_tpg_properties_version[name];
-		std::string new_value = itSettingsDef->second->getValue().toStdString();
-
-		if (new_value != previous_value)
+		TPG *tpg = tpgFeature->getTPG();
+		if (tpg)
 		{
-			itSettingsDef->second->onChanged(QString::fromStdString(previous_value), QString::fromStdString(new_value));
+			tpg->grab();
+
+			// qDebug("TPGSettings::onPropTPGSettingsChanged() called\n");
+			for (std::map<QString, TPGSettingDefinition*>::iterator itSettingsDef = settingDefsMap.begin(); itSettingsDef != settingDefsMap.end(); itSettingsDef++)
+			{
+				std::string name = itSettingsDef->first.toStdString();
+				std::string previous_value = this->previous_tpg_properties_version[name];
+				std::string new_value = itSettingsDef->second->getValue().toStdString();
+
+				if (new_value != previous_value)
+				{
+					tpg->onChanged( itSettingsDef->second, QString::fromStdString(previous_value), QString::fromStdString(new_value));
+				}
+			}
+			tpg->release();
 		}
 	}
-}
-
-
-void TPGSettingDefinition::onChanged(QString previous_value, QString new_value)
-{
-	qDebug("TPGSettingDefinition::onChanged( %s to %s )\n", previous_value.toAscii().constData(), new_value.toAscii().constData());
 }
 
 

@@ -117,11 +117,6 @@ public:
 
     void print();
 
-	/**
-		called when any one of the settings changes.
-	 */
-	void onChanged(QString previous_value, QString new_value);
-
     /**
      * Increases reference count
      * Note: it returns a pointer to this for convenience.
