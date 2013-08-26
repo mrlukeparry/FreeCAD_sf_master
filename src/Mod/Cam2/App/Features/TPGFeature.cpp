@@ -121,6 +121,18 @@ TPGFeature::~TPGFeature()
 //        stop();
 //    //TODO should we wait till the tpg has finished
 //    tpg->release(); // Will internally call destructor and safely stop this
+
+	if (tpg != NULL)
+	{
+		tpg->release();
+		tpg = NULL;
+	}
+
+	if (tpgSettings != NULL)
+	{
+		tpgSettings->release();
+		tpgSettings = NULL;
+	}
 }
 
 App::DocumentObjectExecReturn *TPGFeature::execute(void)
@@ -130,6 +142,49 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
     return App::DocumentObject::StdReturn;
 }
 
+void TPGFeature::onBeforeChange(const App::Property* prop)
+{
+	if (prop == &PropTPGSettings)
+	{
+		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
+		if (property_map)
+		{
+			onBeforePropTPGSettingsChange(property_map);
+		}
+	}
+}
+
+
+void TPGFeature::onChanged(const App::Property* prop)
+{
+	if (prop == &PropTPGSettings)
+	{
+		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
+		if (property_map)
+		{
+			onPropTPGSettingsChanged(property_map);
+		}
+	}
+}
+
+void TPGFeature::onBeforePropTPGSettingsChange(const App::PropertyMap* property_map)
+{
+	// Let the tpgSettings object know that something is about to change.
+	if (tpgSettings != NULL)
+	{
+		tpgSettings->onBeforePropTPGSettingsChange(property_map);
+	}
+}
+
+
+void TPGFeature::onPropTPGSettingsChanged(const App::PropertyMap* property_map)
+{
+	// Let the tpgSettings object know that something changed.
+	if (tpgSettings != NULL)
+	{
+		tpgSettings->onPropTPGSettingsChanged(property_map);
+	}
+}
 
 
 /**
@@ -141,14 +196,6 @@ TPG* TPGFeature::getTPG() {
 		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()));
 	return tpg;
 }
-
-/*
-void TPGFeature::setInputGeometry(const std::vector<Part::Feature *> & vals)
-{
-	inputGeometry.clear();
-	std::copy( vals.begin(), vals.end(), std::inserter( inputGeometry, inputGeometry.begin() ) );
-}
-*/
 
 
 /**

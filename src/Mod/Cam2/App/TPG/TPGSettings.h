@@ -26,6 +26,9 @@
 
 #include <PreCompiled.h>	// we need the __declspec(dllexport) macros for the Windows build
 
+#include <App/PropertyLinks.h>
+#include <App/PropertyStandard.h>
+
 namespace Cam {
 class CamExport TPGSettingOption;
 class CamExport TPGSettingDefinition;
@@ -107,6 +110,11 @@ public:
 
     void print();
 
+	/**
+		called when any one of the settings changes.
+	 */
+	void onChanged(QString previous_value, QString new_value);
+
     /**
      * Increases reference count
      * Note: it returns a pointer to this for convenience.
@@ -143,6 +151,12 @@ public:
 
     void initialise() {};
     void loadSettings() {};
+
+	/**
+		called when any one of the settings changes.
+	 */
+	void onBeforePropTPGSettingsChange(const App::PropertyMap* prop);
+	void onPropTPGSettingsChanged(const App::PropertyMap* prop);
 
 	/**
 	 * Perform a deep copy of this class
@@ -233,6 +247,9 @@ protected:
 
     /// make a namespaced name (from <action>::<name>)
     QString makeName(QString action, QString name) const;
+
+private:
+	std::map<std::string,std::string>	previous_tpg_properties_version;	// NOTE: ONLY used to determine which properties changed in a single update.
 };
 
 } //namespace Cam
