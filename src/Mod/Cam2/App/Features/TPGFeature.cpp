@@ -48,7 +48,7 @@ TPGFeature::TPGFeature() : Properties(this)
     ADD_PROPERTY_TYPE(PropTPGSettings,(), "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
 	// ADD_PROPERTY_TYPE(AnotherProperty,(13), "TPG Feature", (App::PropertyType)(App::Prop_None) , "David was here");
 	
-	this->addDynamicProperty( App::PropertyColor::getClassTypeId().getName(), "David's other favourite colour", "TPG Feature" );
+	this->addDynamicProperty( App::PropertyColor::getClassTypeId().getName(), "David's other favourite colour" );
 
     tpg = NULL;
     tpgSettings = NULL; //new TPGSettings();
@@ -63,8 +63,21 @@ TPGFeature::TPGFeature() : Properties(this)
 		bool ro /* =false  */ ,
 		bool hidden /* =false */ )
 {
-	App::Property *new_property = Properties.addDynamicProperty(type, name, group, doc, attr, ro, hidden);
-	this->propertyData.addProperty(this, "one", new_property, "TPG Feature", App::Prop_None, "");
+	std::string l_ssGroup;
+	if ((group == NULL) || (*group == '\0'))
+	{
+		l_ssGroup = "TPG Feature";
+	}
+	else
+	{
+		l_ssGroup = group;
+	}
+
+	App::Property *new_property = Properties.addDynamicProperty(type, name, l_ssGroup.c_str(), doc, attr, ro, hidden);
+	// this->propertyData.addProperty(this, "one", new_property, "TPG Feature", App::Prop_None, "");
+	// void PropertyData::addProperty(const PropertyContainer *container,const char* PropName, Property *Prop, const char* PropertyGroup , PropertyType Type, const char* PropertyDocu)
+
+	this->propertyData.addProperty(this, name, new_property, "MyGroup", App::PropertyType(new_property->getType()), "MyDoco");
 	return(new_property);
 }
 

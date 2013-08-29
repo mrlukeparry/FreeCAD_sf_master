@@ -146,7 +146,7 @@ CppExampleTPG::~CppExampleTPG() {
 
 	// tpgFeature->Properties.addDynamicProperty( App::PropertyColor::getClassTypeId().getName(), "David's favourite colour", "TPG Feature", "doc", 0, false, false );
 	
-	this->tpgFeature->addDynamicProperty( App::PropertyColor::getClassTypeId().getName(), "David's favourite colour", "TPG Feature" );
+	this->tpgFeature->addDynamicProperty( App::PropertyColor::getClassTypeId().getName(), "David's first favourite colour" );
 
 	QString qaction = QS("default");
 
