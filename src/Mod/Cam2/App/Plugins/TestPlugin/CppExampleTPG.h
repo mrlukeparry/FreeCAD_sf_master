@@ -60,7 +60,7 @@ public:
 	 * also calls the CppTPG::initialiseSettings() method so that those
 	 * associated with all TPGs (such as Geometry and Tool) are included
 	 */
-	virtual void initialiseSettings();
+	virtual void initialise(TPGFeature *tpgFeature);
 
 	virtual void onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value );
 

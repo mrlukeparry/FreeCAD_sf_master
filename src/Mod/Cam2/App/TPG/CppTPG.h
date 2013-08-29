@@ -99,9 +99,9 @@ public:
     void setPlugin(CppTPGPlugin* plugin);
 
 	/*
-	 * Inherited from TPG::initialiseSettings()
+	 * Inherited from TPG::initialise(TPGFeature *tpgFeature)
 	 */
-	virtual void initialiseSettings();
+	virtual void initialise(TPGFeature *tpgFeature);
 
 	virtual void onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value);
 };

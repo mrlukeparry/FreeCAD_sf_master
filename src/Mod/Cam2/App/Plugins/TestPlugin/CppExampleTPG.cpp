@@ -128,22 +128,6 @@ CppExampleTPG::CppExampleTPG()
 
     QString qaction = QS("default");
     actions.push_back(qaction);
-
-	this->initialiseSettings();
-
-	// Just as a hack for now, find all input object names and pass them in as input geometry.
-	App::Document *document = App::GetApplication().getActiveDocument();
-	if (document)
-	{
-		std::vector<App::DocumentObject*> input_geometry = document->getObjectsOfType(Part::Feature::getClassTypeId());
-		for (std::vector<App::DocumentObject *>::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
-		{
-			QString value = settings->getValue(qaction, settingName_Geometry());
-			value.append(QString::fromAscii(" "));
-			value.append(QString::fromAscii((*itGeometry)->getNameInDocument()));
-			settings->setValue(qaction, settingName_Geometry(), value);
-		}
-	}
 }
 
 CppExampleTPG::~CppExampleTPG() {
@@ -151,11 +135,20 @@ CppExampleTPG::~CppExampleTPG() {
 }
 
 
-/* virtual */ void CppExampleTPG::initialiseSettings()
+/* virtual */ void CppExampleTPG::initialise(TPGFeature *tpgFeature)
 {
-	QString qaction = QS("default");
+	CppTPG::initialise(tpgFeature);	// We must do this first so that we have somewhere to store our properties.
 
-	CppTPG::initialiseSettings();	// Allow the ancestors to add their own settings first.
+	/*
+	Property* DynamicProperty::addDynamicProperty(const char* type, const char* name, const char* group,
+                                              const char* doc, short attr, bool ro, bool hidden)
+	*/
+
+	// tpgFeature->Properties.addDynamicProperty( App::PropertyColor::getClassTypeId().getName(), "David's favourite colour", "TPG Feature", "doc", 0, false, false );
+	
+	this->tpgFeature->addDynamicProperty( App::PropertyColor::getClassTypeId().getName(), "David's favourite colour", "TPG Feature" );
+
+	QString qaction = QS("default");
 
 	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), 
 																	 SettingName_Depth.toAscii().constData(),
@@ -221,6 +214,21 @@ CppExampleTPG::~CppExampleTPG() {
     speed->addOption("fast", "Fast");
     speed->addOption("normal", "Normal");
     speed->addOption("slow", "Slow");
+
+	
+	// Just as a hack for now, find all input object names and pass them in as input geometry.
+	App::Document *document = App::GetApplication().getActiveDocument();
+	if (document)
+	{
+		std::vector<App::DocumentObject*> input_geometry = document->getObjectsOfType(Part::Feature::getClassTypeId());
+		for (std::vector<App::DocumentObject *>::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
+		{
+			QString value = settings->getValue(qaction, settingName_Geometry());
+			value.append(QString::fromAscii(" "));
+			value.append(QString::fromAscii((*itGeometry)->getNameInDocument()));
+			settings->setValue(qaction, settingName_Geometry(), value);
+		}
+	}
 
 }
 

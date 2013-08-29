@@ -50,9 +50,9 @@ void CppTPG::setPlugin(CppTPGPlugin* plugin) {
     this->plugin = plugin->grab();
 }
 
-/* virtual */ void CppTPG::initialiseSettings()
+/* virtual */ void CppTPG::initialise(TPGFeature *tpgFeature)
 {
-	TPG::initialiseSettings();
+	TPG::initialise(tpgFeature);
 }
 
 /* virtual */ void CppTPG::onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value )

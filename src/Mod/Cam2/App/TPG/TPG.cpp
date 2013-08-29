@@ -46,6 +46,7 @@ TPG::TPG()
 
     this->refcnt = 1;
     this->settings = NULL;
+	this->tpgFeature = NULL;		// We NEED one of these but we won't get it until the initialise() method is called
 }
 
 TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription)
@@ -55,26 +56,13 @@ TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescrip
   this->name = TPGName;
   this->description = TPGDescription;
   this->settings = NULL;
+  this->tpgFeature = NULL;		// We NEED one of these but we won't get it until the initialise() method is called
 }
 
 TPG::~TPG()
 {
 	if (this->settings) this->settings->release();
-}
-
-void TPG::initialise(TPGFeature *feat)
-{
-//    // We need to intiailise and associate this toolpath with a TPGFeature - it doesn't make sense to be standalone
-//    if(!feat)
-//        return;
-//
-//    tpgFeat = feat;
-
-    this->initialiseSettings();
-    //Check if there is input that can be used
-
-//    // If everything is okay, set status to intiailised
-//    this->state = INITIALISED;
+	// no need to release the tpgFeature as it's not reference counted.
 }
 
 //TPG* TPG::makeTPG()
@@ -82,8 +70,10 @@ void TPG::initialise(TPGFeature *feat)
 //    return 0;
 //}
 
-void TPG::initialiseSettings()
+/* virtual */ void TPG::initialise(TPGFeature *tpgFeature)
 {
+	this->tpgFeature = tpgFeature;
+
 	if (this->settings == NULL)
 	{
 		QString action = QString::fromAscii("default");
@@ -96,6 +86,9 @@ void TPG::initialiseSettings()
 										new TPGSettingDefinition(settingName_Tool().toAscii().constData(), 
 										"Tool", TPGSettingDefinition::SettingType_Text, "Tool01", "", "The tool to use for cutting"));
 	}
+
+	//    // If everything is okay, set status to intiailised
+	//    this->state = INITIALISED;
 }
 
 QString TPG::settingName_Geometry() const

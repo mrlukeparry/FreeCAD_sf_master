@@ -145,12 +145,12 @@ void CamFeature::onDelete(const App::DocumentObject &docObj) {
 
         // remove the children TPG's
         const std::vector<App::DocumentObject *> vals = TPGList.getValues();
-		for (int i = 0; i < vals.size(); i++)
+		for (::size_t i = 0; i < vals.size(); i++)
 			pcDoc->remObject(vals[i]->getNameInDocument());
 
         // remove the children Machine code objects's
 		const std::vector<App::DocumentObject *> vals2 = MachineProgramList.getValues();
-		for (int i = 0; i < vals2.size(); i++)
+		for (::size_t i = 0; i < vals2.size(); i++)
 			pcDoc->remObject(vals2[i]->getNameInDocument());
     }
 }

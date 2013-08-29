@@ -59,6 +59,12 @@ public:
 //    App::PropertyLinkSubList   ExternalGeometry;
     App::PropertyString        PluginId;
     App::PropertyMap           PropTPGSettings;
+	App::DynamicProperty	   Properties;
+
+	virtual App::Property* addDynamicProperty(
+        const char* type, const char* name=0,
+        const char* group=0, const char* doc=0,
+        short attr=0, bool ro=false, bool hidden=false);
 
 //    void setBoundingBox(const Base::BoundBox3d & bbox) { inputBBox = bbox; }
 

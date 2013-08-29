@@ -87,8 +87,7 @@ public:
      */
     TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription);
 
-    virtual void initialise(TPGFeature *feat);
-    virtual void initialiseSettings();
+    virtual void initialise(TPGFeature *tpgFeature);
 
 	QString settingName_Geometry() const;	// Used by all TPG objects.
 	QString settingName_Tool() const;
@@ -208,8 +207,9 @@ protected:
 
     int refcnt; ///< reference counter
 
-private:
-//    TPGFeature  *tpgFeat; //Subclasses shouldn't need to know about this
+public:
+	// Since the TPGFeature is our only PropertiesContainer, we need it to hold our properties.
+	TPGFeature  *tpgFeature;
 
 //    // Storage of TPG Bounding Boxes
 //    Base::BoundBox3d inputBBox;

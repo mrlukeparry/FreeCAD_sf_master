@@ -41,15 +41,33 @@ using namespace Cam;
 
 PROPERTY_SOURCE(Cam::TPGFeature, App::DocumentObject)
 
-TPGFeature::TPGFeature() {
-
+TPGFeature::TPGFeature() : Properties(this)
+{
 	//ADD_PROPERTY_TYPE(_prop_, _defaultval_, _group_,_type_,_Docu_)
     ADD_PROPERTY_TYPE(PluginId,        (""),   "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
     ADD_PROPERTY_TYPE(PropTPGSettings,(), "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
+	// ADD_PROPERTY_TYPE(AnotherProperty,(13), "TPG Feature", (App::PropertyType)(App::Prop_None) , "David was here");
+	
+	this->addDynamicProperty( App::PropertyColor::getClassTypeId().getName(), "David's other favourite colour", "TPG Feature" );
 
     tpg = NULL;
     tpgSettings = NULL; //new TPGSettings();
 }
+
+/* virtual */ App::Property* TPGFeature::addDynamicProperty(
+        const char* type,
+		const char* name /* =0 */ ,
+        const char* group /* =0 */ ,
+		const char* doc /* =0 */ ,
+        short attr /* =0 */ ,
+		bool ro /* =false  */ ,
+		bool hidden /* =false */ )
+{
+	App::Property *new_property = Properties.addDynamicProperty(type, name, group, doc, attr, ro, hidden);
+	this->propertyData.addProperty(this, "one", new_property, "TPG Feature", App::Prop_None, "");
+	return(new_property);
+}
+
 
 //// TODO not sure if this is actually needed anymore.
 //TPGFeature::TPGFeature(TPGDescriptor *tpgDescriptor)
@@ -202,7 +220,11 @@ void TPGFeature::onChanged(const App::Property* prop)
  */
 TPG* TPGFeature::getTPG() {
 	if (tpg == NULL)
+	{
 		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()));
+		tpg->initialise(this);
+	}
+
 	return tpg;
 }
 
