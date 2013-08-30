@@ -41,7 +41,7 @@ public:
   LibTPGDescriptor(const char *id, const char * name, const char * description)
     : TPGDescriptor(id, name, description, "LibTPG")
   {}
-  TPG* make();
+  TPG* make(TPGFeature *tpgFeature);
 };
 
 /**
@@ -51,8 +51,8 @@ class CamExport LibTPG : public TPG
 {
 
 public:
-  LibTPG(){}
-  LibTPG(TPGDescriptor *descriptor);
+  LibTPG(TPGFeature *tpgFeature) : TPG(tpgFeature) {}
+  LibTPG(TPGDescriptor *descriptor, TPGFeature *tpgFeature);
   ~LibTPG();
 
 protected:

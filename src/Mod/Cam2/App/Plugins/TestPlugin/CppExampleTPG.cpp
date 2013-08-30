@@ -27,6 +27,7 @@
 #include <Base/Interpreter.h>		// For Python runtime
 #include <App/PropertyUnits.h>
 #include <TPG/CppTPGDescriptor.h>
+#include <Features/TPGFeature.h>
 #include <Mod/Part/App/PrimitiveFeature.h>
 
 #include <App/Document.h>
@@ -49,6 +50,7 @@
 
 using namespace BOOST_SPIRIT_CLASSIC_NS;
 
+
 /**
  * Implement the Cpp shared library interface functions
  * Note: this must be outside the namespace declaration
@@ -63,9 +65,9 @@ extern "C" Q_DECL_EXPORT Cam::TPGDescriptorCollection* getDescriptors() {
     descriptor->release();
     return descriptors;
 }
-extern "C" Q_DECL_EXPORT Cam::CppTPG* getTPG(QString id) {
+extern "C" Q_DECL_EXPORT Cam::CppTPG* getTPG(QString id, Cam::TPGFeature *tpgFeature) {
     if (id.compare(QString::fromAscii(myID)) == 0)
-        return new Cam::CppExampleTPG();
+        return new Cam::CppExampleTPG(tpgFeature);
     return 0;
 }
 
@@ -118,8 +120,8 @@ CppExampleTPG::RetractMode_t CppExampleTPG::toRetractMode( const QString string_
 }
 
 
-CppExampleTPG::CppExampleTPG()
-        : CppTPG() { // important to call parent constructor
+CppExampleTPG::CppExampleTPG(TPGFeature *tpgFeature)
+        : CppTPG(tpgFeature) { // important to call parent constructor
     id = QS(myID);
     name = QS(myName);
     description = QS(myDesc);
@@ -128,6 +130,8 @@ CppExampleTPG::CppExampleTPG()
 
     QString qaction = QS("default");
     actions.push_back(qaction);
+
+	initialise(this->tpgFeature);
 }
 
 CppExampleTPG::~CppExampleTPG() {

@@ -49,7 +49,7 @@ using namespace Cam;
 // }
 
 TPGPython::TPGPython(PyObject *cls) :
-		TPG()
+		TPG(NULL)	// TODO Fix this, it needs a TPGFeature pointer to work correctly.
 {
 	//TODO: check the cls is an instance of PyTPG (somehow, possibly checking for the presence of api methods)
 	Py_XINCREF(cls);

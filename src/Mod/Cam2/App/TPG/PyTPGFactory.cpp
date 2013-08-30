@@ -197,7 +197,7 @@ TPGDescriptorCollection* PyTPGFactoryInst::getDescriptors()
  *
  * Note: used by the PyTPGDecriptor to get the required PyTPG
  */
-TPGPython *PyTPGFactoryInst::getPlugin(QString id)
+TPGPython *PyTPGFactoryInst::getPlugin(QString id, TPGFeature *tpgFeature)
 {
     TPGPython *tpg = NULL;
     if (this->obj != NULL)

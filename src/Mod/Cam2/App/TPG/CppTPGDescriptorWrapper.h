@@ -48,7 +48,7 @@ public:
     /**
      * Creates a new instance of this TPG.  Sub-classes need to implement this
      */
-    virtual TPG* make();
+    virtual TPG* make(TPGFeature *tpgFeature);
 };
 
 } /* namespace CamGui */

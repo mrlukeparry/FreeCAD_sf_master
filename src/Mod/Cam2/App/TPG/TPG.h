@@ -80,12 +80,12 @@ public:
     /**
      * Default Constructor
      */
-    TPG();
+    TPG(TPGFeature *tpgFeature);
     
     /**
      * Complimentary constructor to assign plugin properties
      */
-    TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription);
+    TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription, TPGFeature *tpgFeature);
 
     virtual void initialise(TPGFeature *tpgFeature);
 

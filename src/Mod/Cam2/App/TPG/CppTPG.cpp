@@ -29,7 +29,7 @@
 namespace Cam {
 
 
-CppTPG::CppTPG() : TPG() {
+CppTPG::CppTPG(TPGFeature *tpgFeature) : TPG(tpgFeature) {
     plugin = NULL;
 }
 CppTPG::~CppTPG() {

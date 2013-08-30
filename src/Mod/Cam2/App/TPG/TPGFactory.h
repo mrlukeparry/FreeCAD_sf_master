@@ -64,7 +64,7 @@ class CamExport TPGFactoryInst
 public:
   static TPGFactoryInst& instance(void);
   static void destruct (void);
-  TPG * getPlugin(QString id);
+  TPG * getPlugin(QString id, TPGFeature *tpgFeature);
 
   /**
    * Searches for TPG's (both Python and Cpp).

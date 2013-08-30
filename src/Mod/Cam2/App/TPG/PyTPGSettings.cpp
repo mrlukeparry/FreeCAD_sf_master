@@ -319,6 +319,7 @@ PyTPGSettings_init(cam_PyTPGSettings *self, PyObject *args, PyObject *kwds) {
 			cam_PyTPGSettings *pcopy = (cam_PyTPGSettings*) copy;
 			if (pcopy->settings != NULL) {
 				self->settings = pcopy->settings->clone();
+				return 0;
 			} else {
 				PyErr_SetString(PyExc_Exception, "Underlying data-structure not set.");
 				return -1;

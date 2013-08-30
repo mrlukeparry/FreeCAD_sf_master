@@ -32,7 +32,7 @@
 using namespace Cam;
 TYPESYSTEM_SOURCE_ABSTRACT(Cam::TPG, Base::BaseClass)
 
-TPG::TPG()
+TPG::TPG(TPGFeature *tpgFeature)
 //    : state(LOADED)
 {
     // Load the TPG Settings Class and Initialise
@@ -46,17 +46,17 @@ TPG::TPG()
 
     this->refcnt = 1;
     this->settings = NULL;
-	this->tpgFeature = NULL;		// We NEED one of these but we won't get it until the initialise() method is called
+	this->tpgFeature = tpgFeature;
 }
 
-TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription)
+TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription, TPGFeature *tpgFeature)
 {
   this->refcnt = 1;
   this->id = TPGId;
   this->name = TPGName;
   this->description = TPGDescription;
   this->settings = NULL;
-  this->tpgFeature = NULL;		// We NEED one of these but we won't get it until the initialise() method is called
+  this->tpgFeature = tpgFeature;
 }
 
 TPG::~TPG()

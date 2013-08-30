@@ -37,7 +37,7 @@ class CppTPG;
 typedef Cam::TPGDescriptorCollection* getDescriptors_t();
 
 // TPG create function types
-typedef CppTPG* getTPG_t(QString);
+typedef CppTPG* getTPG_t(QString, TPGFeature *tpgFeature);
 }
 
 #include "CppTPGPlugin.h"
@@ -48,15 +48,15 @@ typedef CppTPG* getTPG_t(QString);
  */
 #define QS(_cs_) QString::fromAscii(_cs_)
 #define _TPGDescriptor(_type_, _id_, _name_, _desc_) new Cam::CppTPGDescriptor(QS(_id_), QS(_name_), QS(_desc_))
-#define _MakeTPG(_type_, _id_, _name_, _desc_) if (id == QString::fromAscii(_id_))\
-        return new _type_();\
+#define _MakeTPG(_type_, _id_, _name_, _desc_, _feature_) if (id == QString::fromAscii(_id_))\
+        return new _type_(_feature_);\
 
 /**
  * TPG Plugins that implement a single plugin should add this macro to its
  * source file
  * TODO: see if its possible to make a nice macro that can handle multiple TPG's at once
  */
-#define CPPTPG_API_SOURCE(_type_, _id_, _name_, _desc_)\
+#define CPPTPG_API_SOURCE(_type_, _id_, _name_, _desc_, _feature_)\
 extern "C" CamExport Cam::TPGDescriptorCollection* getDescriptors() {\
     Cam::TPGDescriptorCollection* descriptors = new Cam::TPGDescriptorCollection();\
     Cam::TPGDescriptor *descriptor = _TPGDescriptor(_type_, _id_, _name_, _desc_);\
@@ -64,8 +64,8 @@ extern "C" CamExport Cam::TPGDescriptorCollection* getDescriptors() {\
     descriptor->release();\
     return descriptors;\
 }\
-extern "C" CamExport Cam::CppTPG* getTPG(QString id) {\
-    _MakeTPG(_type_, _id_, _name_, _desc_)\
+extern "C" CamExport Cam::CppTPG* getTPG(QString id, TPGFeature *tpgFeature) {\
+    _MakeTPG(_type_, _id_, _name_, _desc_, _feature_)\
     return NULL;\
 }
 
@@ -75,7 +75,7 @@ extern "C" CamExport Cam::CppTPG* getTPG(QString id) {\
  */
 #define CPPTPG_API_HEADER()\
 extern "C" CamExport Cam::TPGDescriptorCollection* getDescriptors();\
-extern "C" CamExport Cam::CppTPG* getTPG(QString);
+extern "C" CamExport Cam::CppTPG* getTPG(QString, TPGFeature *tpgFeature);
 
 namespace Cam {
 
@@ -86,7 +86,7 @@ protected:
     CppTPGPlugin* plugin;
 
 
-    CppTPG();
+    CppTPG(TPGFeature *tpgFeature);
     ~CppTPG();
 
 public:

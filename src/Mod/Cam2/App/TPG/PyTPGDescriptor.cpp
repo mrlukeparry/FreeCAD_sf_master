@@ -30,9 +30,9 @@
 namespace Cam {
 
 
-TPG* PyTPGDescriptor::make()
+TPG* PyTPGDescriptor::make(TPGFeature *tpgFeature)
 {
-  return PyTPGFactory().getPlugin(id);
+  return PyTPGFactory().getPlugin(id, tpgFeature);
 }
 
 } /* namespace Cam */

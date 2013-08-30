@@ -38,7 +38,7 @@ CppTPGDescriptor::~CppTPGDescriptor() {
 }
 
 
-TPG* CppTPGDescriptor::make() {
+TPG* CppTPGDescriptor::make(TPGFeature *tpgFeature) {
     return NULL; // NOTE: this shouldn't be called. Just implemented to make it not abstract.
 }
 

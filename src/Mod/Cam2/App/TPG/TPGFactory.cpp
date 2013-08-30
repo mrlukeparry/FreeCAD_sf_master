@@ -80,11 +80,11 @@ void TPGFactoryInst::clearDescriptors() {
     d->descriptors = new Cam::TPGDescriptorCollection();
 }
 
-TPG * TPGFactoryInst::getPlugin(QString id) {
+TPG * TPGFactoryInst::getPlugin(QString id, TPGFeature *tpgFeature) {
     for(size_t i = 0; i < d->descriptors->size(); ++i) {
         TPGDescriptor *tpg = d->descriptors->at(i);
         if (tpg->id == id)
-            return tpg->make();
+            return tpg->make(tpgFeature);
     }
 
     return 0;

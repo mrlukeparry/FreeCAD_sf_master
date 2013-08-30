@@ -234,8 +234,8 @@ void TPGFeature::onChanged(const App::Property* prop)
 TPG* TPGFeature::getTPG() {
 	if (tpg == NULL)
 	{
-		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()));
-		tpg->initialise(this);
+		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()), this);
+		// tpg->initialise(this);
 	}
 
 	return tpg;

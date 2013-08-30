@@ -36,7 +36,7 @@ public:
     CppTPGDescriptor(QString id, QString name, QString description);
     virtual ~CppTPGDescriptor();
 
-    TPG* make();
+    TPG* make(TPGFeature *tpgFeature);
 
     void incref();
     void decref();

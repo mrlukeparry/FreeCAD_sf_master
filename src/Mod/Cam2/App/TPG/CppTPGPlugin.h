@@ -88,7 +88,7 @@ public:
      * it once you are finished with it and it will automatically delete the
      * implementation using the delTPG(tpg) method below
      */
-    TPG* getTPG(QString id);
+    TPG* getTPG(QString id, TPGFeature *tpgFeature);
 
     /**
      * Used by the CppTPGWrapper to delete its implementation.

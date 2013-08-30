@@ -189,7 +189,8 @@ static PyObject *test(PyObject *self, PyObject *args)
 	if (plugins->size() > 0)
 	{
 	    Cam::TPGDescriptor* descriptor = plugins->at(0);
-        Cam::TPG *tpg = descriptor->make();
+		Cam::TPGFeature *tpgFeature = NULL;	// TODO MAKE THIS POINT TO A REAL OBJECT
+        Cam::TPG *tpg = descriptor->make(tpgFeature);
         if (tpg != NULL) {
             QString desc = tpg->getDescription();
     //		printf("Found PyTPG: %s [%s] '%s'\n",ts(tpg->getName()),ts(tpg->getId()),ts(desc));
