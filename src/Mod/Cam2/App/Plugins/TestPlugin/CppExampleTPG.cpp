@@ -27,7 +27,6 @@
 #include <Base/Interpreter.h>		// For Python runtime
 #include <App/PropertyUnits.h>
 #include <TPG/CppTPGDescriptor.h>
-#include <Features/TPGFeature.h>
 #include <Mod/Part/App/PrimitiveFeature.h>
 
 #include <App/Document.h>

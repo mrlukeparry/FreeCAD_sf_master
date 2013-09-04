@@ -72,7 +72,7 @@ public:
     /**
      * Creates a new instance of this TPG.  Sub-classes need to implement this
      */
-    virtual Cam::TPG* make(TPGFeature *tpgFeature) = 0;
+    virtual Cam::TPG* make() = 0;
     virtual void print();
 };
 

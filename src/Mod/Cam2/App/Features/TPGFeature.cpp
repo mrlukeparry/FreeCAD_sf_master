@@ -48,7 +48,7 @@ TPGFeature::TPGFeature()
     ADD_PROPERTY_TYPE(PropTPGSettings,(), "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
 
     tpg = NULL;
-    tpgSettings = new TPGSettings();
+    tpgSettings = NULL;
 }
 
 
@@ -204,8 +204,10 @@ void TPGFeature::onChanged(const App::Property* prop)
 TPG* TPGFeature::getTPG() {
 	if (tpg == NULL)
 	{
-		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()), this);
+		tpgSettings = new TPGSettings();
+		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()));
 		tpg->initialise(this);
+		tpgSettings->setTPGFeature(this);
 	}
 
 	return tpg;
@@ -219,18 +221,6 @@ TPGSettings* TPGFeature::getTPGSettings() {
 
 	if (tpgSettings == NULL) {
 		getTPG(); // make sure TPG has been loaded already.
-
-		// get a description of settings that TPG expects
-		tpgSettings = tpg->getSettingDefinitions();
-		if (tpgSettings == NULL) {
-			Base::Console().Warning("Unable to get settings\n");
-			return NULL;
-		}
-		else
-			Base::Console().Log("Got settings\n");
-
-		// tell the settings object about myself so it can save values here.
-		tpgSettings->setTPGFeature(this);
 	}
 
 	return tpgSettings;

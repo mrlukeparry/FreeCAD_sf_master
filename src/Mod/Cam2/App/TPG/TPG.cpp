@@ -78,13 +78,13 @@ TPG::~TPG()
 	{
 		if (this->settings == NULL)
 		{
-			this->settings = this->tpgFeature->tpgSettings->grab();	// Get a reference to the tpgFeature's settings object.
+			this->settings = this->tpgFeature->getTPGSettings()->grab();	// Get a reference to the tpgFeature's settings object.
 
 			QString action = QString::fromAscii("default");
 
 			settings->addSettingDefinition(action, 
-											new TPGSettingDefinition(settingName_Geometry().toAscii().constData(), 
-											"Geometry", TPGSettingDefinition::SettingType_Text, "Box01", "", "The input geometry that should be cut"));
+												new TPGSettingDefinition(settingName_Geometry().toAscii().constData(), 
+												"Geometry", TPGSettingDefinition::SettingType_Text, "Box01", "", "The input geometry that should be cut"));
 
 			settings->addSettingDefinition(action, 
 											new TPGSettingDefinition(settingName_Tool().toAscii().constData(), 

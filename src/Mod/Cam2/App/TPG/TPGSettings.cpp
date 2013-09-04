@@ -86,6 +86,15 @@ TPGSettingDefinition::~TPGSettingDefinition() {
     options.clear();
 }
 
+bool TPGSettingDefinition::operator== ( const TPGSettingDefinition & rhs ) const
+{
+	if (name != rhs.name) return(false);
+	if (label != rhs.label) return(false);
+	if (type != rhs.type) return(false);
+
+	return(true);
+}
+
 /**
  * Perform a deep copy of this class
  */
@@ -236,7 +245,23 @@ TPGSettingDefinition* TPGSettings::addSettingDefinition(QString action, TPGSetti
 			settings.push_back(setting);
 			settingDefsActionMap.insert(std::pair<QString, std::vector<TPGSettingDefinition*> >(action, settings));
 		} else {
-			it->second.push_back(setting);
+			// Check to see if we already have one.  If so, return a pointer to it rather than adding this new one.
+			bool found = false;
+			for (std::vector<Cam::TPGSettingDefinition *>::iterator itSettingDef = it->second.begin(); (! found) && (itSettingDef != it->second.end()); itSettingDef++)
+			{
+				if (*itSettingDef == *setting)
+				{
+					found = true;
+					delete setting;	// Delete this new one.
+					setting = &(*itSettingDef);
+					break;
+				}
+			}
+
+			if (! found)
+			{
+				it->second.push_back(setting);
+			}
 		}
 	}
 
@@ -363,7 +388,10 @@ void TPGSettings::addDefaults() {
 		while (it != this->settingDefs.end()) {
 			QString nsName = makeName((*it)->action, (*it)->name);
 			if (currentValues.find(nsName.toStdString()) == currentValues.end())
+			{
 				tpgFeature->PropTPGSettings.setValue(nsName.toStdString(),(*it)->defaultvalue.toStdString());
+			}
+
 			++it;
 		}
 	}

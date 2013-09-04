@@ -90,9 +90,9 @@ Cam::TPGDescriptorCollection* CppTPGPlugin::getDescriptors() {
  * it once you are finished with it and it will automatically delete the
  * implementation once all references are released
  */
-TPG* CppTPGPlugin::getTPG(QString id, TPGFeature *tpgFeature) {
+TPG* CppTPGPlugin::getTPG(QString id) {
     if ((isOpen()) && (getTPGPtr != NULL)) {
-        return getTPGPtr(id, tpgFeature);
+        return getTPGPtr(id);
     }
     qWarning("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
     return NULL;

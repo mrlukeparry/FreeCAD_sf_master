@@ -68,12 +68,12 @@ CppTPGDescriptorWrapper::~CppTPGDescriptorWrapper() {
 /**
  * Creates a new instance of this TPG.  Sub-classes need to implement this
  */
-TPG* CppTPGDescriptorWrapper::make(TPGFeature *tpgFeature)
+TPG* CppTPGDescriptorWrapper::make()
 {
     if (plugin != NULL)
-        return plugin->getTPG(id, tpgFeature);
+        return plugin->getTPG(id);
     if (descriptor != NULL)
-        return descriptor->make(tpgFeature);  // This doesn't work on a CppTPGDescriptor but will work on the cached version later.
+        return descriptor->make();  // This doesn't work on a CppTPGDescriptor but will work on the cached version later.
     return NULL;
 }
 

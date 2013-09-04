@@ -32,13 +32,13 @@
 
 using namespace Cam;
 
-TPG* LibTPGDescriptor::make(TPGFeature *tpgFeature)
+TPG* LibTPGDescriptor::make()
 {
-    return TPGFactory().getPlugin(id, tpgFeature);
+    return TPGFactory().getPlugin(id);
 }
 
-LibTPG::LibTPG(TPGDescriptor *descriptor, TPGFeature *tpgFeature)
-       :TPG(descriptor->id, descriptor->name, descriptor->description, tpgFeature)
+LibTPG::LibTPG(TPGDescriptor *descriptor)
+       :TPG(descriptor->id, descriptor->name, descriptor->description)
 {
     
 }

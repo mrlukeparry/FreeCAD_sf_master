@@ -98,7 +98,7 @@ public:
 	 * Gets a TPG given its id.
 	 * @deprecated, use the descriptors make() method to get a plugin instance
 	 */
-	TPGPython *getPlugin(QString id, TPGFeature *tpgFeature);
+	TPGPython *getPlugin(QString id);
 
 	// testing
 	void test();

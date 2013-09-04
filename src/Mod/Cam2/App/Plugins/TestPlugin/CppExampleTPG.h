@@ -41,7 +41,7 @@ protected:
     virtual ~CppExampleTPG();
 
 public:
-    CppExampleTPG(TPGFeature *tpgFeature);
+    CppExampleTPG();
 
     /**
      * Run the TPG to generate the ToolPath code.

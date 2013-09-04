@@ -42,7 +42,7 @@ public:
   {
   }
 
-  TPG* make(TPGFeature *tpgFeature);
+  TPG* make();
 };
 
 } /* namespace Cam */

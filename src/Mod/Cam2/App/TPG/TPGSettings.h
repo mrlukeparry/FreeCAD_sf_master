@@ -101,6 +101,8 @@ protected:
 public:
     friend class TPGSettings;
 
+	bool operator== ( const TPGSettingDefinition & rhs ) const;
+
 	//(<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>)
 	QString name;
 	QString label;
