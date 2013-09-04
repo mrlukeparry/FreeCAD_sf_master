@@ -80,12 +80,12 @@ public:
     /**
      * Default Constructor
      */
-    TPG(TPGFeature *tpgFeature);
+    TPG();
     
     /**
      * Complimentary constructor to assign plugin properties
      */
-    TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription, TPGFeature *tpgFeature);
+    TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription);
 
     virtual void initialise(TPGFeature *tpgFeature);
 
@@ -106,6 +106,9 @@ public:
      */
     virtual TPGSettings *getSettingDefinitions();
 
+	/**
+	 * Allow each TPG to be notied when one of the settings changes.
+	 */
 	virtual void onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value);
 
     /**
@@ -208,8 +211,7 @@ protected:
     int refcnt; ///< reference counter
 
 public:
-	// Since the TPGFeature is our only PropertiesContainer, we need it to hold our properties.
-	TPGFeature  *tpgFeature;
+	TPGFeature *tpgFeature;	// Pointer to parent.
 
 //    // Storage of TPG Bounding Boxes
 //    Base::BoundBox3d inputBBox;

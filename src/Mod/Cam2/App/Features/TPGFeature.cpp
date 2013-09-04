@@ -41,44 +41,14 @@ using namespace Cam;
 
 PROPERTY_SOURCE(Cam::TPGFeature, App::DocumentObject)
 
-TPGFeature::TPGFeature() : Properties(this)
+TPGFeature::TPGFeature()
 {
 	//ADD_PROPERTY_TYPE(_prop_, _defaultval_, _group_,_type_,_Docu_)
     ADD_PROPERTY_TYPE(PluginId,        (""),   "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
     ADD_PROPERTY_TYPE(PropTPGSettings,(), "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
-	// ADD_PROPERTY_TYPE(AnotherProperty,(13), "TPG Feature", (App::PropertyType)(App::Prop_None) , "David was here");
-	
-	this->addDynamicProperty( App::PropertyColor::getClassTypeId().getName(), "David's other favourite colour" );
 
     tpg = NULL;
-    tpgSettings = NULL; //new TPGSettings();
-}
-
-/* virtual */ App::Property* TPGFeature::addDynamicProperty(
-        const char* type,
-		const char* name /* =0 */ ,
-        const char* group /* =0 */ ,
-		const char* doc /* =0 */ ,
-        short attr /* =0 */ ,
-		bool ro /* =false  */ ,
-		bool hidden /* =false */ )
-{
-	std::string l_ssGroup;
-	if ((group == NULL) || (*group == '\0'))
-	{
-		l_ssGroup = "TPG Feature";
-	}
-	else
-	{
-		l_ssGroup = group;
-	}
-
-	App::Property *new_property = Properties.addDynamicProperty(type, name, l_ssGroup.c_str(), doc, attr, ro, hidden);
-	// this->propertyData.addProperty(this, "one", new_property, "TPG Feature", App::Prop_None, "");
-	// void PropertyData::addProperty(const PropertyContainer *container,const char* PropName, Property *Prop, const char* PropertyGroup , PropertyType Type, const char* PropertyDocu)
-
-	this->propertyData.addProperty(this, name, new_property, "MyGroup", App::PropertyType(new_property->getType()), "MyDoco");
-	return(new_property);
+    tpgSettings = new TPGSettings();
 }
 
 
@@ -235,7 +205,7 @@ TPG* TPGFeature::getTPG() {
 	if (tpg == NULL)
 	{
 		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()), this);
-		// tpg->initialise(this);
+		tpg->initialise(this);
 	}
 
 	return tpg;

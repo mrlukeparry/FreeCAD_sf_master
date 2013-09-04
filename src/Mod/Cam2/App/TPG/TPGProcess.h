@@ -39,7 +39,7 @@ public:
   ProcessTPGDescriptor(const char *id, const char * name, const char * description)
     : TPGDescriptor(id, name, description, "ProcessTPG")
   {}
-  TPG* make(TPGFeature *tpgFeature);
+  TPG* make();
 };
 
 
@@ -50,8 +50,8 @@ class CamExport ProcessTPG : public TPG
 {
 
 public:
-	ProcessTPG(TPGFeature *tpgFeature) : TPG(tpgFeature) {}
-    ProcessTPG(TPGDescriptor *descriptor, TPGFeature *tpgFeature);
+	ProcessTPG() {}
+    ProcessTPG(TPGDescriptor *descriptor);
     ~ProcessTPG();    
 protected:
 };

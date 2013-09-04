@@ -35,14 +35,14 @@ namespace Cam
 class CamExport MyPlugin: public LibTPG
 {
 public:
-	MyPlugin(TPGFeature *tpgFeature) : LibTPG(tpgFeature) {}
-    MyPlugin(TPGDescriptor *descriptor, TPGFeature *tpgFeature);
+	MyPlugin() {}
+    MyPlugin(TPGDescriptor *descriptor);
     ~MyPlugin();
 
     /// Implement the virtual function that is called by the factory method
-    TPG* makeTPG(TPGDescriptor *descriptor, TPGFeature *tpgFeature)
+    TPG* makeTPG(TPGDescriptor *descriptor)
     {
-        return new MyPlugin(descriptor, tpgFeature);
+        return new MyPlugin(descriptor);
     }
     void run();
 

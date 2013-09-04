@@ -51,8 +51,8 @@ class CamExport LibTPG : public TPG
 {
 
 public:
-  LibTPG(TPGFeature *tpgFeature) : TPG(tpgFeature) {}
-  LibTPG(TPGDescriptor *descriptor, TPGFeature *tpgFeature);
+  LibTPG() : TPG() {}
+  LibTPG(TPGDescriptor *descriptor);
   ~LibTPG();
 
 protected:

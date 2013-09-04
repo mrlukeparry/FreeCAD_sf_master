@@ -32,36 +32,36 @@
 using namespace Cam;
 TYPESYSTEM_SOURCE_ABSTRACT(Cam::TPG, Base::BaseClass)
 
-TPG::TPG(TPGFeature *tpgFeature)
+TPG::TPG()
 //    : state(LOADED)
 {
-    // Load the TPG Settings Class and Initialise
-//    settings = new TPGSettings();
-//    settings->initialise();
-//    settings->loadSettings();
-
     // Load the TPG Cache and initialise
 //    cache = new TPGCache();
 //    cache->initialise();
 
     this->refcnt = 1;
     this->settings = NULL;
-	this->tpgFeature = tpgFeature;
+	this->tpgFeature = NULL;
 }
 
-TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription, TPGFeature *tpgFeature)
+TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription)
 {
   this->refcnt = 1;
   this->id = TPGId;
   this->name = TPGName;
   this->description = TPGDescription;
   this->settings = NULL;
-  this->tpgFeature = tpgFeature;
+  this->tpgFeature = NULL;
 }
 
 TPG::~TPG()
 {
-	if (this->settings) this->settings->release();
+	if (this->settings) 
+	{
+		this->settings->release();
+		this->settings = NULL;
+	}
+
 	// no need to release the tpgFeature as it's not reference counted.
 }
 
@@ -74,17 +74,22 @@ TPG::~TPG()
 {
 	this->tpgFeature = tpgFeature;
 
-	if (this->settings == NULL)
+	if (this->tpgFeature != NULL)
 	{
-		QString action = QString::fromAscii("default");
-		this->settings = new TPGSettings();
-		settings->addSettingDefinition(action, 
-										new TPGSettingDefinition(settingName_Geometry().toAscii().constData(), 
-										"Geometry", TPGSettingDefinition::SettingType_Text, "Box01", "", "The input geometry that should be cut"));
+		if (this->settings == NULL)
+		{
+			this->settings = this->tpgFeature->tpgSettings->grab();	// Get a reference to the tpgFeature's settings object.
 
-		settings->addSettingDefinition(action, 
-										new TPGSettingDefinition(settingName_Tool().toAscii().constData(), 
-										"Tool", TPGSettingDefinition::SettingType_Text, "Tool01", "", "The tool to use for cutting"));
+			QString action = QString::fromAscii("default");
+
+			settings->addSettingDefinition(action, 
+											new TPGSettingDefinition(settingName_Geometry().toAscii().constData(), 
+											"Geometry", TPGSettingDefinition::SettingType_Text, "Box01", "", "The input geometry that should be cut"));
+
+			settings->addSettingDefinition(action, 
+											new TPGSettingDefinition(settingName_Tool().toAscii().constData(), 
+											"Tool", TPGSettingDefinition::SettingType_Text, "Tool01", "", "The tool to use for cutting"));
+		}
 	}
 
 	//    // If everything is okay, set status to intiailised

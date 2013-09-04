@@ -65,9 +65,9 @@ extern "C" Q_DECL_EXPORT Cam::TPGDescriptorCollection* getDescriptors() {
     descriptor->release();
     return descriptors;
 }
-extern "C" Q_DECL_EXPORT Cam::CppTPG* getTPG(QString id, Cam::TPGFeature *tpgFeature) {
+extern "C" Q_DECL_EXPORT Cam::CppTPG* getTPG(QString id) {
     if (id.compare(QString::fromAscii(myID)) == 0)
-        return new Cam::CppExampleTPG(tpgFeature);
+        return new Cam::CppExampleTPG();
     return 0;
 }
 
@@ -120,8 +120,8 @@ CppExampleTPG::RetractMode_t CppExampleTPG::toRetractMode( const QString string_
 }
 
 
-CppExampleTPG::CppExampleTPG(TPGFeature *tpgFeature)
-        : CppTPG(tpgFeature) { // important to call parent constructor
+CppExampleTPG::CppExampleTPG()
+        : CppTPG() { // important to call parent constructor
     id = QS(myID);
     name = QS(myName);
     description = QS(myDesc);
@@ -130,8 +130,6 @@ CppExampleTPG::CppExampleTPG(TPGFeature *tpgFeature)
 
     QString qaction = QS("default");
     actions.push_back(qaction);
-
-	initialise(this->tpgFeature);
 }
 
 CppExampleTPG::~CppExampleTPG() {
@@ -143,97 +141,92 @@ CppExampleTPG::~CppExampleTPG() {
 {
 	CppTPG::initialise(tpgFeature);	// We must do this first so that we have somewhere to store our properties.
 
-	/*
-	Property* DynamicProperty::addDynamicProperty(const char* type, const char* name, const char* group,
-                                              const char* doc, short attr, bool ro, bool hidden)
-	*/
-
-	// tpgFeature->Properties.addDynamicProperty( App::PropertyColor::getClassTypeId().getName(), "David's favourite colour", "TPG Feature", "doc", 0, false, false );
-	
-	this->tpgFeature->addDynamicProperty( App::PropertyColor::getClassTypeId().getName(), "David's first favourite colour" );
-
 	QString qaction = QS("default");
 
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), 
-																	 SettingName_Depth.toAscii().constData(),
-																	 TPGSettingDefinition::SettingType_Text, 
-																	 "10.0",
-																	 "mm",
-																	 "Distance from the current Z location to the bottom of the hole.  Must be positive"));
-
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Standoff.toAscii().constData(), 
-																	 SettingName_Standoff.toAscii().constData(),
-																	 TPGSettingDefinition::SettingType_Text, 
-																	 "5.0",
-																	 "mm",
-																	 "Distance above the drilling point location to retract to following the drilling cycle."));
-
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Dwell.toAscii().constData(), 
-																	 SettingName_Dwell.toAscii().constData(),
-																	 TPGSettingDefinition::SettingType_Text, 
-																	 "0.0",
-																	 "seconds",
-																	 "Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'"));
-
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_PeckDepth.toAscii().constData(), 
-																	 SettingName_PeckDepth.toAscii().constData(),
-																	 TPGSettingDefinition::SettingType_Text, 
-																	 "5.0",
-																	 "mm",
-																	 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled."));
-
-	// TODO - Figure out how to express enumerated types as a property.  i.e. convert the
-	// enumeration to a series of strings and present them as a 'combo-box' of drop-down options.
-	QString retract_mode;
-	retract_mode << eRapidRetract;	// Use the conversion method to retrieve the string used for retraction.
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_RetractMode.toAscii().constData(), 
-																	 SettingName_RetractMode.toAscii().constData(),
-																	 TPGSettingDefinition::SettingType_Text, 
-																	 retract_mode.toAscii().constData(),
-																	 "mode",
-																	 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate."));
-
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Clearance.toAscii().constData(), 
-																	 SettingName_Clearance.toAscii().constData(),
-																	 TPGSettingDefinition::SettingType_Text, 
-																	 "30.0",
-																	 "mm",
-																	 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece."));
-
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_SpindleSpeed.toAscii().constData(), 
-																	 SettingName_SpindleSpeed.toAscii().constData(),
-																	 TPGSettingDefinition::SettingType_Text, 
-																	 "700",
-																	 "RPM",
-																	 "Spindle Speed."));
-
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_FeedRate.toAscii().constData(), 
-																	 SettingName_FeedRate.toAscii().constData(),
-																	 TPGSettingDefinition::SettingType_Text, 
-																	 "55",
-																	 "mm/min",
-																	 "Feed Rate."));
-
-	TPGSettingDefinition* speed = settings->addSettingDefinition(qaction, new TPGSettingDefinition("speed", "Speed", TPGSettingDefinition::SettingType_Radio, "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
-    speed->addOption("fast", "Fast");
-    speed->addOption("normal", "Normal");
-    speed->addOption("slow", "Slow");
-
-	
-	// Just as a hack for now, find all input object names and pass them in as input geometry.
-	App::Document *document = App::GetApplication().getActiveDocument();
-	if (document)
+	if (settings != NULL)
 	{
-		std::vector<App::DocumentObject*> input_geometry = document->getObjectsOfType(Part::Feature::getClassTypeId());
-		for (std::vector<App::DocumentObject *>::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
+		// We should have a settings pointer by now due to the CppTPG::initialise() call
+
+		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), 
+																		 SettingName_Depth.toAscii().constData(),
+																		 TPGSettingDefinition::SettingType_Text, 
+																		 "10.0",
+																		 "mm",
+																		 "Distance from the current Z location to the bottom of the hole.  Must be positive"));
+
+		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Standoff.toAscii().constData(), 
+																		 SettingName_Standoff.toAscii().constData(),
+																		 TPGSettingDefinition::SettingType_Text, 
+																		 "5.0",
+																		 "mm",
+																		 "Distance above the drilling point location to retract to following the drilling cycle."));
+
+		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Dwell.toAscii().constData(), 
+																		 SettingName_Dwell.toAscii().constData(),
+																		 TPGSettingDefinition::SettingType_Text, 
+																		 "0.0",
+																		 "seconds",
+																		 "Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'"));
+
+		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_PeckDepth.toAscii().constData(), 
+																		 SettingName_PeckDepth.toAscii().constData(),
+																		 TPGSettingDefinition::SettingType_Text, 
+																		 "5.0",
+																		 "mm",
+																		 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled."));
+
+		// TODO - Figure out how to express enumerated types as a property.  i.e. convert the
+		// enumeration to a series of strings and present them as a 'combo-box' of drop-down options.
+		QString retract_mode;
+		retract_mode << eRapidRetract;	// Use the conversion method to retrieve the string used for retraction.
+		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_RetractMode.toAscii().constData(), 
+																		 SettingName_RetractMode.toAscii().constData(),
+																		 TPGSettingDefinition::SettingType_Text, 
+																		 retract_mode.toAscii().constData(),
+																		 "mode",
+																		 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate."));
+
+		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Clearance.toAscii().constData(), 
+																		 SettingName_Clearance.toAscii().constData(),
+																		 TPGSettingDefinition::SettingType_Text, 
+																		 "30.0",
+																		 "mm",
+																		 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece."));
+
+		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_SpindleSpeed.toAscii().constData(), 
+																		 SettingName_SpindleSpeed.toAscii().constData(),
+																		 TPGSettingDefinition::SettingType_Text, 
+																		 "700",
+																		 "RPM",
+																		 "Spindle Speed."));
+
+		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_FeedRate.toAscii().constData(), 
+																		 SettingName_FeedRate.toAscii().constData(),
+																		 TPGSettingDefinition::SettingType_Text, 
+																		 "55",
+																		 "mm/min",
+																		 "Feed Rate."));
+
+		TPGSettingDefinition* speed = settings->addSettingDefinition(qaction, new TPGSettingDefinition("speed", "Speed", TPGSettingDefinition::SettingType_Radio, "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
+		speed->addOption("fast", "Fast");
+		speed->addOption("normal", "Normal");
+		speed->addOption("slow", "Slow");
+
+		
+		// Just as a hack for now, find all input object names and pass them in as input geometry.
+		App::Document *document = App::GetApplication().getActiveDocument();
+		if (document)
 		{
-			QString value = settings->getValue(qaction, settingName_Geometry());
-			value.append(QString::fromAscii(" "));
-			value.append(QString::fromAscii((*itGeometry)->getNameInDocument()));
-			settings->setValue(qaction, settingName_Geometry(), value);
+			std::vector<App::DocumentObject*> input_geometry = document->getObjectsOfType(Part::Feature::getClassTypeId());
+			for (std::vector<App::DocumentObject *>::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
+			{
+				QString value = settings->getValue(qaction, settingName_Geometry());
+				value.append(QString::fromAscii(" "));
+				value.append(QString::fromAscii((*itGeometry)->getNameInDocument()));
+				settings->setValue(qaction, settingName_Geometry(), value);
+			}
 		}
 	}
-
 }
 
 /**

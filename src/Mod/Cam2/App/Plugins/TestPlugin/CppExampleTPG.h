@@ -62,6 +62,12 @@ public:
 	 */
 	virtual void initialise(TPGFeature *tpgFeature);
 
+	/**
+	 * Allow this object to know when one of its settings has changed.  NOTE: It's important
+	 * that, if implemented, this object also calls the CppTPG::onChanged() method so that
+	 * it, in turn, can call the TPG::onChanged() method.  These other layers of classes
+	 * might also be interested.
+	 */
 	virtual void onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value );
 
 private:

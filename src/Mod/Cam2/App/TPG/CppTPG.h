@@ -85,8 +85,7 @@ class CamExport CppTPG : public TPG {
 protected:
     CppTPGPlugin* plugin;
 
-
-    CppTPG(TPGFeature *tpgFeature);
+    CppTPG();
     ~CppTPG();
 
 public:
@@ -103,6 +102,9 @@ public:
 	 */
 	virtual void initialise(TPGFeature *tpgFeature);
 
+	/*
+	 * Inherited from the TPG::onChanged() method.
+	 */
 	virtual void onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value);
 };
 
