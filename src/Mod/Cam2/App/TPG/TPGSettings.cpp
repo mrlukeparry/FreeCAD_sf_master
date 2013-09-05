@@ -249,11 +249,11 @@ TPGSettingDefinition* TPGSettings::addSettingDefinition(QString action, TPGSetti
 			bool found = false;
 			for (std::vector<Cam::TPGSettingDefinition *>::iterator itSettingDef = it->second.begin(); (! found) && (itSettingDef != it->second.end()); itSettingDef++)
 			{
-				if (*itSettingDef == *setting)
+				if (*(*itSettingDef) == *setting)
 				{
 					found = true;
-					delete setting;	// Delete this new one.
-					setting = &(*itSettingDef);
+					setting->release();	// We don't need this one any more.
+					setting = *itSettingDef; // Return a pointer to the one we already had.
 					break;
 				}
 			}
