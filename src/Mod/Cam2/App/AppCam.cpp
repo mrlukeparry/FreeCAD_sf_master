@@ -29,12 +29,9 @@
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
 
-//#include "Features/GCodeFeature.h"
-#include "Features/TPGFeature.h"
-//#include "Features/StockGeometry.h"
-//#include "Features/CamPartsList.h"
-//#include "Features/TPGList.h"
 #include "Features/CamFeature.h"
+#include "Features/TPGFeature.h"
+#include "Features/ToolPathFeature.h"
 
 
 #include "TPG/TPGFactory.h"
@@ -118,6 +115,7 @@ void CamExport initCam()
 //    Cam::GCodeFeature        ::init();
 //    Cam::StockGeometry       ::init();
     Cam::TPGFeature          ::init();
+    Cam::ToolPathFeature     ::init();
 //    Cam::TPGList             ::init();
 
     // Perform initial scan to load all TPGDescriptors in the factory to ensure that documents can load these

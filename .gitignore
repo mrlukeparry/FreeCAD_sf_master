@@ -16,3 +16,5 @@ install_manifest.txt
 .gitattributes
 .directory
 .gitignore
+.cproject
+.settings

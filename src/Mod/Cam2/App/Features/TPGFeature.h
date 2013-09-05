@@ -24,6 +24,7 @@
 #ifndef CAM_TPGFEATURE_H
 #define CAM_TPGFEATURE_H
 
+//#define CamExport
 #include <PreCompiled.h>
 
 namespace Cam {
@@ -36,9 +37,13 @@ class CamExport TPGFeature;
 #include <Mod/Part/App/PartFeature.h>
 #include <Base/BoundBox.h>
 
+#include "../Features/ToolPathFeature.h"
 #include "../TPG/TPG.h"
 #include "../TPG/TPGSettings.h"
 #include "../TPG/TPGFactory.h"
+
+#include <boost/signals.hpp>
+typedef boost::signals::connection Connection;
 
 /**
   * TPGFeature is the document object that provides the user interface to control an individual ToolPathGenerator
@@ -59,6 +64,8 @@ public:
 //    App::PropertyLinkSubList   ExternalGeometry;
     App::PropertyString        PluginId;
     App::PropertyMap           PropTPGSettings;
+    App::PropertyLink          ToolPath;
+//    App::PropertyLink          MachineProgram;
 
     /// Methods for creating external interface to attach input to each TPG
     // [TODO] eventually this could be an APP::Property link list but doesn't make sens
@@ -88,6 +95,8 @@ public:
     /// Get the current TPG settings
     TPGSettings* getTPGSettings();
 
+    void onDelete(const App::DocumentObject &docObj);
+
     /// Convenience method for get the current TPG Status (Undefined if TPG not loaded)
 //    TPG::State getTPGStatus();
     bool hasTPG() const { return (tpg != NULL); }
@@ -96,12 +105,24 @@ public:
     virtual void Save(Base::Writer &/*writer*/) const;
 //    virtual void Restore(Base::XMLReader &/*reader*/);
 
+    /**
+     * Set the toolpath object for this TPG.
+     */
+    void setToolPath(ToolPathFeature *toolPath);
+
 protected:
     TPG *tpg;
     TPGSettings *tpgSettings;
 //    Base::BoundBox3d inputBBox;
     QStringList inputGeometry;
     
+    ///Connections
+    Connection delObjConnection;
+
+    /// get called by the container when a property has changed
+    //     virtual void onChanged(const App::Property* /*prop*/);
+    virtual void onSettingDocument();
+
     virtual void onDocumentRestored();
 };
 

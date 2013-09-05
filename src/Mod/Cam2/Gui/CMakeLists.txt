@@ -89,7 +89,9 @@ SET(CamGui_SRCS
     # ViewProviderStockGeometry.cpp
     # ViewProviderStockGeometry.h
     ViewProviderTPGFeature.cpp
-    ViewProviderTPGFeature
+    ViewProviderTPGFeature.h
+    ViewProviderToolPathFeature.cpp
+    ViewProviderToolPathFeature.h
     # ViewProviderTPGList.cpp
     # ViewProviderTPGList.h
     CamProjectDockWindow.cpp

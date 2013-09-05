@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (c) 2012 Andrew Robinson  (andrewjrobinson@gmail.com)       *
+ *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,42 +21,51 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CAM_SUPPORT_H_
-#define CAM_SUPPORT_H_
-#include <QString>
-#include <Python.h>
-
-/**
- * Convert a QString to a Python Object
- */
-PyObject *QStringToPythonUC(const QString &str);
-
-/**
- * Convert a Python Object (string/unicode) to a QString
- */
-QString PythonUCToQString(PyObject *obj);
-
-/**
- * Convert a QString to a const char *
- */
-inline const char* ts(QString str)
-{
-  return str.toAscii().constData();
-}
-inline const char* ts(QString *str)
-{
-  if (str != NULL)
-    return str->toAscii().constData();
-  return "NULL";
-}
-
-inline void sleepSec(int seconds)
-{
-#ifdef WIN32
-	Sleep(seconds * 1000);
-#else
-	sleep(seconds);
+#include <PreCompiled.h>
+#ifndef _PreComp_
 #endif
+
+#include <App/PropertyContainer.h>
+
+#include <Base/Console.h>
+#include <Base/Reader.h>
+#include <Base/Writer.h>
+
+#include "ToolPathFeature.h"
+//#include "../TPG/TPGFactory.h"
+
+using namespace Cam;
+
+PROPERTY_SOURCE(Cam::ToolPathFeature, App::DocumentObject)
+
+ToolPathFeature::ToolPathFeature() {
+    ADD_PROPERTY_TYPE(TPCommands,(""),"ToolPath",App::Prop_None,"The list of commands that make up the toolpath");
 }
 
-#endif /* SUPPORT_H_ */
+ToolPathFeature::~ToolPathFeature()
+{
+}
+
+App::DocumentObjectExecReturn *ToolPathFeature::execute(void)
+{
+    return App::DocumentObject::StdReturn;
+}
+
+void ToolPathFeature::Save(Base::Writer &writer) const
+{
+    //save the parent classes
+    App::DocumentObject::Save(writer);
+}
+
+//void ToolPathFeature::setToolPath(ToolPath *toolpath) {
+//    if (this-> toolPath)
+//        this->toolPath->release();
+//    this->toolPath = toolpath->grab();
+//}
+//ToolPath* ToolPathFeature::getToolPath() {
+//    return toolPath;
+//}
+
+void ToolPathFeature::onDocumentRestored()
+{
+}

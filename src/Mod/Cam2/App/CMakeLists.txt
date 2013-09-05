@@ -56,6 +56,8 @@ SET(Features_SRCS
     # Features/StockGeometry.h
     Features/TPGFeature.cpp
     Features/TPGFeature.h
+    Features/ToolPathFeature.cpp
+    Features/ToolPathFeature.h
     # Features/TPGList.cpp
     # Features/TPGList.h
 )

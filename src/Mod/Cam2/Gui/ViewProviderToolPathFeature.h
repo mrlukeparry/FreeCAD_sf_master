@@ -21,12 +21,14 @@
  *                                                                         *
  ***************************************************************************/
 
-#include <PreCompiled.h>
+//#define CamGuiExport
+#include "PreCompiled.h"
 
-#ifndef CAMGUI_VIEWPROVIDERCAMFEATURE_H
-#define CAMGUI_VIEWPROVIDERCAMFEATURE_H
+#ifndef CAMGUI_VIEWPROVIDERTOOLPATHFEATURE_H
+#define CAMGUI_VIEWPROVIDERTOOLPATHFEATURE_H
 
 #include <Gui/ViewProviderDocumentObject.h>
+#include "../App/Features/ToolPathFeature.h"
 
 class QMenu;
 
@@ -35,20 +37,23 @@ namespace Gui
   class View3DInventorViewer;
 }
 
-namespace Cam {
-    class CamFeature;
+
+namespace Cam 
+{
+  class TPGFeature;
 }
 
 namespace CamGui {
-class CamGuiExport ViewProviderCamFeature : public Gui::ViewProviderDocumentObject
+
+class CamGuiExport ViewProviderToolPathFeature : public Gui::ViewProviderDocumentObject
 {
-    PROPERTY_HEADER(CamGui::ViewProviderCamFeature);
+    PROPERTY_HEADER(CamGui::ViewProviderToolPathFeature);
 
 public:
     /// constructor
-    ViewProviderCamFeature();
+    ViewProviderToolPathFeature();
     /// destructor
-    virtual ~ViewProviderCamFeature();
+    virtual ~ViewProviderToolPathFeature();
 
     void setupContextMenu(QMenu *menu, QObject *receiver, const char *member);
     bool setEdit(int ModNum);
@@ -58,14 +63,12 @@ public:
     void unsetEdit(int ModNum);
     bool doubleClicked(void);
 
-    /// grouping handling
-    std::vector<App::DocumentObject*> claimChildren(void)const;
-    Cam::CamFeature* getObject() const;
+    Cam::ToolPathFeature* getObject() const;
 
-//    std::vector<std::string> getDisplayModes(void) const;
-
-//    QIcon getIcon(void) const;
+    QIcon getIcon(void) const;
 };
 
 } // namespace
-#endif //CAMGUI_VIEWPROVIDERCAMFEATURE_H
+
+
+#endif //CAMGUI_VIEWPROVIDERTOOLPATHFEATURE_H

@@ -33,8 +33,10 @@
 #include "CamManager.h"
 
 #include "Features/CamFeature.h"
+#include "Graphics/Paths.h"
 #include "PostProcessor.h"
 #include "Graphics/Paths.h"
+#include "Support.h"
 
 #include "LinuxCNC.h"	// For DEBUG only.  We need to move the GCode parsing out to somewhere else.
 
@@ -285,7 +287,9 @@ void CamManagerInst::tpgRunnerThreadMain() {
 
 			updatedTPGState(tpgRun->tpg->getName(), Cam::TPG::FINISHED, 100);
 
-			
+			// TODO Signal the main instance that we've completed the toolpath generation. Only when
+			// this is done can we post process them into actual GCode.
+			addToolPath(tpgRun->tpgFeature, toolpath);
 
 			// The tpgRun object was created by us and holds just enough information to allow the
 			// toolpath to be generated.  We must release this memory here.
@@ -297,14 +301,51 @@ void CamManagerInst::tpgRunnerThreadMain() {
             toolpath->release();
 		}
 		else {
-			#ifdef WIN32
-				Sleep(1 * 1000);
-			#else
-				sleep(1); //TODO: make this a bit smarter so it can be interupted to stop quickly.
-			#endif
+			sleepSec(1);//TODO: make this a bit smarter so it can be interupted to stop quickly.
 		}
 	}
 	Base::Console().Message("TPG Runner thread stopping\n");
+}
+
+
+/**
+ * Adds a toolpath to the document under the given tpg.
+ */
+void CamManagerInst::addToolPath(TPGFeature* tpgFeature, ToolPath *toolPath) {
+
+    // get the Active document
+    App::Document* activeDoc = App::GetApplication().getActiveDocument();
+    if (!activeDoc) {
+        Base::Console().Error("No active document! Please create or open a FreeCad document\n");
+        return;
+    }
+
+    // construct a name for toolpath
+    const char *tpgname = tpgFeature->getNameInDocument();
+    std::string toolpathName;
+    toolpathName.append(tpgname);
+    toolpathName.append("-ToolPath");
+    std::string tpFeatName = activeDoc->getUniqueObjectName(toolpathName.c_str());
+
+    // create the feature (for Document Tree)
+    App::DocumentObject *toolPathFeat =  activeDoc->addObject("Cam::ToolPathFeature", tpFeatName.c_str());
+    if(toolPathFeat && toolPathFeat->isDerivedFrom(Cam::ToolPathFeature::getClassTypeId())) {
+        Cam::ToolPathFeature *toolPathFeature = dynamic_cast<Cam::ToolPathFeature *>(toolPathFeat);
+
+        // We Must Initialise the Tool Path Feature before usage
+        toolPathFeature->initialise();
+
+        // wrap toolpath object in tpfeature
+        toolPathFeature->setToolPath(toolPath);
+
+        // add tpfeature to tpg
+        tpgFeature->setToolPath(toolPathFeature);
+
+        activeDoc->recompute();
+        qDebug("Added ToolPath");
+    }
+    else
+        qDebug("Unable to create ToolPathFeature: %p", toolPathFeat);
 }
 
 /**

@@ -43,7 +43,7 @@ class CamExport TPGSettings;
 
 namespace Cam
 {
-
+class CamExport TPGFeature; //TODO: work out why this is needed (must be some crazy cyclic including)
 
 class CamExport TPGSettingOption
 {

@@ -37,6 +37,8 @@
 #include <App/Document.h>
 #include <App/Application.h>
 
+#include <boost/bind.hpp>
+
 using namespace Cam;
 
 PROPERTY_SOURCE(Cam::TPGFeature, App::DocumentObject)
@@ -44,8 +46,10 @@ PROPERTY_SOURCE(Cam::TPGFeature, App::DocumentObject)
 TPGFeature::TPGFeature() {
 
 	//ADD_PROPERTY_TYPE(_prop_, _defaultval_, _group_,_type_,_Docu_)
-    ADD_PROPERTY_TYPE(PluginId,        (""),   "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
-    ADD_PROPERTY_TYPE(PropTPGSettings,(), "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
+    ADD_PROPERTY_TYPE(PluginId,        (""),  "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
+    ADD_PROPERTY_TYPE(PropTPGSettings, (),    "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
+    ADD_PROPERTY_TYPE(ToolPath,        (0),   "TPG Feature", (App::PropertyType)(App::Prop_None),"ToolPath");
+//    ADD_PROPERTY_TYPE(MachineProgram,  (0),   "TPG Feature", (App::Prop_None),"MachineProgram");
 
     tpg = NULL;
     tpgSettings = NULL; //new TPGSettings();
@@ -121,6 +125,18 @@ TPGFeature::~TPGFeature()
 //        stop();
 //    //TODO should we wait till the tpg has finished
 //    tpg->release(); // Will internally call destructor and safely stop this
+
+
+    delObjConnection.disconnect();
+}
+void TPGFeature::onSettingDocument()
+{
+    //Create a signal to observe slot if this item is deleted
+    delObjConnection = getDocument()->signalDeletedObject.connect(boost::bind(&Cam::TPGFeature::onDelete, this, _1));
+
+    //test
+    qDebug("setting TPG  Feature Document");
+
 }
 
 App::DocumentObjectExecReturn *TPGFeature::execute(void)
@@ -175,6 +191,20 @@ TPGSettings* TPGFeature::getTPGSettings() {
 	return tpgSettings;
 }
 
+void TPGFeature::onDelete(const App::DocumentObject &docObj) {
+
+    // If deleted object matches this cam feature, proceed to delete children
+    const char *myName = getNameInDocument();
+    if(myName != 0 && std::strcmp(docObj.getNameInDocument(), myName) == 0) {
+        App::Document *pcDoc = getDocument();
+
+        // remove the toolpath object if needed
+        if (this->ToolPath.getValue() != NULL) {
+            pcDoc->remObject(this->ToolPath.getValue()->getNameInDocument());
+        }
+    }
+}
+
 void TPGFeature::Save(Base::Writer &writer) const
 {
 	//NOTE: this isn't need anymore as the setting values are placed directly into the PropTPGSettings object
@@ -199,6 +229,18 @@ void TPGFeature::Save(Base::Writer &writer) const
 //    //read the father classes
 //    App::DocumentObject::Restore(reader);
 //}
+
+
+/**
+ * Set the toolpath object for this TPG.
+ */
+void TPGFeature::setToolPath(ToolPathFeature *toolPath) {
+    if (this->ToolPath.getValue() != NULL) {
+        App::Document *pcDoc = getDocument();
+        pcDoc->remObject(this->ToolPath.getValue()->getNameInDocument());
+    }
+    this->ToolPath.setValue(toolPath);
+}
 
 void TPGFeature::onDocumentRestored()
 {

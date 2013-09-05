@@ -31,7 +31,7 @@
 #include <Area.h>
 
 namespace Cam {
-class ToolPath;
+class CamExport ToolPath;
 }
 
 #include "TPG.h"
