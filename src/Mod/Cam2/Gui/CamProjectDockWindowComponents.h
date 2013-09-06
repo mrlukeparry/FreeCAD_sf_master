@@ -42,6 +42,36 @@ protected:
     QFormLayout* form;
     QList<QWidget*> rootComponents;
 
+	/**
+		The Validator class allows the QValidator mechanisms supported by the Qt library to ask
+		the Cam::TPGSettingDefinition class whether the value entered into the user interface
+		is valid.  This allows the Cam::TPGSettingDefinition::SettingType values to each implement
+		their own validation rules without the need to link with the Qt library.
+	 */
+	class Validator : public QValidator
+	{
+	public:
+		Validator( Cam::TPGSettingDefinition *setting_definition, QObject *widget ) : QValidator(widget)
+		{
+			this->setting_definition = setting_definition;
+		}
+
+		~Validator()
+		{
+			if (this->setting_definition)
+			{
+				this->setting_definition->release();
+			}
+		}
+
+	virtual QValidator::State validate(QString &input, int &position) const;
+
+	private:
+		Cam::TPGSettingDefinition *setting_definition;
+	}; // End Validator class definition
+
+	std::auto_ptr<Validator> validator;
+
 public:
     CamComponent();
     virtual ~CamComponent();

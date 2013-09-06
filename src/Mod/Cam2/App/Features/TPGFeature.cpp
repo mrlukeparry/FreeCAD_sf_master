@@ -48,7 +48,8 @@ TPGFeature::TPGFeature()
     ADD_PROPERTY_TYPE(PropTPGSettings,(), "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
 
     tpg = NULL;
-    tpgSettings = NULL;
+    tpgSettings = new TPGSettings;
+	tpgSettings->setTPGFeature(this);
 }
 
 
@@ -204,25 +205,33 @@ void TPGFeature::onChanged(const App::Property* prop)
 TPG* TPGFeature::getTPG() {
 	if (tpg == NULL)
 	{
-		tpgSettings = new TPGSettings();
 		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()));
-		tpg->initialise(this);
-		tpgSettings->setTPGFeature(this);
+		if (tpg != NULL)
+		{
+			tpg->initialise(this);
+		}
 	}
 
 	return tpg;
 }
 
+/**
+ * NOTE: It's important that we do NOT initialise the TPG within this initialise() method.
+ * This is due to the delayed loading of TPG objects.  It's possible that the TPGFeature
+ * object will be instantiated and initialised by virtue of having been found in the
+ * document file.  We may not yet have the TPG object loaded into memory.  Leave the
+ * initialisation to the getTPG() method instead.
+ */
+void TPGFeature::initialise()
+{
+	return;
+}
 
 /**
  * Get the current TPG settings object
  */
 TPGSettings* TPGFeature::getTPGSettings() {
-
-	if (tpgSettings == NULL) {
-		getTPG(); // make sure TPG has been loaded already.
-	}
-
+	getTPG();	// Try to load and initialise the TPG so that our settings array is fully populated.
 	return tpgSettings;
 }
 

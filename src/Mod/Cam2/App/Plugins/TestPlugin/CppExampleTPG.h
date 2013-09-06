@@ -81,6 +81,7 @@ private:
 	static QString SettingName_Clearance;
 	static QString SettingName_SpindleSpeed;
 	static QString SettingName_FeedRate;
+	static QString SettingName_ReferenceObjects;
 
 	typedef enum
 	{

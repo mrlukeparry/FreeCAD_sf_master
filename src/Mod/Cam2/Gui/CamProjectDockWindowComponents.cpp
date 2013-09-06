@@ -26,6 +26,7 @@
 
 #include <cstdlib>
 #include <QLabel>
+#include <QIntValidator>
 
 #include <Base/Console.h>
 
@@ -53,6 +54,22 @@ CamComponent::~CamComponent() {
     for (; it != rootComponents.end(); ++it)
         delete *it;
     rootComponents.clear();
+}
+
+QValidator::State CamComponent::Validator::validate(QString & input, int & position) const
+{
+	switch(this->setting_definition->validate(input, position))
+	{
+	case Cam::TPGSettingDefinition::Acceptable:
+		return(QValidator::Acceptable);
+
+	case Cam::TPGSettingDefinition::Intermediate:
+		return(QValidator::Intermediate);
+
+	default:
+	case Cam::TPGSettingDefinition::Invalid:
+		return(QValidator::Invalid);
+	}
 }
 
 /**
@@ -119,6 +136,10 @@ bool CamTextBoxComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLay
             widget->setObjectName(qname);
             widget->setText(tpgsetting->getValue());
             widget->setToolTip(tpgsetting->helptext);
+
+			this->validator.reset(new Validator(tpgsetting->grab(), widget));
+			widget->setValidator(validator.get());
+
             form->setWidget(row, QFormLayout::FieldRole, widget);
 
             // connect events

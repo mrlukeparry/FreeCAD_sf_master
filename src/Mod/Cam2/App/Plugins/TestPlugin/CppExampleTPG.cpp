@@ -82,6 +82,7 @@ namespace Cam {
 /* static */ QString CppExampleTPG::SettingName_Clearance = QString::fromAscii("Clearance Relative Height");
 /* static */ QString CppExampleTPG::SettingName_SpindleSpeed = QString::fromAscii("Spindle Speed");
 /* static */ QString CppExampleTPG::SettingName_FeedRate = QString::fromAscii("Feed Rate");
+/* static */ QString CppExampleTPG::SettingName_ReferenceObjects = QString::fromAscii("Reference Objects");
 
 
 /* friend */ QString & operator<< ( QString & buf, const CppExampleTPG::RetractMode_t & retract_mode )
@@ -145,6 +146,23 @@ CppExampleTPG::~CppExampleTPG() {
 	if (settings != NULL)
 	{
 		// We should have a settings pointer by now due to the CppTPG::initialise() call
+
+		TPGSettingDefinition *references_setting = new TPGSettingDefinition(SettingName_ReferenceObjects.toAscii().constData(), 
+																		 SettingName_ReferenceObjects.toAscii().constData(),
+																		 TPGSettingDefinition::SettingType_ObjectNamesForType, 
+																		 "",
+																		 "Part::Feature",
+																		 "Reference object names whose types are appropriate for this TPG.  Names must be separated by spaces and/or commas only.");
+		// The object names will be separated by commas and/or spaces.  Make sure we tell the TPGSettingDefinition object this fact so that
+		// it can parse out the object names during its data validation processing.
+		references_setting->addOption(QString::fromAscii("Delimiters"), QString::fromAscii(" \t,"));
+
+		// We need to specify object type names that can be passed into the Base::Type::fromName() method to validate the types of
+		// objects whose names are included in this setting.
+		references_setting->addOption(QString::fromAscii("TypeId"), QString::fromAscii("Part::Feature"));
+
+		settings->addSettingDefinition(qaction, references_setting);
+
 
 		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), 
 																		 SettingName_Depth.toAscii().constData(),

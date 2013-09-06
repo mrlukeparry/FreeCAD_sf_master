@@ -25,10 +25,15 @@
 #ifndef _PreComp_
 #endif
 
+#include <App/Application.h>
+#include <App/Document.h>
+
 #include "TPGSettings.h"
 
 #include <cstdio>
 #include <QList>
+
+#include <set>
 
 #include <Base/Console.h>
 
@@ -84,6 +89,10 @@ TPGSettingDefinition::~TPGSettingDefinition() {
         delete *it;
 	}
     options.clear();
+
+	#ifdef FCAppCamGui
+		pValidator.reset(NULL);	// Discard the validator object.
+	#endif // FCAppCamGui
 }
 
 bool TPGSettingDefinition::operator== ( const TPGSettingDefinition & rhs ) const
@@ -124,6 +133,93 @@ void TPGSettingDefinition::addOption(QString id, QString label) {
  */
 void TPGSettingDefinition::addOption(const char *id, const char *label) {
     this->options.append(new TPGSettingOption(id, label));
+}
+
+
+TPGSettingDefinition::ValidationState TPGSettingDefinition::validate(QString & input,int & position) const
+{
+	switch (this->type)
+	{
+	case SettingType_Text:
+		return(validateText(input, position));
+
+	case SettingType_ObjectNamesForType:
+		return(validateObjectNamesForType(input, position));
+
+	case SettingType_Radio:
+		// The radio gadgets used in the Cam::CamComponent class don't use the QValidator mechanisms so this
+		// won't ever be called.  It's included here only to avoid the compiler warning about not catering
+		// for all possible values within the enumerated type.
+		return(this->Acceptable);
+
+	default:
+		return(this->Acceptable);
+	}
+}
+
+TPGSettingDefinition::ValidationState TPGSettingDefinition::validateText(QString & input,int & position) const
+{
+	return(this->Acceptable);
+}
+
+/**
+	Settings whose type is SettingType_ObjectNamesForType are expected to have a value that includes
+	a list of object names.  The characters that delimit the names must be found in an option
+	whose ID = "Delimiters".  Once the value has been parsed into separate object names
+	using these delimiting characters, pointers to them are retrieved using their names alone.  Once
+	found, their types MUST be included within the options whose ID = "TypeId".  eg: for this a
+	name might be "Circle01, Line74", the options might be;
+		- id = "Delimiters" label = " \n\t,"
+		- id = "TypeId" label = "Part::Feature"
+		- id = "TypeId" label = "Cam::TPGFeature"
+ */
+TPGSettingDefinition::ValidationState TPGSettingDefinition::validateObjectNamesForType(QString & input,int & position) const
+{
+	QString delimiters;
+	std::set<QString> valid_type_names;
+
+	for (QList<TPGSettingOption*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
+	{
+		if ((*itOption)->id.toUpper() == QString::fromAscii("Delimiters").toUpper())
+		{
+			delimiters = (*itOption)->label;
+		}
+		else if ((*itOption)->id.toUpper() == QString::fromAscii("TypeId").toUpper())
+		{
+			valid_type_names.insert( (*itOption)->label );
+		}
+	}
+
+	QStringList tokens = input.split(delimiters, QString::SkipEmptyParts);
+	App::Document *document = App::GetApplication().getActiveDocument();
+	if (document)
+	{
+		for (QStringList::size_type i=0; i<tokens.size(); i++)
+		{
+			App::DocumentObject *object = document->getObject(tokens[i].toAscii().constData());
+			if(object)
+			{
+				bool is_valid = false;
+				for (std::set<QString>::const_iterator itTypeName = valid_type_names.begin(); itTypeName != valid_type_names.end(); itTypeName++)
+				{
+					if (object->isDerivedFrom(Base::Type::fromName((*itTypeName).toAscii().constData())))
+					{
+						is_valid = true;
+					}
+				}
+				if (! is_valid)
+				{
+					return(this->Intermediate);	// They may be half way through typing it.  Give them the bennefit of the doubt.
+				}
+			}
+			else
+			{
+				return(this->Intermediate);	// They may be half way through typing it.  Give them the bennefit of the doubt.
+			}
+		}
+	}
+
+	return(this->Acceptable);
 }
 
 

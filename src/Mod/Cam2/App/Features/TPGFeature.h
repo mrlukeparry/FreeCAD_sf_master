@@ -74,7 +74,7 @@ public:
 	void onBeforeChange(const App::Property* prop);
 	void onChanged(const App::Property* prop);
 
-    void initialise() {};
+	void initialise();
 
     /// Methods for controlling the TPG
 //    void run();

@@ -43,10 +43,8 @@ class CamExport TPGSettings;
 
 #include <App/PropertyStandard.h>
 
-
 namespace Cam
 {
-
 
 class CamExport TPGSettingOption
 {
@@ -80,12 +78,24 @@ public:
 		their corresponding ASCII equivalents (used via the Python interface)
 		must also be updated.  Such values are defined within the
 		PyTPGSettingDefinition_init() method of the PyTPGSettings.cpp file.
+
+		NOTE: The SettingType_ObjectNamesForType setting type assumes that
+		the Options list has been populated with the following entries;
+			- id = "Delimiters" (as a keyword) and label = <all characters that delimit separate values in the setting>
+			- id = "TypeId" (the keyword) and label = <a single class type ID as would be used within the Base::Type::fromName() method>
 	 */
 	typedef enum
 	{
 		SettingType_Text = 0,	// Values of this type are stored in TPGFeature::PropTPGSettings
-		SettingType_Radio		// Values of this type are stored in TPGFeature::PropTPGSettings
+		SettingType_Radio,		// Values of this type are stored in TPGFeature::PropTPGSettings
+		SettingType_ObjectNamesForType	// Object names whose types are included in the list of options.
 	} SettingType;
+
+	typedef enum {
+        Invalid,
+        Intermediate,
+        Acceptable
+	} ValidationState;
 
 protected:
 
@@ -102,6 +112,7 @@ public:
     friend class TPGSettings;
 
 	bool operator== ( const TPGSettingDefinition & rhs ) const;
+	
 
 	//(<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>)
 	QString name;
@@ -119,6 +130,10 @@ public:
 	TPGSettingDefinition();
 
 	~TPGSettingDefinition();
+
+	ValidationState validate(QString & input, int & position) const;
+	ValidationState validateText(QString & input, int & position) const;
+	ValidationState validateObjectNamesForType(QString & input, int & position) const;
 
 	/**
 	 * Perform a deep copy of this class
