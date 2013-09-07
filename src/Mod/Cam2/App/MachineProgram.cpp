@@ -140,7 +140,7 @@ QString MachineProgram::TraceProgramLinkages() const
 	for (std::set< ToolPathOffset_t >::const_iterator itToolPathOffset = toolpath_offsets.begin(); itToolPathOffset != toolpath_offsets.end(); itToolPathOffset++)
 	{
 		result	<< "\t<LINK>\n"
-					<< "\t\t<TOOLPATH INDEX=\"" << *itToolPathOffset << "\">" << (*(toolPath->getToolPath()))[*itToolPathOffset].c_str() << "</TOOLPATH>\n"
+					<< "\t\t<TOOLPATH INDEX=\"" << *itToolPathOffset << "\">" << (*(toolPath->getToolPath()))[*itToolPathOffset].toStdString() << "</TOOLPATH>\n"
 					<< "\t\t<MACHINE>\n";
 
 		for (Indices_t::const_iterator itIndex = indices.lower_bound(*itToolPathOffset); itIndex != indices.upper_bound(*itToolPathOffset); itIndex++)

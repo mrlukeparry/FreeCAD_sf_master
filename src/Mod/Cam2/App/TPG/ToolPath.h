@@ -69,6 +69,7 @@ protected:
 public:
     QStringList *toolpath;
     ToolPath(TPG* source);
+    ToolPath(const std::vector<std::string> & commands);
 
     /**
      * Add a single toolpath command to the ToolPath

@@ -27,6 +27,8 @@
 #include <Gui/DockWindow.h>
 #include <qtextedit.h>
 
+#include "../App/Features/ToolPathFeature.h"
+
 namespace CamGui {
 
 class ToolPathDockWindow : public Gui::DockWindow {
@@ -42,6 +44,17 @@ public:
    * format already.
    */
   void setToolPath(const QString &toolpath);
+
+  /**
+   * Clear the output (i.e. no toolpath or machine program selected)
+   */
+  void clearSelection();
+
+public Q_SLOTS:
+    /**
+     * Receive messages to update the toolpath display
+     */
+    void updatedToolPathSelection(Cam::ToolPathFeature* toolpath);
 
 protected:
   QTextEdit *textedit;

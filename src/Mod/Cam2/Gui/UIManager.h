@@ -128,6 +128,8 @@ Q_SIGNALS:
   void updatedTPGList(TPGListModel *model);
 
   void updatedTPGSelection(Cam::TPGFeature* tpg);
+  void updatedToolPathSelection(Cam::ToolPathFeature* toolpath);
+//  void updatedMachineProgramSelection(Cam::MachineProgramFeature* machineProgram);
 
   void updatedTPGStateSig(QString tpgid, Cam::TPG::State state, int progress);
 };

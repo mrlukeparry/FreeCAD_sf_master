@@ -68,11 +68,11 @@ public:
     virtual void Save(Base::Writer &/*writer*/) const;
 //    virtual void Restore(Base::XMLReader &/*reader*/);
 
-//    void setToolPath(ToolPath *toolpath);
-//    ToolPath* getToolPath();
+    void setToolPath(ToolPath *toolpath);
+    ToolPath* getToolPath();
 
 protected:
-//    ToolPath *toolPath;
+    ToolPath *toolPath;
     
     virtual void onDocumentRestored();
 };

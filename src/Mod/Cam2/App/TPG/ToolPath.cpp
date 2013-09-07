@@ -39,6 +39,19 @@ ToolPath::ToolPath(TPG* source) {
 	required_decimal_places = 3;	// TODO: Implement this properly.  Assume metric for now.
 }
 
+
+ToolPath::ToolPath(const std::vector<std::string>& commands) {
+    source = NULL;
+    toolpath = new QStringList();
+    refcnt = 1;
+    required_decimal_places = 3;    // TODO: Implement this properly.  Assume metric for now.
+
+    std::vector<std::string>::const_iterator it;
+    for (it = commands.begin(); it != commands.end(); ++it) {
+        toolpath->append(QString::fromStdString(*it));
+    }
+}
+
 ToolPath::~ToolPath() {
     if (this->toolpath != NULL)
         delete this->toolpath;

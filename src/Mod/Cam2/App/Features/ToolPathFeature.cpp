@@ -57,14 +57,25 @@ void ToolPathFeature::Save(Base::Writer &writer) const
     App::DocumentObject::Save(writer);
 }
 
-//void ToolPathFeature::setToolPath(ToolPath *toolpath) {
-//    if (this-> toolPath)
-//        this->toolPath->release();
-//    this->toolPath = toolpath->grab();
-//}
-//ToolPath* ToolPathFeature::getToolPath() {
-//    return toolPath;
-//}
+void ToolPathFeature::setToolPath(ToolPath *toolpath) {
+    if (this-> toolPath)
+        this->toolPath->release();
+    this->toolPath = toolpath->grab();
+
+    // copy the commands out of toolpath and save in internal storage
+    QStringList::const_iterator it;
+    std::vector<std::string> result;
+    for (it = toolpath->toolpath->constBegin(); it != toolpath->toolpath->constEnd(); ++it) {
+        result.push_back((*it).toStdString());
+    }
+    this->TPCommands.setValues(result);
+}
+ToolPath* ToolPathFeature::getToolPath() {
+    if (toolPath == NULL) {
+        toolPath = new ToolPath(TPCommands.getValues());
+    }
+    return toolPath;
+}
 
 void ToolPathFeature::onDocumentRestored()
 {
