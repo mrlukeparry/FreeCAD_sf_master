@@ -40,6 +40,7 @@ PROPERTY_SOURCE(Cam::ToolPathFeature, App::DocumentObject)
 
 ToolPathFeature::ToolPathFeature() {
     ADD_PROPERTY_TYPE(TPCommands,(""),"ToolPath",App::Prop_None,"The list of commands that make up the toolpath");
+    toolPath = NULL;
 }
 
 ToolPathFeature::~ToolPathFeature()
@@ -58,7 +59,7 @@ void ToolPathFeature::Save(Base::Writer &writer) const
 }
 
 void ToolPathFeature::setToolPath(ToolPath *toolpath) {
-    if (this-> toolPath)
+    if (this->toolPath != NULL)
         this->toolPath->release();
     this->toolPath = toolpath->grab();
 
@@ -70,11 +71,14 @@ void ToolPathFeature::setToolPath(ToolPath *toolpath) {
     }
     this->TPCommands.setValues(result);
 }
+/**
+ * Get the toolpath object.  Returned reference is owned by caller
+ */
 ToolPath* ToolPathFeature::getToolPath() {
     if (toolPath == NULL) {
         toolPath = new ToolPath(TPCommands.getValues());
     }
-    return toolPath;
+    return toolPath->grab();
 }
 
 void ToolPathFeature::onDocumentRestored()

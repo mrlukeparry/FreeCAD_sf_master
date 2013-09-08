@@ -34,6 +34,17 @@ MachineProgram::MachineProgram(ToolPath *toolPath) {
 	errors = new QStringList();
 	this->toolPath = toolPath->grab();	// Keep a reference to the toolpath object used to create this MachineProgram object.
 }
+MachineProgram::MachineProgram(const std::vector<std::basic_string<char> >&commands, ToolPath *toolPath) {
+    refcnt = 1;
+    machineProgram = new QStringList();
+    errors = new QStringList();
+    this->toolPath = toolPath->grab();
+
+    std::vector<std::string>::const_iterator it;
+    for (it = commands.begin(); it != commands.end(); ++it) {
+        machineProgram->append(QString::fromStdString(*it));
+    }
+}
 
 MachineProgram::~MachineProgram() {
     if (this->machineProgram != NULL)

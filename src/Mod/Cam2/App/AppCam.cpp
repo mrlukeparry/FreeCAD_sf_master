@@ -32,6 +32,7 @@
 #include "Features/CamFeature.h"
 #include "Features/TPGFeature.h"
 #include "Features/ToolPathFeature.h"
+#include "Features/MachineProgramFeature.h"
 
 
 #include "TPG/TPGFactory.h"
@@ -110,13 +111,10 @@ void CamExport initCam()
     // call PyType_Ready, otherwise we run into a segmentation fault, later on.
     // This function is responsible for adding inherited slots from a type's base class.
 
-    Cam::CamFeature          ::init();
-//    Cam::CamPartsList        ::init();
-//    Cam::GCodeFeature        ::init();
-//    Cam::StockGeometry       ::init();
-    Cam::TPGFeature          ::init();
-    Cam::ToolPathFeature     ::init();
-//    Cam::TPGList             ::init();
+    Cam::CamFeature             ::init();
+    Cam::TPGFeature             ::init();
+    Cam::ToolPathFeature        ::init();
+    Cam::MachineProgramFeature  ::init();
 
     // Perform initial scan to load all TPGDescriptors in the factory to ensure that documents can load these
     Cam::TPGFactory().scanPlugins();

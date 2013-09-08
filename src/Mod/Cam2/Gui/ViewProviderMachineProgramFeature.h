@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,57 +21,54 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
-#ifndef _PreComp_
-#endif
+//#define CamGuiExport
+#include "PreCompiled.h"
 
-#include <Base/Placement.h>
-#include "StockGeometry.h"
+#ifndef CAMGUI_VIEWPROVIDERMACHINEPROGRAMFEATURE_H
+#define CAMGUI_VIEWPROVIDERMACHINEPROGRAMFEATURE_H
 
-using namespace Cam;
+#include <Gui/ViewProviderDocumentObject.h>
+#include "../App/Features/MachineProgramFeature.h"
 
-PROPERTY_SOURCE(Cam::StockGeometry, App::DocumentObject)
+class QMenu;
 
-const char *stockGeomGroup = "Stock Geometry Feature";
-
-StockGeometry::StockGeometry()
+namespace Gui
 {
-    Base::Placement place = Base::Placement();
-//     ADD_PROPERTY_TYPE(Base, place , stockGeomGroup, (App::PropertyType)(App::Prop_Output) ,"Origin Placement");
-    ADD_PROPERTY_TYPE(Geometry,(0), stockGeomGroup, (App::PropertyType)(App::Prop_None) ,"Stock Geometry");
+  class View3DInventorViewer;
 }
 
-StockGeometry::~StockGeometry()
-{
 
+namespace Cam 
+{
+  class TPGFeature;
 }
 
-short StockGeometry::mustExecute() const
+namespace CamGui {
+
+class CamGuiExport ViewProviderMachineProgramFeature : public Gui::ViewProviderDocumentObject
 {
-    if (Geometry.isTouched() ||
-        Base.isTouched())
-        return 1;
-    return 0;
-}
+    PROPERTY_HEADER(CamGui::ViewProviderMachineProgramFeature);
 
-// void StockGeometry::positionByBase(void)
-// {
-//     Part::Feature *Geometry = static_cast<Part::Feature*>(Geometry.getValue());
-//     if (Geometry && Geometry->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
-//         this->Geometry.setValue(Geometry->Placement.getValue());
-// }
+public:
+    /// constructor
+    ViewProviderMachineProgramFeature();
+    /// destructor
+    virtual ~ViewProviderMachineProgramFeature();
+
+    void setupContextMenu(QMenu *menu, QObject *receiver, const char *member);
+    bool setEdit(int ModNum);
+    void setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum);
+    
+    void unsetEditViewer(Gui::View3DInventorViewer* viewer);
+    void unsetEdit(int ModNum);
+    bool doubleClicked(void);
+
+    Cam::MachineProgramFeature* getObject() const;
+
+    QIcon getIcon(void) const;
+};
+
+} // namespace
 
 
-App::DocumentObjectExecReturn *StockGeometry::execute(void)
-{
-    this->touch();
-    return App::DocumentObject::StdReturn;
-}
-
-void StockGeometry::onChanged(const App::Property* prop)
-{
-    if (prop == &Geometry) {
-    }
-
-    App::DocumentObject::onChanged(prop);
-}
+#endif //CAMGUI_VIEWPROVIDERTOOLPATHFEATURE_H

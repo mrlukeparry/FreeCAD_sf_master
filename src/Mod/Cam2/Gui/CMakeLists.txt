@@ -44,8 +44,8 @@ set(CamGui_MOC_HDRS
     TaskDialog/TaskDlgEditTPGFeature.h
     CamProjectDockWindow.h
     CamProjectDockWindowComponents.h
-    ToolPathDockWindow.h
-    TPGLibraryDockWindow.h    
+    CamInspectorDockWindow.h
+    TPGLibraryDockWindow.h
     UIManager.h
     TPGListModel.h
 )
@@ -72,35 +72,25 @@ SET(CamGui_SRCS
     PreCompiled.h
     TaskDialog/TaskDlgEditCamFeature.cpp
     TaskDialog/TaskDlgEditCamFeature.h
-    # TaskDialog/TaskDlgEditCamPartsList.cpp
-    # TaskDialog/TaskDlgEditCamPartsList.h
-    # TaskDialog/TaskDlgEditStockGeometry.cpp
-    # TaskDialog/TaskDlgEditStockGeometry.h
     TaskDialog/TaskDlgEditTPGFeature.cpp
     TaskDialog/TaskDlgEditTPGFeature.h
     Workbench.cpp
     Workbench.h
     ViewProviderCamFeature.cpp
     ViewProviderCamFeature.h
-    # ViewProviderCamPartsList.cpp
-    # ViewProviderCamPartsList.h
-    # ViewProviderGCodeFeature.cpp
-    # ViewProviderGCodeFeature.h
-    # ViewProviderStockGeometry.cpp
-    # ViewProviderStockGeometry.h
     ViewProviderTPGFeature.cpp
     ViewProviderTPGFeature.h
     ViewProviderToolPathFeature.cpp
     ViewProviderToolPathFeature.h
-    # ViewProviderTPGList.cpp
-    # ViewProviderTPGList.h
+    ViewProviderMachineProgramFeature.cpp
+    ViewProviderMachineProgramFeature.h
     CamProjectDockWindow.cpp
     CamProjectDockWindow.h
     CamProjectDockWindowComponents.cpp
     CamProjectDockWindowComponents.h
 
-    ToolPathDockWindow.cpp
-    ToolPathDockWindow.h
+    CamInspectorDockWindow.cpp
+    CamInspectorDockWindow.h
     TPGLibraryDockWindow.cpp
     TPGLibraryDockWindow.h
     UIManager.cpp

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -19,48 +19,61 @@
  *   Suite 330, Boston, MA  02111-1307, USA                                *
  *                                                                         *
  ***************************************************************************/
-#ifndef CAMGUI_VIEWPROVIDERCAMPARTSLIST_H
-#define CAMGUI_VIEWPROVIDERCAMPARTSLIST_H
 
-#include <Gui/ViewProviderDocumentObject.h>
+#ifndef CAM_MACHINEPROGRAMFEATURE_H
+#define CAM_MACHINEPROGRAMFEATURE_H
 
-class QMenu;
-
-namespace Gui
-{
-  class View3DInventorViewer;
-}
+#define CamExport
+#include <PreCompiled.h>
 
 namespace Cam {
-  class CamPartsList;
+class CamExport MachineProgramFeature;
 }
 
-namespace CamGui {
+#include <App/DocumentObject.h>
+#include <App/PropertyLinks.h>
+#include <App/PropertyStandard.h>
+#include <Mod/Part/App/PartFeature.h>
+#include <Base/BoundBox.h>
 
-class CamGuiExport ViewProviderCamPartsList : public Gui::ViewProviderDocumentObject
+#include "../MachineProgram.h"
+
+/**
+ * MachineProgramFeature is a wrapper for the MachineProgram object within the Document Tree.
+ */
+namespace Cam
 {
-    PROPERTY_HEADER(CamGui::ViewProviderCamPartsList);
+class CamExport MachineProgramFeature : public App::DocumentObject
+{
+    PROPERTY_HEADER(Cam::MachineProgramFeature);
 
 public:
-    /// constructor
-    ViewProviderCamPartsList();
-    /// destructor
-    virtual ~ViewProviderCamPartsList();
+    MachineProgramFeature();
+    ~MachineProgramFeature();
 
-    void setupContextMenu(QMenu *menu, QObject *receiver, const char *member);
-    bool setEdit(int ModNum);
-    void setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum);
+    App::PropertyStringList MPCommands;
+
+    /// recalculate the Feature
+    App::DocumentObjectExecReturn *execute(void);
+
+    const char* getViewProviderName(void) const {
+        return "CamGui::ViewProviderMachineProgramFeature";
+    }
+
+    void initialise() {};
+
+    virtual void Save(Base::Writer &/*writer*/) const;
+
+    void setMachineProgram(MachineProgram *machineProgram);
+    MachineProgram* getMachineProgram();
+
+protected:
+    MachineProgram *machineProgram;
     
-    void unsetEditViewer(Gui::View3DInventorViewer* viewer);
-    void unsetEdit(int ModNum);
-    bool doubleClicked(void);
-    
-    Cam::CamPartsList* getObject() const;
+    virtual void onDocumentRestored();
 };
 
+} //namespace Cam
 
 
-} // namespace
-
-
-#endif //CAMGUI_VIEWPROVIDERCAMFEATURE_H
+#endif //CAM_TOOLPATHFEATURE_H

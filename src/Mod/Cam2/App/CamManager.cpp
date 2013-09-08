@@ -128,45 +128,40 @@ bool CamManagerInst::runPostProcessByName(const char *FeatName, App::Document* d
 		return false;
 	}
 
-	/*
-	{
-		Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-		TopoDS_Edge line = Cam::Edge( Cam::Point(0.0, 0.0, 0.0), Cam::Point(100.0, 0.0, 0.0) );
-		gcFeature->Shape.setValue(line);
-	}
-
-	{
-		Part::Feature *gcFeature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
-		TopoDS_Edge line = Cam::Edge( Cam::Point(0.0, 0.0, 0.0), Cam::Point(100.0, 0.0, 0.0) );
-		gcFeature->Shape.setValue(line);
-	}
-	*/
-
 	// get TPGFeature
 	App::DocumentObject *docObj = doc->getObject(FeatName);
 	if(docObj && docObj->isDerivedFrom(Cam::TPGFeature::getClassTypeId())) {
 		Cam::TPGFeature *tpgFeature = dynamic_cast<Cam::TPGFeature *>(docObj);
 		if (tpgFeature) {
-			TPG* tpg = tpgFeature->getTPG();
-			if (tpg)
-			{
-				// Just playing.  This part needs to go away later on.
-				// I would expect that all the tpgRun->tpg->run() threads will return before any of their
-				// ToolPath objects are executed by the Python interpreter.  I'm just doing it here
-				// for now because I don't know how to work around the user interface stuff well enough
-				// to actually do this.
+            TPG* tpg = tpgFeature->getTPG();
+            if (tpg)
+            {
+                // get the toolpath (if it was already run)
+                ToolPath *toolpath = NULL;
+                //TODO: need a check on tpgfeature to make sure it doesn't need running again
+                App::DocumentObject *tpObj = tpgFeature->ToolPath.getValue();
+                if (tpObj && tpObj->isDerivedFrom(Cam::ToolPathFeature::getClassTypeId())) {
+                    Cam::ToolPathFeature *tpFeature = dynamic_cast<Cam::ToolPathFeature *>(tpObj);
+                    toolpath = tpFeature->getToolPath();
+                    qDebug("Found existing Toolpath\n");
+                }
 
-				ToolPath *toolpath = new ToolPath(tpg);
-				if (toolpath)
-				{
-				    qDebug("Running TPG\n");
-					// We must not have executed the TPG already.  Do so now.
-				    // AR: Logic changed (probably just remove all this test code)
-					tpg->run(tpgFeature->getTPGSettings(), toolpath, QString::fromAscii("default"));
-				}
+                // if not run yet then do so
+                //TODO: need to run this in a thread
+                if (toolpath == NULL) {
+                    toolpath = new ToolPath(tpg);
+                    qDebug("Running TPG\n");
+                    // We must not have executed the TPG already.  Do so now.
+                    // AR: Logic changed (probably just remove all this test code)
+                    tpg->run(tpgFeature->getTPGSettings(), toolpath, QString::fromAscii("default"));
 
-				if (toolpath)
-				{
+                    //TODO: check this actually creates the ToolPathFeature (most likely not)
+                }
+
+                // now we are ready to Post-process
+				if (toolpath != NULL) {
+                    qDebug("Running Post Processor\n");
+
 					// Just log the whole program here for interest sake.  Not for real use.
 					QString python_program;
 					python_program << *toolpath;
@@ -195,6 +190,9 @@ bool CamManagerInst::runPostProcessByName(const char *FeatName, App::Document* d
 						QString gcode;
 						gcode << *machine_program;
 						qDebug("%s\n", gcode.toAscii().constData());
+
+						// Add the MachineProgram to the TPG
+						tpgFeature->setMachineProgram(machine_program);
 
 						LinuxCNC parser(machine_program, tpgFeature);
 						if (parser.Parse())
@@ -247,7 +245,7 @@ bool CamManagerInst::queueTPGRun(TPG* tpg, TPGSettings* settings, Cam::TPGFeatur
 	}
 
 	// add the tpg to the processing queue
-	if (tpg != NULL && settings != NULL) {
+	if (tpg != NULL && settings != NULL) {//TODO: grab these so it doesn't break if they are released before running
 		TPGRunnerItem* tpgRun = new TPGRunnerItem(tpg, settings->clone(), tpgFeature);
 		tpgRunnerQueue.push(tpgRun);
 		tpgRunnerQueueMutex.unlock();

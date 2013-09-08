@@ -37,7 +37,9 @@ class CamExport TPGFeature;
 #include <Mod/Part/App/PartFeature.h>
 #include <Base/BoundBox.h>
 
+#include "../Features/MachineProgramFeature.h"
 #include "../Features/ToolPathFeature.h"
+#include "../MachineProgram.h"
 #include "../TPG/TPG.h"
 #include "../TPG/TPGSettings.h"
 #include "../TPG/TPGFactory.h"
@@ -65,7 +67,7 @@ public:
     App::PropertyString        PluginId;
     App::PropertyMap           PropTPGSettings;
     App::PropertyLink          ToolPath;
-//    App::PropertyLink          MachineProgram;
+    App::PropertyLink          MachineProgram;
 
     /// Methods for creating external interface to attach input to each TPG
     // [TODO] eventually this could be an APP::Property link list but doesn't make sens
@@ -109,6 +111,11 @@ public:
      * Set the toolpath object for this TPG.
      */
     void setToolPath(ToolPathFeature *toolPath);
+
+    /**
+     * Set the machine program object for this TPG.
+     */
+    void setMachineProgram(Cam::MachineProgram *machineProgram);
 
 protected:
     TPG *tpg;

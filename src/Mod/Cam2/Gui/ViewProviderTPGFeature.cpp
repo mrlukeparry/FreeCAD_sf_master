@@ -138,9 +138,9 @@ std::vector<App::DocumentObject*> ViewProviderTPGFeature::claimChildren(void) co
         App::DocumentObject* toolPath = feat->ToolPath.getValue();
         result.push_back(toolPath);
 
-//      // claim the Machine program's that belong to this Feature
-//      tpgs = feat->MachineProgramList.getValues();
-//      temp.insert(temp.end(), tpgs.begin(), tpgs.end());
+        // claim the Machine program that belong to this Feature
+        App::DocumentObject* machineProgram = feat->MachineProgram.getValue();
+        result.push_back(machineProgram);
 
         return result;
     } catch (...) {

@@ -49,7 +49,7 @@ TPGFeature::TPGFeature() {
     ADD_PROPERTY_TYPE(PluginId,        (""),  "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
     ADD_PROPERTY_TYPE(PropTPGSettings, (),    "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
     ADD_PROPERTY_TYPE(ToolPath,        (0),   "TPG Feature", (App::PropertyType)(App::Prop_None),"ToolPath");
-//    ADD_PROPERTY_TYPE(MachineProgram,  (0),   "TPG Feature", (App::Prop_None),"MachineProgram");
+    ADD_PROPERTY_TYPE(MachineProgram,  (0),   "TPG Feature", (App::Prop_None),"MachineProgram");
 
     tpg = NULL;
     tpgSettings = NULL; //new TPGSettings();
@@ -240,6 +240,49 @@ void TPGFeature::setToolPath(ToolPathFeature *toolPath) {
         pcDoc->remObject(this->ToolPath.getValue()->getNameInDocument());
     }
     this->ToolPath.setValue(toolPath);
+}
+
+/**
+ * Set the machine program object for this TPG.
+ */
+void TPGFeature::setMachineProgram(Cam::MachineProgram *machineProgram) {
+
+    // get the Active document
+    App::Document* doc = getDocument();
+    if (!doc) {
+        Base::Console().Error("No document! Please create or open a FreeCad document\n");
+        return;
+    }
+
+    // construct a name for toolpath
+    const char *tpgname = getNameInDocument();
+    std::string toolpathName;
+    toolpathName.append(tpgname);
+    toolpathName.append("-MachineProgram");
+    std::string mpFeatName = doc->getUniqueObjectName(toolpathName.c_str());
+
+    // create the feature (for Document Tree)
+    App::DocumentObject *machineProgramFeat =  doc->addObject("Cam::MachineProgramFeature", mpFeatName.c_str());
+    if(machineProgramFeat && machineProgramFeat->isDerivedFrom(Cam::MachineProgramFeature::getClassTypeId())) {
+        Cam::MachineProgramFeature *machineProgramFeature = dynamic_cast<Cam::MachineProgramFeature *>(machineProgramFeat);
+
+        machineProgramFeature->initialise();
+
+        // wrap machine program object in mpfeature
+        machineProgramFeature->setMachineProgram(machineProgram);
+
+        // add mpfeature to tpg
+        if (this->MachineProgram.getValue() != NULL) {
+            App::Document *pcDoc = getDocument();
+            pcDoc->remObject(this->MachineProgram.getValue()->getNameInDocument());
+        }
+        this->MachineProgram.setValue(machineProgramFeature);
+
+        doc->recompute();
+        qDebug("Added ToolPath");
+    }
+    else
+        qDebug("Unable to create MachineProgramFeature: %p", machineProgramFeat);
 }
 
 void TPGFeature::onDocumentRestored()

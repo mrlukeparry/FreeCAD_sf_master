@@ -133,10 +133,6 @@ std::vector<App::DocumentObject*> ViewProviderCamFeature::claimChildren(void) co
     	std::vector<App::DocumentObject*> tpgs = feat->TPGList.getValues();
     	temp.insert(temp.end(), tpgs.begin(), tpgs.end());
 
-//    	// claim the Machine program's that belong to this Feature
-//    	tpgs = feat->MachineProgramList.getValues();
-//		temp.insert(temp.end(), tpgs.begin(), tpgs.end());
-
     	return temp;
     } catch (...) {
         std::vector<App::DocumentObject*> tmp;

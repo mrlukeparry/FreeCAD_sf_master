@@ -46,7 +46,6 @@
 #include <Gui/SelectionFilter.h>
 
 #include "../App/CamManager.h"
-#include "../App/Features/TPGList.h"
 #include "../App/Features/TPGFeature.h"
 #include "../App/Features/ToolPathFeature.h"
 #include "../App/TPG/PyTPGFactory.h"
@@ -303,8 +302,18 @@ void UIManagerInst::updateCamProjectSelection(const char* pDocName) {
     	}
         else if (docObj->isDerivedFrom(Cam::ToolPathFeature::getClassTypeId())) {
             Cam::ToolPathFeature *tpFeature = dynamic_cast<Cam::ToolPathFeature *>(docObj);
+            Q_EMIT updatedMachineProgramSelection(NULL);
             if (tpFeature)
                 Q_EMIT updatedToolPathSelection(tpFeature);
+            else
+                Q_EMIT updatedToolPathSelection(NULL);
+            Q_EMIT updatedTPGSelection(NULL);
+        }
+        else if (docObj->isDerivedFrom(Cam::MachineProgramFeature::getClassTypeId())) {
+            Cam::MachineProgramFeature *mpFeature = dynamic_cast<Cam::MachineProgramFeature *>(docObj);
+            Q_EMIT updatedToolPathSelection(NULL);
+            if (mpFeature)
+                Q_EMIT updatedMachineProgramSelection(mpFeature);
             else
                 Q_EMIT updatedToolPathSelection(NULL);
             Q_EMIT updatedTPGSelection(NULL);

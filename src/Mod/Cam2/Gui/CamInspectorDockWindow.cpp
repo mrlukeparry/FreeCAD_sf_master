@@ -25,17 +25,17 @@
 # include <QGridLayout>
 #endif
 
-#include "ToolPathDockWindow.h"
+#include "CamInspectorDockWindow.h"
 #include "UIManager.h"
 
 #include "sstream"
 
 namespace CamGui {
 
-ToolPathDockWindow::ToolPathDockWindow(Gui::Document*  pcDocument, QWidget *parent)
+CamInspectorDockWindow::CamInspectorDockWindow(Gui::Document*  pcDocument, QWidget *parent)
   : DockWindow(pcDocument,parent)
 {
-	setWindowTitle(QString::fromUtf8("Tool Path"));
+	setWindowTitle(QString::fromUtf8("Cam inspector"));
 
   textedit = new QTextEdit(this);
   textedit->setReadOnly(true);
@@ -52,6 +52,10 @@ ToolPathDockWindow::ToolPathDockWindow(Gui::Document*  pcDocument, QWidget *pare
   // listen for ToolPath Selection events
   QObject::connect(&UIManager(), SIGNAL(updatedToolPathSelection(Cam::ToolPathFeature*)), this,
           SLOT(updatedToolPathSelection(Cam::ToolPathFeature*)));
+
+  // listen for Machine Program Selection events
+  QObject::connect(&UIManager(), SIGNAL(updatedMachineProgramSelection(Cam::MachineProgramFeature*)), this,
+          SLOT(updatedMachineProgramSelection(Cam::MachineProgramFeature*)));
 
 //  setToolPath(QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"\
 //"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"\
@@ -87,14 +91,14 @@ ToolPathDockWindow::ToolPathDockWindow(Gui::Document*  pcDocument, QWidget *pare
 //"'3.175mm Ball'</span><span style=\" font-family:'Courier'; font-size:9pt;\">)</span></p></body></html>"));
 }
 
-ToolPathDockWindow::~ToolPathDockWindow() {
+CamInspectorDockWindow::~CamInspectorDockWindow() {
 }
 
 /**
  * Set the Toolpath to be displayed.  It expects the toolpath to be in HTML
  * format already.
  */
-void ToolPathDockWindow::setToolPath(const QString &toolpath)
+void CamInspectorDockWindow::setToolPath(const QString &toolpath)
 {
   textedit->setHtml(toolpath);
 }
@@ -102,7 +106,7 @@ void ToolPathDockWindow::setToolPath(const QString &toolpath)
 /**
  * Clear the output (i.e. no toolpath or machine program selected)
  */
-void ToolPathDockWindow::clearSelection() {
+void CamInspectorDockWindow::clearSelection() {
     textedit->setText(QString::fromUtf8("No tool-path/machine program selected"));
 }
 
@@ -110,7 +114,7 @@ void ToolPathDockWindow::clearSelection() {
 /**
  * Receive messages to update the toolpath display
  */
-void ToolPathDockWindow::updatedToolPathSelection(Cam::ToolPathFeature* toolpath) {
+void CamInspectorDockWindow::updatedToolPathSelection(Cam::ToolPathFeature* toolpath) {
     if (toolpath != NULL) {
 
         const std::vector<std::string> tpcmds = toolpath->TPCommands.getValues();
@@ -136,6 +140,35 @@ void ToolPathDockWindow::updatedToolPathSelection(Cam::ToolPathFeature* toolpath
         clearSelection();
 }
 
-#include "moc_ToolPathDockWindow.cpp"
+/**
+ * Receive messages to update the machineProgram display
+ */
+void CamInspectorDockWindow::updatedMachineProgramSelection(Cam::MachineProgramFeature* machineProgram) {
+    if (machineProgram != NULL) {
+
+        const std::vector<std::string> mpcmds = machineProgram->MPCommands.getValues();
+        if (mpcmds.size() > 0) {
+
+            // format the toolpath
+            //TODO: do a colour coded rendering
+            std::vector<std::string>::const_iterator it;
+            std::stringstream ss;
+            ss << "<p><b>Machine Program</b>:</p>" << std::endl;
+            ss << "<ol>" << std::endl;
+            for (it = mpcmds.begin(); it != mpcmds.end(); ++it)
+                ss << "  <li><i>" << (*it) << "</i></li>" << std::endl;
+            ss << "</ol>" << std::endl;
+
+            // update display
+            setToolPath(QString::fromStdString(ss.str()));
+        }
+        else
+            clearSelection();
+    }
+    else
+        clearSelection();
+}
+
+#include "moc_CamInspectorDockWindow.cpp"
 
 } /* namespace Cam */

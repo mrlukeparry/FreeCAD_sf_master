@@ -31,10 +31,7 @@
 #include <QPointer>
 
 #include "../App/Features/CamFeature.h"
-#include "../App/Features/StockGeometry.h"
-#include "../App/Features/TPGList.h"
 #include "../App/Features/TPGFeature.h"
-#include "../App/Features/CamPartsList.h"
 
 #include "UIManager.h"
 
