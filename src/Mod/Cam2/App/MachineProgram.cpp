@@ -34,6 +34,17 @@ MachineProgram::MachineProgram(ToolPath *toolPath) {
 	errors = new QStringList();
 	this->toolPath = toolPath->grab();	// Keep a reference to the toolpath object used to create this MachineProgram object.
 }
+MachineProgram::MachineProgram(const std::vector<std::basic_string<char> >&commands, ToolPath *toolPath) {
+    refcnt = 1;
+    machineProgram = new QStringList();
+    errors = new QStringList();
+    this->toolPath = toolPath->grab();
+
+    std::vector<std::string>::const_iterator it;
+    for (it = commands.begin(); it != commands.end(); ++it) {
+        machineProgram->append(QString::fromStdString(*it));
+    }
+}
 
 MachineProgram::~MachineProgram() {
     if (this->machineProgram != NULL)
@@ -140,7 +151,7 @@ QString MachineProgram::TraceProgramLinkages() const
 	for (std::set< ToolPathOffset_t >::const_iterator itToolPathOffset = toolpath_offsets.begin(); itToolPathOffset != toolpath_offsets.end(); itToolPathOffset++)
 	{
 		result	<< "\t<LINK>\n"
-					<< "\t\t<TOOLPATH INDEX=\"" << *itToolPathOffset << "\">" << (*(toolPath->getToolPath()))[*itToolPathOffset].toAscii().constData() << "</TOOLPATH>\n"
+					<< "\t\t<TOOLPATH INDEX=\"" << *itToolPathOffset << "\">" << (*(toolPath->getToolPath()))[*itToolPathOffset].toStdString() << "</TOOLPATH>\n"
 					<< "\t\t<MACHINE>\n";
 
 		for (Indices_t::const_iterator itIndex = indices.lower_bound(*itToolPathOffset); itIndex != indices.upper_bound(*itToolPathOffset); itIndex++)

@@ -31,7 +31,7 @@
 #include <Area.h>
 
 namespace Cam {
-class ToolPath;
+class CamExport ToolPath;
 }
 
 #include "TPG.h"
@@ -69,6 +69,7 @@ protected:
 public:
     QStringList *toolpath;
     ToolPath(TPG* source);
+    ToolPath(const std::vector<std::string> & commands);
 
     /**
      * Add a single toolpath command to the ToolPath

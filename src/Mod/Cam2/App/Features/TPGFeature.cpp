@@ -37,6 +37,8 @@
 #include <App/Document.h>
 #include <App/Application.h>
 
+#include <boost/bind.hpp>
+
 using namespace Cam;
 
 PROPERTY_SOURCE(Cam::TPGFeature, App::DocumentObject)
@@ -44,8 +46,10 @@ PROPERTY_SOURCE(Cam::TPGFeature, App::DocumentObject)
 TPGFeature::TPGFeature()
 {
 	//ADD_PROPERTY_TYPE(_prop_, _defaultval_, _group_,_type_,_Docu_)
-    ADD_PROPERTY_TYPE(PluginId,        (""),   "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
-    ADD_PROPERTY_TYPE(PropTPGSettings,(), "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
+    ADD_PROPERTY_TYPE(PluginId,        (""),  "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
+    ADD_PROPERTY_TYPE(PropTPGSettings, (),    "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
+    ADD_PROPERTY_TYPE(ToolPath,        (0),   "TPG Feature", (App::PropertyType)(App::Prop_None),"ToolPath");
+    ADD_PROPERTY_TYPE(MachineProgram,  (0),   "TPG Feature", (App::Prop_None),"MachineProgram");
 
     tpg = NULL;
     tpgSettings = new TPGSettings;
@@ -124,6 +128,8 @@ TPGFeature::~TPGFeature()
 //    //TODO should we wait till the tpg has finished
 //    tpg->release(); // Will internally call destructor and safely stop this
 
+	delObjConnection.disconnect();
+
 	if (tpg != NULL)
 	{
 		tpg->release();
@@ -135,6 +141,17 @@ TPGFeature::~TPGFeature()
 		tpgSettings->release();
 		tpgSettings = NULL;
 	}
+
+
+}
+void TPGFeature::onSettingDocument()
+{
+    //Create a signal to observe slot if this item is deleted
+    delObjConnection = getDocument()->signalDeletedObject.connect(boost::bind(&Cam::TPGFeature::onDelete, this, _1));
+
+    //test
+    qDebug("setting TPG  Feature Document");
+
 }
 
 App::DocumentObjectExecReturn *TPGFeature::execute(void)
@@ -235,6 +252,20 @@ TPGSettings* TPGFeature::getTPGSettings() {
 	return tpgSettings;
 }
 
+void TPGFeature::onDelete(const App::DocumentObject &docObj) {
+
+    // If deleted object matches this cam feature, proceed to delete children
+    const char *myName = getNameInDocument();
+    if(myName != 0 && std::strcmp(docObj.getNameInDocument(), myName) == 0) {
+        App::Document *pcDoc = getDocument();
+
+        // remove the toolpath object if needed
+        if (this->ToolPath.getValue() != NULL) {
+            pcDoc->remObject(this->ToolPath.getValue()->getNameInDocument());
+        }
+    }
+}
+
 void TPGFeature::Save(Base::Writer &writer) const
 {
 	//NOTE: this isn't need anymore as the setting values are placed directly into the PropTPGSettings object
@@ -259,6 +290,61 @@ void TPGFeature::Save(Base::Writer &writer) const
 //    //read the father classes
 //    App::DocumentObject::Restore(reader);
 //}
+
+
+/**
+ * Set the toolpath object for this TPG.
+ */
+void TPGFeature::setToolPath(ToolPathFeature *toolPath) {
+    if (this->ToolPath.getValue() != NULL) {
+        App::Document *pcDoc = getDocument();
+        pcDoc->remObject(this->ToolPath.getValue()->getNameInDocument());
+    }
+    this->ToolPath.setValue(toolPath);
+}
+
+/**
+ * Set the machine program object for this TPG.
+ */
+void TPGFeature::setMachineProgram(Cam::MachineProgram *machineProgram) {
+
+    // get the Active document
+    App::Document* doc = getDocument();
+    if (!doc) {
+        Base::Console().Error("No document! Please create or open a FreeCad document\n");
+        return;
+    }
+
+    // construct a name for toolpath
+    const char *tpgname = getNameInDocument();
+    std::string toolpathName;
+    toolpathName.append(tpgname);
+    toolpathName.append("-MachineProgram");
+    std::string mpFeatName = doc->getUniqueObjectName(toolpathName.c_str());
+
+    // create the feature (for Document Tree)
+    App::DocumentObject *machineProgramFeat =  doc->addObject("Cam::MachineProgramFeature", mpFeatName.c_str());
+    if(machineProgramFeat && machineProgramFeat->isDerivedFrom(Cam::MachineProgramFeature::getClassTypeId())) {
+        Cam::MachineProgramFeature *machineProgramFeature = dynamic_cast<Cam::MachineProgramFeature *>(machineProgramFeat);
+
+        machineProgramFeature->initialise();
+
+        // wrap machine program object in mpfeature
+        machineProgramFeature->setMachineProgram(machineProgram);
+
+        // add mpfeature to tpg
+        if (this->MachineProgram.getValue() != NULL) {
+            App::Document *pcDoc = getDocument();
+            pcDoc->remObject(this->MachineProgram.getValue()->getNameInDocument());
+        }
+        this->MachineProgram.setValue(machineProgramFeature);
+
+        doc->recompute();
+        qDebug("Added ToolPath");
+    }
+    else
+        qDebug("Unable to create MachineProgramFeature: %p", machineProgramFeat);
+}
 
 void TPGFeature::onDocumentRestored()
 {

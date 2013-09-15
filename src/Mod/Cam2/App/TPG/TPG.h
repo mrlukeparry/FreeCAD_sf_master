@@ -37,18 +37,19 @@
 #include <Base/BoundBox.h>
 
 namespace Cam {
-class TPG;
+class CamExport TPG;
 }
 //#include "../GCode.h"
 //#include "TPGCache.h"
-#include "TPGSettings.h"
 #include "ToolPath.h"
+#include "TPGSettings.h"
+#include "../Features/TPGFeature.h"
 
 namespace Cam
 {
 
-class TPGFeature;
-class TPGSettings;
+class CamExport TPGFeature;
+//class CamExport TPGSettings;
 //class TPG;
 #ifdef ERROR
 	#undef ERROR	// This macro name is included in Windows standard header files so it doesn't compile on Windows builds.

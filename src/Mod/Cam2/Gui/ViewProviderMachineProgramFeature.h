@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,35 +21,54 @@
  *                                                                         *
  ***************************************************************************/
 
+//#define CamGuiExport
 #include "PreCompiled.h"
 
-#ifndef CAMGUI_VIEWPROVIDERGCODEFEATURE_H
-#define CAMGUI_VIEWPROVIDERGCODEFEATURE_H
+#ifndef CAMGUI_VIEWPROVIDERMACHINEPROGRAMFEATURE_H
+#define CAMGUI_VIEWPROVIDERMACHINEPROGRAMFEATURE_H
 
 #include <Gui/ViewProviderDocumentObject.h>
+#include "../App/Features/MachineProgramFeature.h"
 
-namespace Cam {
-  class GCodeFeature;
+class QMenu;
+
+namespace Gui
+{
+  class View3DInventorViewer;
+}
+
+
+namespace Cam 
+{
+  class TPGFeature;
 }
 
 namespace CamGui {
 
-class CamGuiExport ViewProviderGCodeFeature : public Gui::ViewProviderDocumentObject
+class CamGuiExport ViewProviderMachineProgramFeature : public Gui::ViewProviderDocumentObject
 {
-    PROPERTY_HEADER(CamGui::ViewProviderGCodeFeature);
+    PROPERTY_HEADER(CamGui::ViewProviderMachineProgramFeature);
 
 public:
     /// constructor
-    ViewProviderGCodeFeature();
+    ViewProviderMachineProgramFeature();
     /// destructor
-    virtual ~ViewProviderGCodeFeature();
+    virtual ~ViewProviderMachineProgramFeature();
 
-    Cam::GCodeFeature* getObject() const;
+    void setupContextMenu(QMenu *menu, QObject *receiver, const char *member);
+    bool setEdit(int ModNum);
+    void setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum);
+    
+    void unsetEditViewer(Gui::View3DInventorViewer* viewer);
+    void unsetEdit(int ModNum);
+    bool doubleClicked(void);
+
+    Cam::MachineProgramFeature* getObject() const;
+
+    QIcon getIcon(void) const;
 };
-
-
 
 } // namespace
 
 
-#endif //CAMGUI_VIEWPROVIDERGCODEFEATURE_H
+#endif //CAMGUI_VIEWPROVIDERTOOLPATHFEATURE_H

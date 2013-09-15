@@ -55,6 +55,7 @@ PROPERTY_SOURCE(CamGui::ViewProviderCamFeature, Gui::ViewProviderDocumentObject)
 
 ViewProviderCamFeature::ViewProviderCamFeature()
 {
+    sPixmap = "Cam_CamFeature.svg";
 }
 
 ViewProviderCamFeature::~ViewProviderCamFeature()
@@ -132,10 +133,6 @@ std::vector<App::DocumentObject*> ViewProviderCamFeature::claimChildren(void) co
     	std::vector<App::DocumentObject*> tpgs = feat->TPGList.getValues();
     	temp.insert(temp.end(), tpgs.begin(), tpgs.end());
 
-    	// claim the Machine program's that belong to this Feature
-    	tpgs = feat->MachineProgramList.getValues();
-		temp.insert(temp.end(), tpgs.begin(), tpgs.end());
-
     	return temp;
     } catch (...) {
         std::vector<App::DocumentObject*> tmp;
@@ -143,10 +140,22 @@ std::vector<App::DocumentObject*> ViewProviderCamFeature::claimChildren(void) co
     }
 }
 
-QIcon ViewProviderCamFeature::getIcon(void) const
-{
-	return Gui::BitmapFactory().pixmap("Cam_CamFeature");
-}
+
+//std::vector<std::string> ViewProviderCamFeature::getDisplayModes(void) const
+//{
+//  // get the modes of the father
+//  std::vector<std::string> StrList;
+//
+//  // add your own modes
+//  StrList.push_back("Default");
+//
+//  return StrList;
+//}
+
+//QIcon ViewProviderCamFeature::getIcon(void) const
+//{
+//	return Gui::BitmapFactory().pixmap("Cam_CamFeature");
+//}
 
 Cam::CamFeature* ViewProviderCamFeature::getObject() const
 {

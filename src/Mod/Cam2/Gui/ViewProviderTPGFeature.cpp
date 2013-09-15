@@ -128,6 +128,27 @@ Cam::TPGFeature* ViewProviderTPGFeature::getObject() const
     return dynamic_cast<Cam::TPGFeature*>(pcObject);
 }
 
+std::vector<App::DocumentObject*> ViewProviderTPGFeature::claimChildren(void) const
+{
+    // Collect any child fields and put this in the CamFeature tree
+    std::vector<App::DocumentObject*> result;
+    Cam::TPGFeature *feat = static_cast<Cam::TPGFeature*>(getObject());
+    try {
+        // claim the ToolPath that belongs to this TPGFeature
+        App::DocumentObject* toolPath = feat->ToolPath.getValue();
+        result.push_back(toolPath);
+
+        // claim the Machine program that belong to this Feature
+        App::DocumentObject* machineProgram = feat->MachineProgram.getValue();
+        result.push_back(machineProgram);
+
+        return result;
+    } catch (...) {
+        std::vector<App::DocumentObject*> tmp;
+        return tmp;
+    }
+}
+
 QIcon ViewProviderTPGFeature::getIcon(void) const
 {
 	return Gui::BitmapFactory().pixmap("Cam_TPGFeature");

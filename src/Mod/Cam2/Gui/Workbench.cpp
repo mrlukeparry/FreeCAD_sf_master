@@ -35,7 +35,7 @@
 #include <Gui/DockWindowManager.h>
 
 #include "CamProjectDockWindow.h"
-#include "ToolPathDockWindow.h"
+#include "CamInspectorDockWindow.h"
 #include "TPGLibraryDockWindow.h"
 #include "UIManager.h"
 
@@ -51,19 +51,19 @@ Workbench::Workbench()
 
   // Add CamSettings Dock Window
   CamProjectDockWindow* pcCamProjectView = new CamProjectDockWindow(0, pMainWindow);
-  pcCamProjectView->setObjectName(QString::fromUtf8("Cam Project"));
+  pcCamProjectView->setObjectName(QString::fromUtf8("Cam project"));
   pcCamProjectView->setMinimumWidth(150);
   pDockMgr->registerDockWindow("Cam_CamSettingsDockWindow", pcCamProjectView);
 
-  // Add Toolpath Dock Window
-  ToolPathDockWindow* pcTPView = new ToolPathDockWindow(0, pMainWindow);
-  pcTPView->setObjectName(QString::fromUtf8("Tool Path"));
-  pcTPView->setMinimumWidth(150);
-  pDockMgr->registerDockWindow("Cam_ToolPathDockWindow", pcTPView);
+  // Add Cam Inspector Dock Window
+  CamInspectorDockWindow* pcCIView = new CamInspectorDockWindow(0, pMainWindow);
+  pcCIView->setObjectName(QString::fromUtf8("Cam inspector"));
+  pcCIView->setMinimumWidth(150);
+  pDockMgr->registerDockWindow("Cam_CamInspectorDockWindow", pcCIView);
 
   // Add TPGLibrary Dock Window
   TPGLibraryDockWindow* pcTPGLibView = new TPGLibraryDockWindow(0, pMainWindow);
-  pcTPGLibView->setObjectName(QString::fromUtf8("TPG Library"));
+  pcTPGLibView->setObjectName(QString::fromUtf8("TPG library"));
   pcTPGLibView->setMinimumWidth(150);
   pDockMgr->registerDockWindow("Cam_TPGLibraryDockWindow", pcTPGLibView);
 
@@ -118,7 +118,7 @@ Gui::DockWindowItems* Workbench::setupDockWindows() const
 {
     Gui::DockWindowItems* root = Gui::StdWorkbench::setupDockWindows();
     root->addDockWidget("Cam_CamSettingsDockWindow", Qt::LeftDockWidgetArea, true, false);
-    root->addDockWidget("Cam_ToolPathDockWindow", Qt::BottomDockWidgetArea, true, false);
+    root->addDockWidget("Cam_CamInspectorDockWindow", Qt::BottomDockWidgetArea, true, false);
     root->addDockWidget("Cam_TPGLibraryDockWindow", Qt::RightDockWidgetArea, true, false);
 //    root->setVisibility(false); // hide all dock windows by default
 //    root->setVisibility("Std_CombiView",true); // except of the combi view

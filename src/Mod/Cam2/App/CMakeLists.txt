@@ -46,18 +46,14 @@ SOURCE_GROUP("Graphics" FILES ${Graphics_SRCS})
 SET(Features_SRCS
     Features/CamFeature.cpp
     Features/CamFeature.h
-    # Features/CamPartsList.cpp
-    # Features/CamPartsList.h
     Features/Feature.cpp
     Features/Feature.h
-    # Features/GCodeFeature.cpp
-    # Features/GCodeFeature.h
-    # Features/StockGeometry.cpp
-    # Features/StockGeometry.h
+    Features/MachineProgramFeature.cpp
+    Features/MachineProgramFeature.h
+    Features/ToolPathFeature.cpp
+    Features/ToolPathFeature.h
     Features/TPGFeature.cpp
     Features/TPGFeature.h
-    # Features/TPGList.cpp
-    # Features/TPGList.h
 )
 SOURCE_GROUP("Features" FILES ${Features_SRCS})
 

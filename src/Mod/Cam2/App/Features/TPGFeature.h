@@ -24,6 +24,7 @@
 #ifndef CAM_TPGFEATURE_H
 #define CAM_TPGFEATURE_H
 
+//#define CamExport
 #include <PreCompiled.h>
 
 namespace Cam {
@@ -36,9 +37,15 @@ class CamExport TPGFeature;
 #include <Mod/Part/App/PartFeature.h>
 #include <Base/BoundBox.h>
 
+#include "../Features/MachineProgramFeature.h"
+#include "../Features/ToolPathFeature.h"
+#include "../MachineProgram.h"
 #include "../TPG/TPG.h"
 #include "../TPG/TPGSettings.h"
 #include "../TPG/TPGFactory.h"
+
+#include <boost/signals.hpp>
+typedef boost::signals::connection Connection;
 
 /**
   * TPGFeature is the document object that provides the user interface to control an individual ToolPathGenerator
@@ -59,6 +66,8 @@ public:
 //    App::PropertyLinkSubList   ExternalGeometry;
     App::PropertyString        PluginId;
     App::PropertyMap           PropTPGSettings;
+    App::PropertyLink          ToolPath;
+    App::PropertyLink          MachineProgram;
 
 //    void setBoundingBox(const Base::BoundBox3d & bbox) { inputBBox = bbox; }
 
@@ -88,6 +97,8 @@ public:
     /// Get a cloned copy of the current TPG settings
     TPGSettings* getTPGSettings();
 
+    void onDelete(const App::DocumentObject &docObj);
+
     /// Convenience method for get the current TPG Status (Undefined if TPG not loaded)
 //    TPG::State getTPGStatus();
     bool hasTPG() const { return (tpg != NULL); }
@@ -96,11 +107,28 @@ public:
     virtual void Save(Base::Writer &/*writer*/) const;
 //    virtual void Restore(Base::XMLReader &/*reader*/);
 
+    /**
+     * Set the toolpath object for this TPG.
+     */
+    void setToolPath(ToolPathFeature *toolPath);
+
+    /**
+     * Set the machine program object for this TPG.
+     */
+    void setMachineProgram(Cam::MachineProgram *machineProgram);
+
 protected:
     TPG *tpg;
     TPGSettings *tpgSettings;
 //    Base::BoundBox3d inputBBox;
     
+    ///Connections
+    Connection delObjConnection;
+
+    /// get called by the container when a property has changed
+    //     virtual void onChanged(const App::Property* /*prop*/);
+    virtual void onSettingDocument();
+
     virtual void onDocumentRestored();
 };
 

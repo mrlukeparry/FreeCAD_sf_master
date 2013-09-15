@@ -33,8 +33,10 @@
 #include "CamManager.h"
 
 #include "Features/CamFeature.h"
+#include "Graphics/Paths.h"
 #include "PostProcessor.h"
 #include "Graphics/Paths.h"
+#include "Support.h"
 
 #include "LinuxCNC.h"	// For DEBUG only.  We need to move the GCode parsing out to somewhere else.
 
@@ -131,26 +133,35 @@ bool CamManagerInst::runPostProcessByName(const char *FeatName, App::Document* d
 	if(docObj && docObj->isDerivedFrom(Cam::TPGFeature::getClassTypeId())) {
 		Cam::TPGFeature *tpgFeature = dynamic_cast<Cam::TPGFeature *>(docObj);
 		if (tpgFeature) {
-			TPG* tpg = tpgFeature->getTPG();
-			if (tpg)
-			{
-				// Just playing.  This part needs to go away later on.
-				// I would expect that all the tpgRun->tpg->run() threads will return before any of their
-				// ToolPath objects are executed by the Python interpreter.  I'm just doing it here
-				// for now because I don't know how to work around the user interface stuff well enough
-				// to actually do this.
+            TPG* tpg = tpgFeature->getTPG();
+            if (tpg)
+            {
+                // get the toolpath (if it was already run)
+                ToolPath *toolpath = NULL;
+                //TODO: need a check on tpgfeature to make sure it doesn't need running again
+                App::DocumentObject *tpObj = tpgFeature->ToolPath.getValue();
+                if (tpObj && tpObj->isDerivedFrom(Cam::ToolPathFeature::getClassTypeId())) {
+                    Cam::ToolPathFeature *tpFeature = dynamic_cast<Cam::ToolPathFeature *>(tpObj);
+                    toolpath = tpFeature->getToolPath();
+                    qDebug("Found existing Toolpath\n");
+                }
 
-				ToolPath *toolpath = new ToolPath(tpg);
-				if (toolpath)
-				{
-				    qDebug("Running TPG\n");
-					// We must not have executed the TPG already.  Do so now.
-				    // AR: Logic changed (probably just remove all this test code)
-					tpg->run(tpgFeature->getTPGSettings(), toolpath, QString::fromAscii("default"));
-				}
+                // if not run yet then do so
+                //TODO: need to run this in a thread
+                if (toolpath == NULL) {
+                    toolpath = new ToolPath(tpg);
+                    qDebug("Running TPG\n");
+                    // We must not have executed the TPG already.  Do so now.
+                    // AR: Logic changed (probably just remove all this test code)
+                    tpg->run(tpgFeature->getTPGSettings(), toolpath, QString::fromAscii("default"));
 
-				if (toolpath)
-				{
+                    //TODO: check this actually creates the ToolPathFeature (most likely not)
+                }
+
+                // now we are ready to Post-process
+				if (toolpath != NULL) {
+                    qDebug("Running Post Processor\n");
+
 					// Just log the whole program here for interest sake.  Not for real use.
 					QString python_program;
 					python_program << *toolpath;
@@ -179,6 +190,9 @@ bool CamManagerInst::runPostProcessByName(const char *FeatName, App::Document* d
 						QString gcode;
 						gcode << *machine_program;
 						qDebug("%s\n", gcode.toAscii().constData());
+
+						// Add the MachineProgram to the TPG
+						tpgFeature->setMachineProgram(machine_program);
 
 						LinuxCNC parser(machine_program, tpgFeature);
 						if (parser.Parse())
@@ -231,7 +245,7 @@ bool CamManagerInst::queueTPGRun(TPG* tpg, TPGSettings* settings, Cam::TPGFeatur
 	}
 
 	// add the tpg to the processing queue
-	if (tpg != NULL && settings != NULL) {
+	if (tpg != NULL && settings != NULL) {//TODO: grab these so it doesn't break if they are released before running
 		TPGRunnerItem* tpgRun = new TPGRunnerItem(tpg, settings->clone(), tpgFeature);
 		tpgRunnerQueue.push(tpgRun);
 		tpgRunnerQueueMutex.unlock();
@@ -271,7 +285,9 @@ void CamManagerInst::tpgRunnerThreadMain() {
 
 			updatedTPGState(tpgRun->tpg->getName(), Cam::TPG::FINISHED, 100);
 
-			
+			// TODO Signal the main instance that we've completed the toolpath generation. Only when
+			// this is done can we post process them into actual GCode.
+			addToolPath(tpgRun->tpgFeature, toolpath);
 
 			// The tpgRun object was created by us and holds just enough information to allow the
 			// toolpath to be generated.  We must release this memory here.
@@ -283,14 +299,51 @@ void CamManagerInst::tpgRunnerThreadMain() {
             toolpath->release();
 		}
 		else {
-			#ifdef WIN32
-				Sleep(1 * 1000);
-			#else
-				sleep(1); //TODO: make this a bit smarter so it can be interupted to stop quickly.
-			#endif
+			sleepSec(1);//TODO: make this a bit smarter so it can be interupted to stop quickly.
 		}
 	}
 	Base::Console().Message("TPG Runner thread stopping\n");
+}
+
+
+/**
+ * Adds a toolpath to the document under the given tpg.
+ */
+void CamManagerInst::addToolPath(TPGFeature* tpgFeature, ToolPath *toolPath) {
+
+    // get the Active document
+    App::Document* activeDoc = App::GetApplication().getActiveDocument();
+    if (!activeDoc) {
+        Base::Console().Error("No active document! Please create or open a FreeCad document\n");
+        return;
+    }
+
+    // construct a name for toolpath
+    const char *tpgname = tpgFeature->getNameInDocument();
+    std::string toolpathName;
+    toolpathName.append(tpgname);
+    toolpathName.append("-ToolPath");
+    std::string tpFeatName = activeDoc->getUniqueObjectName(toolpathName.c_str());
+
+    // create the feature (for Document Tree)
+    App::DocumentObject *toolPathFeat =  activeDoc->addObject("Cam::ToolPathFeature", tpFeatName.c_str());
+    if(toolPathFeat && toolPathFeat->isDerivedFrom(Cam::ToolPathFeature::getClassTypeId())) {
+        Cam::ToolPathFeature *toolPathFeature = dynamic_cast<Cam::ToolPathFeature *>(toolPathFeat);
+
+        // We Must Initialise the Tool Path Feature before usage
+        toolPathFeature->initialise();
+
+        // wrap toolpath object in tpfeature
+        toolPathFeature->setToolPath(toolPath);
+
+        // add tpfeature to tpg
+        tpgFeature->setToolPath(toolPathFeature);
+
+        activeDoc->recompute();
+        qDebug("Added ToolPath");
+    }
+    else
+        qDebug("Unable to create ToolPathFeature: %p", toolPathFeat);
 }
 
 /**

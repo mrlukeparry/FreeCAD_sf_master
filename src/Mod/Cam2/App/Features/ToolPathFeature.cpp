@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,48 +21,66 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CAM_GCODEFEATURE_H
-#define CAM_GCODEFEATURE_H
+#include <PreCompiled.h>
+#ifndef _PreComp_
+#endif
 
-#include <QString>
+#include <App/PropertyContainer.h>
 
-#include <App/PropertyFile.h>
-#include <App/PropertyLinks.h>
-#include <App/PropertyStandard.h>
-#include <App/DocumentObject.h>
+#include <Base/Console.h>
+#include <Base/Reader.h>
+#include <Base/Writer.h>
 
-/// Base class
-// Holds and Compiles the GCode Output and allows interaction with the user.
-namespace Cam
+#include "ToolPathFeature.h"
+//#include "../TPG/TPGFactory.h"
+
+using namespace Cam;
+
+PROPERTY_SOURCE(Cam::ToolPathFeature, App::DocumentObject)
+
+ToolPathFeature::ToolPathFeature() {
+    ADD_PROPERTY_TYPE(TPCommands,(""),"ToolPath",App::Prop_None,"The list of commands that make up the toolpath");
+    toolPath = NULL;
+}
+
+ToolPathFeature::~ToolPathFeature()
 {
-class TPGList;
-class GCode;
+}
 
-class CamExport GCodeFeature : public App::DocumentObject
+App::DocumentObjectExecReturn *ToolPathFeature::execute(void)
 {
-    PROPERTY_HEADER(Cam::GCodeFeature);
+    return App::DocumentObject::StdReturn;
+}
 
-public:
+void ToolPathFeature::Save(Base::Writer &writer) const
+{
+    //save the parent classes
+    App::DocumentObject::Save(writer);
+}
 
-    /// Constructor & Destructor
-    GCodeFeature();
-    ~GCodeFeature();
+void ToolPathFeature::setToolPath(ToolPath *toolpath) {
+    if (this->toolPath != NULL)
+        this->toolPath->release();
+    this->toolPath = toolpath->grab();
 
-    /// recalculate the Feature
-    App::DocumentObjectExecReturn *execute(void);
-        /// returns the type name of the ViewProvider
-
-    const char* getViewProviderName(void) const {
-        return "CamGui::ViewProviderGCodeFeature";
+    // copy the commands out of toolpath and save in internal storage
+    QStringList::const_iterator it;
+    std::vector<std::string> result;
+    for (it = toolpath->toolpath->constBegin(); it != toolpath->toolpath->constEnd(); ++it) {
+        result.push_back((*it).toStdString());
     }
+    this->TPCommands.setValues(result);
+}
+/**
+ * Get the toolpath object.  Returned reference is owned by caller
+ */
+ToolPath* ToolPathFeature::getToolPath() {
+    if (toolPath == NULL) {
+        toolPath = new ToolPath(TPCommands.getValues());
+    }
+    return toolPath->grab();
+}
 
-    QString getResult() { return QString::fromAscii("empty"); }
-
-protected:
-    GCode *result;
-};
-
-} //namespace Cam
-
-
-#endif //CAM_GCODEFEATURE_H
+void ToolPathFeature::onDocumentRestored()
+{
+}

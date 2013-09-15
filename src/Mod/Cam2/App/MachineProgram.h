@@ -23,8 +23,12 @@
 #ifndef MACHINEPROGRAM_H_
 #define MACHINEPROGRAM_H_
 
+namespace Cam {
+class CamExport MachineProgram;
+}
+
 #include <QStringList>
-#include <TPG/ToolPath.h>
+#include "TPG/ToolPath.h"
 
 namespace Cam {
 
@@ -39,7 +43,7 @@ namespace Cam {
 	by the calling routine.  i.e. call the release() method and allow
 	that to free any memory when the refcnt reaches zero.
  */
-class MachineProgram {
+class CamExport MachineProgram {
 protected:
     QStringList *machineProgram;
 	QStringList *errors;
@@ -61,6 +65,7 @@ protected:
     virtual ~MachineProgram();
 public:
     MachineProgram(ToolPath *toolPath);
+    MachineProgram(const std::vector<std::basic_string<char> >&, ToolPath *toolPath);
 
     /**
      * Add a single Machine command to the Program

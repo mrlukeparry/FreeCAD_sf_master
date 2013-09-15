@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -19,48 +19,64 @@
  *   Suite 330, Boston, MA  02111-1307, USA                                *
  *                                                                         *
  ***************************************************************************/
-#ifndef CAMGUI_VIEWPROVIDERCAMPARTSLIST_H
-#define CAMGUI_VIEWPROVIDERCAMPARTSLIST_H
 
-#include <Gui/ViewProviderDocumentObject.h>
+#ifndef CAM_TOOLPATHFEATURE_H
+#define CAM_TOOLPATHFEATURE_H
 
-class QMenu;
-
-namespace Gui
-{
-  class View3DInventorViewer;
-}
+#include <PreCompiled.h>
 
 namespace Cam {
-  class CamPartsList;
+class CamExport ToolPathFeature;
 }
 
-namespace CamGui {
+#include <App/DocumentObject.h>
+#include <App/PropertyLinks.h>
+#include <App/PropertyStandard.h>
+#include <Mod/Part/App/PartFeature.h>
+#include <Base/BoundBox.h>
 
-class CamGuiExport ViewProviderCamPartsList : public Gui::ViewProviderDocumentObject
+//#include "../TPG/TPG.h"
+//#include "../TPG/TPGSettings.h"
+//#include "../TPG/TPGFactory.h"
+#include "../TPG/ToolPath.h"
+
+/**
+ * ToolPathFeature is a wrapper for the ToolPath object within the Document Tree.
+ */
+namespace Cam
 {
-    PROPERTY_HEADER(CamGui::ViewProviderCamPartsList);
+class CamExport ToolPathFeature : public App::DocumentObject
+{
+    PROPERTY_HEADER(Cam::ToolPathFeature);
 
 public:
-    /// constructor
-    ViewProviderCamPartsList();
-    /// destructor
-    virtual ~ViewProviderCamPartsList();
+    ToolPathFeature();
+    ~ToolPathFeature();
 
-    void setupContextMenu(QMenu *menu, QObject *receiver, const char *member);
-    bool setEdit(int ModNum);
-    void setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum);
+    App::PropertyStringList TPCommands;
+
+    /// recalculate the Feature
+    App::DocumentObjectExecReturn *execute(void);
+
+    const char* getViewProviderName(void) const {
+        return "CamGui::ViewProviderToolPathFeature";
+    }
+
+    void initialise() {};
+
+    virtual void Save(Base::Writer &/*writer*/) const;
+//    virtual void Restore(Base::XMLReader &/*reader*/);
+
+    void setToolPath(ToolPath *toolpath);
+    ToolPath* getToolPath();
+
+protected:
+    ToolPath *toolPath;
     
-    void unsetEditViewer(Gui::View3DInventorViewer* viewer);
-    void unsetEdit(int ModNum);
-    bool doubleClicked(void);
-    
-    Cam::CamPartsList* getObject() const;
+    virtual void onDocumentRestored();
 };
 
+} //namespace Cam
 
 
-} // namespace
-
-
-#endif //CAMGUI_VIEWPROVIDERCAMFEATURE_H
+#endif //CAM_TOOLPATHFEATURE_H

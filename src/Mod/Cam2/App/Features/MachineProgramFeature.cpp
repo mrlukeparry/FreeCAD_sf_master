@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,27 +20,63 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
-#include "GCode.h"
-#include "TPGList.h"
-#include "GCodeFeature.h"
+#include <App/PropertyContainer.h>
+
+#include <Base/Console.h>
+#include <Base/Reader.h>
+#include <Base/Writer.h>
+
+#include "MachineProgramFeature.h"
+#include "../MachineProgram.h"
 
 using namespace Cam;
 
-PROPERTY_SOURCE(Cam::GCodeFeature, App::DocumentObject)
+PROPERTY_SOURCE(Cam::MachineProgramFeature, App::DocumentObject)
 
-GCodeFeature::GCodeFeature()
+MachineProgramFeature::MachineProgramFeature() {
+    ADD_PROPERTY_TYPE(MPCommands,(""),"MachineProgram",App::Prop_None,"The list of commands that make up the Machine Program");
+    machineProgram = NULL;
+}
+
+MachineProgramFeature::~MachineProgramFeature()
 {
 }
 
-GCodeFeature::~GCodeFeature()
-{
-}
-
-App::DocumentObjectExecReturn * GCodeFeature::execute(void)
+App::DocumentObjectExecReturn *MachineProgramFeature::execute(void)
 {
     return App::DocumentObject::StdReturn;
+}
+
+void MachineProgramFeature::Save(Base::Writer &writer) const
+{
+    //save the parent classes
+    App::DocumentObject::Save(writer);
+}
+
+void MachineProgramFeature::setMachineProgram(MachineProgram *machineProgram) {
+    if (this->machineProgram)
+        this->machineProgram->release();
+    this->machineProgram = machineProgram->grab();
+
+    // copy the commands out of machine program and save in internal storage
+    QStringList::const_iterator it;
+    std::vector<std::string> result;
+    for (it = machineProgram->getMachineProgram()->constBegin(); it != machineProgram->getMachineProgram()->constEnd(); ++it) {
+        result.push_back((*it).toStdString());
+    }
+    this->MPCommands.setValues(result);
+}
+MachineProgram* MachineProgramFeature::getMachineProgram() {
+    if (machineProgram == NULL) {
+        machineProgram = new MachineProgram(MPCommands.getValues(), NULL);
+    }
+    return machineProgram;
+}
+
+void MachineProgramFeature::onDocumentRestored()
+{
 }

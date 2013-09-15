@@ -24,6 +24,9 @@
 #ifndef CAM_CAMFEATURE_H
 #define CAM_CAMFEATURE_H
 
+//#define CamExport
+#include <PreCompiled.h>
+
 #include <App/DocumentObject.h>
 #include <App/PropertyContainer.h>
 #include <App/PropertyLinks.h>
@@ -64,7 +67,7 @@ public:
 
     /// Property
     App::PropertyLinkList TPGList;				// Stores the list of TPG's that are used
-    App::PropertyLinkList MachineProgramList;	// Stores the list of Machine Programs
+//    App::PropertyLinkList MachineProgramList;	// Stores the list of Machine Programs
 
 //    App::PropertyLink     Result;      // Link to the GCodeFeature (End Result - TOP of TPG hierarchy)
 //    App::PropertyLink     TPGListLink;      // Link to the GCodeFeature (End Result - TOP of TPG hierarchy)

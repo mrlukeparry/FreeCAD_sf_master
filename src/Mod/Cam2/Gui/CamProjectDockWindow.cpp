@@ -37,7 +37,7 @@ namespace CamGui {
 CamProjectDockWindow::CamProjectDockWindow(Gui::Document* pcDocument,
 		QWidget *parent) :
 		DockWindow(pcDocument, parent), ui(new Ui_CamProjectDockWindow) {
-	setWindowTitle(tr("Cam Project"));
+	setWindowTitle(tr("Cam project"));
 
 	ui->setupUi(this);
 

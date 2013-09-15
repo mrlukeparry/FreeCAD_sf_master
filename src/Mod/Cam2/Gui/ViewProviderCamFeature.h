@@ -62,7 +62,9 @@ public:
     std::vector<App::DocumentObject*> claimChildren(void)const;
     Cam::CamFeature* getObject() const;
 
-    QIcon getIcon(void) const;
+//    std::vector<std::string> getDisplayModes(void) const;
+
+//    QIcon getIcon(void) const;
 };
 
 } // namespace

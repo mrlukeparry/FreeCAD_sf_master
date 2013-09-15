@@ -95,6 +95,10 @@ public:
 	 * Updates the progress of TPG processing
 	 */
 	void updateProgress(QString tpgid, TPG::State state, int progress);
+	/**
+	 * Adds a toolpath to the document under the given tpg.
+	 */
+	void addToolPath(TPGFeature* tpgFeature, ToolPath *toolPath);
 
 public Q_SLOTS:
 //  void addTPG(Cam::TPGDescriptor *tpg);

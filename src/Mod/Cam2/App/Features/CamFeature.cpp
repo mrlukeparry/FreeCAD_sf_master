@@ -69,7 +69,7 @@ const char *camFeatGroup = "Cam Feature";
 CamFeature::CamFeature()
 {
     ADD_PROPERTY_TYPE(TPGList,(0), camFeatGroup, (App::PropertyType)(App::Prop_None) ,"TPG Features");
-    ADD_PROPERTY_TYPE(MachineProgramList,(0), camFeatGroup, (App::PropertyType)(App::Prop_None) ,"Machine Program Features");
+//    ADD_PROPERTY_TYPE(MachineProgramList,(0), camFeatGroup, (App::PropertyType)(App::Prop_None) ,"Machine Program Features");
 
 //    ADD_PROPERTY_TYPE(Result,              (0), camFeatGroup, (App::Prop_None),"Result");
 //    ADD_PROPERTY_TYPE(TPGListLink,         (0), camFeatGroup, (App::Prop_None),"TPGList");
@@ -149,9 +149,9 @@ void CamFeature::onDelete(const App::DocumentObject &docObj) {
 			pcDoc->remObject(vals[i]->getNameInDocument());
 
         // remove the children Machine code objects's
-		const std::vector<App::DocumentObject *> vals2 = MachineProgramList.getValues();
-		for (int i = 0; i < vals2.size(); i++)
-			pcDoc->remObject(vals2[i]->getNameInDocument());
+//		const std::vector<App::DocumentObject *> vals2 = MachineProgramList.getValues();
+//		for (int i = 0; i < vals2.size(); i++)
+//			pcDoc->remObject(vals2[i]->getNameInDocument());
     }
 }
 

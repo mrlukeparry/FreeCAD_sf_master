@@ -27,21 +27,40 @@
 #include <Gui/DockWindow.h>
 #include <qtextedit.h>
 
+#include "../App/Features/ToolPathFeature.h"
+#include "../App/Features/MachineProgramFeature.h"
+
 namespace CamGui {
 
-class ToolPathDockWindow : public Gui::DockWindow {
+class CamInspectorDockWindow : public Gui::DockWindow {
 
   Q_OBJECT
 
 public:
-  ToolPathDockWindow(Gui::Document*  pcDocument, QWidget *parent=0);
-  virtual ~ToolPathDockWindow();
+  CamInspectorDockWindow(Gui::Document*  pcDocument, QWidget *parent=0);
+  virtual ~CamInspectorDockWindow();
 
   /**
    * Set the Toolpath to be displayed.  It expects the toolpath to be in HTML
    * format already.
    */
   void setToolPath(const QString &toolpath);
+
+  /**
+   * Clear the output (i.e. no toolpath or machine program selected)
+   */
+  void clearSelection();
+
+public Q_SLOTS:
+    /**
+     * Receive messages to update the toolpath display
+     */
+    void updatedToolPathSelection(Cam::ToolPathFeature* toolpath);
+
+    /**
+     * Receive messages to update the machineProgram display
+     */
+    void updatedMachineProgramSelection(Cam::MachineProgramFeature* machineProgram);
 
 protected:
   QTextEdit *textedit;

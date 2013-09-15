@@ -64,6 +64,8 @@ public:
     
     Cam::TPGFeature* getObject() const;
 
+    std::vector<App::DocumentObject*> claimChildren(void) const;
+
     QIcon getIcon(void) const;
 };
 
