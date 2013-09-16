@@ -151,7 +151,7 @@ CppExampleTPG::~CppExampleTPG() {
 																		 SettingName_ReferenceObjects.toAscii().constData(),
 																		 TPGSettingDefinition::SettingType_ObjectNamesForType, 
 																		 "",
-																		 "Part::Feature",
+																		 Part::Feature::getClassTypeId().getName(),
 																		 "Reference object names whose types are appropriate for this TPG.  Names must be separated by spaces and/or commas only.");
 		// The object names will be separated by commas and/or spaces.  Make sure we tell the TPGSettingDefinition object this fact so that
 		// it can parse out the object names during its data validation processing.
@@ -159,7 +159,7 @@ CppExampleTPG::~CppExampleTPG() {
 
 		// We need to specify object type names that can be passed into the Base::Type::fromName() method to validate the types of
 		// objects whose names are included in this setting.
-		references_setting->addOption(QString::fromAscii("TypeId"), QString::fromAscii("Part::Feature"));
+		references_setting->addOption(QString::fromAscii("TypeId"), QString::fromAscii(Part::Feature::getClassTypeId().getName()));
 
 		settings->addSettingDefinition(qaction, references_setting);
 

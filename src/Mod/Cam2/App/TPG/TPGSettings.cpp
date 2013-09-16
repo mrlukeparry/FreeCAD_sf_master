@@ -368,6 +368,9 @@ TPGSettingDefinition* TPGSettings::addSettingDefinition(QString action, TPGSetti
 				it->second.push_back(setting);
 			}
 		}
+
+		// And assign the value as the default value (for now).
+		this->setValue( action, setting->name, setting->defaultvalue );
 	}
 
 	// return setting for convenience

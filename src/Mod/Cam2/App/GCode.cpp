@@ -125,7 +125,7 @@ void GCode::ToolMovement::Edge(TopoDS_Edge edge)
 	this->edge = edge;
 
 	App::Document *doc = App::GetApplication().getActiveDocument();
-	Part::Feature *part_feature = (Part::Feature *)doc->addObject("Part::Feature", doc->getUniqueObjectName("GCodeFeature").c_str());
+	Part::Feature *part_feature = (Part::Feature *)doc->addObject(Part::Feature::getClassTypeId().getName(), doc->getUniqueObjectName("GCodeFeature").c_str());
 	part_feature->Shape.setValue(edge);
 	this->PartFeature( part_feature );
 }

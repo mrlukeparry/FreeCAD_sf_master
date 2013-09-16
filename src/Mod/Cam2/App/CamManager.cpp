@@ -326,7 +326,7 @@ void CamManagerInst::addToolPath(TPGFeature* tpgFeature, ToolPath *toolPath) {
     std::string tpFeatName = activeDoc->getUniqueObjectName(toolpathName.c_str());
 
     // create the feature (for Document Tree)
-    App::DocumentObject *toolPathFeat =  activeDoc->addObject("Cam::ToolPathFeature", tpFeatName.c_str());
+	App::DocumentObject *toolPathFeat =  activeDoc->addObject(Cam::ToolPathFeature::getClassTypeId().getName(), tpFeatName.c_str());
     if(toolPathFeat && toolPathFeat->isDerivedFrom(Cam::ToolPathFeature::getClassTypeId())) {
         Cam::ToolPathFeature *toolPathFeature = dynamic_cast<Cam::ToolPathFeature *>(toolPathFeat);
 
