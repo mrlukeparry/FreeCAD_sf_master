@@ -84,6 +84,8 @@ public:
 		the Options list has been populated with the following entries;
 			- id = "Delimiters" (as a keyword) and label = <all characters that delimit separate values in the setting>
 			- id = "TypeId" (the keyword) and label = <a single class type ID as would be used within the Base::Type::fromName() method>
+
+		There must be only one option with an option.id="Delimiters" but there may be many options with an id="TypeId".
 	 */
 	typedef enum
 	{

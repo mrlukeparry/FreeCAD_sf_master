@@ -53,7 +53,7 @@ protected:
 	public:
 		Validator( Cam::TPGSettingDefinition *setting_definition, QObject *widget ) : QValidator(widget)
 		{
-			this->setting_definition = setting_definition;
+			this->setting_definition = setting_definition->grab();
 		}
 
 		~Validator()
@@ -70,7 +70,7 @@ protected:
 		Cam::TPGSettingDefinition *setting_definition;
 	}; // End Validator class definition
 
-	std::auto_ptr<Validator> validator;
+	Validator *validator;
 
 public:
     CamComponent();

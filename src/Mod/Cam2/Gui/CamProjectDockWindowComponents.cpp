@@ -39,6 +39,7 @@ namespace CamGui {
 CamComponent::CamComponent() {
     form = NULL;
     tpgsetting = NULL;
+	validator = NULL;
 }
 
 CamComponent::~CamComponent() {
@@ -52,8 +53,13 @@ CamComponent::~CamComponent() {
     // Remove my components
     QList<QWidget*>::iterator it = rootComponents.begin();
     for (; it != rootComponents.end(); ++it)
+	{
         delete *it;
+	}
     rootComponents.clear();
+
+	// NOTE: There is no need to explicitly delete the Validator object as the deletion of
+	// the QWidget implicitly deletes the Validator object for us.
 }
 
 QValidator::State CamComponent::Validator::validate(QString & input, int & position) const
@@ -137,8 +143,8 @@ bool CamTextBoxComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLay
             widget->setText(tpgsetting->getValue());
             widget->setToolTip(tpgsetting->helptext);
 
-			this->validator.reset(new Validator(tpgsetting->grab(), widget));
-			widget->setValidator(validator.get());
+			this->validator = new Validator(tpgsetting->grab(), widget);
+			widget->setValidator(validator);
 
             form->setWidget(row, QFormLayout::FieldRole, widget);
 

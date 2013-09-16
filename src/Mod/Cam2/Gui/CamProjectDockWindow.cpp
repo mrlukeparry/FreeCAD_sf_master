@@ -72,7 +72,9 @@ bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool save
         // clear old form components
         QList<CamComponent*>::iterator it = components.begin();
         for (; it != components.end(); ++it)
+		{
             delete *it;
+		}
         components.clear();
         return false;
     }
@@ -80,7 +82,9 @@ bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool save
     // clear old form components
     QList<CamComponent*>::iterator it = components.begin();
     for (; it != components.end(); ++it)
+	{
         delete *it;
+	}
     components.clear();
 
     // create the new form

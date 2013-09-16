@@ -265,10 +265,19 @@ QString TPGSettingDefinition::getValue() {
  * Set the value associated with this setting
  */
 bool TPGSettingDefinition::setValue(QString value) {
-	if (this->parent != NULL) {
-		return parent->setValue(action, name, value);
+	int position = value.length();
+	if (position > 0) position -= 1;
+	if (this->validate(value,position) == this->Acceptable)
+	{
+		if (this->parent != NULL) {
+			return parent->setValue(action, name, value);
+		}
+		Base::Console().Warning("Setting doesn't have parent!\n");
 	}
-	Base::Console().Warning("Setting doesn't have parent!\n");
+	else
+	{
+		Base::Console().Warning("Invalid value\n");
+	}
 	return false;
 }
 
