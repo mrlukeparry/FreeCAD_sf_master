@@ -202,7 +202,6 @@ bool UIManagerInst::RunTPG() {
  * Executes the selected TPG(s) Tool Path to (re)produce its Machine Program.
  */
 bool UIManagerInst::PostProcess() {
-
     // make unique list of selected objects
     std::vector<Gui::SelectionSingleton::SelObj> objs = Gui::Selection().getSelection(App::GetApplication().getActiveDocument()->getName());
     std::set<App::DocumentObject*> selDocObjs;
@@ -223,7 +222,7 @@ bool UIManagerInst::PostProcess() {
 
     // run TPG's
     for (std::set<App::DocumentObject*>::const_iterator it = selDocObjs.begin(); it != selDocObjs.end(); ++it) {
-		Cam::CamManager().runPostProcessByName((*it)->getNameInDocument());
+		Cam::CamManager().runPostProcessByName((*it)->getNameInDocument(), (*it)->getDocument());
     }
 	return true;
 }
