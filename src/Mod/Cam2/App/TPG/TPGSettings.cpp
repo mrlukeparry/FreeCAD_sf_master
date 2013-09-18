@@ -369,8 +369,21 @@ TPGSettingDefinition* TPGSettings::addSettingDefinition(QString action, TPGSetti
 			}
 		}
 
-		// And assign the value as the default value (for now).
-		this->setValue( action, setting->name, setting->defaultvalue );
+		// Look to see if the properties map already has a value for this
+		// name.  If not, assign the default value for now.
+		if (this->tpgFeature)
+		{
+			const std::map<std::string,std::string> existing_values = this->tpgFeature->PropTPGSettings.getValues();
+			std::map<std::string,std::string>::const_iterator itValue = existing_values.find(qname.toAscii().constData());
+			if (itValue == existing_values.end())
+			{
+				this->setValue( action, setting->name, setting->defaultvalue );
+			}
+		}
+		else
+		{
+			this->setValue( action, setting->name, setting->defaultvalue );
+		}
 	}
 
 	// return setting for convenience

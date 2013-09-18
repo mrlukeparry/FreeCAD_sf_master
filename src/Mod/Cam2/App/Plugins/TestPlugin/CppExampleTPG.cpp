@@ -238,9 +238,12 @@ CppExampleTPG::~CppExampleTPG() {
 			for (std::vector<App::DocumentObject *>::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
 			{
 				QString value = settings->getValue(qaction, settingName_Geometry());
-				value.append(QString::fromAscii(" "));
-				value.append(QString::fromAscii((*itGeometry)->getNameInDocument()));
-				settings->setValue(qaction, settingName_Geometry(), value);
+				if (value.contains(QString::fromAscii((*itGeometry)->getNameInDocument())) == false)
+				{
+					value.append(QString::fromAscii(" "));
+					value.append(QString::fromAscii((*itGeometry)->getNameInDocument()));
+					settings->setValue(qaction, settingName_Geometry(), value);
+				}
 			}
 		}
 	}

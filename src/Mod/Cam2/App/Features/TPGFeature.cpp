@@ -363,4 +363,6 @@ void TPGFeature::onDocumentRestored()
 //    } catch (...) {
 //
 //    }
+
+	this->tpgSettings->addDefaults();
 }
