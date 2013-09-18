@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <QLabel>
 #include <QIntValidator>
+#include <QMessageBox>
 
 #include <Base/Console.h>
 
@@ -123,7 +124,20 @@ void CamLineEdit::focusOutEvent ( QFocusEvent * e )
 {
 	if (this->hasAcceptableInput() == false)
 	{
-		this->setText(this->tpgSetting->getValue());
+		QMessageBox message_box;
+		message_box.setText(QString::fromAscii("Value rejected as invalid"));
+		message_box.setInformativeText(QString::fromAscii("Do you want to keep the value entered or revert to the previous value?"));
+		message_box.setStandardButtons( QMessageBox::Save | QMessageBox::Discard );
+		message_box.setDefaultButton( QMessageBox::Discard );
+		int response = message_box.exec();
+		if (response == QMessageBox::Discard)
+		{
+			this->setText(this->tpgSetting->getValue());
+		}
+		else
+		{
+			QLineEdit::focusOutEvent(e);
+		}
 	}
 	else
 	{
