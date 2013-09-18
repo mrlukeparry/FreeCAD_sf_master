@@ -110,10 +110,25 @@ void CamTextBoxComponent::editingFinished() {
 	if (widget != NULL && tpgsetting != NULL) {
 		QString qvalue = widget->text();
 		if (!tpgsetting->setValue(qvalue))
+		{
 			Base::Console().Error("Saving failed: '%s'\n", tpgsetting->name.toStdString().c_str());
+			widget->setText(tpgsetting->getValue());
+		}
 	}
 	else
 		Base::Console().Error("Saving a setting failed!\n");
+}
+
+void CamLineEdit::focusOutEvent ( QFocusEvent * e )
+{
+	if (this->hasAcceptableInput() == false)
+	{
+		this->setText(this->tpgSetting->getValue());
+	}
+	else
+	{
+		QLineEdit::focusOutEvent(e);
+	}
 }
 
 /**
@@ -138,10 +153,11 @@ bool CamTextBoxComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLay
             labelWidget->setToolTip(tpgsetting->helptext);
 
             // make the edit box
-            widget = new QLineEdit(parent);
+            widget = new CamLineEdit(parent, tpgsetting);
             widget->setObjectName(qname);
             widget->setText(tpgsetting->getValue());
             widget->setToolTip(tpgsetting->helptext);
+			widget->setPlaceholderText(tpgsetting->helptext);
 
 			this->validator = new Validator(tpgsetting->grab(), widget);
 			widget->setValidator(validator);

@@ -94,6 +94,28 @@ public:
     }
 };
 
+class CamLineEdit : public QLineEdit
+{
+public:
+	CamLineEdit(QWidget *parent, Cam::TPGSettingDefinition *tpgsetting) : QLineEdit(parent) 
+	{
+		this->tpgSetting = tpgsetting->grab();
+	}
+
+	~CamLineEdit()
+	{
+		if (this->tpgSetting)
+		{
+			this->tpgSetting->release();
+		}
+	}
+
+	virtual void focusOutEvent ( QFocusEvent * e );
+
+private:
+	Cam::TPGSettingDefinition *tpgSetting;
+};
+
 // ----- CamTextBoxComponent ---------------------------------------------------------
 /**
  * Object that manages a Cam::TextBox setting
@@ -103,7 +125,7 @@ class CamGuiExport CamTextBoxComponent: public QObject, public CamComponent {
 	Q_OBJECT
 
 protected:
-    QLineEdit *widget;
+    CamLineEdit *widget;
 
 public:
 
