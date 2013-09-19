@@ -37,6 +37,16 @@
 
 #include <Base/Console.h>
 
+#include <math.h>
+
+#include <boost/config/warning_disable.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/fusion/include/adapt_struct.hpp>
+#include <boost/fusion/include/io.hpp>
+
 namespace Cam {
 
 const char* ts(QString str)
@@ -155,6 +165,9 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validate(QString & i
 	case SettingType_Enumeration:
 		return(validateEnumeration(input, position));
 
+	case SettingType_Length:
+		return(validateLength(input, position));
+
 	default:
 		return(this->Acceptable);
 	}
@@ -163,6 +176,19 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validate(QString & i
 TPGSettingDefinition::ValidationState TPGSettingDefinition::validateText(QString & input,int & position) const
 {
 	return(this->Acceptable);
+}
+
+TPGSettingDefinition::ValidationState TPGSettingDefinition::validateLength(QString & input,int & position) const
+{
+	double value;
+	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
+	{
+		return(this->Acceptable);
+	}
+	else
+	{
+		return(this->Invalid);
+	}
 }
 
 /**
@@ -635,6 +661,64 @@ void TPGSettings::onPropTPGSettingsChanged(const App::PropertyMap* property_map)
 		}
 	}
 }
+
+namespace qi = boost::spirit::qi;
+namespace ascii = boost::spirit::ascii;
+namespace phx = boost::phoenix;
+
+template <typename Iter, typename Skipper = qi::blank_type> 
+	struct length_grammar : qi::grammar<Iter, Skipper> 
+{
+	length_grammar(double *pResult) : length_grammar::base_type(Start)
+	{
+		this->pResult = pResult;
+
+		Start = qi::double_;
+	}
+
+	qi::rule<Iter, Skipper> Start;
+
+private:
+	double *pResult;
+
+};
+
+
+bool TPGSettings::EvaluateLength( const TPGSettingDefinition *definition, const char *entered_value, double *pResult ) const
+{	
+	const std::string value_to_parse(entered_value);
+	length_grammar<std::string::const_iterator> parser(pResult);
+	std::string::const_iterator program_location = value_to_parse.begin();
+	
+	// Parse the GCode using the linuxcnc grammar.  The qi::blank skipper will skip all whitespace
+	// except newline characters.  i.e. it allows newline characters to be included in the grammar
+	// (which they need to be as they represent an 'end of block' marker)
+
+	if ((qi::phrase_parse(program_location, value_to_parse.end(), parser, qi::blank)) && (program_location == value_to_parse.end()))
+	{
+		return(true);
+	}
+	
+	return(false);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 } // end namespace Cam

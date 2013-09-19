@@ -225,7 +225,7 @@ CppExampleTPG::~CppExampleTPG() {
 
 		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Clearance.toAscii().constData(), 
 																		 SettingName_Clearance.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Text, 
+																		 TPGSettingDefinition::SettingType_Length, 
 																		 "30.0",
 																		 "mm",
 																		 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece."));

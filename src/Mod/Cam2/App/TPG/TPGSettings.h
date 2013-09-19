@@ -100,7 +100,8 @@ public:
 		SettingType_Text = 0,	// Values of this type are stored in TPGFeature::PropTPGSettings
 		SettingType_Radio,		// Values of this type are stored in TPGFeature::PropTPGSettings
 		SettingType_ObjectNamesForType,	// Object names whose types are included in the list of options.
-		SettingType_Enumeration	// Produces a combo-box whose values include the verbose forms of the enumerated type.
+		SettingType_Enumeration,	// Produces a combo-box whose values include the verbose forms of the enumerated type.
+		SettingType_Length			// MUST have units of 'mm' or 'inch' for this to make sense.
 	} SettingType;
 
 	typedef enum {
@@ -147,6 +148,7 @@ public:
 	ValidationState validateText(QString & input, int & position) const;
 	ValidationState validateObjectNamesForType(QString & input, int & position) const;
 	ValidationState validateEnumeration(QString & input,int & position) const;
+	ValidationState validateLength(QString & input,int & position) const;
 
 	/**
 	 * Perform a deep copy of this class
@@ -279,6 +281,9 @@ public:
      * Decreases reference count and deletes self if no other references
      */
     void release();
+
+	bool EvaluateLength( const TPGSettingDefinition *definition, const char *entered_value, double *pResult ) const;
+
 protected:
 
     /// the action that is selected (i.e. algorithm and group of settings to use)

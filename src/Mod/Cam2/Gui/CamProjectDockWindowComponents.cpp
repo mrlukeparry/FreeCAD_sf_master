@@ -317,7 +317,6 @@ bool CamComboBoxComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLa
 			form->setWidget(row, QFormLayout::LabelRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
 
-		
             // make the container
 			// Keep our own copy of the id/label pairs in a vector so that we're sure to
 			// associate the 'index' of the combo-box with the correct options in both
