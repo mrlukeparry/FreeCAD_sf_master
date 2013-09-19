@@ -192,13 +192,13 @@ CppExampleTPG::~CppExampleTPG() {
 																		 "mm",
 																		 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled."));
 
-		QString default_retract_mode;
-		default_retract_mode << eRapidRetract;	// Use the conversion method to retrieve the string used for retraction.
+		std::ostringstream default_retract_mode;
+		default_retract_mode << int(eRapidRetract);	// Use the conversion method to retrieve the string used for retraction.
 
 		TPGSettingDefinition *retract_mode_setting = new TPGSettingDefinition(SettingName_RetractMode.toAscii().constData(), 
 																		 SettingName_RetractMode.toAscii().constData(),
 																		 TPGSettingDefinition::SettingType_Enumeration, 
-																		 default_retract_mode.toAscii().constData(),
+																		 default_retract_mode.str().c_str(),
 																		 "mode",
 																		 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate.");
 

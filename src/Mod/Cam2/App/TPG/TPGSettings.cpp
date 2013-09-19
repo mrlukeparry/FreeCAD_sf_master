@@ -225,6 +225,11 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateObjectNamesF
 	return(this->Acceptable);
 }
 
+/**
+	This method is really just here for completeness.  Since the enumerated types are handled via a combo-box, I can't see
+	how their values could ever become invalid.  I'll leave it here for now just in case we need to perform some validation
+	(and I can still remember how it all fits together) but I suspect it's not necessary for this data type.
+ */
 TPGSettingDefinition::ValidationState TPGSettingDefinition::validateEnumeration(QString & input,int & position) const
 {
 	return(this->Acceptable);
