@@ -39,13 +39,10 @@
 
 #include <math.h>
 
-#include <boost/config/warning_disable.hpp>
 #include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/phoenix_core.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/include/phoenix_object.hpp>
-#include <boost/fusion/include/adapt_struct.hpp>
-#include <boost/fusion/include/io.hpp>
+#include <boost/spirit/include/phoenix.hpp>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
 
 namespace Cam {
 
@@ -187,7 +184,7 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateLength(QStri
 	}
 	else
 	{
-		return(this->Invalid);
+		return(this->Intermediate);
 	}
 }
 
@@ -667,16 +664,41 @@ namespace ascii = boost::spirit::ascii;
 namespace phx = boost::phoenix;
 
 template <typename Iter, typename Skipper = qi::blank_type> 
-	struct length_grammar : qi::grammar<Iter, Skipper> 
+	struct length_grammar : qi::grammar<Iter, double(), Skipper> 
 {
 	length_grammar(double *pResult) : length_grammar::base_type(Start)
 	{
 		this->pResult = pResult;
 
-		Start = qi::double_;
+		Addition = (Expression >> qi::lit("+") >> Expression)
+				[ phx::bind(&length_grammar<Iter, Skipper>::addition, phx::ref(*this), qi::_val, qi::_1, qi::_2 ) ]
+		;
+
+		Expression = 
+			  (qi::lit("(") >> Expression >> qi::lit(")"))
+				[ phx::bind(&length_grammar<Iter, Skipper>::assign, phx::ref(*this), qi::_val, qi::_1 ) ]
+			| (qi::double_)
+				[ phx::bind(&length_grammar<Iter, Skipper>::assign, phx::ref(*this), qi::_val, qi::_1 ) ]
+			
+		;
+
+		Start = (Addition)
+			|	(Expression)
+		;
 	}
 
-	qi::rule<Iter, Skipper> Start;
+	void assign(double & out, const double in)
+	{
+		*pResult = in;
+		out = in;
+	}
+
+	void addition(double & out, const double lhs, const double rhs)
+	{
+		out = lhs + rhs;
+	}
+
+	qi::rule<Iter, double(), Skipper> Start, Expression, Addition;
 
 private:
 	double *pResult;
