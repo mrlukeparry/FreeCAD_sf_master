@@ -106,6 +106,8 @@ bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool save
                     comp = new CamRadioComponent();
 				else if (setting->type == Cam::TPGSettingDefinition::SettingType_ObjectNamesForType)
                     comp = new CamTextBoxComponent();
+				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Enumeration)
+					comp = new CamComboBoxComponent();
                 else
                     continue;
                 components.append(comp);

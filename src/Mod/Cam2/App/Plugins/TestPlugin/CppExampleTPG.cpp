@@ -192,16 +192,36 @@ CppExampleTPG::~CppExampleTPG() {
 																		 "mm",
 																		 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled."));
 
-		// TODO - Figure out how to express enumerated types as a property.  i.e. convert the
-		// enumeration to a series of strings and present them as a 'combo-box' of drop-down options.
-		QString retract_mode;
-		retract_mode << eRapidRetract;	// Use the conversion method to retrieve the string used for retraction.
-		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_RetractMode.toAscii().constData(), 
+		QString default_retract_mode;
+		default_retract_mode << eRapidRetract;	// Use the conversion method to retrieve the string used for retraction.
+
+		TPGSettingDefinition *retract_mode_setting = new TPGSettingDefinition(SettingName_RetractMode.toAscii().constData(), 
 																		 SettingName_RetractMode.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Text, 
-																		 retract_mode.toAscii().constData(),
+																		 TPGSettingDefinition::SettingType_Enumeration, 
+																		 default_retract_mode.toAscii().constData(),
 																		 "mode",
-																		 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate."));
+																		 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate.");
+
+		// Enumerated types MUST have one option for each different value.  For each option, the Id must be the integer form and the Label must
+		// be the string (verbose) form.  Only the verbose forms are used on the user interface but the values used in the TPGSettingDefinition.value will
+		// always be the integer form.
+		// The integer forms need not start from zero or be sequential.  The values will appear in the combo-box in the order that
+		// they're defined in the options list.  Their position in the list will be used by the combo-box.
+
+		for (RetractMode_t mode = eRapidRetract; mode <= eFeedRetract; mode = RetractMode_t(int(mode)+1))
+		{
+			QString label;
+			label << mode;		// use the operator<< override to convert from the enum to the string form.
+
+			std::ostringstream ossId;
+			ossId << int(mode);	// We want this to be the integer form so that it's language-independent.
+
+			retract_mode_setting->addOption(QString::fromStdString(ossId.str()), label);
+		}
+
+		settings->addSettingDefinition(qaction, retract_mode_setting);
+
+
 
 		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Clearance.toAscii().constData(), 
 																		 SettingName_Clearance.toAscii().constData(),

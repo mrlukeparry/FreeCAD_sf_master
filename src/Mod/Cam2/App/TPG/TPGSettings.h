@@ -86,12 +86,21 @@ public:
 			- id = "TypeId" (the keyword) and label = <a single class type ID as would be used within the Base::Type::fromName() method>
 
 		There must be only one option with an option.id="Delimiters" but there may be many options with an id="TypeId".
+
+		NOTE: For SettingType_Enumeration, the 'value' is always going to be the integer form.  When it's presented
+		in the QComboBox (i.e. the user interface) the verbose (string) form is always used but, once that interaction
+		is complete, the value written to the TPGSettingDefinition object will always be the integer form.
+		To this end, settings of this type must have options whose ID is the integer form and whose LABEL is the string form.
+		Since Python is all string-based it might make sense to just use the string form for the value too.  The problem with
+		this is that it precludes language changes.  If we use the integer form for the value then the files should carry
+		between languages better.
 	 */
 	typedef enum
 	{
 		SettingType_Text = 0,	// Values of this type are stored in TPGFeature::PropTPGSettings
 		SettingType_Radio,		// Values of this type are stored in TPGFeature::PropTPGSettings
-		SettingType_ObjectNamesForType	// Object names whose types are included in the list of options.
+		SettingType_ObjectNamesForType,	// Object names whose types are included in the list of options.
+		SettingType_Enumeration	// Produces a combo-box whose values include the verbose forms of the enumerated type.
 	} SettingType;
 
 	typedef enum {
@@ -137,6 +146,7 @@ public:
 	ValidationState validate(QString & input, int & position) const;
 	ValidationState validateText(QString & input, int & position) const;
 	ValidationState validateObjectNamesForType(QString & input, int & position) const;
+	ValidationState validateEnumeration(QString & input,int & position) const;
 
 	/**
 	 * Perform a deep copy of this class

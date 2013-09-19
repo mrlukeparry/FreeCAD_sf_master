@@ -152,6 +152,9 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validate(QString & i
 		// for all possible values within the enumerated type.
 		return(this->Acceptable);
 
+	case SettingType_Enumeration:
+		return(validateEnumeration(input, position));
+
 	default:
 		return(this->Acceptable);
 	}
@@ -219,6 +222,11 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateObjectNamesF
 		}
 	}
 
+	return(this->Acceptable);
+}
+
+TPGSettingDefinition::ValidationState TPGSettingDefinition::validateEnumeration(QString & input,int & position) const
+{
 	return(this->Acceptable);
 }
 

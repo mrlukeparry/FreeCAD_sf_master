@@ -175,5 +175,41 @@ public:
 
 };
 
+
+// ----- CamRadioComponent ---------------------------------------------------------
+/**
+ * Object that manages a Cam::TPGSettingDefinition::SettingType_Enumeration setting
+ */
+class CamGuiExport CamComboBoxComponent: public QObject, public CamComponent {
+
+	Q_OBJECT
+
+public:
+
+    CamComboBoxComponent();
+
+    /**
+     * Creates the UI for this component and loads the initial value
+     */
+    virtual bool makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form);
+
+    /**
+     * Saves the values on the UI to the TPGSetting instance
+     */
+    virtual bool close();
+
+public Q_SLOTS:
+
+    /**
+     * Slot to receive messages when the user changes the text value
+     */
+    void currentIndexChanged(int index);
+
+private:
+	typedef QString Id_t;
+	typedef QString Label_t;
+	std::vector< std::pair< Id_t, Label_t > > values;
+};
+
 } /* namespace Cam */
 #endif /* CAMPROJECTDOCKWINDOWCOMPONENTS_H_ */

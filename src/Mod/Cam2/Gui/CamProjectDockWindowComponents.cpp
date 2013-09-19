@@ -28,6 +28,7 @@
 #include <QLabel>
 #include <QIntValidator>
 #include <QMessageBox>
+#include <QComboBox>
 
 #include <Base/Console.h>
 
@@ -285,6 +286,101 @@ bool CamRadioComponent::close() {
 
     return false;
 }
+
+
+
+
+// ----- CamComboBoxComponent ---------------------------------------------------------
+
+CamComboBoxComponent::CamComboBoxComponent()
+: CamComponent() {
+}
+
+/**
+ * Creates the UI for this component and loads the initial value
+ */
+bool CamComboBoxComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form) {
+
+    if (tpgsetting != NULL) {
+        // grab a copy of the setting so we can save it later
+        this->tpgsetting = tpgsetting->grab();
+
+        // construct the ui
+        QWidget *parent = dynamic_cast<QWidget*>(form->parent());
+        if (parent != NULL) {
+            int row = form->rowCount();
+            QString qname = tpgsetting->getFullname();
+
+            // make the label
+            QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
+			form->setWidget(row, QFormLayout::LabelRole, labelWidget);
+            labelWidget->setToolTip(tpgsetting->helptext);
+
+		
+            // make the container
+			// Keep our own copy of the id/label pairs in a vector so that we're sure to
+			// associate the 'index' of the combo-box with the correct options in both
+			// this method (which defines them) and in the currentIndexChanged() (which
+			// looks for which one was chosen).
+			QComboBox *combo_box = new QComboBox(parent);
+			int index = 0;
+			for (QList<Cam::TPGSettingOption *>::const_iterator itOption = this->tpgsetting->options.begin(); itOption != this->tpgsetting->options.end(); itOption++)
+			{
+				combo_box->addItem((*itOption)->label);
+				if (this->tpgsetting->getValue() == (*itOption)->id)
+				{
+					combo_box->setCurrentIndex(index);
+				}
+				values.push_back( std::make_pair( (*itOption)->id, (*itOption)->label ) );
+				index++;
+			}
+
+            combo_box->setObjectName(qname);
+            combo_box->setToolTip(tpgsetting->helptext);
+
+			this->validator = new Validator(tpgsetting->grab(), combo_box);
+			combo_box->setValidator(validator);
+
+            form->setWidget(row, QFormLayout::FieldRole, combo_box);
+
+            // connect events
+        	QObject::connect(combo_box, SIGNAL(currentIndexChanged(int)), this,
+        			SLOT(currentIndexChanged(int)));
+
+            // keep reference to widgets for later cleanup
+            rootComponents.push_back(labelWidget);
+            rootComponents.push_back(combo_box);
+
+            return true;
+        }
+        Base::Console().Warning("Warning: Unable to find parent widget for (%p)", form->parent());
+    }
+
+    Base::Console().Warning("Warning: Not given a TPGSettingDefinition");
+    return false;
+}
+
+/**
+ * Apply the changed setting to the TPGFeature so that any interested parties are notified of the change.
+ */
+void CamComboBoxComponent::currentIndexChanged ( int current_index )
+{
+	if ((current_index >= 0) && (current_index < int(values.size())))
+	{
+		this->tpgsetting->setValue(values[current_index].first);
+	}
+}
+
+/**
+ * Saves the values on the UI to the TPGSetting instance.
+ * NOTE: We don't save it here as the value will already have been set in the currentIndexChanged() method.
+ */
+bool CamComboBoxComponent::close() {
+	
+    return true;	// Assume all is well.
+}
+
 
 
 #include "moc_CamProjectDockWindowComponents.cpp"
