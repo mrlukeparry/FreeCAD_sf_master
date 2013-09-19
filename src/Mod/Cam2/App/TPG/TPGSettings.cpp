@@ -670,19 +670,32 @@ template <typename Iter, typename Skipper = qi::blank_type>
 	{
 		this->pResult = pResult;
 
-		Addition = (Expression >> qi::lit("+") >> Expression)
+		Expressions = 
+			(Expression >> qi::lit("+") >> Expression)
 				[ phx::bind(&length_grammar<Iter, Skipper>::addition, phx::ref(*this), qi::_val, qi::_1, qi::_2 ) ]
+		|
+			(Expression >> qi::lit("-") >> Expression)
+				[ phx::bind(&length_grammar<Iter, Skipper>::subtraction, phx::ref(*this), qi::_val, qi::_1, qi::_2 ) ]
+
+		|
+			(Expression >> qi::lit("/") >> Expression)
+				[ phx::bind(&length_grammar<Iter, Skipper>::division, phx::ref(*this), qi::_val, qi::_1, qi::_2 ) ]
+
+		|
+			(Expression >> qi::lit("*") >> Expression)
+				[ phx::bind(&length_grammar<Iter, Skipper>::multiplication, phx::ref(*this), qi::_val, qi::_1, qi::_2 ) ]
 		;
 
 		Expression = 
 			  (qi::lit("(") >> Expression >> qi::lit(")"))
 				[ phx::bind(&length_grammar<Iter, Skipper>::assign, phx::ref(*this), qi::_val, qi::_1 ) ]
+
 			| (qi::double_)
 				[ phx::bind(&length_grammar<Iter, Skipper>::assign, phx::ref(*this), qi::_val, qi::_1 ) ]
 			
 		;
 
-		Start = (Addition)
+		Start = (Expressions)
 			|	(Expression)
 		;
 	}
@@ -698,7 +711,22 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		out = lhs + rhs;
 	}
 
-	qi::rule<Iter, double(), Skipper> Start, Expression, Addition;
+	void subtraction(double & out, const double lhs, const double rhs)
+	{
+		out = lhs - rhs;
+	}
+
+	void division(double & out, const double lhs, const double rhs)
+	{
+		out = lhs / rhs;
+	}
+
+	void multiplication(double & out, const double lhs, const double rhs)
+	{
+		out = lhs * rhs;
+	}
+
+	qi::rule<Iter, double(), Skipper> Start, Expression, Expressions;
 
 private:
 	double *pResult;
