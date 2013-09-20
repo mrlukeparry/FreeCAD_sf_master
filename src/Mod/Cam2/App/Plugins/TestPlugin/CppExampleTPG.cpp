@@ -263,6 +263,13 @@ CppExampleTPG::~CppExampleTPG() {
 																		 "Directory",
 																		 "Dummy setting to test the new SettingType_Directory enumeration."));
 
+		settings->addSettingDefinition(qaction, new TPGSettingDefinition("Colour", 
+																		 "My Special Colour",
+																		 TPGSettingDefinition::SettingType_Color, 
+																		 "Blue",
+																		 "Colour",
+																		 "Dummy setting to test the new SettingType_Color enumeration."));
+
 
 
 		

@@ -103,7 +103,8 @@ public:
 		SettingType_Enumeration,	// Produces a combo-box whose values include the verbose forms of the enumerated type.
 		SettingType_Length,			// MUST have units of 'mm' or 'inch' for this to make sense.
 		SettingType_Filename,
-		SettingType_Directory
+		SettingType_Directory,
+		SettingType_Color
 	} SettingType;
 
 	typedef enum {
@@ -153,6 +154,7 @@ public:
 	ValidationState validateLength(QString & input,int & position) const;
 	ValidationState validateFilename(QString & input,int & position) const;
 	ValidationState validateDirectory(QString & input,int & position) const;
+	ValidationState validateColor(QString & input,int & position) const;
 
 	/**
 	 * Perform a deep copy of this class

@@ -30,6 +30,9 @@
 #include <QMessageBox>
 #include <QComboBox>
 #include <QFileDialog>
+#include <QColor>
+#include <QColorDialog>
+#include <QPalette>
 
 #include <Base/Console.h>
 
@@ -617,6 +620,92 @@ void CamDirectoryComponent::handleButton()
 		this->camLineEdit->setText(dir);
 	}
 }
+
+
+
+
+
+
+CamColorComponent::CamColorComponent()
+: QObject(), CamComponent() {
+	this->button = NULL;
+}
+
+/**
+ * Creates the UI for this component and loads the initial value
+ */
+bool CamColorComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form) {
+    if (tpgsetting != NULL)
+    {
+        // grab a copy of the setting so we can save it later
+        this->tpgsetting = tpgsetting->grab();
+
+        // construct the ui
+        QWidget *parent = dynamic_cast<QWidget*>(form->parent());
+        if (parent != NULL) {
+            int row = form->rowCount();
+            QString qname = tpgsetting->getFullname();
+
+            // make the label
+            QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
+            form->setWidget(row, QFormLayout::LabelRole, labelWidget);
+            labelWidget->setToolTip(tpgsetting->helptext);
+
+            // make the container
+            QWidget *widget = new QWidget(parent);
+
+            // make the push button
+            QString qvalue = tpgsetting->getValue();
+            button = new QPushButton(widget);
+			button->setObjectName(QString::fromAscii("SelectFile"));
+            button->setText(QString::fromAscii("   "));
+
+			QColor blue(Qt::blue);
+			QPalette palette(blue);
+			button->setPalette(palette);
+
+			// connect events
+        	QObject::connect(button, SIGNAL(pressed()), this,
+        			SLOT(handleButton()));
+			form->setWidget(row, QFormLayout::FieldRole, widget);
+
+            // keep reference to widgets for later cleanup
+            rootComponents.push_back(labelWidget);
+            rootComponents.push_back(widget);
+
+            return true;
+        }
+        Base::Console().Warning("Warning: Unable to find parent widget for (%p)\n", form->parent());
+    }
+
+    Base::Console().Warning("Warning: Not given a TPGSettingDefinition\n");
+    return false;
+}
+
+/**
+ * Saves the values on the UI to the TPGSetting instance
+ */
+bool CamColorComponent::close() {
+//    if (widget != NULL && tpgsetting != NULL) {
+//    	QString qvalue = widget->text();
+//        return tpgsetting->setValue(qvalue);
+//    }
+    return true;
+}
+
+void CamColorComponent::handleButton()
+{
+	QColor color = QColorDialog::getColor(Qt::green, NULL);
+	if (color.isValid())
+	{
+		QPalette palette(color);
+		this->button->setPalette(palette);
+	}
+	
+}
+
+
 
 
 #include "moc_CamProjectDockWindowComponents.cpp"

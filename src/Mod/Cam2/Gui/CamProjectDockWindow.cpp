@@ -114,6 +114,8 @@ bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool save
                     comp = new CamFilenameComponent();
 				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Directory)
                     comp = new CamDirectoryComponent();
+				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Color)
+                    comp = new CamColorComponent();
                 else
                     continue;
                 components.append(comp);

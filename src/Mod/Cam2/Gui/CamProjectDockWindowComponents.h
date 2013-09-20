@@ -288,5 +288,42 @@ private Q_SLOTS:
 
 };
 
+
+
+
+// ----- CamColorComponent ---------------------------------------------------------
+/**
+ * Object that manages a Cam::Directory setting
+ */
+class CamGuiExport CamColorComponent: public QObject, public CamComponent {
+
+	Q_OBJECT
+
+protected:
+	QPushButton	*button;
+
+public:
+
+    CamColorComponent();
+
+    /**
+     * Creates the UI for this component and loads the initial value
+     */
+    virtual bool makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form);
+
+    /**
+     * Saves the values on the UI to the TPGSetting instance
+     */
+    virtual bool close();
+
+private Q_SLOTS:
+
+    /**
+     * Slot to receive messages when the user changes the text value
+     */
+	void handleButton();
+
+};
+
 } /* namespace Cam */
 #endif /* CAMPROJECTDOCKWINDOWCOMPONENTS_H_ */

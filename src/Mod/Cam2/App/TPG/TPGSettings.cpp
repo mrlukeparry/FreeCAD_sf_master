@@ -171,6 +171,9 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validate(QString & i
 	case SettingType_Directory:
 		return(validateDirectory(input, position));
 
+	case SettingType_Color:
+		return(validateColor(input, position));
+
 	default:
 		return(this->Acceptable);
 	}
@@ -187,6 +190,11 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateFilename(QSt
 }
 
 TPGSettingDefinition::ValidationState TPGSettingDefinition::validateDirectory(QString & input,int & position) const
+{
+	return(this->Acceptable);
+}
+
+TPGSettingDefinition::ValidationState TPGSettingDefinition::validateColor(QString & input,int & position) const
 {
 	return(this->Acceptable);
 }
