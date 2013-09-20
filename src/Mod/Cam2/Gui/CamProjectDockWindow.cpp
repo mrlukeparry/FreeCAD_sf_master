@@ -110,6 +110,8 @@ bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool save
 					comp = new CamComboBoxComponent();
 				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Length)
                     comp = new CamTextBoxComponent();
+				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Filename)
+                    comp = new CamFilenameComponent();
                 else
                     continue;
                 components.append(comp);

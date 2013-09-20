@@ -82,9 +82,22 @@ TPG::~TPG()
 
 			QString action = QString::fromAscii("default");
 
-			settings->addSettingDefinition(action, 
-												new TPGSettingDefinition(settingName_Geometry().toAscii().constData(), 
-												"Geometry", TPGSettingDefinition::SettingType_Text, "Box01", "", "The input geometry that should be cut"));
+			TPGSettingDefinition *geometry_setting = new TPGSettingDefinition(settingName_Geometry().toAscii().constData(),
+																			 "Geometry",
+																			 TPGSettingDefinition::SettingType_ObjectNamesForType, 
+																			 "",
+																			 Part::Feature::getClassTypeId().getName(),
+																			 "Reference object names whose types are appropriate for this TPG.  Names must be separated by spaces and/or commas only.");
+			// The object names will be separated by commas and/or spaces.  Make sure we tell the TPGSettingDefinition object this fact so that
+			// it can parse out the object names during its data validation processing.
+			geometry_setting->addOption(QString::fromAscii("Delimiters"), QString::fromAscii(" \t,"));
+
+			// We need to specify object type names that can be passed into the Base::Type::fromName() method to validate the types of
+			// objects whose names are included in this setting.
+			geometry_setting->addOption(QString::fromAscii("TypeId"), QString::fromAscii(Part::Feature::getClassTypeId().getName()));
+
+			settings->addSettingDefinition(action, geometry_setting);
+
 
 			settings->addSettingDefinition(action, 
 											new TPGSettingDefinition(settingName_Tool().toAscii().constData(), 

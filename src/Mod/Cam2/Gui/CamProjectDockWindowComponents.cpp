@@ -382,6 +382,109 @@ bool CamComboBoxComponent::close() {
 
 
 
+
+
+
+
+CamFilenameComponent::CamFilenameComponent()
+: QObject(), CamComponent() {
+    this->widget = NULL;
+	this->button = NULL;
+}
+
+/**
+ * Slot to receive messages when the user changes the text value
+ */
+void CamFilenameComponent::editingFinished() {
+	if (widget != NULL && tpgsetting != NULL) {
+		QString qvalue = widget->text();
+		if (!tpgsetting->setValue(qvalue))
+		{
+			Base::Console().Error("Saving failed: '%s'\n", tpgsetting->name.toStdString().c_str());
+			widget->setText(tpgsetting->getValue());
+		}
+	}
+	else
+		Base::Console().Error("Saving a setting failed!\n");
+}
+
+/**
+ * Creates the UI for this component and loads the initial value
+ */
+bool CamFilenameComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form) {
+    if (tpgsetting != NULL)
+    {
+        // grab a copy of the setting so we can save it later
+        this->tpgsetting = tpgsetting->grab();
+
+        // construct the ui
+        QWidget *parent = dynamic_cast<QWidget*>(form->parent());
+        if (parent != NULL) {
+            int row = form->rowCount();
+            QString qname = tpgsetting->getFullname();
+
+            // make the label
+            QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
+            form->setWidget(row, QFormLayout::LabelRole, labelWidget);
+            labelWidget->setToolTip(tpgsetting->helptext);
+
+            // make the container
+            QWidget *widget = new QWidget(parent);
+            QHBoxLayout *layout = new QHBoxLayout(widget);
+            layout->setContentsMargins(0,0,0,0);
+            widget->setLayout(layout);
+            widget->setObjectName(qname);
+            widget->setToolTip(tpgsetting->helptext);
+			form->setWidget(row, QFormLayout::FieldRole, widget);
+
+			// make the edit box
+            widget = new CamLineEdit(parent, tpgsetting);
+            widget->setObjectName(qname);
+            widget->setText(tpgsetting->getValue());
+            widget->setToolTip(tpgsetting->helptext);
+			widget->setPlaceholderText(tpgsetting->helptext);
+			this->validator = new Validator(tpgsetting->grab(), widget);
+			widget->setValidator(validator);
+            // connect events
+        	QObject::connect(widget, SIGNAL(editingFinished()), this,
+        			SLOT(editingFinished()));
+			layout->addWidget(widget);
+
+            // make the push button
+            QString qvalue = tpgsetting->getValue();
+            QPushButton *btn = new QPushButton(widget);
+            btn->setObjectName(qname + (*it)->id);
+            btn->setText((*it)->label);
+            layout->addWidget(btn);
+
+            // keep reference to widgets for later cleanup
+            rootComponents.push_back(labelWidget);
+            rootComponents.push_back(widget);
+
+            return true;
+        }
+        Base::Console().Warning("Warning: Unable to find parent widget for (%p)\n", form->parent());
+    }
+
+    Base::Console().Warning("Warning: Not given a TPGSettingDefinition\n");
+    return false;
+}
+
+/**
+ * Saves the values on the UI to the TPGSetting instance
+ */
+bool CamFilenameComponent::close() {
+//    if (widget != NULL && tpgsetting != NULL) {
+//    	QString qvalue = widget->text();
+//        return tpgsetting->setValue(qvalue);
+//    }
+    return true;
+}
+
+
+
+
 #include "moc_CamProjectDockWindowComponents.cpp"
 
 } /* namespace Cam */

@@ -249,6 +249,15 @@ CppExampleTPG::~CppExampleTPG() {
 		speed->addOption("normal", "Normal");
 		speed->addOption("slow", "Slow");
 
+		settings->addSettingDefinition(qaction, new TPGSettingDefinition("Filename", 
+																		 "My Special Filename",
+																		 TPGSettingDefinition::SettingType_Filename, 
+																		 "c:\\temp\\david.txt",
+																		 "Filename",
+																		 "Dummy setting to test the new SettingType_Filename enumeration."));
+
+
+
 		
 		// Just as a hack for now, find all input object names and pass them in as input geometry.
 		App::Document *document = App::GetApplication().getActiveDocument();
