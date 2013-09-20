@@ -39,10 +39,9 @@
 
 #include <math.h>
 
-#include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/phoenix.hpp>
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
+#include <boost/property_tree/ini_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/exceptions.hpp>
 
 namespace Cam {
 
@@ -683,102 +682,70 @@ void TPGSettings::onPropTPGSettingsChanged(const App::PropertyMap* property_map)
 	}
 }
 
-namespace qi = boost::spirit::qi;
-namespace ascii = boost::spirit::ascii;
-namespace phx = boost::phoenix;
-
-template <typename Iter, typename Skipper = qi::blank_type> 
-	struct length_grammar : qi::grammar<Iter, double(), Skipper> 
-{
-	length_grammar(double *pResult) : length_grammar::base_type(Start)
-	{
-		this->pResult = pResult;
-
-		Expressions = 
-			(Expression >> qi::lit("+") >> Expression)
-				[ phx::bind(&length_grammar<Iter, Skipper>::addition, phx::ref(*this), qi::_val, qi::_1, qi::_2 ) ]
-		|
-			(Expression >> qi::lit("-") >> Expression)
-				[ phx::bind(&length_grammar<Iter, Skipper>::subtraction, phx::ref(*this), qi::_val, qi::_1, qi::_2 ) ]
-
-		|
-			(Expression >> qi::lit("/") >> Expression)
-				[ phx::bind(&length_grammar<Iter, Skipper>::division, phx::ref(*this), qi::_val, qi::_1, qi::_2 ) ]
-
-		|
-			(Expression >> qi::lit("*") >> Expression)
-				[ phx::bind(&length_grammar<Iter, Skipper>::multiplication, phx::ref(*this), qi::_val, qi::_1, qi::_2 ) ]
-		;
-
-		Expression = 
-			  (qi::lit("(") >> Expression >> qi::lit(")"))
-				[ phx::bind(&length_grammar<Iter, Skipper>::assign, phx::ref(*this), qi::_val, qi::_1 ) ]
-
-			| (qi::double_)
-				[ phx::bind(&length_grammar<Iter, Skipper>::assign, phx::ref(*this), qi::_val, qi::_1 ) ]
-			
-		;
-
-		Start = (Expressions)
-			|	(Expression)
-		;
-	}
-
-	void assign(double & out, const double in)
-	{
-		*pResult = in;
-		out = in;
-	}
-
-	void addition(double & out, const double lhs, const double rhs)
-	{
-		out = lhs + rhs;
-	}
-
-	void subtraction(double & out, const double lhs, const double rhs)
-	{
-		out = lhs - rhs;
-	}
-
-	void division(double & out, const double lhs, const double rhs)
-	{
-		out = lhs / rhs;
-	}
-
-	void multiplication(double & out, const double lhs, const double rhs)
-	{
-		out = lhs * rhs;
-	}
-
-	qi::rule<Iter, double(), Skipper> Start, Expression, Expressions;
-
-private:
-	double *pResult;
-
-};
 
 
 bool TPGSettings::EvaluateLength( const TPGSettingDefinition *definition, const char *entered_value, double *pResult ) const
 {	
-	const std::string value_to_parse(entered_value);
-	length_grammar<std::string::const_iterator> parser(pResult);
-	std::string::const_iterator program_location = value_to_parse.begin();
-	
-	// Parse the GCode using the linuxcnc grammar.  The qi::blank skipper will skip all whitespace
-	// except newline characters.  i.e. it allows newline characters to be included in the grammar
-	// (which they need to be as they represent an 'end of block' marker)
 
-	if ((qi::phrase_parse(program_location, value_to_parse.end(), parser, qi::blank)) && (program_location == value_to_parse.end()))
-	{
-		return(true);
-	}
-	
 	return(false);
 }
 
 
 
 
+/**
+	The color's value is encoded in an INI document describing
+	all the various properties required to define a QColor object.  This
+	XML document forms the 'value' part within the PropTPGSetting
+	map.  We use the TPGColorSettingDefinition class to handle
+	the conversion between the INI string used in the TPGFeature's 
+	property and the QColor value we use in the code.
+ */
+bool TPGColorSettingDefinition::get(int &red, int &green, int &blue, int &alpha)
+{
+	try
+	{
+		using boost::property_tree::ptree;
+		ptree pt;
+
+		std::stringstream encoded_value;
+		encoded_value << this->getValue().toAscii().constData();
+		
+		read_ini(encoded_value, pt);
+
+		red = pt.get<int>("color.red");
+		green = pt.get<int>("color.green");
+		blue = pt.get<int>("color.blue");
+		alpha = pt.get<int>("color.alpha");
+		return(true);	// success.
+	}
+	catch(boost::property_tree::ptree_error const & error)
+	{
+		qWarning("%s\n", error.what());
+		memset( &red, 0xFF, sizeof(red) );
+		memset( &green, 0xFF, sizeof(green) );
+		memset( &blue, 0xFF, sizeof(blue) );
+		memset( &alpha, 0xFF, sizeof(alpha) );
+
+		return(false);	// failure.
+	}
+}
+
+void TPGColorSettingDefinition::set(const int red, const int green, const int blue, const int alpha)
+{
+	using boost::property_tree::ptree;
+	ptree pt;
+
+	pt.put("color.red",  red);
+	pt.put("color.green", green);
+	pt.put("color.blue", blue);
+	pt.put("color.alpha", alpha);
+	
+	std::ostringstream encoded_value;
+
+	write_ini(encoded_value, pt);
+	this->setValue(QString::fromStdString(encoded_value.str()));
+}
 
 
 

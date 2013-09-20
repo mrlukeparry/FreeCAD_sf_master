@@ -129,8 +129,12 @@ void CamLineEdit::focusOutEvent ( QFocusEvent * e )
 {
 	if (this->hasAcceptableInput() == false)
 	{
+		QString message = QString::fromAscii("Value for ");
+		message += this->tpgSetting->name;
+		message += QString::fromAscii(" has been rejected as invalid");
+
 		QMessageBox message_box;
-		message_box.setText(QString::fromAscii("Value rejected as invalid"));
+		message_box.setText(message);
 		message_box.setInformativeText(QString::fromAscii("Do you want to keep the value entered or revert to the previous value?"));
 		message_box.setStandardButtons( QMessageBox::Save | QMessageBox::Discard );
 		message_box.setDefaultButton( QMessageBox::Discard );
@@ -661,9 +665,14 @@ bool CamColorComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayou
 			button->setObjectName(QString::fromAscii("SelectFile"));
             button->setText(QString::fromAscii("   "));
 
-			QColor blue(Qt::blue);
-			QPalette palette(blue);
+			int red, green, blue, alpha;
+			Cam::TPGColorSettingDefinition *pColorSetting = (Cam::TPGColorSettingDefinition *) this->tpgsetting;
+			pColorSetting->get( red, green, blue, alpha );
+			QColor color(red, green, blue, alpha);
+			QPalette palette(color);
 			button->setPalette(palette);
+			button->setAutoFillBackground(true);
+			button->setFlat(true);
 
 			// connect events
         	QObject::connect(button, SIGNAL(pressed()), this,
@@ -701,6 +710,15 @@ void CamColorComponent::handleButton()
 	{
 		QPalette palette(color);
 		this->button->setPalette(palette);
+		this->button->setAutoFillBackground(true);
+		this->button->setFlat(true);
+
+		// Cast the setting pointer to a TPGColorSettingDefinition so that we can generate
+		// the verbose (string) represenation of the QColor for storage in the PropTPGSettings property
+		// within the TPGFeature.
+
+		Cam::TPGColorSettingDefinition *pColorSetting = (Cam::TPGColorSettingDefinition *) this->tpgsetting;
+		pColorSetting->set( color.red(), color.green(), color.blue(), color.alpha() );
 	}
 	
 }

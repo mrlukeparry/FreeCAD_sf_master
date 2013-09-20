@@ -40,6 +40,7 @@ class CamExport TPGSettings;
 #include <vector>
 #include <QString>
 #include <QList>
+#include <QColor>
 
 #include <App/PropertyStandard.h>
 
@@ -315,6 +316,20 @@ private:
 	// calls.
 	std::map<std::string,std::string>	previous_tpg_properties_version;
 };
+
+
+
+// Declare some classes used to get/set TPGSettingDefinition values depending on the
+// type of TPGSettingDefinition object used.
+
+class CamExport TPGColorSettingDefinition : TPGSettingDefinition
+{
+public:
+	bool get(int &red, int &green, int &blue, int &alpha);
+	void set(const int red, const int green, const int blue, const int alpha);
+};
+
+
 
 } //namespace Cam
 
