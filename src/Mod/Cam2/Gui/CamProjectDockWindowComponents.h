@@ -222,8 +222,8 @@ class CamGuiExport CamFilenameComponent: public QObject, public CamComponent {
 	Q_OBJECT
 
 protected:
-    CamLineEdit *widget;
 	QPushButton	*button;
+    CamLineEdit *camLineEdit;
 
 public:
 
@@ -239,12 +239,13 @@ public:
      */
     virtual bool close();
 
-public Q_SLOTS:
+private Q_SLOTS:
 
     /**
      * Slot to receive messages when the user changes the text value
      */
     void editingFinished();
+	void handleButton();
 
 };
 

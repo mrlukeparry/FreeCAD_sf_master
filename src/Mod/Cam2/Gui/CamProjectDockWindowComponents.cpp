@@ -29,6 +29,7 @@
 #include <QIntValidator>
 #include <QMessageBox>
 #include <QComboBox>
+#include <QFileDialog>
 
 #include <Base/Console.h>
 
@@ -388,7 +389,7 @@ bool CamComboBoxComponent::close() {
 
 CamFilenameComponent::CamFilenameComponent()
 : QObject(), CamComponent() {
-    this->widget = NULL;
+    this->camLineEdit = NULL;
 	this->button = NULL;
 }
 
@@ -396,12 +397,12 @@ CamFilenameComponent::CamFilenameComponent()
  * Slot to receive messages when the user changes the text value
  */
 void CamFilenameComponent::editingFinished() {
-	if (widget != NULL && tpgsetting != NULL) {
-		QString qvalue = widget->text();
+	if (camLineEdit != NULL && tpgsetting != NULL) {
+		QString qvalue = camLineEdit->text();
 		if (!tpgsetting->setValue(qvalue))
 		{
 			Base::Console().Error("Saving failed: '%s'\n", tpgsetting->name.toStdString().c_str());
-			widget->setText(tpgsetting->getValue());
+			camLineEdit->setText(tpgsetting->getValue());
 		}
 	}
 	else
@@ -439,24 +440,27 @@ bool CamFilenameComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLa
 			form->setWidget(row, QFormLayout::FieldRole, widget);
 
 			// make the edit box
-            widget = new CamLineEdit(parent, tpgsetting);
-            widget->setObjectName(qname);
-            widget->setText(tpgsetting->getValue());
-            widget->setToolTip(tpgsetting->helptext);
-			widget->setPlaceholderText(tpgsetting->helptext);
-			this->validator = new Validator(tpgsetting->grab(), widget);
-			widget->setValidator(validator);
+            camLineEdit = new CamLineEdit(parent, tpgsetting);
+            camLineEdit->setObjectName(qname);
+            camLineEdit->setText(tpgsetting->getValue());
+            camLineEdit->setToolTip(tpgsetting->helptext);
+			camLineEdit->setPlaceholderText(tpgsetting->helptext);
+			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
+			camLineEdit->setValidator(validator);
             // connect events
-        	QObject::connect(widget, SIGNAL(editingFinished()), this,
+        	QObject::connect(camLineEdit, SIGNAL(editingFinished()), this,
         			SLOT(editingFinished()));
-			layout->addWidget(widget);
+			layout->addWidget(camLineEdit);
 
             // make the push button
             QString qvalue = tpgsetting->getValue();
-            QPushButton *btn = new QPushButton(widget);
-            btn->setObjectName(qname + (*it)->id);
-            btn->setText((*it)->label);
-            layout->addWidget(btn);
+            button = new QPushButton(widget);
+			button->setObjectName(QString::fromAscii("SelectFile"));
+            button->setText(QString::fromAscii("..."));
+			// connect events
+        	QObject::connect(button, SIGNAL(pressed()), this,
+        			SLOT(handleButton()));
+            layout->addWidget(button);
 
             // keep reference to widgets for later cleanup
             rootComponents.push_back(labelWidget);
@@ -482,6 +486,19 @@ bool CamFilenameComponent::close() {
     return true;
 }
 
+void CamFilenameComponent::handleButton()
+{
+	QString caption = QString::fromAscii("Caption");
+	QString directory = QString::fromAscii("c:\\david");
+	QString filter = QString::fromAscii("*.*");
+
+	QString filename = QFileDialog::getOpenFileName(NULL, caption, directory, filter);
+	if (filename.isNull() == false)
+	{
+		this->camLineEdit->setText(filename);
+	}
+
+}
 
 
 
