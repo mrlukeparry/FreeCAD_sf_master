@@ -256,6 +256,13 @@ CppExampleTPG::~CppExampleTPG() {
 																		 "Filename",
 																		 "Dummy setting to test the new SettingType_Filename enumeration."));
 
+		settings->addSettingDefinition(qaction, new TPGSettingDefinition("Directory", 
+																		 "My Special Directory",
+																		 TPGSettingDefinition::SettingType_Directory, 
+																		 "c:\\temp",
+																		 "Directory",
+																		 "Dummy setting to test the new SettingType_Directory enumeration."));
+
 
 
 		

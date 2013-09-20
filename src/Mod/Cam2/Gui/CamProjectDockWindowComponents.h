@@ -32,6 +32,7 @@
 #include <QRadioButton>
 #include <QMap>
 #include <QPushButton>
+#include <QToolButton>
 
 #include "../App/TPG/TPGSettings.h"
 
@@ -222,12 +223,50 @@ class CamGuiExport CamFilenameComponent: public QObject, public CamComponent {
 	Q_OBJECT
 
 protected:
-	QPushButton	*button;
+	QToolButton	*button;
     CamLineEdit *camLineEdit;
 
 public:
 
     CamFilenameComponent();
+
+    /**
+     * Creates the UI for this component and loads the initial value
+     */
+    virtual bool makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form);
+
+    /**
+     * Saves the values on the UI to the TPGSetting instance
+     */
+    virtual bool close();
+
+private Q_SLOTS:
+
+    /**
+     * Slot to receive messages when the user changes the text value
+     */
+    void editingFinished();
+	void handleButton();
+
+};
+
+
+
+// ----- CamDirectoryComponent ---------------------------------------------------------
+/**
+ * Object that manages a Cam::Directory setting
+ */
+class CamGuiExport CamDirectoryComponent: public QObject, public CamComponent {
+
+	Q_OBJECT
+
+protected:
+	QToolButton	*button;
+    CamLineEdit *camLineEdit;
+
+public:
+
+    CamDirectoryComponent();
 
     /**
      * Creates the UI for this component and loads the initial value

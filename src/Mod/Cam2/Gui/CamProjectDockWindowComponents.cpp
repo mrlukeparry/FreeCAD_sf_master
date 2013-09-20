@@ -454,7 +454,7 @@ bool CamFilenameComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLa
 
             // make the push button
             QString qvalue = tpgsetting->getValue();
-            button = new QPushButton(widget);
+            button = new QToolButton(widget);
 			button->setObjectName(QString::fromAscii("SelectFile"));
             button->setText(QString::fromAscii("..."));
 			// connect events
@@ -497,9 +497,126 @@ void CamFilenameComponent::handleButton()
 	{
 		this->camLineEdit->setText(filename);
 	}
-
 }
 
+
+
+
+
+
+
+
+CamDirectoryComponent::CamDirectoryComponent()
+: QObject(), CamComponent() {
+    this->camLineEdit = NULL;
+	this->button = NULL;
+}
+
+/**
+ * Slot to receive messages when the user changes the text value
+ */
+void CamDirectoryComponent::editingFinished() {
+	if (camLineEdit != NULL && tpgsetting != NULL) {
+		QString qvalue = camLineEdit->text();
+		if (!tpgsetting->setValue(qvalue))
+		{
+			Base::Console().Error("Saving failed: '%s'\n", tpgsetting->name.toStdString().c_str());
+			camLineEdit->setText(tpgsetting->getValue());
+		}
+	}
+	else
+		Base::Console().Error("Saving a setting failed!\n");
+}
+
+/**
+ * Creates the UI for this component and loads the initial value
+ */
+bool CamDirectoryComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form) {
+    if (tpgsetting != NULL)
+    {
+        // grab a copy of the setting so we can save it later
+        this->tpgsetting = tpgsetting->grab();
+
+        // construct the ui
+        QWidget *parent = dynamic_cast<QWidget*>(form->parent());
+        if (parent != NULL) {
+            int row = form->rowCount();
+            QString qname = tpgsetting->getFullname();
+
+            // make the label
+            QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
+            form->setWidget(row, QFormLayout::LabelRole, labelWidget);
+            labelWidget->setToolTip(tpgsetting->helptext);
+
+            // make the container
+            QWidget *widget = new QWidget(parent);
+            QHBoxLayout *layout = new QHBoxLayout(widget);
+            layout->setContentsMargins(0,0,0,0);
+            widget->setLayout(layout);
+            widget->setObjectName(qname);
+            widget->setToolTip(tpgsetting->helptext);
+			form->setWidget(row, QFormLayout::FieldRole, widget);
+
+			// make the edit box
+            camLineEdit = new CamLineEdit(parent, tpgsetting);
+            camLineEdit->setObjectName(qname);
+            camLineEdit->setText(tpgsetting->getValue());
+            camLineEdit->setToolTip(tpgsetting->helptext);
+			camLineEdit->setPlaceholderText(tpgsetting->helptext);
+			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
+			camLineEdit->setValidator(validator);
+            // connect events
+        	QObject::connect(camLineEdit, SIGNAL(editingFinished()), this,
+        			SLOT(editingFinished()));
+			layout->addWidget(camLineEdit);
+
+            // make the push button
+            QString qvalue = tpgsetting->getValue();
+            button = new QToolButton(widget);
+			button->setObjectName(QString::fromAscii("SelectFile"));
+            button->setText(QString::fromAscii("..."));
+			// connect events
+        	QObject::connect(button, SIGNAL(pressed()), this,
+        			SLOT(handleButton()));
+            layout->addWidget(button);
+
+            // keep reference to widgets for later cleanup
+            rootComponents.push_back(labelWidget);
+            rootComponents.push_back(widget);
+
+            return true;
+        }
+        Base::Console().Warning("Warning: Unable to find parent widget for (%p)\n", form->parent());
+    }
+
+    Base::Console().Warning("Warning: Not given a TPGSettingDefinition\n");
+    return false;
+}
+
+/**
+ * Saves the values on the UI to the TPGSetting instance
+ */
+bool CamDirectoryComponent::close() {
+//    if (widget != NULL && tpgsetting != NULL) {
+//    	QString qvalue = widget->text();
+//        return tpgsetting->setValue(qvalue);
+//    }
+    return true;
+}
+
+void CamDirectoryComponent::handleButton()
+{
+	QString caption = QString::fromAscii("Caption");
+	QString directory = QString::fromAscii("c:\\david");
+	QString filter = QString::fromAscii("*.*");
+
+	QString dir = QFileDialog::getExistingDirectory(NULL, caption, directory, QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+	if (dir.isNull() == false)
+	{
+		this->camLineEdit->setText(dir);
+	}
+}
 
 
 #include "moc_CamProjectDockWindowComponents.cpp"

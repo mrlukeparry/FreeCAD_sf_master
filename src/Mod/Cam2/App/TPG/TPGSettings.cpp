@@ -168,6 +168,9 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validate(QString & i
 	case SettingType_Filename:
 		return(validateFilename(input, position));
 
+	case SettingType_Directory:
+		return(validateDirectory(input, position));
+
 	default:
 		return(this->Acceptable);
 	}
@@ -183,6 +186,10 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateFilename(QSt
 	return(this->Acceptable);
 }
 
+TPGSettingDefinition::ValidationState TPGSettingDefinition::validateDirectory(QString & input,int & position) const
+{
+	return(this->Acceptable);
+}
 
 TPGSettingDefinition::ValidationState TPGSettingDefinition::validateLength(QString & input,int & position) const
 {
