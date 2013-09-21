@@ -503,6 +503,7 @@ void CamFilenameComponent::handleButton()
 	if (filename.isNull() == false)
 	{
 		this->camLineEdit->setText(filename);
+		this->tpgsetting->setValue(filename);
 	}
 }
 
@@ -622,6 +623,7 @@ void CamDirectoryComponent::handleButton()
 	if (dir.isNull() == false)
 	{
 		this->camLineEdit->setText(dir);
+		this->tpgsetting->setValue(dir);
 	}
 }
 
