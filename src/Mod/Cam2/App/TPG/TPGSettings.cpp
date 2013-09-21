@@ -39,7 +39,7 @@
 
 #include <math.h>
 
-#include <boost/property_tree/ini_parser.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/exceptions.hpp>
 
@@ -710,22 +710,24 @@ bool TPGColorSettingDefinition::get(int &red, int &green, int &blue, int &alpha)
 
 		std::stringstream encoded_value;
 		encoded_value << this->getValue().toAscii().constData();
+		qDebug("%s\n", encoded_value.str().c_str());
 		
-		read_ini(encoded_value, pt);
+		read_json(encoded_value, pt);
 
-		red = pt.get<int>("color.red");
+		red   = pt.get<int>("color.red");
 		green = pt.get<int>("color.green");
-		blue = pt.get<int>("color.blue");
+		blue  = pt.get<int>("color.blue");
 		alpha = pt.get<int>("color.alpha");
+
 		return(true);	// success.
 	}
 	catch(boost::property_tree::ptree_error const & error)
 	{
 		qWarning("%s\n", error.what());
-		memset( &red, 0xFF, sizeof(red) );
-		memset( &green, 0xFF, sizeof(green) );
-		memset( &blue, 0xFF, sizeof(blue) );
-		memset( &alpha, 0xFF, sizeof(alpha) );
+		red = 0;
+		green = 255;
+		blue = 0;
+		alpha = 255;
 
 		return(false);	// failure.
 	}
@@ -743,7 +745,7 @@ void TPGColorSettingDefinition::set(const int red, const int green, const int bl
 	
 	std::ostringstream encoded_value;
 
-	write_ini(encoded_value, pt);
+	write_json(encoded_value, pt);
 	this->setValue(QString::fromStdString(encoded_value.str()));
 }
 
