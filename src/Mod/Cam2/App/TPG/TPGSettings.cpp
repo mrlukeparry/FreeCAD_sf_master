@@ -742,7 +742,7 @@ void TPGColorSettingDefinition::set(const int red, const int green, const int bl
 	pt.put("color.green", green);
 	pt.put("color.blue", blue);
 	pt.put("color.alpha", alpha);
-	
+
 	std::ostringstream encoded_value;
 
 	write_json(encoded_value, pt);

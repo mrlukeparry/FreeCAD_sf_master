@@ -707,7 +707,13 @@ bool CamColorComponent::close() {
 
 void CamColorComponent::handleButton()
 {
-	QColor color = QColorDialog::getColor(Qt::green, NULL);
+	Cam::TPGColorSettingDefinition *pColorSetting = (Cam::TPGColorSettingDefinition *) this->tpgsetting;
+
+	int red, green, blue, alpha;
+	pColorSetting->get(red, green, blue, alpha);
+	QColor initial(red, green, blue, alpha);
+
+	QColor color = QColorDialog::getColor(initial, NULL);
 	if (color.isValid())
 	{
 		QPalette palette(color);
@@ -719,7 +725,7 @@ void CamColorComponent::handleButton()
 		// the verbose (string) represenation of the QColor for storage in the PropTPGSettings property
 		// within the TPGFeature.
 
-		Cam::TPGColorSettingDefinition *pColorSetting = (Cam::TPGColorSettingDefinition *) this->tpgsetting;
+		
 		pColorSetting->set( color.red(), color.green(), color.blue(), color.alpha() );
 	}
 	
