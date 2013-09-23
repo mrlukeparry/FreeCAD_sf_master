@@ -219,6 +219,10 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateLength(QStri
 
 TPGSettingDefinition::ValidationState TPGSettingDefinition::validateInteger(QString & input,int & position) const
 {
+	if (input.length() == 0) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
+
 	int minimum = 0;
 	int maximum = 99999999;
 	for (QList<TPGSettingOption*>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
@@ -234,29 +238,30 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateInteger(QStr
 		}
 	}
 
-	if (input.length() == 0) return(this->Intermediate);
-	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
-	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
-
-	bool ok = false;
-	int value = input.toInt( &ok );
-	if (! ok)
+	double value;
+	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		return(this->Invalid);
-	}
-
-	if ((minimum <= value) && (value <= maximum))
-	{
-		return(this->Acceptable);
+		if ((minimum <= value) && (value <= maximum))
+		{
+			return(this->Acceptable);
+		}
+		else
+		{
+			return(this->Invalid);
+		}
 	}
 	else
 	{
-		return(this->Invalid);
+		return(this->Intermediate);
 	}
 }
 
 TPGSettingDefinition::ValidationState TPGSettingDefinition::validateDouble(QString & input,int & position) const
 {
+	if (input.length() == 0) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
+
 	double minimum = 0.0;
 	double maximum = 99999999.9;
 	for (QList<TPGSettingOption*>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
@@ -272,24 +277,21 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateDouble(QStri
 		}
 	}
 
-	if (input.length() == 0) return(this->Intermediate);
-	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
-	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
-
-	bool ok = false;
-	int value = input.toDouble( &ok );
-	if (! ok)
+	double value;
+	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		return(this->Invalid);
-	}
-
-	if ((minimum <= value) && (value <= maximum))
-	{
-		return(this->Acceptable);
+		if ((minimum <= value) && (value <= maximum))
+		{
+			return(this->Acceptable);
+		}
+		else
+		{
+			return(this->Invalid);
+		}
 	}
 	else
 	{
-		return(this->Invalid);
+		return(this->Intermediate);
 	}
 }
 
@@ -765,7 +767,9 @@ void TPGSettings::onPropTPGSettingsChanged(const App::PropertyMap* property_map)
 }
 
 
-
+/**
+	Interpret the entered_value as a Python script that should return a floating point number.
+ */
 bool TPGSettings::EvaluateLength( const TPGSettingDefinition *definition, const char *entered_value, double *pResult ) const
 {	
 
