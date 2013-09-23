@@ -173,6 +173,12 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validate(QString & i
 	case SettingType_Color:
 		return(validateColor(input, position));
 
+	case SettingType_Integer:
+		return(validateInteger(input, position));
+
+	case SettingType_Double:
+		return(validateDouble(input, position));
+
 	default:
 		return(this->Acceptable);
 	}
@@ -208,6 +214,82 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateLength(QStri
 	else
 	{
 		return(this->Intermediate);
+	}
+}
+
+TPGSettingDefinition::ValidationState TPGSettingDefinition::validateInteger(QString & input,int & position) const
+{
+	int minimum = 0;
+	int maximum = 99999999;
+	for (QList<TPGSettingOption*>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
+	{
+		if ((*itOption)->id == QString::fromAscii("minimum"))
+		{
+			minimum = (*itOption)->label.toInt();
+		}
+
+		if ((*itOption)->id == QString::fromAscii("maximum"))
+		{
+			maximum = (*itOption)->label.toInt();
+		}
+	}
+
+	if (input.length() == 0) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
+
+	bool ok = false;
+	int value = input.toInt( &ok );
+	if (! ok)
+	{
+		return(this->Invalid);
+	}
+
+	if ((minimum <= value) && (value <= maximum))
+	{
+		return(this->Acceptable);
+	}
+	else
+	{
+		return(this->Invalid);
+	}
+}
+
+TPGSettingDefinition::ValidationState TPGSettingDefinition::validateDouble(QString & input,int & position) const
+{
+	double minimum = 0.0;
+	double maximum = 99999999.9;
+	for (QList<TPGSettingOption*>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
+	{
+		if ((*itOption)->id == QString::fromAscii("minimum"))
+		{
+			minimum = (*itOption)->label.toDouble();
+		}
+
+		if ((*itOption)->id == QString::fromAscii("maximum"))
+		{
+			maximum = (*itOption)->label.toDouble();
+		}
+	}
+
+	if (input.length() == 0) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
+
+	bool ok = false;
+	int value = input.toDouble( &ok );
+	if (! ok)
+	{
+		return(this->Invalid);
+	}
+
+	if ((minimum <= value) && (value <= maximum))
+	{
+		return(this->Acceptable);
+	}
+	else
+	{
+		return(this->Invalid);
 	}
 }
 

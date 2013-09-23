@@ -165,6 +165,9 @@ PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, Py
 	else if (qsType == QString::fromAscii("Cam::Directory")) data_type = Cam::TPGSettingDefinition::SettingType_Directory;
 	else if (qsType == QString::fromAscii("Cam::Color")) data_type = Cam::TPGSettingDefinition::SettingType_Color;
 	else if (qsType == QString::fromAscii("Cam::Colour")) data_type = Cam::TPGSettingDefinition::SettingType_Color;
+	else if (qsType == QString::fromAscii("Cam::Integer")) data_type = Cam::TPGSettingDefinition::SettingType_Integer;
+	else if (qsType == QString::fromAscii("Cam::Double")) data_type = Cam::TPGSettingDefinition::SettingType_Double;
+	else if (qsType == QString::fromAscii("Cam::Float")) data_type = Cam::TPGSettingDefinition::SettingType_Double;
 
 	self->setting = new Cam::TPGSettingDefinition(name, label, data_type, defaultvalue, units, helptext);
     return 0;

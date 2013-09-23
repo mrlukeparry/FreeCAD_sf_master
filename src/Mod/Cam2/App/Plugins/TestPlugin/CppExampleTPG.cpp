@@ -164,26 +164,40 @@ CppExampleTPG::~CppExampleTPG() {
 		settings->addSettingDefinition(qaction, references_setting);
 
 
-		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), 
+		TPGSettingDefinition *depth_setting = new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), 
 																		 SettingName_Depth.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Text, 
+																		 TPGSettingDefinition::SettingType_Length, 
 																		 "10.0",
 																		 "mm",
-																		 "Distance from the current Z location to the bottom of the hole.  Must be positive"));
+																		 "Distance from the current Z location to the bottom of the hole.  Must be positive");
+		depth_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("0.0"));
+		depth_setting->addOption(QString::fromAscii("maximum"), QString::fromAscii("99999.0"));
 
-		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Standoff.toAscii().constData(), 
+		settings->addSettingDefinition(qaction, depth_setting);
+
+		TPGSettingDefinition *standoff_setting = new TPGSettingDefinition(SettingName_Standoff.toAscii().constData(), 
 																		 SettingName_Standoff.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Text, 
+																		 TPGSettingDefinition::SettingType_Length, 
 																		 "5.0",
 																		 "mm",
-																		 "Distance above the drilling point location to retract to following the drilling cycle."));
+																		 "Distance above the drilling point location to retract to following the drilling cycle.");
+		standoff_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("0.0"));
+		standoff_setting->addOption(QString::fromAscii("maximum"), QString::fromAscii("99.0"));
 
-		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Dwell.toAscii().constData(), 
+		settings->addSettingDefinition(qaction, standoff_setting);
+
+		TPGSettingDefinition *dwell_setting = new TPGSettingDefinition(SettingName_Dwell.toAscii().constData(), 
 																		 SettingName_Dwell.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Text, 
+																		 TPGSettingDefinition::SettingType_Double, 
 																		 "0.0",
 																		 "seconds",
-																		 "Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'"));
+																		 "Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'");
+		dwell_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("0.0"));
+		dwell_setting->addOption(QString::fromAscii("maximum"), QString::fromAscii("99.0"));
+		
+		settings->addSettingDefinition(qaction, dwell_setting);
+
+
 
 		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_PeckDepth.toAscii().constData(), 
 																		 SettingName_PeckDepth.toAscii().constData(),
@@ -270,6 +284,16 @@ CppExampleTPG::~CppExampleTPG() {
 																		 "Colour",
 																		 "Dummy setting to test the new SettingType_Color enumeration."));
 
+		TPGSettingDefinition *test_integer_setting = new TPGSettingDefinition("Integer", 
+																		 "My Special Integer",
+																		 TPGSettingDefinition::SettingType_Integer,
+																		 "3",
+																		 "an integer",
+																		 "Dummy setting to test the new SettingType_Integer. Must be between 0 and 10");
+		test_integer_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("1"));
+		test_integer_setting->addOption(QString::fromAscii("maximum"), QString::fromAscii("10"));
+
+		settings->addSettingDefinition(qaction, test_integer_setting);
 
 
 		

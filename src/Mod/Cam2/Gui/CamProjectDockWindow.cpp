@@ -116,6 +116,10 @@ bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool save
                     comp = new CamDirectoryComponent();
 				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Color)
                     comp = new CamColorComponent();
+				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Integer)
+                    comp = new CamTextBoxComponent();
+				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Double)
+                    comp = new CamTextBoxComponent();
                 else
                     continue;
                 components.append(comp);

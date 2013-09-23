@@ -105,7 +105,9 @@ public:
 		SettingType_Length,			// MUST have units of 'mm' or 'inch' for this to make sense.
 		SettingType_Filename,
 		SettingType_Directory,
-		SettingType_Color
+		SettingType_Color,
+		SettingType_Integer,
+		SettingType_Double
 	} SettingType;
 
 	typedef enum {
@@ -156,6 +158,8 @@ public:
 	ValidationState validateFilename(QString & input,int & position) const;
 	ValidationState validateDirectory(QString & input,int & position) const;
 	ValidationState validateColor(QString & input,int & position) const;
+	ValidationState validateInteger(QString & input,int & position) const;
+	ValidationState validateDouble(QString & input,int & position) const;
 
 	/**
 	 * Perform a deep copy of this class
