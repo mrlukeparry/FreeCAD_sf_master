@@ -223,32 +223,27 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateInteger(QStr
 	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
 	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
 
-	int minimum = 0;
-	int maximum = 99999999;
+	std::auto_ptr<int> pMinimum;
+	std::auto_ptr<int> pMaximum;
 	for (QList<TPGSettingOption*>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
 	{
 		if ((*itOption)->id == QString::fromAscii("minimum"))
 		{
-			minimum = (*itOption)->label.toInt();
+			pMinimum.reset( new int((*itOption)->label.toInt()));
 		}
 
 		if ((*itOption)->id == QString::fromAscii("maximum"))
 		{
-			maximum = (*itOption)->label.toInt();
+			pMaximum.reset( new int((*itOption)->label.toInt()));
 		}
 	}
 
 	double value;
 	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		if ((minimum <= value) && (value <= maximum))
-		{
-			return(this->Acceptable);
-		}
-		else
-		{
-			return(this->Invalid);
-		}
+		if ((pMinimum.get()) && (value < *pMinimum)) return(this->Invalid);
+		if ((pMaximum.get()) && (value > *pMaximum)) return(this->Invalid);
+		return(this->Acceptable);
 	}
 	else
 	{
@@ -262,32 +257,27 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateDouble(QStri
 	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
 	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
 
-	double minimum = 0.0;
-	double maximum = 99999999.9;
+	std::auto_ptr<double> pMinimum;
+	std::auto_ptr<double> pMaximum;
 	for (QList<TPGSettingOption*>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
 	{
 		if ((*itOption)->id == QString::fromAscii("minimum"))
 		{
-			minimum = (*itOption)->label.toDouble();
+			pMinimum.reset( new double((*itOption)->label.toDouble()));
 		}
 
 		if ((*itOption)->id == QString::fromAscii("maximum"))
 		{
-			maximum = (*itOption)->label.toDouble();
+			pMaximum.reset( new double((*itOption)->label.toDouble()));
 		}
 	}
 
 	double value;
 	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		if ((minimum <= value) && (value <= maximum))
-		{
-			return(this->Acceptable);
-		}
-		else
-		{
-			return(this->Invalid);
-		}
+		if ((pMinimum.get()) && (value < *pMinimum)) return(this->Invalid);
+		if ((pMaximum.get()) && (value > *pMaximum)) return(this->Invalid);
+		return(this->Acceptable);
 	}
 	else
 	{
@@ -837,6 +827,72 @@ void TPGColorSettingDefinition::set(const int red, const int green, const int bl
 
 
 
+TPGLengthSettingDefinition::TPGLengthSettingDefinition(
+		const char *name, 
+		const char *label, 
+		const char *helptext,
+		const double default_value,
+		const double minimum, 
+		const double maximum, 
+		const TPGSettingDefinition::Units_t units ):
+	  TPGSettingDefinition(name, label, SettingType_Length, "", "", helptext)
+{
+	switch (units)
+	{
+	case Metric:
+		TPGSettingDefinition::units = QString::fromAscii("mm");
+		break;
+
+	case Imperial:
+	default:
+		TPGSettingDefinition::units = QString::fromAscii("inch");
+		break;
+	}
+
+	std::ostringstream min;
+	min << minimum;
+
+	std::ostringstream max;
+	max << maximum;
+
+	this->options.push_back( new TPGSettingOption(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
+	this->options.push_back( new TPGSettingOption(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
+
+	std::ostringstream def_val;
+	def_val << default_value;
+	TPGSettingDefinition::defaultvalue = QString::fromStdString(def_val.str());
+}
+
+TPGLengthSettingDefinition::TPGLengthSettingDefinition(
+		const char *name, 
+		const char *label, 
+		const char *helptext,
+		const double default_value,
+		const TPGSettingDefinition::Units_t units ):
+	  TPGSettingDefinition(name, label, SettingType_Length, "", "", helptext)
+{
+	switch (units)
+	{
+	case Metric:
+		TPGSettingDefinition::units = QString::fromAscii("mm");
+		break;
+
+	case Imperial:
+	default:
+		TPGSettingDefinition::units = QString::fromAscii("inch");
+		break;
+	}
+
+	std::ostringstream min;
+	min << minimum;
+
+	std::ostringstream max;
+	max << maximum;
+
+	std::ostringstream def_val;
+	def_val << default_value;
+	TPGSettingDefinition::defaultvalue = QString::fromStdString(def_val.str());
+}
 
 
 

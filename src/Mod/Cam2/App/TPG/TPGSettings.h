@@ -73,6 +73,13 @@ public:
 class CamExport TPGSettingDefinition
 {
 public:
+	typedef enum
+	{
+		Metric = 0,
+		Imperial
+	} Units_t;
+
+public:
 	/**
 		Define an enumeration for the types of settings we support.
 
@@ -204,7 +211,6 @@ public:
  */
 class CamExport TPGSettings
 {
-
 public:
     TPGSettings();
     ~TPGSettings();
@@ -326,11 +332,33 @@ private:
 // Declare some classes used to get/set TPGSettingDefinition values depending on the
 // type of TPGSettingDefinition object used.
 
-class CamExport TPGColorSettingDefinition : TPGSettingDefinition
+class CamExport TPGColorSettingDefinition : public TPGSettingDefinition
 {
 public:
+	TPGColorSettingDefinition(const char *name, const char *label, const char *helptext ):
+	  TPGSettingDefinition(name, label, SettingType_Color, "", "", helptext)
+	{
+	}
+
 	bool get(int &red, int &green, int &blue, int &alpha);
 	void set(const int red, const int green, const int blue, const int alpha);
+};
+
+class CamExport TPGLengthSettingDefinition : public TPGSettingDefinition
+{
+public:
+	TPGLengthSettingDefinition(	const char *name, 
+								const char *label, 
+								const char *helptext,
+								const double default_value,
+								const double minimum, 
+								const double maximum, 
+								const TPGSettingDefinition::Units_t units );
+	TPGLengthSettingDefinition(	const char *name, 
+								const char *label, 
+								const char *helptext,
+								const double default_value,
+								const TPGSettingDefinition::Units_t units );
 };
 
 

@@ -146,43 +146,20 @@ CppExampleTPG::~CppExampleTPG() {
 	if (settings != NULL)
 	{
 		// We should have a settings pointer by now due to the CppTPG::initialise() call
-
-		TPGSettingDefinition *references_setting = new TPGSettingDefinition(SettingName_ReferenceObjects.toAscii().constData(), 
-																		 SettingName_ReferenceObjects.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_ObjectNamesForType, 
-																		 "",
-																		 Part::Feature::getClassTypeId().getName(),
-																		 "Reference object names whose types are appropriate for this TPG.  Names must be separated by spaces and/or commas only.");
-		// The object names will be separated by commas and/or spaces.  Make sure we tell the TPGSettingDefinition object this fact so that
-		// it can parse out the object names during its data validation processing.
-		references_setting->addOption(QString::fromAscii("Delimiters"), QString::fromAscii(" \t,"));
-
-		// We need to specify object type names that can be passed into the Base::Type::fromName() method to validate the types of
-		// objects whose names are included in this setting.
-		references_setting->addOption(QString::fromAscii("TypeId"), QString::fromAscii(Part::Feature::getClassTypeId().getName()));
-
-		settings->addSettingDefinition(qaction, references_setting);
-
-
-		TPGSettingDefinition *depth_setting = new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), 
+		TPGLengthSettingDefinition *depth_setting = new TPGLengthSettingDefinition(SettingName_Depth.toAscii().constData(), 
 																		 SettingName_Depth.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Length, 
-																		 "10.0",
-																		 "mm",
+																		 5.0,
+																		 TPGSettingDefinition::Metric,
 																		 "Distance from the current Z location to the bottom of the hole.  Must be positive");
-		depth_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("0.0"));
-		depth_setting->addOption(QString::fromAscii("maximum"), QString::fromAscii("99999.0"));
-
+		depth_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("0.0"));	// must be positive.  No maximum.
 		settings->addSettingDefinition(qaction, depth_setting);
 
-		TPGSettingDefinition *standoff_setting = new TPGSettingDefinition(SettingName_Standoff.toAscii().constData(), 
+		TPGLengthSettingDefinition *standoff_setting = new TPGLengthSettingDefinition(SettingName_Standoff.toAscii().constData(), 
 																		 SettingName_Standoff.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Length, 
-																		 "5.0",
-																		 "mm",
+																		 TPGSettingDefinition::SettingType_Length,
+																		 5.0,
+																		 TPGSettingDefinition::Metric,
 																		 "Distance above the drilling point location to retract to following the drilling cycle.");
-		standoff_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("0.0"));
-		standoff_setting->addOption(QString::fromAscii("maximum"), QString::fromAscii("99.0"));
 
 		settings->addSettingDefinition(qaction, standoff_setting);
 
@@ -193,17 +170,15 @@ CppExampleTPG::~CppExampleTPG() {
 																		 "seconds",
 																		 "Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'");
 		dwell_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("0.0"));
-		dwell_setting->addOption(QString::fromAscii("maximum"), QString::fromAscii("99.0"));
 		
 		settings->addSettingDefinition(qaction, dwell_setting);
 
 
 
-		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_PeckDepth.toAscii().constData(), 
+		settings->addSettingDefinition(qaction, new TPGLengthSettingDefinition(SettingName_PeckDepth.toAscii().constData(), 
 																		 SettingName_PeckDepth.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Text, 
-																		 "5.0",
-																		 "mm",
+																		 5.0,
+																		 TPGSettingDefinition::Metric,
 																		 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled."));
 
 		std::ostringstream default_retract_mode;
@@ -237,11 +212,10 @@ CppExampleTPG::~CppExampleTPG() {
 
 
 
-		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Clearance.toAscii().constData(), 
+		settings->addSettingDefinition(qaction, new TPGLengthSettingDefinition(SettingName_Clearance.toAscii().constData(), 
 																		 SettingName_Clearance.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Length, 
-																		 "30.0",
-																		 "mm",
+																		 30.0,
+																		 TPGSettingDefinition::Metric,
 																		 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece."));
 
 		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_SpindleSpeed.toAscii().constData(), 
