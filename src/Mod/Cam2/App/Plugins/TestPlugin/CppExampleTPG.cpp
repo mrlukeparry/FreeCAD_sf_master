@@ -148,18 +148,17 @@ CppExampleTPG::~CppExampleTPG() {
 		// We should have a settings pointer by now due to the CppTPG::initialise() call
 		TPGLengthSettingDefinition *depth_setting = new TPGLengthSettingDefinition(SettingName_Depth.toAscii().constData(), 
 																		 SettingName_Depth.toAscii().constData(),
+																		 "Distance from the current Z location to the bottom of the hole.  Must be positive",
 																		 5.0,
-																		 TPGSettingDefinition::Metric,
-																		 "Distance from the current Z location to the bottom of the hole.  Must be positive");
+																		 TPGSettingDefinition::Metric );
 		depth_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("0.0"));	// must be positive.  No maximum.
 		settings->addSettingDefinition(qaction, depth_setting);
 
 		TPGLengthSettingDefinition *standoff_setting = new TPGLengthSettingDefinition(SettingName_Standoff.toAscii().constData(), 
 																		 SettingName_Standoff.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Length,
+																		 "Distance above the drilling point location to retract to following the drilling cycle.",
 																		 5.0,
-																		 TPGSettingDefinition::Metric,
-																		 "Distance above the drilling point location to retract to following the drilling cycle.");
+																		 TPGSettingDefinition::Metric );
 
 		settings->addSettingDefinition(qaction, standoff_setting);
 
@@ -177,9 +176,9 @@ CppExampleTPG::~CppExampleTPG() {
 
 		settings->addSettingDefinition(qaction, new TPGLengthSettingDefinition(SettingName_PeckDepth.toAscii().constData(), 
 																		 SettingName_PeckDepth.toAscii().constData(),
+																		 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled.",
 																		 5.0,
-																		 TPGSettingDefinition::Metric,
-																		 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled."));
+																		 TPGSettingDefinition::Metric));
 
 		std::ostringstream default_retract_mode;
 		default_retract_mode << int(eRapidRetract);	// Use the conversion method to retrieve the string used for retraction.
@@ -214,9 +213,9 @@ CppExampleTPG::~CppExampleTPG() {
 
 		settings->addSettingDefinition(qaction, new TPGLengthSettingDefinition(SettingName_Clearance.toAscii().constData(), 
 																		 SettingName_Clearance.toAscii().constData(),
+																		 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece.",
 																		 30.0,
-																		 TPGSettingDefinition::Metric,
-																		 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece."));
+																		 TPGSettingDefinition::Metric ));
 
 		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_SpindleSpeed.toAscii().constData(), 
 																		 SettingName_SpindleSpeed.toAscii().constData(),

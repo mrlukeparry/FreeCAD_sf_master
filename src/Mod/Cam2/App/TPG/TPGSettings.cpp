@@ -883,12 +883,6 @@ TPGLengthSettingDefinition::TPGLengthSettingDefinition(
 		break;
 	}
 
-	std::ostringstream min;
-	min << minimum;
-
-	std::ostringstream max;
-	max << maximum;
-
 	std::ostringstream def_val;
 	def_val << default_value;
 	TPGSettingDefinition::defaultvalue = QString::fromStdString(def_val.str());
