@@ -114,11 +114,42 @@ CamTextBoxComponent::CamTextBoxComponent()
  */
 void CamTextBoxComponent::editingFinished() {
 	if (widget != NULL && tpgsetting != NULL) {
-		QString qvalue = widget->text();
-		if (!tpgsetting->setValue(qvalue))
+		switch (tpgsetting->type)
 		{
-			Base::Console().Error("Saving failed: '%s'\n", tpgsetting->name.toStdString().c_str());
-			widget->setText(tpgsetting->getValue());
+		case Cam::TPGSettingDefinition::SettingType_Length:
+			{
+				Cam::TPGLengthSettingDefinition *length_setting = (Cam::TPGLengthSettingDefinition *) tpgsetting;
+				if (length_setting)
+				{
+					double value;
+					if (length_setting->Evaluate(widget->text().toAscii().constData(), &value))
+					{
+						std::ostringstream oss_value;
+						oss_value << value;
+						if (!length_setting->setValue(QString::fromStdString(oss_value.str())))
+						{
+							Base::Console().Error("Saving failed: '%s'\n", length_setting->name.toStdString().c_str());
+							widget->setText(length_setting->getValue());
+						}
+						else
+						{
+							widget->setText(QString::fromStdString(oss_value.str()));
+						}
+					}
+				}
+			}
+			break;
+
+		default:
+			{
+				QString qvalue = widget->text();
+				if (!tpgsetting->setValue(qvalue))
+				{
+					Base::Console().Error("Saving failed: '%s'\n", tpgsetting->name.toStdString().c_str());
+					widget->setText(tpgsetting->getValue());
+				}
+			}
+			break;
 		}
 	}
 	else

@@ -199,6 +199,9 @@ public:
 
     /// get the namespaced name <action>::<name>
     QString getFullname();
+
+	/// Used by the TPGSetting::EvaluateWithPython() method.
+	bool AddToPythonDictionary(PyObject *dictionary);
 };
 
 /** 
@@ -300,6 +303,7 @@ public:
     void release();
 
 	bool EvaluateLength( const TPGSettingDefinition *definition, const char *entered_value, double *pResult ) const;
+	bool EvaluateWithPython( const TPGSettingDefinition *definition, QString value, QString & evaluated_version ) const;
 
 protected:
 
@@ -359,6 +363,8 @@ public:
 								const char *helptext,
 								const double default_value,
 								const TPGSettingDefinition::Units_t units );
+
+	bool Evaluate( const char *entered_value, double *pResult ) const;
 };
 
 

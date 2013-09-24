@@ -43,6 +43,12 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/exceptions.hpp>
 
+#include <Base/Interpreter.h>
+
+#include <Base/PyTools.h>
+#include <Base/Exception.h>
+#include <Base/PyObjectBase.h>
+
 namespace Cam {
 
 const char* ts(QString str)
@@ -757,15 +763,290 @@ void TPGSettings::onPropTPGSettingsChanged(const App::PropertyMap* property_map)
 }
 
 
+static std::pair<std::string::size_type, std::string::size_type> next_possible_number(const std::string & value, std::string::size_type offset )
+{
+	std::pair<std::string::size_type, std::string::size_type> results = std::make_pair(std::string::npos, std::string::npos);
+
+	for ( ; offset < value.length(); offset++)
+	{
+		if ((value[offset] == '-') ||
+			(value[offset] == '+') ||
+			(value[offset] == '.') ||
+			((value[offset] >= '0') &&
+			 (value[offset] <= '9')))
+		{
+			if (results.first == std::string::npos)
+			{
+				results.first = offset;
+			}
+			else
+			{
+				// We already have the starting point.  Just keep stepping through the number.
+			}
+		}
+		else
+		{
+			if (results.first != std::string::npos)
+			{
+				results.second = offset-1;
+				return(results);
+			}
+		}
+	}
+
+	if (results.first != std::string::npos)
+	{
+		results.second = value.length() - 1;
+		return(results);
+	}
+
+	return(results);
+}
+
+
+
+
+
+/**
+    Use the Python interpreter to evaluate the 'value' string passed in.  Before
+    doing this, however, define all the variable=value pairs found in the settings
+    list just in case the 'value' expression uses one of these properties as
+    a reference.  eg: if a propertyDouble has 'diameter'='3.4' and the
+    'value'='diameter / 2.0' then we need to end up returning '1.7' in a QString.
+ */
+bool TPGSettings::EvaluateWithPython( const TPGSettingDefinition *definition, QString value, QString & evaluated_version ) const
+{
+    // QString evaluated_version;
+    bool return_status = false;
+
+    // Py_Initialize() and Py_Finalize() should only occur once per process.  Do it in the main application framework instead.
+    // Py_Initialize();
+
+	// Lock the 'Global Interpreter Lock' so that we're not interrupted during our execution.
+	Base::PyGILStateLocker locker;	
+
+    PyObject *pModule = PyImport_ImportModule("math");
+
+    if (pModule != NULL)
+    {
+        PyObject *pDictionary = PyModule_GetDict(pModule);
+
+        if (pDictionary != NULL)
+        {
+			/*
+			if (pProperties != NULL)
+			{
+				// Add the variable=value commands to this dictionary just in case the user wants
+				// to use one of the other parameters within their expression.  eg: 'diameter/2.0'
+				for (std::list<Property *>::const_iterator itProperty = pProperties->begin(); itProperty != pProperties->end(); itProperty++)
+				{
+					PyObject *pName = (*itProperty)->PyName();
+					PyObject *pValue = (*itProperty)->PyValue();
+
+					if ((pName != NULL) && (pValue != NULL))
+					{
+						PyDict_SetItem(pDictionary, pName, pValue);
+					}
+
+					Py_XDECREF(pName); pName=NULL;
+					Py_XDECREF(pValue); pValue=NULL;
+				}
+			}
+		*/
+
+			std::string interpreted_value(value.toStdString());
+
+			// Run through the value looking for the various units (inch/mm) and
+			// add the modification required to convert it into mm.
+			//
+			// eg: '1/8 inch' -> '((1/8) * 25.4)'  (assuming we're using mm)
+			// eg: '1/8 inch' -> '((1/8) * 1.0)'  (assuming we're using inches)
+			// eg: '1/8 mm' -> '((1/8) / 25.4)'  (assuming we're using inches)
+
+			typedef std::list< std::pair<std::string, std::string> >  Patterns_t;
+			Patterns_t patterns;
+
+			if (definition->units == QString::fromAscii("mm"))
+			{
+				// We're using mm.
+				patterns.push_back( std::make_pair(std::string("Inches"), std::string(" * 25.4")));
+				patterns.push_back( std::make_pair(std::string("inches"), std::string(" * 25.4")));
+				patterns.push_back( std::make_pair(std::string("INCHES"), std::string(" * 25.4")));
+				patterns.push_back( std::make_pair(std::string("Inch"), std::string(" * 25.4")));
+				patterns.push_back( std::make_pair(std::string("INCH"), std::string(" * 25.4")));
+				patterns.push_back( std::make_pair(std::string("inch"), std::string(" * 25.4")));
+				patterns.push_back( std::make_pair(std::string("In"), std::string(" * 25.4")));
+				patterns.push_back( std::make_pair(std::string("IN"), std::string(" * 25.4")));
+				patterns.push_back( std::make_pair(std::string("in"), std::string(" * 25.4")));
+				patterns.push_back( std::make_pair(std::string("mm"), std::string(" * 1.0")));
+				patterns.push_back( std::make_pair(std::string("MM"), std::string(" * 1.0")));
+			}
+			else
+			{
+				// We're using inches.
+				patterns.push_back( std::make_pair(std::string("Inches"), std::string(" * 1.0")));
+				patterns.push_back( std::make_pair(std::string("inches"), std::string(" * 1.0")));
+				patterns.push_back( std::make_pair(std::string("INCHES"), std::string(" * 1.0")));
+				patterns.push_back( std::make_pair(std::string("Inch"), std::string(" * 1.0")));
+				patterns.push_back( std::make_pair(std::string("INCH"), std::string(" * 1.0")));
+				patterns.push_back( std::make_pair(std::string("inch"), std::string(" * 1.0")));
+				patterns.push_back( std::make_pair(std::string("In"), std::string(" * 1.0")));
+				patterns.push_back( std::make_pair(std::string("IN"), std::string(" * 1.0")));
+				patterns.push_back( std::make_pair(std::string("in"), std::string(" * 1.0")));
+				patterns.push_back( std::make_pair(std::string("mm"), std::string(" / 25.4")));
+				patterns.push_back( std::make_pair(std::string("MM"), std::string(" / 25.4")));
+			}
+
+			// NOTE: The patterns list must be arranged from most verbose to least verbose so that
+			// a substitution of 'in' does not occur before the substitution of 'inches'
+			patterns.sort();
+			patterns.reverse();
+
+			for (Patterns_t::iterator itPattern = patterns.begin(); itPattern != patterns.end(); itPattern++)
+			{
+				std::string::size_type offset = std::string::npos;
+				while ((offset = interpreted_value.find(itPattern->first)) != std::string::npos)
+				{
+					interpreted_value.insert(0,std::string("(("));
+					std::string replacement;
+					replacement = std::string(")") + itPattern->second + std::string(")");
+					interpreted_value.replace(offset+2, itPattern->first.length(), replacement);
+				}
+			}
+
+			// Now step through the value and change all integer values (3) into floating point
+			// values (3.0) so that values such as '1/8' will be interpreted as '1.0/8.0' to force floating
+			// point arithmetic rather than integer arithmetic.
+
+			// eg: '((1/8) * 25.4)' -> '((1.0/8.0) * 25.4)'
+
+			for (std::string::size_type i = 0; i <= interpreted_value.length();)
+			{
+				std::pair<std::string::size_type, std::string::size_type> pointers = next_possible_number(interpreted_value, i);
+				if ((pointers.first != std::string::npos) && (pointers.second != std::string::npos))
+				{
+					std::string replacement(interpreted_value.substr(0, pointers.first));
+					std::string a(interpreted_value.substr(pointers.first, pointers.second - pointers.first + 1));
+					if (a.find('.') == std::string::npos)
+					{
+						a += std::string(".0");
+					}
+
+					replacement += a;
+
+					i = replacement.length();
+
+					if (pointers.second < interpreted_value.length())
+					{
+						replacement.append(interpreted_value.substr(pointers.second+1));
+					}
+
+					interpreted_value.assign(replacement);
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			// Remove any leading or trailing spaces.
+			while ((interpreted_value.size() > 0) && (interpreted_value[0] == ' '))
+			{
+			    interpreted_value.erase(0,1);
+			}
+
+			while ((interpreted_value.size() > 0) && (interpreted_value[interpreted_value.size()-1] == ' '))
+			{
+			    interpreted_value.erase(interpreted_value.size()-1,1);
+			}
+
+            PyObject *pResult = PyRun_String(interpreted_value.c_str(), Py_eval_input, pDictionary, pDictionary);
+            if (pResult != NULL)
+            {
+                double d;
+                if (PyArg_Parse(pResult, "d", &d))
+                {
+					std::ostringstream oss_value;
+					oss_value << d;
+					evaluated_version = QString::fromStdString(oss_value.str());
+                    return_status = true;
+                    Py_XDECREF(pResult);
+                    pResult = NULL;
+                }
+                else
+                {
+                    // wxMessageBox(_("Value does not evaluate to a floating point number"));
+                    Py_XDECREF(pResult);
+                    pResult = NULL;
+                    return_status = false;
+                }
+            }
+            else
+            {
+				/*
+                QString message;
+                message << _("Could not evaluate ") << interpreted_value << _(" using Python");
+                wxMessageBox(message);
+				*/
+                return_status = false;
+            }
+
+            // Do NOT release the dictionary - I still don't know why.
+            // Py_XDECREF(pDictionary);
+            // pDictionary = NULL;
+        }
+        else
+        {
+            // wxMessageBox(_("Could not load dictionary from 'math' module in Python interpreter"));
+            return_status = false;
+        }
+
+        Py_XDECREF(pModule);
+        pModule = NULL;
+    }
+    else
+    {
+        // wxMessageBox(_("Could not load 'math' module in Python interpreter"));
+        return_status = false;
+    }
+
+    // Py_Initialize() and Py_Finalize() should only occur once per process.  Do it in the main application framework instead.
+    // Py_Finalize();
+
+    // return(evaluated_version);
+    return(return_status);
+}
+
+
+
 /**
 	Interpret the entered_value as a Python script that should return a floating point number.
  */
 bool TPGSettings::EvaluateLength( const TPGSettingDefinition *definition, const char *entered_value, double *pResult ) const
 {	
-
-	return(false);
+	QString evaluated_version;
+	if (this->EvaluateWithPython( definition, QString::fromAscii(entered_value), evaluated_version ))
+	{
+		bool status;
+		*pResult = evaluated_version.toDouble(&status);
+		return(status);
+	}
+	else
+	{
+		return(false);
+	}
 }
 
+
+bool TPGLengthSettingDefinition::Evaluate( const char *formula, double *pResult ) const
+{
+	if (! this->parent)
+	{
+		return(false);
+	}
+
+	return(this->parent->EvaluateLength( this, formula, pResult ));
+}
 
 
 
@@ -889,8 +1170,63 @@ TPGLengthSettingDefinition::TPGLengthSettingDefinition(
 }
 
 
+bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary)
+{
+	switch(this->type)
+	{
+	case SettingType_Filename:
+	case SettingType_Directory:
+	case SettingType_Text:
+		{
+			// Name=Value
+			bool status = false;
+			PyObject *pName = PyString_FromString(this->name.toAscii().constData());
+			PyObject *pValue = PyString_FromString(this->getValue().toAscii().constData());
 
+			if ((pName != NULL) && (pValue != NULL))
+			{
+				PyDict_SetItem(pDictionary, pName, pValue);
+				status = true;
+			}
 
+			Py_XDECREF(pName); pName=NULL;
+			Py_XDECREF(pValue); pValue=NULL;
+			return(status);
+		}
+
+	case SettingType_Radio:
+	case SettingType_ObjectNamesForType:
+	case SettingType_Enumeration:
+	case SettingType_Length:
+	case SettingType_Color:
+	case SettingType_Integer:
+	case SettingType_Double:
+		{
+			// Name=Value
+			bool status = false;
+			
+			QString string_value = this->getValue();
+			double value;
+			bool ok;
+			value = string_value.toDouble(&ok);
+			if (ok)
+			{
+				PyObject *pName = PyString_FromString(this->name.toAscii().constData());
+				PyObject *pValue = PyFloat_FromDouble(value);
+
+				if ((pName != NULL) && (pValue != NULL))
+				{
+					PyDict_SetItem(pDictionary, pName, pValue);
+					status = true;
+				}
+
+				Py_XDECREF(pName); pName=NULL;
+				Py_XDECREF(pValue); pValue=NULL;
+			}
+			return(status);
+		}
+	} // End switch
+}
 
 
 
