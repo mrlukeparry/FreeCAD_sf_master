@@ -1050,6 +1050,16 @@ bool TPGLengthSettingDefinition::Evaluate( const char *formula, double *pResult 
 }
 
 
+bool TPGDoubleSettingDefinition::Evaluate( const char *formula, double *pResult ) const
+{
+	if (! this->parent)
+	{
+		return(false);
+	}
+
+	return(this->parent->EvaluateLength( this, formula, pResult ));
+}
+
 
 /**
 	The color's value is encoded in an INI document describing
@@ -1169,6 +1179,49 @@ TPGLengthSettingDefinition::TPGLengthSettingDefinition(
 	def_val << default_value;
 	TPGSettingDefinition::defaultvalue = QString::fromStdString(def_val.str());
 }
+
+
+
+
+TPGDoubleSettingDefinition::TPGDoubleSettingDefinition(
+		const char *name, 
+		const char *label, 
+		const char *helptext,
+		const double default_value,
+		const double minimum, 
+		const double maximum, 
+		const char *units ):
+	  TPGSettingDefinition(name, label, SettingType_Double, "", units, helptext)
+{
+	std::ostringstream min;
+	min << minimum;
+
+	std::ostringstream max;
+	max << maximum;
+
+	this->options.push_back( new TPGSettingOption(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
+	this->options.push_back( new TPGSettingOption(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
+
+	std::ostringstream def_val;
+	def_val << default_value;
+	TPGSettingDefinition::defaultvalue = QString::fromStdString(def_val.str());
+}
+
+TPGDoubleSettingDefinition::TPGDoubleSettingDefinition(
+		const char *name, 
+		const char *label, 
+		const char *helptext,
+		const double default_value,
+		const char * units ):
+	  TPGSettingDefinition(name, label, SettingType_Double, "", units, helptext)
+{
+	std::ostringstream def_val;
+	def_val << default_value;
+	TPGSettingDefinition::defaultvalue = QString::fromStdString(def_val.str());
+}
+
+
+
 
 
 bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary)

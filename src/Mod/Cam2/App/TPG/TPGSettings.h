@@ -367,6 +367,25 @@ public:
 	bool Evaluate( const char *entered_value, double *pResult ) const;
 };
 
+class CamExport TPGDoubleSettingDefinition : public TPGSettingDefinition
+{
+public:
+	TPGDoubleSettingDefinition(	const char *name, 
+								const char *label, 
+								const char *helptext,
+								const double default_value,
+								const double minimum, 
+								const double maximum, 
+								const char *units );
+	TPGDoubleSettingDefinition(	const char *name, 
+								const char *label, 
+								const char *helptext,
+								const double default_value,
+								const char *units );
+
+	bool Evaluate( const char *entered_value, double *pResult ) const;
+};
+
 
 
 } //namespace Cam

@@ -140,6 +140,30 @@ void CamTextBoxComponent::editingFinished() {
 			}
 			break;
 
+		case Cam::TPGSettingDefinition::SettingType_Double:
+			{
+				Cam::TPGDoubleSettingDefinition *double_setting = (Cam::TPGDoubleSettingDefinition *) tpgsetting;
+				if (double_setting)
+				{
+					double value;
+					if (double_setting->Evaluate(widget->text().toAscii().constData(), &value))
+					{
+						std::ostringstream oss_value;
+						oss_value << value;
+						if (!double_setting->setValue(QString::fromStdString(oss_value.str())))
+						{
+							Base::Console().Error("Saving failed: '%s'\n", double_setting->name.toStdString().c_str());
+							widget->setText(double_setting->getValue());
+						}
+						else
+						{
+							widget->setText(QString::fromStdString(oss_value.str()));
+						}
+					}
+				}
+			}
+			break;
+
 		default:
 			{
 				QString qvalue = widget->text();

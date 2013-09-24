@@ -217,19 +217,17 @@ CppExampleTPG::~CppExampleTPG() {
 																		 30.0,
 																		 TPGSettingDefinition::Metric ));
 
-		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_SpindleSpeed.toAscii().constData(), 
+		settings->addSettingDefinition(qaction, new TPGDoubleSettingDefinition(SettingName_SpindleSpeed.toAscii().constData(), 
 																		 SettingName_SpindleSpeed.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Text, 
-																		 "700",
-																		 "RPM",
-																		 "Spindle Speed."));
+																		 "Spindle Speed.", 
+																		 700.0,
+																		 "RPM" ));
 
-		settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_FeedRate.toAscii().constData(), 
+		settings->addSettingDefinition(qaction, new TPGDoubleSettingDefinition(SettingName_FeedRate.toAscii().constData(), 
 																		 SettingName_FeedRate.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Text, 
-																		 "55",
-																		 "mm/min",
-																		 "Feed Rate."));
+																		 "Feed Rate.", 
+																		 55.0,
+																		 "mm/min" ));
 
 		TPGSettingDefinition* speed = settings->addSettingDefinition(qaction, new TPGSettingDefinition("speed", "Speed", TPGSettingDefinition::SettingType_Radio, "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
 		speed->addOption("fast", "Fast");
