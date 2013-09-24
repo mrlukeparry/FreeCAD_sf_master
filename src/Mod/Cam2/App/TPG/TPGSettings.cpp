@@ -927,7 +927,7 @@ bool TPGSettings::EvaluateWithPython( const TPGSettingDefinition *definition, QS
 				{
 					std::string replacement(interpreted_value.substr(0, pointers.first));
 					std::string a(interpreted_value.substr(pointers.first, pointers.second - pointers.first + 1));
-					if (a.find('.') == std::string::npos)
+					if ((a.find('.') == std::string::npos) && (a.size() > 0) && (a[a.size()-1] >= '0') && (a[a.size()-1] <= '9'))
 					{
 						a += std::string(".0");
 					}
@@ -960,6 +960,7 @@ bool TPGSettings::EvaluateWithPython( const TPGSettingDefinition *definition, QS
 			    interpreted_value.erase(interpreted_value.size()-1,1);
 			}
 
+			qDebug("%s\n", interpreted_value.c_str());
             PyObject *pResult = PyRun_String(interpreted_value.c_str(), Py_eval_input, pDictionary, pDictionary);
             if (pResult != NULL)
             {
