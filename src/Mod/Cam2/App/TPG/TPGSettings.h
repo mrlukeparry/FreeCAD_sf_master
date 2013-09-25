@@ -173,7 +173,7 @@ public:
 	 */
     TPGSettingDefinition* clone();
 
-    void print();
+    void print() const;
 
     /**
      * Increases reference count
@@ -192,16 +192,16 @@ public:
     void addOption(const char *id, const char *label);
 
     /// get the value associated with this setting
-    QString getValue();
+    QString getValue() const;
 
     /// set the value associated with this setting
     bool setValue(QString value);
 
     /// get the namespaced name <action>::<name>
-    QString getFullname();
+    QString getFullname() const;
 
 	/// Used by the TPGSetting::EvaluateWithPython() method.
-	bool AddToPythonDictionary(PyObject *dictionary);
+	bool AddToPythonDictionary(PyObject *dictionary) const;
 };
 
 /** 
@@ -252,19 +252,19 @@ public:
     /**
      * Get the value of a given setting (by name)
      */
-    const QString getValue(QString name);
+    const QString getValue(QString name) const;
 
     /**
      * Get the value of a given setting (by name)
      */
-    const QString getValue(QString action, QString name);
+    const QString getValue(QString action, QString name) const;
 
     /**
      * Print the settings to stdout
      */
-    void print();
+    void print() const;
 
-    std::vector<TPGSettingDefinition*> getSettings();
+    std::vector<TPGSettingDefinition*> getSettings() const;
 
     /**
      * Sets the default value for every setting in Settings collection
@@ -274,7 +274,7 @@ public:
     /**
      * Get the action names defined
      */
-    QStringList getActions();
+    QStringList getActions() const;
 
     /**
      * Set the value for the named setting
@@ -344,7 +344,7 @@ public:
 	{
 	}
 
-	bool get(int &red, int &green, int &blue, int &alpha);
+	bool get(int &red, int &green, int &blue, int &alpha) const;
 	void set(const int red, const int green, const int blue, const int alpha);
 };
 

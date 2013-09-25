@@ -362,7 +362,7 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateEnumeration(
 }
 
 
-void TPGSettingDefinition::print()
+void TPGSettingDefinition::print() const
 {
 	qDebug("  - (%s, %s, %d, %s, %s, %s)\n",
 			name.toAscii().constData(),
@@ -394,7 +394,8 @@ void TPGSettingDefinition::release() {
 /**
  * Get the value associated with this setting
  */
-QString TPGSettingDefinition::getValue() {
+QString TPGSettingDefinition::getValue() const
+{
 	if (this->parent != NULL)
 		return this->parent->getValue(action, name);
 	return QString::null;
@@ -423,7 +424,8 @@ bool TPGSettingDefinition::setValue(QString value) {
 /**
  * Get the namespaced name <action>::<name>
  */
-QString TPGSettingDefinition::getFullname() {
+QString TPGSettingDefinition::getFullname() const
+{
 	return action + QString::fromAscii("::") + name;
 }
 
@@ -552,7 +554,8 @@ bool TPGSettings::setAction(QString action) {
 /**
  * Get the value of a given setting (by name)
  */
-const QString TPGSettings::getValue(QString name) {
+const QString TPGSettings::getValue(QString name) const
+{
 	if (action.isNull() || action.isEmpty())
 		return QString::null;
 	return getValue(name, action);
@@ -561,7 +564,8 @@ const QString TPGSettings::getValue(QString name) {
 /**
  * Get the value of a given setting (by name)
  */
-const QString TPGSettings::getValue(QString action, QString name) {
+const QString TPGSettings::getValue(QString action, QString name) const
+{
 
 	if (action.isNull() || action.isEmpty()) {
 		Base::Console().Message("action not set\n");
@@ -615,9 +619,9 @@ bool TPGSettings::setValue(QString name, QString value) {
 	return setValue(action, name, value);
 }
 
-void TPGSettings::print()
+void TPGSettings::print() const
 {
-	std::vector<TPGSettingDefinition*>::iterator it = this->settingDefs.begin();
+	std::vector<TPGSettingDefinition*>::const_iterator it = this->settingDefs.begin();
 	while (it != this->settingDefs.end())
 	{
 		(*it)->print();
@@ -626,7 +630,7 @@ void TPGSettings::print()
 }
 
 
-std::vector<TPGSettingDefinition*> TPGSettings::getSettings() 
+std::vector<TPGSettingDefinition*> TPGSettings::getSettings() const
 {
 	return this->settingDefs;
 }
@@ -657,11 +661,12 @@ void TPGSettings::addDefaults() {
 	}
 }
 
-QStringList TPGSettings::getActions() {
+QStringList TPGSettings::getActions() const
+{
 
 	QStringList result;
 
-	std::map<QString, std::vector<TPGSettingDefinition*> >::iterator it = settingDefsActionMap.begin();
+	std::map<QString, std::vector<TPGSettingDefinition*> >::const_iterator it = settingDefsActionMap.begin();
 	while (it != settingDefsActionMap.end()) {
 		Base::Console().Log("%s\n", (*it).first.toAscii().constData());
 		result.append((*it).first);
@@ -833,6 +838,13 @@ bool TPGSettings::EvaluateWithPython( const TPGSettingDefinition *definition, QS
 
         if (pDictionary != NULL)
         {
+			for (std::vector<TPGSettingDefinition *>::const_iterator itDef = this->settingDefs.begin(); itDef != this->settingDefs.end(); itDef++)
+			{
+				if ((*itDef) == definition) continue;	// Can't use our own value within the definition of our own value.
+
+				(*itDef)->AddToPythonDictionary(pDictionary);
+			}
+
 			/*
 			if (pProperties != NULL)
 			{
@@ -1069,7 +1081,7 @@ bool TPGDoubleSettingDefinition::Evaluate( const char *formula, double *pResult 
 	the conversion between the INI string used in the TPGFeature's 
 	property and the QColor value we use in the code.
  */
-bool TPGColorSettingDefinition::get(int &red, int &green, int &blue, int &alpha)
+bool TPGColorSettingDefinition::get(int &red, int &green, int &blue, int &alpha) const
 {
 	try
 	{
@@ -1222,10 +1234,44 @@ TPGDoubleSettingDefinition::TPGDoubleSettingDefinition(
 
 
 
+/**
+	This method is called once for each setting in the TPGSettings object prior
+	to any 'Length' or 'Double' setting's interpretation within the Python
+	environment.  This method adds variable=value pairs to the Python dictionary
+	passed in so that such variables may be used when calculating the value
+	of other settings.
 
+	eg: If we're changing the 'Peck Depth' of a drilling operation then we might
+	enter "Tool_Diameter/2" into the dialog box.  The "Tool_Diameter" variable
+	will have been added by this method and its value will be divided by two
+	before assigning the result to the 'Peck Depth' setting.
 
-bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary)
+	For text-based settings such as 'text', 'filename' and 'directory', the
+	variable name will be the setting's label (with spaces replaced by
+	underbar characters).  The value will simply be the setting's value.
+
+	For floating point settings such as 'Double' and 'Length', the name
+	will be the label (processed as above) and the value will be the value
+	of the setting.
+
+	For Color settings we define four separate variables.  The 'label' of
+	the color setting will be pre-processed as mentioned above.  Appended
+	to this label will be "_red", "_green", "_blue" and "_alpha".  eg:
+	If the color setting's label is "My Color" then the following
+	variable names will be added to the Python dictionary;
+	"My_Color_red", "My_Color_green", "My_Color_blue" and "My_Color_alpha"
+ */
+bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary) const
 {
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = this->label.toStdString();
+	std::string::size_type offset;
+	while ((offset=processed_name.find(' ')) != std::string::npos)
+	{
+		processed_name[offset] = '_';
+	}
+
 	switch(this->type)
 	{
 	case SettingType_Filename:
@@ -1234,7 +1280,7 @@ bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary)
 		{
 			// Name=Value
 			bool status = false;
-			PyObject *pName = PyString_FromString(this->name.toAscii().constData());
+			PyObject *pName = PyString_FromString(processed_name.c_str());
 			PyObject *pValue = PyString_FromString(this->getValue().toAscii().constData());
 
 			if ((pName != NULL) && (pValue != NULL))
@@ -1251,9 +1297,74 @@ bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary)
 	case SettingType_Radio:
 	case SettingType_ObjectNamesForType:
 	case SettingType_Enumeration:
-	case SettingType_Length:
+		break;
+
 	case SettingType_Color:
+		{
+			// Name_red=int
+			// Name_green=int
+			// Name_blue=int
+			// Name_alpha=int
+
+			bool status = false;
+
+			TPGColorSettingDefinition *colour = (TPGColorSettingDefinition *) this;
+			int red, green, blue, alpha;
+			colour->get(red, green, blue, alpha);
+
+			std::set< std::pair< std::string, int > > values;
+			values.insert( std::make_pair( std::string( processed_name + "_red" ), red ) );
+			values.insert( std::make_pair( std::string( processed_name + "_green" ), green ) );
+			values.insert( std::make_pair( std::string( processed_name + "_blue" ), blue ) );
+			values.insert( std::make_pair( std::string( processed_name + "_alpha" ), alpha ) );
+
+			for (std::set< std::pair< std::string, int > >::iterator itValue = values.begin(); itValue != values.end(); itValue++)
+			{
+				PyObject *pName = PyString_FromString(itValue->first.c_str());
+				PyObject *pValue = PyInt_FromLong(itValue->second);
+
+				if ((pName != NULL) && (pValue != NULL))
+				{
+					PyDict_SetItem(pDictionary, pName, pValue);
+					status = true;
+				}
+
+				Py_XDECREF(pName); pName=NULL;
+				Py_XDECREF(pValue); pValue=NULL;
+			}
+
+			return(status);
+		}
+		break;
+
 	case SettingType_Integer:
+		{
+			// Name=Value
+			bool status = false;
+			
+			QString string_value = this->getValue();
+			long value;
+			bool ok;
+			value = string_value.toLong(&ok);
+			if (ok)
+			{
+				PyObject *pName = PyString_FromString(processed_name.c_str());
+				PyObject *pValue = PyInt_FromLong(value);
+
+				if ((pName != NULL) && (pValue != NULL))
+				{
+					PyDict_SetItem(pDictionary, pName, pValue);
+					status = true;
+				}
+
+				Py_XDECREF(pName); pName=NULL;
+				Py_XDECREF(pValue); pValue=NULL;
+			}
+			return(status);
+		}
+		break;
+
+	case SettingType_Length:
 	case SettingType_Double:
 		{
 			// Name=Value
@@ -1265,7 +1376,7 @@ bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary)
 			value = string_value.toDouble(&ok);
 			if (ok)
 			{
-				PyObject *pName = PyString_FromString(this->name.toAscii().constData());
+				PyObject *pName = PyString_FromString(processed_name.c_str());
 				PyObject *pValue = PyFloat_FromDouble(value);
 
 				if ((pName != NULL) && (pValue != NULL))
