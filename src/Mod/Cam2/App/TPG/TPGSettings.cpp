@@ -821,7 +821,6 @@ static std::pair<std::string::size_type, std::string::size_type> next_possible_n
  */
 bool TPGSettings::EvaluateWithPython( const TPGSettingDefinition *definition, QString value, QString & evaluated_version ) const
 {
-    // QString evaluated_version;
     bool return_status = false;
 
     // Py_Initialize() and Py_Finalize() should only occur once per process.  Do it in the main application framework instead.
@@ -842,29 +841,8 @@ bool TPGSettings::EvaluateWithPython( const TPGSettingDefinition *definition, QS
 			{
 				if ((*itDef) == definition) continue;	// Can't use our own value within the definition of our own value.
 
-				(*itDef)->AddToPythonDictionary(pDictionary);
+				(*itDef)->AddToPythonDictionary(pDictionary, definition->units, QString::null);
 			}
-
-			/*
-			if (pProperties != NULL)
-			{
-				// Add the variable=value commands to this dictionary just in case the user wants
-				// to use one of the other parameters within their expression.  eg: 'diameter/2.0'
-				for (std::list<Property *>::const_iterator itProperty = pProperties->begin(); itProperty != pProperties->end(); itProperty++)
-				{
-					PyObject *pName = (*itProperty)->PyName();
-					PyObject *pValue = (*itProperty)->PyValue();
-
-					if ((pName != NULL) && (pValue != NULL))
-					{
-						PyDict_SetItem(pDictionary, pName, pValue);
-					}
-
-					Py_XDECREF(pName); pName=NULL;
-					Py_XDECREF(pValue); pValue=NULL;
-				}
-			}
-		*/
 
 			std::string interpreted_value(value.toStdString());
 
@@ -1260,12 +1238,24 @@ TPGDoubleSettingDefinition::TPGDoubleSettingDefinition(
 	If the color setting's label is "My Color" then the following
 	variable names will be added to the Python dictionary;
 	"My_Color_red", "My_Color_green", "My_Color_blue" and "My_Color_alpha"
+
+	NOTE: Any Length settings will be converted to the 'units' passed in prior to
+	being used in the variable's value.  This allows one setting to refer to another
+	setting's value without worrying about which units each one is defined in.
  */
-bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary) const
+bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
 {
 	// Replace any spaces within the variable name with underbars so that the
 	// name can be used as a Python variable name.
-	std::string processed_name = this->label.toStdString();
+	std::string processed_name;
+	
+	if (prefix.isNull() == false)
+	{
+		processed_name = prefix.toStdString();
+		processed_name += "_";
+	}
+
+	processed_name += this->label.toStdString();
 	std::string::size_type offset;
 	while ((offset=processed_name.find(' ')) != std::string::npos)
 	{
@@ -1376,6 +1366,20 @@ bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary) const
 			value = string_value.toDouble(&ok);
 			if (ok)
 			{
+				if (this->type == SettingType_Length)
+				{
+					if ((this->units == QString::fromAscii("mm")) && (requested_units == QString::fromAscii("inch")))
+					{
+						// We have mm but the setting being changed uses inches.  Convert now.
+						value /= 25.4;
+					}
+					else if ((this->units == QString::fromAscii("inch")) && (requested_units == QString::fromAscii("mm")))
+					{
+						// We're using inches but the setting being changed uses mm. Convert now.
+						value *= 25.4;
+					}
+				}				
+
 				PyObject *pName = PyString_FromString(processed_name.c_str());
 				PyObject *pValue = PyFloat_FromDouble(value);
 
@@ -1391,9 +1395,103 @@ bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary) const
 			return(status);
 		}
 	} // End switch
+
+	return(false);
 }
 
 
+bool TPGSettings::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	bool status = false;
+	for (std::vector<TPGSettingDefinition*>::const_iterator itDef = this->settingDefs.begin(); itDef != this->settingDefs.end(); itDef++)
+	{
+		if ((*itDef)->AddToPythonDictionary(pDictionary, requested_units, prefix))
+		{
+			status = true;	// We have at least one.
+		}
+	}
+	return(status);
+}
+
+
+
+TPGObjectNamesForTypeSettingDefinition::TPGObjectNamesForTypeSettingDefinition(	const char *name, 
+								const char *label, 
+								const char *helptext,
+								const char *delimiters,
+								const char *object_type )
+{
+	this->name = QString::fromAscii(name);
+	this->label = QString::fromAscii(label);
+	this->helptext = QString::fromAscii(helptext);
+	this->type = SettingType_ObjectNamesForType;
+	this->units = QString::fromAscii("");
+
+	this->addOption( QString::fromAscii("Delimiters"), QString::fromAscii(delimiters) );
+	this->addOption( QString::fromAscii("TypeId"), QString::fromAscii(object_type) );
+}
+
+void TPGObjectNamesForTypeSettingDefinition::Add(const char * object_type)
+{
+	this->addOption( QString::fromAscii("TypeId"), QString::fromAscii(object_type) );
+}
+
+TPGSettingOption *TPGObjectNamesForTypeSettingDefinition::GetDelimitersOption() const
+{
+	TPGSettingOption *delimiters_option = NULL;
+	for (QList<TPGSettingOption*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
+	{
+		if ((*itOption)->id.toUpper() == QString::fromAscii("Delimiters").toUpper())
+		{
+			return(*itOption);
+		}
+	}
+
+	return(NULL);	// not found.
+}
+
+void TPGObjectNamesForTypeSettingDefinition::SetDelimiters(const char * delimiters)
+{
+
+	TPGSettingOption *delimiters_option = GetDelimitersOption();
+	if (delimiters_option != NULL)
+	{
+		delimiters_option->label = delimiters;
+		return;
+	}
+
+	// We couldn't find an existing option so add one now.
+	this->addOption( QString::fromAscii("Delimiters"), QString::fromAscii(delimiters) );	
+}
+
+
+QStringList TPGObjectNamesForTypeSettingDefinition::GetTypes() const
+{
+	QStringList types;
+
+	for (QList<TPGSettingOption*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
+	{
+		if ((*itOption)->id.toUpper() == QString::fromAscii("TypeId").toUpper())
+		{
+			types.push_back((*itOption)->label);
+		}
+	}
+
+	return(types);
+}
+
+QStringList TPGObjectNamesForTypeSettingDefinition::GetNames() const
+{
+	QStringList types;
+	TPGSettingOption *delimiters_option = GetDelimitersOption();
+	if (delimiters_option != NULL)
+	{
+		QString value = this->getValue();
+		types = value.split(delimiters_option->label, QString::SkipEmptyParts);
+	}
+
+	return(types);
+}
 
 
 

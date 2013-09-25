@@ -201,7 +201,7 @@ public:
     QString getFullname() const;
 
 	/// Used by the TPGSetting::EvaluateWithPython() method.
-	bool AddToPythonDictionary(PyObject *dictionary) const;
+	bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
 /** 
@@ -304,6 +304,7 @@ public:
 
 	bool EvaluateLength( const TPGSettingDefinition *definition, const char *entered_value, double *pResult ) const;
 	bool EvaluateWithPython( const TPGSettingDefinition *definition, QString value, QString & evaluated_version ) const;
+	bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 
 protected:
 
@@ -384,6 +385,23 @@ public:
 								const char *units );
 
 	bool Evaluate( const char *entered_value, double *pResult ) const;
+};
+
+class CamExport TPGObjectNamesForTypeSettingDefinition : public TPGSettingDefinition
+{
+public:
+	TPGObjectNamesForTypeSettingDefinition(	const char *name, 
+								const char *label, 
+								const char *helptext,
+								const char *delimiters,
+								const char *object_type );
+
+	void Add(const QString object_type);
+	void SetDelimiters(const QString object_type);
+
+	QStringList GetTypes() const;
+	TPGSettingOption *GetDelimitersOption() const;
+	QStringList GetNames() const;
 };
 
 
