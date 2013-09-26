@@ -206,6 +206,8 @@ public:
 
 	/// Used by the TPGSetting::EvaluateWithPython() method.
 	bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+
+	Option *getOption(const QString id) const;
 };
 
 /** 
@@ -372,6 +374,12 @@ public:
 								const Definition::Units_t units );
 
 	bool Evaluate( const char *entered_value, double *pResult ) const;
+
+	double Minimum() const;
+	void Minimum(const double value);
+
+	double Maximum() const;
+	void Maximum(const double value);
 };
 
 class CamExport Double : public Definition
@@ -406,7 +414,6 @@ public:
 	void SetDelimiters(const char * object_type);
 
 	QStringList GetTypes() const;
-	Option *GetDelimitersOption() const;
 	QStringList GetNames() const;
 };
 

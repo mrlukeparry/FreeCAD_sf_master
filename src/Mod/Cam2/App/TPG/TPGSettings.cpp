@@ -230,26 +230,14 @@ Definition::ValidationState Definition::validateInteger(QString & input,int & po
 	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
 	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
 
-	std::auto_ptr<int> pMinimum;
-	std::auto_ptr<int> pMaximum;
-	for (QList<Option*>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
-	{
-		if ((*itOption)->id == QString::fromAscii("minimum"))
-		{
-			pMinimum.reset( new int((*itOption)->label.toInt()));
-		}
-
-		if ((*itOption)->id == QString::fromAscii("maximum"))
-		{
-			pMaximum.reset( new int((*itOption)->label.toInt()));
-		}
-	}
-
+	Option *minOption = this->getOption(QString::fromAscii("minimum"));
+	Option *maxOption = this->getOption(QString::fromAscii("maximum"));
+	
 	double value;
 	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		if ((pMinimum.get()) && (value < *pMinimum)) return(this->Invalid);
-		if ((pMaximum.get()) && (value > *pMaximum)) return(this->Invalid);
+		if ((minOption) && (value < minOption->label.toInt())) return(this->Invalid);
+		if ((maxOption) && (value > maxOption->label.toInt())) return(this->Invalid);
 		return(this->Acceptable);
 	}
 	else
@@ -264,26 +252,14 @@ Definition::ValidationState Definition::validateDouble(QString & input,int & pos
 	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
 	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
 
-	std::auto_ptr<double> pMinimum;
-	std::auto_ptr<double> pMaximum;
-	for (QList<Option*>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
-	{
-		if ((*itOption)->id == QString::fromAscii("minimum"))
-		{
-			pMinimum.reset( new double((*itOption)->label.toDouble()));
-		}
-
-		if ((*itOption)->id == QString::fromAscii("maximum"))
-		{
-			pMaximum.reset( new double((*itOption)->label.toDouble()));
-		}
-	}
+	Option *minOption = this->getOption(QString::fromAscii("minimum"));
+	Option *maxOption = this->getOption(QString::fromAscii("maximum"));
 
 	double value;
 	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		if ((pMinimum.get()) && (value < *pMinimum)) return(this->Invalid);
-		if ((pMaximum.get()) && (value > *pMaximum)) return(this->Invalid);
+		if ((minOption) && (value < minOption->label.toDouble())) return(this->Invalid);
+		if ((maxOption) && (value > maxOption->label.toDouble())) return(this->Invalid);
 		return(this->Acceptable);
 	}
 	else
@@ -309,7 +285,7 @@ Definition::ValidationState Definition::validateObjectNamesForType(QString & inp
 	// to review the object's contents.
 	ObjectNamesForType *pSetting = (ObjectNamesForType *) this;
 
-	Option *delimiters_option = pSetting->GetDelimitersOption();
+	Option *delimiters_option = this->getOption(QString::fromAscii("Delimiters"));
 	if (delimiters_option == NULL)
 	{
 		return(this->Invalid);
@@ -1072,7 +1048,6 @@ bool Settings::Color::get(int &red, int &green, int &blue, int &alpha) const
 
 		std::stringstream encoded_value;
 		encoded_value << this->getValue().toAscii().constData();
-		qDebug("%s\n", encoded_value.str().c_str());
 		
 		read_json(encoded_value, pt);
 
@@ -1174,7 +1149,83 @@ Settings::Length::Length(
 	Definition::defaultvalue = QString::fromStdString(def_val.str());
 }
 
+Settings::Option *Settings::Definition::getOption(const QString id) const
+{
+	for (QList<Option*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
+	{
+		if ((*itOption)->id.toUpper() == id.toUpper())
+		{
+			return(*itOption);
+		}
+	}
 
+	return(NULL);
+}
+
+double Settings::Length::Minimum() const
+{
+	Option *option = this->getOption(QString::fromAscii("minimum"));
+	if (option)
+	{
+		bool status;
+		double value = option->label.toDouble(&status);
+		if (status)
+		{
+			return(value);
+		}
+		else
+		{
+			return(0.0);
+		}
+	}
+	else
+	{
+		return(0.0);
+	}
+}
+
+void Settings::Length::Minimum(const double value)
+{
+	Option *option = this->getOption(QString::fromAscii("minimum"));
+	if (option)
+	{
+		std::ostringstream ossValue;
+		ossValue << value;
+		option->label = QString::fromStdString(ossValue.str());
+	}
+}
+
+double Settings::Length::Maximum() const
+{
+	Option *option = this->getOption(QString::fromAscii("maximum"));
+	if (option)
+	{
+		bool status;
+		double value = option->label.toDouble(&status);
+		if (status)
+		{
+			return(value);
+		}
+		else
+		{
+			return(0.0);
+		}
+	}
+	else
+	{
+		return(0.0);
+	}
+}
+void Settings::Length::Maximum(const double value)
+{
+	Option *option = this->getOption(QString::fromAscii("maximum"));
+	if (option)
+	{
+		std::ostringstream ossValue;
+		ossValue << value;
+		option->label = QString::fromStdString(ossValue.str());
+	}
+}
 
 
 Double::Double(
@@ -1440,24 +1491,10 @@ void ObjectNamesForType::Add(const char * object_type)
 	this->addOption( QString::fromAscii("TypeId"), QString::fromAscii(object_type) );
 }
 
-Option *ObjectNamesForType::GetDelimitersOption() const
-{
-	Option *delimiters_option = NULL;
-	for (QList<Option*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
-	{
-		if ((*itOption)->id.toUpper() == QString::fromAscii("Delimiters").toUpper())
-		{
-			return(*itOption);
-		}
-	}
-
-	return(NULL);	// not found.
-}
-
 void ObjectNamesForType::SetDelimiters(const char * delimiters)
 {
 
-	Option *delimiters_option = GetDelimitersOption();
+	Option *delimiters_option = this->getOption(QString::fromAscii("Delimiters"));
 	if (delimiters_option != NULL)
 	{
 		delimiters_option->label = QString::fromAscii(delimiters);
@@ -1487,7 +1524,7 @@ QStringList ObjectNamesForType::GetTypes() const
 QStringList ObjectNamesForType::GetNames() const
 {
 	QStringList names;
-	Option *delimiters_option = GetDelimitersOption();
+	Option *delimiters_option = this->getOption(QString::fromAscii("Delimiters"));
 	if (delimiters_option != NULL)
 	{
 		// Use a regular expression so that we use any one of the characters in the delimiters string
