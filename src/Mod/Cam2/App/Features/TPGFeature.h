@@ -95,7 +95,7 @@ public:
     TPG* getTPG();
 
     /// Get a cloned copy of the current TPG settings
-    TPGSettings* getTPGSettings();
+	Settings::TPGSettings* getTPGSettings();
 
     void onDelete(const App::DocumentObject &docObj);
 
@@ -119,7 +119,7 @@ public:
 
 protected:
     TPG *tpg;
-    TPGSettings *tpgSettings;
+    Settings::TPGSettings *tpgSettings;
 //    Base::BoundBox3d inputBBox;
     
     ///Connections

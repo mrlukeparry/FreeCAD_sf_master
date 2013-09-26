@@ -72,14 +72,14 @@ QValidator::State CamComponent::Validator::validate(QString & input, int & posit
 {
 	switch(this->setting_definition->validate(input, position))
 	{
-	case Cam::TPGSettingDefinition::Acceptable:
+	case Cam::Settings::Definition::Acceptable:
 		return(QValidator::Acceptable);
 
-	case Cam::TPGSettingDefinition::Intermediate:
+	case Cam::Settings::Definition::Intermediate:
 		return(QValidator::Intermediate);
 
 	default:
-	case Cam::TPGSettingDefinition::Invalid:
+	case Cam::Settings::Definition::Invalid:
 		return(QValidator::Invalid);
 	}
 }
@@ -87,7 +87,7 @@ QValidator::State CamComponent::Validator::validate(QString & input, int & posit
 /**
  * Creates the UI for this component and loads the initial value
  */
-bool CamComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form) {
+bool CamComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form) {
     Base::Console().Log("Warning: Unimplemented makeUI() method or unnecessary call to base method.");
     return false;
 }
@@ -116,9 +116,9 @@ void CamTextBoxComponent::editingFinished() {
 	if (widget != NULL && tpgsetting != NULL) {
 		switch (tpgsetting->type)
 		{
-		case Cam::TPGSettingDefinition::SettingType_Length:
+		case Cam::Settings::Definition::SettingType_Length:
 			{
-				Cam::TPGLengthSettingDefinition *length_setting = (Cam::TPGLengthSettingDefinition *) tpgsetting;
+				Cam::Settings::Length *length_setting = (Cam::Settings::Length *) tpgsetting;
 				if (length_setting)
 				{
 					double value;
@@ -140,9 +140,9 @@ void CamTextBoxComponent::editingFinished() {
 			}
 			break;
 
-		case Cam::TPGSettingDefinition::SettingType_Double:
+		case Cam::Settings::Definition::SettingType_Double:
 			{
-				Cam::TPGDoubleSettingDefinition *double_setting = (Cam::TPGDoubleSettingDefinition *) tpgsetting;
+				Cam::Settings::Double *double_setting = (Cam::Settings::Double *) tpgsetting;
 				if (double_setting)
 				{
 					double value;
@@ -212,7 +212,7 @@ void CamLineEdit::focusOutEvent ( QFocusEvent * e )
 /**
  * Creates the UI for this component and loads the initial value
  */
-bool CamTextBoxComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form) {
+bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form) {
     if (tpgsetting != NULL)
     {
         // grab a copy of the setting so we can save it later
@@ -280,7 +280,7 @@ CamRadioComponent::CamRadioComponent()
 /**
  * Creates the UI for this component and loads the initial value
  */
-bool CamRadioComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form) {
+bool CamRadioComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form) {
 
     if (tpgsetting != NULL) {
         // grab a copy of the setting so we can save it later
@@ -309,7 +309,7 @@ bool CamRadioComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayou
 
             // make the radio buttons
             QString qvalue = tpgsetting->getValue();
-            QList<Cam::TPGSettingOption*>::iterator it = tpgsetting->options.begin();
+            QList<Cam::Settings::Option*>::iterator it = tpgsetting->options.begin();
             for (; it != tpgsetting->options.end(); ++it) {
                 QRadioButton *btn = new QRadioButton(widget);
                 btn->setObjectName(qname + (*it)->id);
@@ -362,7 +362,7 @@ CamComboBoxComponent::CamComboBoxComponent()
 /**
  * Creates the UI for this component and loads the initial value
  */
-bool CamComboBoxComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form) {
+bool CamComboBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form) {
 
     if (tpgsetting != NULL) {
         // grab a copy of the setting so we can save it later
@@ -387,7 +387,7 @@ bool CamComboBoxComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLa
 			// looks for which one was chosen).
 			QComboBox *combo_box = new QComboBox(parent);
 			int index = 0;
-			for (QList<Cam::TPGSettingOption *>::const_iterator itOption = this->tpgsetting->options.begin(); itOption != this->tpgsetting->options.end(); itOption++)
+			for (QList<Cam::Settings::Option *>::const_iterator itOption = this->tpgsetting->options.begin(); itOption != this->tpgsetting->options.end(); itOption++)
 			{
 				combo_box->addItem((*itOption)->label);
 				if (this->tpgsetting->getValue() == (*itOption)->id)
@@ -474,7 +474,7 @@ void CamFilenameComponent::editingFinished() {
 /**
  * Creates the UI for this component and loads the initial value
  */
-bool CamFilenameComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form) {
+bool CamFilenameComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form) {
     if (tpgsetting != NULL)
     {
         // grab a copy of the setting so we can save it later
@@ -594,7 +594,7 @@ void CamDirectoryComponent::editingFinished() {
 /**
  * Creates the UI for this component and loads the initial value
  */
-bool CamDirectoryComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form) {
+bool CamDirectoryComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form) {
     if (tpgsetting != NULL)
     {
         // grab a copy of the setting so we can save it later
@@ -695,7 +695,7 @@ CamColorComponent::CamColorComponent()
 /**
  * Creates the UI for this component and loads the initial value
  */
-bool CamColorComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form) {
+bool CamColorComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form) {
     if (tpgsetting != NULL)
     {
         // grab a copy of the setting so we can save it later
@@ -723,7 +723,7 @@ bool CamColorComponent::makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayou
             button->setText(QString::fromAscii("   "));
 
 			int red, green, blue, alpha;
-			Cam::TPGColorSettingDefinition *pColorSetting = (Cam::TPGColorSettingDefinition *) this->tpgsetting;
+			Cam::Settings::Color *pColorSetting = (Cam::Settings::Color *) this->tpgsetting;
 			pColorSetting->get( red, green, blue, alpha );
 			QColor color(red, green, blue, alpha);
 			QPalette palette(color);
@@ -762,7 +762,7 @@ bool CamColorComponent::close() {
 
 void CamColorComponent::handleButton()
 {
-	Cam::TPGColorSettingDefinition *pColorSetting = (Cam::TPGColorSettingDefinition *) this->tpgsetting;
+	Cam::Settings::Color *pColorSetting = (Cam::Settings::Color *) this->tpgsetting;
 
 	int red, green, blue, alpha;
 	pColorSetting->get(red, green, blue, alpha);

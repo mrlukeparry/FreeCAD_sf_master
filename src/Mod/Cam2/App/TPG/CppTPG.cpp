@@ -59,7 +59,7 @@ void CppTPG::setPlugin(CppTPGPlugin* plugin) {
 
 }
 
-/* virtual */ void CppTPG::onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value )
+/* virtual */ void CppTPG::onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value )
 {
 	qDebug("CppTPG::onChanged(%s changed from %s to %s)\n", 
 				tpgSettingDefinition->getFullname().toAscii().constData(),

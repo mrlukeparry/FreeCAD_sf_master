@@ -146,25 +146,25 @@ CppExampleTPG::~CppExampleTPG() {
 	if (settings != NULL)
 	{
 		// We should have a settings pointer by now due to the CppTPG::initialise() call
-		TPGLengthSettingDefinition *depth_setting = new TPGLengthSettingDefinition(SettingName_Depth.toAscii().constData(), 
+		Settings::Length *depth_setting = new Settings::Length(SettingName_Depth.toAscii().constData(), 
 																		 SettingName_Depth.toAscii().constData(),
 																		 "Distance from the current Z location to the bottom of the hole.  Must be positive",
 																		 5.0,
-																		 TPGSettingDefinition::Metric );
+																		 Settings::Definition::Metric );
 		depth_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("0.0"));	// must be positive.  No maximum.
 		settings->addSettingDefinition(qaction, depth_setting);
 
-		TPGLengthSettingDefinition *standoff_setting = new TPGLengthSettingDefinition(SettingName_Standoff.toAscii().constData(), 
+		Settings::Length *standoff_setting = new Settings::Length(SettingName_Standoff.toAscii().constData(), 
 																		 SettingName_Standoff.toAscii().constData(),
 																		 "Distance above the drilling point location to retract to following the drilling cycle.",
 																		 5.0,
-																		 TPGSettingDefinition::Metric );
+																		 Settings::Definition::Metric );
 
 		settings->addSettingDefinition(qaction, standoff_setting);
 
-		TPGSettingDefinition *dwell_setting = new TPGSettingDefinition(SettingName_Dwell.toAscii().constData(), 
+		Settings::Definition *dwell_setting = new Settings::Definition(SettingName_Dwell.toAscii().constData(), 
 																		 SettingName_Dwell.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Double, 
+																		 Settings::Definition::SettingType_Double, 
 																		 "0.0",
 																		 "seconds",
 																		 "Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'");
@@ -174,18 +174,18 @@ CppExampleTPG::~CppExampleTPG() {
 
 
 
-		settings->addSettingDefinition(qaction, new TPGLengthSettingDefinition(SettingName_PeckDepth.toAscii().constData(), 
+		settings->addSettingDefinition(qaction, new Settings::Length(SettingName_PeckDepth.toAscii().constData(), 
 																		 SettingName_PeckDepth.toAscii().constData(),
 																		 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled.",
 																		 5.0,
-																		 TPGSettingDefinition::Metric));
+																		Settings::Definition::Metric));
 
 		std::ostringstream default_retract_mode;
 		default_retract_mode << int(eRapidRetract);	// Use the conversion method to retrieve the string used for retraction.
 
-		TPGSettingDefinition *retract_mode_setting = new TPGSettingDefinition(SettingName_RetractMode.toAscii().constData(), 
+		Settings::Definition *retract_mode_setting = new Settings::Definition(SettingName_RetractMode.toAscii().constData(), 
 																		 SettingName_RetractMode.toAscii().constData(),
-																		 TPGSettingDefinition::SettingType_Enumeration, 
+																		 Settings::Definition::SettingType_Enumeration, 
 																		 default_retract_mode.str().c_str(),
 																		 "mode",
 																		 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate.");
@@ -211,53 +211,53 @@ CppExampleTPG::~CppExampleTPG() {
 
 
 
-		settings->addSettingDefinition(qaction, new TPGLengthSettingDefinition(SettingName_Clearance.toAscii().constData(), 
+		settings->addSettingDefinition(qaction, new Settings::Length(SettingName_Clearance.toAscii().constData(), 
 																		 SettingName_Clearance.toAscii().constData(),
 																		 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece.",
 																		 30.0,
-																		 TPGSettingDefinition::Metric ));
+																		 Settings::Definition::Metric ));
 
-		settings->addSettingDefinition(qaction, new TPGDoubleSettingDefinition(SettingName_SpindleSpeed.toAscii().constData(), 
+		settings->addSettingDefinition(qaction, new Settings::Double(SettingName_SpindleSpeed.toAscii().constData(), 
 																		 SettingName_SpindleSpeed.toAscii().constData(),
 																		 "Spindle Speed.", 
 																		 700.0,
 																		 "RPM" ));
 
-		settings->addSettingDefinition(qaction, new TPGDoubleSettingDefinition(SettingName_FeedRate.toAscii().constData(), 
+		settings->addSettingDefinition(qaction, new Settings::Double(SettingName_FeedRate.toAscii().constData(), 
 																		 SettingName_FeedRate.toAscii().constData(),
 																		 "Feed Rate.", 
 																		 55.0,
 																		 "mm/min" ));
 
-		TPGSettingDefinition* speed = settings->addSettingDefinition(qaction, new TPGSettingDefinition("speed", "Speed", TPGSettingDefinition::SettingType_Radio, "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
+		Settings::Definition* speed = settings->addSettingDefinition(qaction, new Settings::Definition("speed", "Speed", Settings::Definition::SettingType_Radio, "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
 		speed->addOption("fast", "Fast");
 		speed->addOption("normal", "Normal");
 		speed->addOption("slow", "Slow");
 
-		settings->addSettingDefinition(qaction, new TPGSettingDefinition("Filename", 
+		settings->addSettingDefinition(qaction, new Settings::Definition("Filename", 
 																		 "My Special Filename",
-																		 TPGSettingDefinition::SettingType_Filename, 
+																		 Settings::Definition::SettingType_Filename, 
 																		 "c:\\temp\\david.txt",
 																		 "Filename",
 																		 "Dummy setting to test the new SettingType_Filename enumeration."));
 
-		settings->addSettingDefinition(qaction, new TPGSettingDefinition("Directory", 
+		settings->addSettingDefinition(qaction, new Settings::Definition("Directory", 
 																		 "My Special Directory",
-																		 TPGSettingDefinition::SettingType_Directory, 
+																		 Settings::Definition::SettingType_Directory, 
 																		 "c:\\temp",
 																		 "Directory",
 																		 "Dummy setting to test the new SettingType_Directory enumeration."));
 
-		settings->addSettingDefinition(qaction, new TPGSettingDefinition("Colour", 
+		settings->addSettingDefinition(qaction, new Settings::Definition("Colour", 
 																		 "My Special Colour",
-																		 TPGSettingDefinition::SettingType_Color, 
+																		 Settings::Definition::SettingType_Color, 
 																		 "Blue",
 																		 "Colour",
 																		 "Dummy setting to test the new SettingType_Color enumeration."));
 
-		TPGSettingDefinition *test_integer_setting = new TPGSettingDefinition("Integer", 
+		Settings::Definition *test_integer_setting = new Settings::Definition("Integer", 
 																		 "My Special Integer",
-																		 TPGSettingDefinition::SettingType_Integer,
+																		 Settings::Definition::SettingType_Integer,
 																		 "3",
 																		 "an integer",
 																		 "Dummy setting to test the new SettingType_Integer. Must be between 0 and 10");
@@ -292,7 +292,7 @@ CppExampleTPG::~CppExampleTPG() {
  *
  * Note: the return will change once the TP Language has been set in stone
  */
-void CppExampleTPG::run(TPGSettings *settings, ToolPath *toolpath, QString action= QString::fromAscii(""))
+void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QString action= QString::fromAscii(""))
 {
     qDebug("This is where the TPG would generate the tool-path! \n");
 //	if (this->toolpath != NULL)
@@ -742,7 +742,7 @@ void CppExampleTPG::run(TPGSettings *settings, ToolPath *toolpath, QString actio
 }
 
 
-/* virtual */ void CppExampleTPG::onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value )
+/* virtual */ void CppExampleTPG::onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value )
 {
 	qDebug("CppExampleTPG::onChanged(%s changed from %s to %s)\n", 
 				tpgSettingDefinition->getFullname().toAscii().constData(),

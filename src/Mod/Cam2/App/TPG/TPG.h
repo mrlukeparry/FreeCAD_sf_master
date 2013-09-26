@@ -105,19 +105,19 @@ public:
     /**
      * Get the settings for a given action
      */
-    virtual TPGSettings *getSettingDefinitions();
+	virtual Settings::TPGSettings *getSettingDefinitions();
 
 	/**
 	 * Allow each TPG to be notied when one of the settings changes.
 	 */
-	virtual void onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value);
+	virtual void onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value);
 
     /**
      * Run the TPG to generate the ToolPath code.
      *
      * Note: the return will change once the TP Language has been set in store
      */
-	virtual void run(TPGSettings *settings, ToolPath *toolpath, QString action);
+	virtual void run(Settings::TPGSettings *settings, ToolPath *toolpath, QString action);
 
 //    /**
 //     * Returns the toolpath from the last run
@@ -188,7 +188,7 @@ protected:
     const Base::BoundBox3d & setOutputBBox(const Base::BoundBox3d bbox) { outputBBox = bbox; }
 
     std::vector<QString> actions;
-    std::map<QString, Cam::TPGSettings* > settings;
+    std::map<QString, Cam::Settings::TPGSettings* > settings;
     TPGCache    *cache;
     State        state;
     */
@@ -207,7 +207,7 @@ protected:
 
     std::vector<QString> actions; ///< e.g ['action','action2',...]
 //    std::map<QString, TPGSettings*> settings; ///< e.g. settings[<action>] // Action has been moved into TPGSettings object
-    TPGSettings* settings; ///< the setting definitions for this TPG
+    Settings::TPGSettings* settings; ///< the setting definitions for this TPG
 
     int refcnt; ///< reference counter
 

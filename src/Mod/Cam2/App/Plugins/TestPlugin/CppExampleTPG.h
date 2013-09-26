@@ -48,7 +48,7 @@ public:
      *
      * Note: the return will change once the TP Language has been set in stone
      */
-    virtual void run(TPGSettings *settings, ToolPath *toolpath, QString action);
+    virtual void run(Settings::TPGSettings *settings, ToolPath *toolpath, QString action);
 
 //    /**
 //     * Returns the toolpath from the last
@@ -68,7 +68,7 @@ public:
 	 * it, in turn, can call the TPG::onChanged() method.  These other layers of classes
 	 * might also be interested.
 	 */
-	virtual void onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value );
+	virtual void onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value );
 
 private:
 	// Declare some static settings names once here so that they're consistent

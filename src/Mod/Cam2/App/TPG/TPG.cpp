@@ -82,7 +82,7 @@ TPG::~TPG()
 
 			QString action = QString::fromAscii("default");
 
-			TPGSettingDefinition *geometry_setting = new TPGObjectNamesForTypeSettingDefinition(	
+			Settings::Definition *geometry_setting = new Settings::ObjectNamesForType(	
 																			settingName_Geometry().toAscii().constData(),
 																			"Geometry",
 																			"Reference object names whose types are appropriate for this TPG.  Names must be separated by spaces and/or commas only.",
@@ -93,10 +93,10 @@ TPG::~TPG()
 
 
 			// TODO: Change the tool from a Text type of setting to a ObjectNamesForType setting with the tool class's object
-			// type used  within its definition.
+			// type used  within its definitio
 			settings->addSettingDefinition(action, 
-											new TPGSettingDefinition(settingName_Tool().toAscii().constData(), 
-											"Tool", TPGSettingDefinition::SettingType_Text, "Tool01", "", "The tool to use for cutting"));
+											new Settings::Definition(settingName_Tool().toAscii().constData(), 
+											"Tool", Settings::Definition::SettingType_Text, "Tool01", "", "The tool to use for cutting"));
 		}
 	}
 
@@ -138,7 +138,7 @@ std::vector<QString> &TPG::getActions()
 /**
  * Get the settings for this TPG.  Note: value returned is a deep copy of object.
  */
-TPGSettings *TPG::getSettingDefinitions()
+Settings::TPGSettings *TPG::getSettingDefinitions()
 {
 	if (settings != NULL)
 		return settings->clone();
@@ -150,7 +150,7 @@ TPGSettings *TPG::getSettingDefinitions()
  *
  * Note: the return will change once the TP Language has been set in stone
  */
-void TPG::run(TPGSettings *settings, ToolPath *toolpath, QString action = QString::fromAscii("default"))
+void TPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QString action = QString::fromAscii("default"))
 {
 	return;
 }
@@ -190,7 +190,7 @@ void TPG::release() {
 }
 
 
-/* virtual */ void TPG::onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value)
+/* virtual */ void TPG::onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value)
 {
 	qDebug("TPG::onChanged(%s changed from %s to %s)\n", 
 				tpgSettingDefinition->getFullname().toAscii().constData(),

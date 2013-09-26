@@ -199,7 +199,7 @@ static PyObject *test(PyObject *self, PyObject *args)
             vector<QString> actions = tpg->getActions();
 			for (::size_t i = 0; i < actions.size(); i++) {
                 printf(" - Action: %s\n", ts(actions[i]));
-                Cam::TPGSettings *settings = tpg->getSettingDefinitions();
+                Cam::Settings::TPGSettings *settings = tpg->getSettingDefinitions();
                 settings->print();
                 delete settings;
             }

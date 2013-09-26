@@ -206,7 +206,7 @@ std::vector<QString> &TPGPython::getActions()
  *
  * TODO: load the options for each setting
  */
-TPGSettings *TPGPython::getSettingDefinitions()
+Settings::TPGSettings *TPGPython::getSettingDefinitions()
 {
 	if (settings == NULL) {
 		PyObject *inst = getInst();
@@ -303,7 +303,7 @@ TPGSettings *TPGPython::getSettingDefinitions()
  *
  * Note: the return will change once the TP Language has been set in store
  */
-void TPGPython::run(TPGSettings *settings, ToolPath *toolpath, QString action)
+void TPGPython::run(Settings::TPGSettings *settings, ToolPath *toolpath, QString action)
 {
 	PyObject *inst = getInst();
 	if (inst != NULL)

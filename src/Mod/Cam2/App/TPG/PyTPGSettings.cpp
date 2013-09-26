@@ -124,7 +124,7 @@ PyTPGSettingDefinition_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 
     self = (cam_PyTPGSettings *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->settings = NULL; //new Cam::TPGSettings();
+        self->settings = NULL; //new Cam::Settings::TPGSettings();
     }
 
     return (PyObject *)self;
@@ -134,8 +134,8 @@ PyTPGSettingDefinition_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
  * Python initialiser
  *
  * NOTE: The ASCII values available for the TPGSettingDefinition::type are effectively
- *       defined here.  eg: "Cam::Text" converts to Cam::TPGSettingDefinition::SettingType_Text in
- *       this routine.  If values are added to the Cam::TPGSettingDefinition::SettingType enumeration
+ *       defined here.  eg: "Cam::Text" converts to Cam::Settings::Definition::SettingType_Text in
+ *       this routine.  If values are added to the Cam::Settings::Definition::SettingType enumeration
  *       then the corresponding values MUST be added here as well.
  */
 static int
@@ -155,21 +155,21 @@ PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, Py
 	}
 
 	QString qsType = QString::fromAscii(type);
-	Cam::TPGSettingDefinition::SettingType data_type = Cam::TPGSettingDefinition::SettingType_Text;
+	Cam::Settings::Definition::SettingType data_type = Cam::Settings::Definition::SettingType_Text;
 
-	     if (qsType == QString::fromAscii("Cam::Text")) data_type = Cam::TPGSettingDefinition::SettingType_Text;
-	else if (qsType == QString::fromAscii("Cam::Radio")) data_type = Cam::TPGSettingDefinition::SettingType_Radio;
-	else if (qsType == QString::fromAscii("Cam::ObjectNamesForType")) data_type = Cam::TPGSettingDefinition::SettingType_ObjectNamesForType;
-	else if (qsType == QString::fromAscii("Cam::Length")) data_type = Cam::TPGSettingDefinition::SettingType_Length;
-	else if (qsType == QString::fromAscii("Cam::Filename")) data_type = Cam::TPGSettingDefinition::SettingType_Filename;
-	else if (qsType == QString::fromAscii("Cam::Directory")) data_type = Cam::TPGSettingDefinition::SettingType_Directory;
-	else if (qsType == QString::fromAscii("Cam::Color")) data_type = Cam::TPGSettingDefinition::SettingType_Color;
-	else if (qsType == QString::fromAscii("Cam::Colour")) data_type = Cam::TPGSettingDefinition::SettingType_Color;
-	else if (qsType == QString::fromAscii("Cam::Integer")) data_type = Cam::TPGSettingDefinition::SettingType_Integer;
-	else if (qsType == QString::fromAscii("Cam::Double")) data_type = Cam::TPGSettingDefinition::SettingType_Double;
-	else if (qsType == QString::fromAscii("Cam::Float")) data_type = Cam::TPGSettingDefinition::SettingType_Double;
+	     if (qsType == QString::fromAscii("Cam::Text")) data_type = Cam::Settings::Definition::SettingType_Text;
+	else if (qsType == QString::fromAscii("Cam::Radio")) data_type = Cam::Settings::Definition::SettingType_Radio;
+	else if (qsType == QString::fromAscii("Cam::ObjectNamesForType")) data_type = Cam::Settings::Definition::SettingType_ObjectNamesForType;
+	else if (qsType == QString::fromAscii("Cam::Length")) data_type = Cam::Settings::Definition::SettingType_Length;
+	else if (qsType == QString::fromAscii("Cam::Filename")) data_type = Cam::Settings::Definition::SettingType_Filename;
+	else if (qsType == QString::fromAscii("Cam::Directory")) data_type = Cam::Settings::Definition::SettingType_Directory;
+	else if (qsType == QString::fromAscii("Cam::Color")) data_type = Cam::Settings::Definition::SettingType_Color;
+	else if (qsType == QString::fromAscii("Cam::Colour")) data_type = Cam::Settings::Definition::SettingType_Color;
+	else if (qsType == QString::fromAscii("Cam::Integer")) data_type = Cam::Settings::Definition::SettingType_Integer;
+	else if (qsType == QString::fromAscii("Cam::Double")) data_type = Cam::Settings::Definition::SettingType_Double;
+	else if (qsType == QString::fromAscii("Cam::Float")) data_type = Cam::Settings::Definition::SettingType_Double;
 
-	self->setting = new Cam::TPGSettingDefinition(name, label, data_type, defaultvalue, units, helptext);
+	self->setting = new Cam::Settings::Definition(name, label, data_type, defaultvalue, units, helptext);
     return 0;
 }
 
@@ -302,7 +302,7 @@ PyTPGSettings_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 
     self = (cam_PyTPGSettings *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->settings = NULL; //new Cam::TPGSettings();
+        self->settings = NULL; //new Cam::Settings::TPGSettings();
     }
 
     return (PyObject *)self;
@@ -322,7 +322,7 @@ PyTPGSettings_init(cam_PyTPGSettings *self, PyObject *args, PyObject *kwds) {
 	}
 
 	if (copy == NULL) {
-		self->settings = new Cam::TPGSettings();
+		self->settings = new Cam::Settings::TPGSettings();
 		return 0;
 	} else {
 		if (PyCamTPGSettings_Check(copy)) {
@@ -552,7 +552,7 @@ static PyObject *PyTPGSettings_getActions (cam_PyTPGSettings* self, PyObject* ar
 //PyTPGSettings_clone (cam_PyTPGSettings* self, PyObject* args) {
 //
 //	if (self->settings != NULL) {
-//		Cam::TPGSettings* sett = self->settings->clone();
+//		Cam::Settings::TPGSettings* sett = self->settings->clone();
 //		PyObject result = PyObject_New(, &PyTPGSettingsType);
 //	}
 //
@@ -563,7 +563,7 @@ static PyObject *PyTPGSettings_getActions (cam_PyTPGSettings* self, PyObject* ar
 /**
  * Wrapper function to create new PyTPGSettings objects from c++
  */
-extern PyObject* PyTPGSettings_New(Cam::TPGSettings* settings) {
+extern PyObject* PyTPGSettings_New(Cam::Settings::TPGSettings* settings) {
     cam_PyTPGSettings *self;
 
     self = (cam_PyTPGSettings *)PyTPGSettingsType.tp_alloc(&PyTPGSettingsType, 0);

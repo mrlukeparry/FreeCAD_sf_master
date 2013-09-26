@@ -236,7 +236,7 @@ bool CamManagerInst::runPostProcessByName(const char *FeatName, App::Document* d
 /**
  * Add a TPG to the TPG Runner Queue.  First call will start the tpgRunnerThread.
  */
-bool CamManagerInst::queueTPGRun(TPG* tpg, TPGSettings* settings, Cam::TPGFeature *tpgFeature) {
+bool CamManagerInst::queueTPGRun(TPG* tpg, Settings::TPGSettings* settings, Cam::TPGFeature *tpgFeature) {
 
 	tpgRunnerQueueMutex.lock(); // exploit this lock to make starting runner thread 'thread-safe'.
 	// start the thread if needed

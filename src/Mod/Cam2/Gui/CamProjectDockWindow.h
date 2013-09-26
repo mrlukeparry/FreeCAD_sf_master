@@ -55,7 +55,7 @@ public:
 	 *
 	 * Provide a NULL newSettings to stop edit any settings.
 	 */
-	bool editSettings(Cam::TPGSettings* newSettings, bool saveOld = true);
+	bool editSettings(Cam::Settings::TPGSettings* newSettings, bool saveOld = true);
 
 	/**
 	 * Saves the current values from the UI into the settings objects.
@@ -113,7 +113,7 @@ protected:
 		}
 	};
 
-	Cam::TPGSettings *currentSettings;
+	Cam::Settings::TPGSettings *currentSettings;
 	QList<CamComponent*> components;
 
 	QMap<QString, ProgressBar*> progressBars;

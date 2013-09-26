@@ -49,7 +49,7 @@ extern PyTypeObject *PyTPGSettingDefinition_Type();
  */
 typedef struct  {
     PyObject_HEAD
-    Cam::TPGSettingDefinition *setting;
+    Cam::Settings::Definition *setting;
 } cam_PyTPGSettingDefinition;
 
 
@@ -63,12 +63,12 @@ typedef struct  {
  */
 typedef struct  {
     PyObject_HEAD
-    Cam::TPGSettings *settings;
+    Cam::Settings::TPGSettings *settings;
 } cam_PyTPGSettings;
 
 /**
  * Wrapper function to create new PyTPGSettings objects from c++
  */
-extern PyObject* PyTPGSettings_New(Cam::TPGSettings* settings);
+extern PyObject* PyTPGSettings_New(Cam::Settings::TPGSettings* settings);
 
 #endif /* PYTPGSETTINGS_H_ */

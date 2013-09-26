@@ -62,7 +62,7 @@ CamProjectDockWindow::~CamProjectDockWindow()
  *
  * Provide a NULL newSettings to stop edit any settings.
  */
-bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool saveOld /*=true*/)
+bool CamProjectDockWindow::editSettings(Cam::Settings::TPGSettings* newSettings, bool saveOld /*=true*/)
 {
     // save old settings
     if (saveOld && ! saveSettings()) {
@@ -93,32 +93,32 @@ bool CamProjectDockWindow::editSettings(Cam::TPGSettings* newSettings, bool save
         currentSettings = newSettings->grab();
         CamComponent *comp = NULL;
         bool failure = false;
-        std::vector<Cam::TPGSettingDefinition*> settings = newSettings->getSettings();
-        std::vector<Cam::TPGSettingDefinition*>::iterator it = settings.begin();
+        std::vector<Cam::Settings::Definition*> settings = newSettings->getSettings();
+        std::vector<Cam::Settings::Definition*>::iterator it = settings.begin();
         for (; it != settings.end(); ++it)
         {
-            Cam::TPGSettingDefinition* setting = *it;
+            Cam::Settings::Definition* setting = *it;
             if (setting != NULL)
             {
-				if (setting->type == Cam::TPGSettingDefinition::SettingType_Text)
+				if (setting->type == Cam::Settings::Definition::SettingType_Text)
                     comp = new CamTextBoxComponent();
-				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Radio)
+				else if (setting->type == Cam::Settings::Definition::SettingType_Radio)
                     comp = new CamRadioComponent();
-				else if (setting->type == Cam::TPGSettingDefinition::SettingType_ObjectNamesForType)
+				else if (setting->type == Cam::Settings::Definition::SettingType_ObjectNamesForType)
                     comp = new CamTextBoxComponent();
-				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Enumeration)
+				else if (setting->type == Cam::Settings::Definition::SettingType_Enumeration)
 					comp = new CamComboBoxComponent();
-				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Length)
+				else if (setting->type == Cam::Settings::Definition::SettingType_Length)
                     comp = new CamTextBoxComponent();
-				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Filename)
+				else if (setting->type == Cam::Settings::Definition::SettingType_Filename)
                     comp = new CamFilenameComponent();
-				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Directory)
+				else if (setting->type == Cam::Settings::Definition::SettingType_Directory)
                     comp = new CamDirectoryComponent();
-				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Color)
+				else if (setting->type == Cam::Settings::Definition::SettingType_Color)
                     comp = new CamColorComponent();
-				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Integer)
+				else if (setting->type == Cam::Settings::Definition::SettingType_Integer)
                     comp = new CamTextBoxComponent();
-				else if (setting->type == Cam::TPGSettingDefinition::SettingType_Double)
+				else if (setting->type == Cam::Settings::Definition::SettingType_Double)
                     comp = new CamTextBoxComponent();
                 else
                     continue;
@@ -161,7 +161,7 @@ bool CamProjectDockWindow::saveSettings()
 void CamProjectDockWindow::updatedTPGSelection(Cam::TPGFeature* tpgFeature) {
 
     if (tpgFeature != NULL) {
-		Cam::TPGSettings *settings = tpgFeature->getTPGSettings();
+		Cam::Settings::TPGSettings *settings = tpgFeature->getTPGSettings();
 		QStringList sl = settings->getActions();
 		Base::Console().Log("Actions: %i",sl.size());
 		if (!this->editSettings(settings))

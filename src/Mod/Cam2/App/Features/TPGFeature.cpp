@@ -52,7 +52,7 @@ TPGFeature::TPGFeature()
     ADD_PROPERTY_TYPE(MachineProgram,  (0),   "TPG Feature", (App::Prop_None),"MachineProgram");
 
     tpg = NULL;
-    tpgSettings = new TPGSettings;
+    tpgSettings = new Settings::TPGSettings;
 	tpgSettings->setTPGFeature(this);
 }
 
@@ -247,7 +247,7 @@ void TPGFeature::initialise()
 /**
  * Get the current TPG settings object
  */
-TPGSettings* TPGFeature::getTPGSettings() {
+Settings::TPGSettings* TPGFeature::getTPGSettings() {
 	getTPG();	// Try to load and initialise the TPG so that our settings array is fully populated.
 	return tpgSettings;
 }

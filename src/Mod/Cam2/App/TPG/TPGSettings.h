@@ -30,9 +30,11 @@
 #include <App/PropertyStandard.h>
 
 namespace Cam {
-class CamExport TPGSettingOption;
-class CamExport TPGSettingDefinition;
-class CamExport TPGSettings;
+	namespace Settings {
+	class CamExport Option;
+	class CamExport Definition;
+	class CamExport TPGSettings;
+	}
 }
 
 #include "../Features/TPGFeature.h"
@@ -46,21 +48,23 @@ class CamExport TPGSettings;
 
 namespace Cam
 {
+	namespace Settings 
+	{
 class CamExport TPGFeature; //TODO: work out why this is needed (must be some crazy cyclic including)
 
-class CamExport TPGSettingOption
+class CamExport Option
 {
 public:
     QString id;
     QString label;
 
-    TPGSettingOption(QString id, QString label)
+    Option(QString id, QString label)
     {
         this->id = id;
         this->label = label;
     }
 
-    TPGSettingOption(const char *id, const char *label)
+    Option(const char *id, const char *label)
     {
         this->id = QString::fromUtf8(id);
         this->label = QString::fromUtf8(label);
@@ -70,7 +74,7 @@ public:
 /**
  * A Class object to store the details of a single setting
  */
-class CamExport TPGSettingDefinition
+class CamExport Definition
 {
 public:
 	typedef enum
@@ -86,7 +90,7 @@ public:
 		NOTE: If any values are added/removed from this enumeration then
 		their corresponding ASCII equivalents (used via the Python interface)
 		must also be updated.  Such values are defined within the
-		PyTPGSettingDefinition_init() method of the PyTPGSettings.cpp file.
+		PyDefinition_init() method of the PyTPGSettings.cpp file.
 
 		NOTE: The SettingType_ObjectNamesForType setting type assumes that
 		the Options list has been populated with the following entries;
@@ -97,7 +101,7 @@ public:
 
 		NOTE: For SettingType_Enumeration, the 'value' is always going to be the integer form.  When it's presented
 		in the QComboBox (i.e. the user interface) the verbose (string) form is always used but, once that interaction
-		is complete, the value written to the TPGSettingDefinition object will always be the integer form.
+		is complete, the value written to the Definition object will always be the integer form.
 		To this end, settings of this type must have options whose ID is the integer form and whose LABEL is the string form.
 		Since Python is all string-based it might make sense to just use the string form for the value too.  The problem with
 		this is that it precludes language changes.  If we use the integer form for the value then the files should carry
@@ -137,7 +141,7 @@ protected:
 public:
     friend class TPGSettings;
 
-	bool operator== ( const TPGSettingDefinition & rhs ) const;
+	bool operator== ( const Definition & rhs ) const;
 	
 
 	//(<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>)
@@ -147,15 +151,15 @@ public:
 	QString defaultvalue;
 	QString units;
 	QString helptext;
-	QList<TPGSettingOption*> options;
+	QList<Option*> options;
 
 //	QString value; // deprecated: now uses FreeCAD data structure which is contained in TPGSettings.tpgFeature
 
-	TPGSettingDefinition(const char *name, const char *label, const SettingType  type, const char *defaultvalue, const char *units, const char *helptext);
-	TPGSettingDefinition(QString name, QString label, SettingType type, QString defaultvalue, QString units, QString helptext);
-	TPGSettingDefinition();
+	Definition(const char *name, const char *label, const SettingType  type, const char *defaultvalue, const char *units, const char *helptext);
+	Definition(QString name, QString label, SettingType type, QString defaultvalue, QString units, QString helptext);
+	Definition();
 
-	~TPGSettingDefinition();
+	~Definition();
 
 	ValidationState validate(QString & input, int & position) const;
 	ValidationState validateText(QString & input, int & position) const;
@@ -171,7 +175,7 @@ public:
 	/**
 	 * Perform a deep copy of this class
 	 */
-    TPGSettingDefinition* clone();
+    Definition* clone();
 
     void print() const;
 
@@ -179,7 +183,7 @@ public:
      * Increases reference count
      * Note: it returns a pointer to this for convenience.
      */
-    TPGSettingDefinition *grab();
+    Definition *grab();
 
     /**
      * Decreases reference count and deletes self if no other references
@@ -207,8 +211,8 @@ public:
 /** 
 	Class stores hash of settings for managing each independant TPG
 
-	This class mostly just holds a map of TPGSettingDefinition objects.
-	The TPGSettingDefinition objects hold data 'about' the setting but
+	This class mostly just holds a map of Definition objects.
+	The Definition objects hold data 'about' the setting but
 	the value itself is stored in one of the member variables contained
 	within the owning TPGFeature object.
  */
@@ -237,7 +241,7 @@ public:
     /**
      * Add a setting to this Settings collection
      */
-    TPGSettingDefinition* addSettingDefinition(QString action, TPGSettingDefinition* setting);
+    Definition* addSettingDefinition(QString action, Definition* setting);
 
     /**
      * Get the currently selected action.
@@ -264,7 +268,7 @@ public:
      */
     void print() const;
 
-    std::vector<TPGSettingDefinition*> getSettings() const;
+    std::vector<Definition*> getSettings() const;
 
     /**
      * Sets the default value for every setting in Settings collection
@@ -289,7 +293,7 @@ public:
     /**
      * Sets the TPGFeature that the value will be saved-to/read-from.
      */
-    void setTPGFeature(TPGFeature *tpgFeature);
+    void setTPGFeature(Cam::TPGFeature *tpgFeature);
 
     /**
      * Increases reference count
@@ -302,8 +306,8 @@ public:
      */
     void release();
 
-	bool EvaluateLength( const TPGSettingDefinition *definition, const char *entered_value, double *pResult ) const;
-	bool EvaluateWithPython( const TPGSettingDefinition *definition, QString value, QString & evaluated_version ) const;
+	bool EvaluateLength( const Definition *definition, const char *entered_value, double *pResult ) const;
+	bool EvaluateWithPython( const Definition *definition, QString value, QString & evaluated_version ) const;
 	bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 
 protected:
@@ -311,15 +315,15 @@ protected:
     /// the action that is selected (i.e. algorithm and group of settings to use)
     QString action;
     /// the settings in the order that the TPG developer wants them to display
-    std::vector<TPGSettingDefinition*> settingDefs;
+    std::vector<Definition*> settingDefs;
     /// the same settings but in map data structure for random access (key: <action>::<name>)
-    std::map<QString, TPGSettingDefinition*> settingDefsMap;
+    std::map<QString, Definition*> settingDefsMap;
     /// a map to store which settings are in which action
-    std::map<QString, std::vector<TPGSettingDefinition*> > settingDefsActionMap;
+    std::map<QString, std::vector<Definition*> > settingDefsActionMap;
     /// reference counter
     int refcnt;
     /// the tpgFeature to which these settings belong
-    TPGFeature *tpgFeature;
+	Cam::TPGFeature *tpgFeature;
 
     /// make a namespaced name (from <action>::<name>)
     QString makeName(QString action, QString name) const;
@@ -334,14 +338,16 @@ private:
 
 
 
-// Declare some classes used to get/set TPGSettingDefinition values depending on the
-// type of TPGSettingDefinition object used.
+// Declare some classes used to get/set Definition values depending on the
+// type of Definition object used.  Consider these 'helper classes' that
+// will allow a Cam::Setting::Definition to be correctly set and interpreted
+// when the various types of settings are defined.
 
-class CamExport TPGColorSettingDefinition : public TPGSettingDefinition
+class CamExport Color : public Definition
 {
 public:
-	TPGColorSettingDefinition(const char *name, const char *label, const char *helptext ):
-	  TPGSettingDefinition(name, label, SettingType_Color, "", "", helptext)
+	Color(const char *name, const char *label, const char *helptext ):
+	  Definition(name, label, SettingType_Color, "", "", helptext)
 	{
 	}
 
@@ -349,36 +355,36 @@ public:
 	void set(const int red, const int green, const int blue, const int alpha);
 };
 
-class CamExport TPGLengthSettingDefinition : public TPGSettingDefinition
+class CamExport Length : public Definition
 {
 public:
-	TPGLengthSettingDefinition(	const char *name, 
+	Length(	const char *name, 
 								const char *label, 
 								const char *helptext,
 								const double default_value,
 								const double minimum, 
 								const double maximum, 
-								const TPGSettingDefinition::Units_t units );
-	TPGLengthSettingDefinition(	const char *name, 
+								const Definition::Units_t units );
+	Length(	const char *name, 
 								const char *label, 
 								const char *helptext,
 								const double default_value,
-								const TPGSettingDefinition::Units_t units );
+								const Definition::Units_t units );
 
 	bool Evaluate( const char *entered_value, double *pResult ) const;
 };
 
-class CamExport TPGDoubleSettingDefinition : public TPGSettingDefinition
+class CamExport Double : public Definition
 {
 public:
-	TPGDoubleSettingDefinition(	const char *name, 
+	Double(	const char *name, 
 								const char *label, 
 								const char *helptext,
 								const double default_value,
 								const double minimum, 
 								const double maximum, 
 								const char *units );
-	TPGDoubleSettingDefinition(	const char *name, 
+	Double(	const char *name, 
 								const char *label, 
 								const char *helptext,
 								const double default_value,
@@ -387,10 +393,10 @@ public:
 	bool Evaluate( const char *entered_value, double *pResult ) const;
 };
 
-class CamExport TPGObjectNamesForTypeSettingDefinition : public TPGSettingDefinition
+class CamExport ObjectNamesForType : public Definition
 {
 public:
-	TPGObjectNamesForTypeSettingDefinition(	const char *name, 
+	ObjectNamesForType(	const char *name, 
 								const char *label, 
 								const char *helptext,
 								const char *delimiters,
@@ -400,12 +406,12 @@ public:
 	void SetDelimiters(const char * object_type);
 
 	QStringList GetTypes() const;
-	TPGSettingOption *GetDelimitersOption() const;
+	Option *GetDelimitersOption() const;
 	QStringList GetNames() const;
 };
 
 
-
+} // namespace Settings
 } //namespace Cam
 
 

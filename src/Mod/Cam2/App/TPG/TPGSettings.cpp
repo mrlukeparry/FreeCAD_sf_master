@@ -50,6 +50,7 @@
 #include <Base/PyObjectBase.h>
 
 namespace Cam {
+	namespace Settings {
 
 const char* ts(QString str)
 {
@@ -65,7 +66,7 @@ const char* ts(QString *str)
 
 ////////// TPGSetting //////////
 
-TPGSettingDefinition::TPGSettingDefinition(const char *name, const char *label, const SettingType type, const char *defaultvalue, const char *units, const char *helptext)
+Definition::Definition(const char *name, const char *label, const SettingType type, const char *defaultvalue, const char *units, const char *helptext)
 {
 	this->refcnt = 1;
     this->parent = NULL;
@@ -77,7 +78,7 @@ TPGSettingDefinition::TPGSettingDefinition(const char *name, const char *label, 
 	this->units = QString::fromAscii(units);
 	this->helptext = QString::fromAscii(helptext);
 }
-TPGSettingDefinition::TPGSettingDefinition(QString name, QString label, SettingType type, QString defaultvalue, QString units, QString helptext)
+Definition::Definition(QString name, QString label, SettingType type, QString defaultvalue, QString units, QString helptext)
 {
 	this->refcnt = 1;
     this->parent = NULL;
@@ -89,13 +90,13 @@ TPGSettingDefinition::TPGSettingDefinition(QString name, QString label, SettingT
 	this->units = units;
 	this->helptext = helptext;
 }
-TPGSettingDefinition::TPGSettingDefinition() {
+Definition::Definition() {
 	this->refcnt = 1;
     this->parent = NULL;
 }
 
-TPGSettingDefinition::~TPGSettingDefinition() {
-    QList<TPGSettingOption*>::iterator it = this->options.begin();
+Definition::~Definition() {
+    QList<Settings::Option*>::iterator it = this->options.begin();
     for (; it != this->options.end(); ++it)
 	{
         delete *it;
@@ -107,7 +108,7 @@ TPGSettingDefinition::~TPGSettingDefinition() {
 	#endif // FCAppCamGui
 }
 
-bool TPGSettingDefinition::operator== ( const TPGSettingDefinition & rhs ) const
+bool Definition::operator== ( const Definition & rhs ) const
 {
 	if (name != rhs.name) return(false);
 	if (label != rhs.label) return(false);
@@ -119,10 +120,10 @@ bool TPGSettingDefinition::operator== ( const TPGSettingDefinition & rhs ) const
 /**
  * Perform a deep copy of this class
  */
-TPGSettingDefinition* TPGSettingDefinition::clone()
+Definition* Definition::clone()
 {
-    TPGSettingDefinition* clone = new TPGSettingDefinition(name, label, type, defaultvalue, units, helptext);
-    QList<TPGSettingOption*>::iterator it = this->options.begin();
+    Definition* clone = new Definition(name, label, type, defaultvalue, units, helptext);
+	QList<Settings::Option*>::iterator it = this->options.begin();
 
     for (; it != this->options.end(); ++it)
         clone->addOption((*it)->id, (*it)->label);
@@ -136,19 +137,19 @@ TPGSettingDefinition* TPGSettingDefinition::clone()
 /**
  * add an option for the value of this setting
  */
-void TPGSettingDefinition::addOption(QString id, QString label) {
-    this->options.append(new TPGSettingOption(id, label));
+void Definition::addOption(QString id, QString label) {
+    this->options.append(new Settings::Option(id, label));
 }
 
 /**
  * add an option for the value of this setting
  */
-void TPGSettingDefinition::addOption(const char *id, const char *label) {
-    this->options.append(new TPGSettingOption(id, label));
+void Definition::addOption(const char *id, const char *label) {
+    this->options.append(new Settings::Option(id, label));
 }
 
 
-TPGSettingDefinition::ValidationState TPGSettingDefinition::validate(QString & input,int & position) const
+Definition::ValidationState Definition::validate(QString & input,int & position) const
 {
 	switch (this->type)
 	{
@@ -190,27 +191,27 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validate(QString & i
 	}
 }
 
-TPGSettingDefinition::ValidationState TPGSettingDefinition::validateText(QString & input,int & position) const
+Definition::ValidationState Definition::validateText(QString & input,int & position) const
 {
 	return(this->Acceptable);
 }
 
-TPGSettingDefinition::ValidationState TPGSettingDefinition::validateFilename(QString & input,int & position) const
+Definition::ValidationState Definition::validateFilename(QString & input,int & position) const
 {
 	return(this->Acceptable);
 }
 
-TPGSettingDefinition::ValidationState TPGSettingDefinition::validateDirectory(QString & input,int & position) const
+Definition::ValidationState Definition::validateDirectory(QString & input,int & position) const
 {
 	return(this->Acceptable);
 }
 
-TPGSettingDefinition::ValidationState TPGSettingDefinition::validateColor(QString & input,int & position) const
+Definition::ValidationState Definition::validateColor(QString & input,int & position) const
 {
 	return(this->Acceptable);
 }
 
-TPGSettingDefinition::ValidationState TPGSettingDefinition::validateLength(QString & input,int & position) const
+Definition::ValidationState Definition::validateLength(QString & input,int & position) const
 {
 	double value;
 	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
@@ -223,7 +224,7 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateLength(QStri
 	}
 }
 
-TPGSettingDefinition::ValidationState TPGSettingDefinition::validateInteger(QString & input,int & position) const
+Definition::ValidationState Definition::validateInteger(QString & input,int & position) const
 {
 	if (input.length() == 0) return(this->Intermediate);
 	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
@@ -231,7 +232,7 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateInteger(QStr
 
 	std::auto_ptr<int> pMinimum;
 	std::auto_ptr<int> pMaximum;
-	for (QList<TPGSettingOption*>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
+	for (QList<Option*>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
 	{
 		if ((*itOption)->id == QString::fromAscii("minimum"))
 		{
@@ -257,7 +258,7 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateInteger(QStr
 	}
 }
 
-TPGSettingDefinition::ValidationState TPGSettingDefinition::validateDouble(QString & input,int & position) const
+Definition::ValidationState Definition::validateDouble(QString & input,int & position) const
 {
 	if (input.length() == 0) return(this->Intermediate);
 	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
@@ -265,7 +266,7 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateDouble(QStri
 
 	std::auto_ptr<double> pMinimum;
 	std::auto_ptr<double> pMaximum;
-	for (QList<TPGSettingOption*>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
+	for (QList<Option*>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
 	{
 		if ((*itOption)->id == QString::fromAscii("minimum"))
 		{
@@ -302,13 +303,13 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateDouble(QStri
 		- id = "TypeId" label = "Part::Feature"
 		- id = "TypeId" label = "Cam::TPGFeature"
  */
-TPGSettingDefinition::ValidationState TPGSettingDefinition::validateObjectNamesForType(QString & input,int & position) const
+Definition::ValidationState Definition::validateObjectNamesForType(QString & input,int & position) const
 {
 	// Cast this object to a TPGObjectNamesForTypeSettingDefinition object so we can use the helper functions
 	// to review the object's contents.
-	TPGObjectNamesForTypeSettingDefinition *pSetting = (TPGObjectNamesForTypeSettingDefinition *) this;
+	ObjectNamesForType *pSetting = (ObjectNamesForType *) this;
 
-	TPGSettingOption *delimiters_option = pSetting->GetDelimitersOption();
+	Option *delimiters_option = pSetting->GetDelimitersOption();
 	if (delimiters_option == NULL)
 	{
 		return(this->Invalid);
@@ -359,13 +360,13 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateObjectNamesF
 	how their values could ever become invalid.  I'll leave it here for now just in case we need to perform some validation
 	(and I can still remember how it all fits together) but I suspect it's not necessary for this data type.
  */
-TPGSettingDefinition::ValidationState TPGSettingDefinition::validateEnumeration(QString & input,int & position) const
+Definition::ValidationState Definition::validateEnumeration(QString & input,int & position) const
 {
 	return(this->Acceptable);
 }
 
 
-void TPGSettingDefinition::print() const
+void Definition::print() const
 {
 	qDebug("  - (%s, %s, %d, %s, %s, %s)\n",
 			name.toAscii().constData(),
@@ -380,7 +381,7 @@ void TPGSettingDefinition::print() const
  * Increases reference count
  * Note: it returns a pointer to 'this' for convenience.
  */
-TPGSettingDefinition *TPGSettingDefinition::grab() {
+Definition *Definition::grab() {
     refcnt++;
     return this;
 }
@@ -388,7 +389,7 @@ TPGSettingDefinition *TPGSettingDefinition::grab() {
 /**
  * Decreases reference count and deletes self if no other references
  */
-void TPGSettingDefinition::release() {
+void Definition::release() {
     refcnt--;
     if (refcnt == 0)
         delete this;
@@ -397,7 +398,7 @@ void TPGSettingDefinition::release() {
 /**
  * Get the value associated with this setting
  */
-QString TPGSettingDefinition::getValue() const
+QString Definition::getValue() const
 {
 	if (this->parent != NULL)
 		return this->parent->getValue(action, name);
@@ -407,7 +408,7 @@ QString TPGSettingDefinition::getValue() const
 /**
  * Set the value associated with this setting
  */
-bool TPGSettingDefinition::setValue(QString value) {
+bool Definition::setValue(QString value) {
 	int position = value.length();
 	if (position > 0) position -= 1;
 	if (this->validate(value,position) == this->Acceptable)
@@ -427,7 +428,7 @@ bool TPGSettingDefinition::setValue(QString value) {
 /**
  * Get the namespaced name <action>::<name>
  */
-QString TPGSettingDefinition::getFullname() const
+QString Definition::getFullname() const
 {
 	return action + QString::fromAscii("::") + name;
 }
@@ -445,7 +446,7 @@ TPGSettings::~TPGSettings()
 	// The objects in the settingDefs vector used grab() to increment the reference count when they
 	// were added in the addSettingDefinition() method.  Release this reference count now that we
 	// don't need them any more.
-	for (std::vector<TPGSettingDefinition*>::iterator itSetting = settingDefs.begin(); itSetting != settingDefs.end(); /* increment within loop */ )
+	for (std::vector<Definition*>::iterator itSetting = settingDefs.begin(); itSetting != settingDefs.end(); /* increment within loop */ )
 	{
 		(*itSetting)->release();
 		itSetting = settingDefs.erase(itSetting);
@@ -459,7 +460,7 @@ TPGSettings* TPGSettings::clone()
 {
 	TPGSettings* settings = new TPGSettings();
 
-	std::vector<TPGSettingDefinition*>::iterator it = this->settingDefs.begin();
+	std::vector<Definition*>::iterator it = this->settingDefs.begin();
 	while (it != this->settingDefs.end())
 	{
 		settings->addSettingDefinition((*it)->action, (*it)->clone());
@@ -474,29 +475,29 @@ TPGSettings* TPGSettings::clone()
 /**
  * Adds the setting to this setting group
  */
-TPGSettingDefinition* TPGSettings::addSettingDefinition(QString action, TPGSettingDefinition* setting) {
+Definition* TPGSettings::addSettingDefinition(QString action, Definition* setting) {
 
 	if (setting != NULL) {
 		QString qname = makeName(action, setting->name);
 
 		// store reference to setting
 		settingDefs.push_back(setting->grab());
-		settingDefsMap.insert(std::pair<QString, TPGSettingDefinition*>(qname, setting));
+		settingDefsMap.insert(std::pair<QString, Definition*>(qname, setting));
 
 		// take ownership of setting
 		setting->action = action;
 		setting->parent = this;
 
 		// add setting to the required action
-		std::map<QString, std::vector<TPGSettingDefinition*> >::iterator it = settingDefsActionMap.find(action);
+		std::map<QString, std::vector<Definition*> >::iterator it = settingDefsActionMap.find(action);
 		if (it == settingDefsActionMap.end()) {
-			std::vector<TPGSettingDefinition*> settings;
+			std::vector<Definition*> settings;
 			settings.push_back(setting);
-			settingDefsActionMap.insert(std::pair<QString, std::vector<TPGSettingDefinition*> >(action, settings));
+			settingDefsActionMap.insert(std::pair<QString, std::vector<Definition*> >(action, settings));
 		} else {
 			// Check to see if we already have one.  If so, return a pointer to it rather than adding this new one.
 			bool found = false;
-			for (std::vector<Cam::TPGSettingDefinition *>::iterator itSettingDef = it->second.begin(); (! found) && (itSettingDef != it->second.end()); itSettingDef++)
+			for (std::vector<Cam::Settings::Definition *>::iterator itSettingDef = it->second.begin(); (! found) && (itSettingDef != it->second.end()); itSettingDef++)
 			{
 				if (*(*itSettingDef) == *setting)
 				{
@@ -624,7 +625,7 @@ bool TPGSettings::setValue(QString name, QString value) {
 
 void TPGSettings::print() const
 {
-	std::vector<TPGSettingDefinition*>::const_iterator it = this->settingDefs.begin();
+	std::vector<Definition*>::const_iterator it = this->settingDefs.begin();
 	while (it != this->settingDefs.end())
 	{
 		(*it)->print();
@@ -633,7 +634,7 @@ void TPGSettings::print() const
 }
 
 
-std::vector<TPGSettingDefinition*> TPGSettings::getSettings() const
+std::vector<Definition*> TPGSettings::getSettings() const
 {
 	return this->settingDefs;
 }
@@ -651,7 +652,7 @@ void TPGSettings::addDefaults() {
 			tpgFeature->PropTPGSettings.setValue("action", "default");
 
 		// add all settings for each available action
-		std::vector<TPGSettingDefinition*>::iterator it = this->settingDefs.begin();
+		std::vector<Definition*>::iterator it = this->settingDefs.begin();
 		while (it != this->settingDefs.end()) {
 			QString nsName = makeName((*it)->action, (*it)->name);
 			if (currentValues.find(nsName.toStdString()) == currentValues.end())
@@ -669,7 +670,7 @@ QStringList TPGSettings::getActions() const
 
 	QStringList result;
 
-	std::map<QString, std::vector<TPGSettingDefinition*> >::const_iterator it = settingDefsActionMap.begin();
+	std::map<QString, std::vector<Definition*> >::const_iterator it = settingDefsActionMap.begin();
 	while (it != settingDefsActionMap.end()) {
 		Base::Console().Log("%s\n", (*it).first.toAscii().constData());
 		result.append((*it).first);
@@ -684,7 +685,7 @@ QStringList TPGSettings::getActions() const
  *
  * This will set the default values for any missing settings
  */
-void TPGSettings::setTPGFeature(TPGFeature *tpgFeature) {
+void TPGSettings::setTPGFeature(Cam::TPGFeature *tpgFeature) {
 	this->tpgFeature = tpgFeature;
 
 	// load the TPG's action
@@ -754,7 +755,7 @@ void TPGSettings::onPropTPGSettingsChanged(const App::PropertyMap* property_map)
 			tpg->grab();
 
 			// qDebug("TPGSettings::onPropTPGSettingsChanged() called\n");
-			for (std::map<QString, TPGSettingDefinition*>::iterator itSettingsDef = settingDefsMap.begin(); itSettingsDef != settingDefsMap.end(); itSettingsDef++)
+			for (std::map<QString, Definition*>::iterator itSettingsDef = settingDefsMap.begin(); itSettingsDef != settingDefsMap.end(); itSettingsDef++)
 			{
 				std::string name = itSettingsDef->first.toStdString();
 				std::string previous_value = this->previous_tpg_properties_version[name];
@@ -822,7 +823,7 @@ static std::pair<std::string::size_type, std::string::size_type> next_possible_n
     a reference.  eg: if a propertyDouble has 'diameter'='3.4' and the
     'value'='diameter / 2.0' then we need to end up returning '1.7' in a QString.
  */
-bool TPGSettings::EvaluateWithPython( const TPGSettingDefinition *definition, QString value, QString & evaluated_version ) const
+bool TPGSettings::EvaluateWithPython( const Definition *definition, QString value, QString & evaluated_version ) const
 {
     bool return_status = false;
 
@@ -840,7 +841,7 @@ bool TPGSettings::EvaluateWithPython( const TPGSettingDefinition *definition, QS
 
         if (pDictionary != NULL)
         {
-			for (std::vector<TPGSettingDefinition *>::const_iterator itDef = this->settingDefs.begin(); itDef != this->settingDefs.end(); itDef++)
+			for (std::vector<Definition *>::const_iterator itDef = this->settingDefs.begin(); itDef != this->settingDefs.end(); itDef++)
 			{
 				if ((*itDef) == definition) continue;	// Can't use our own value within the definition of our own value.
 
@@ -1016,7 +1017,7 @@ bool TPGSettings::EvaluateWithPython( const TPGSettingDefinition *definition, QS
 /**
 	Interpret the entered_value as a Python script that should return a floating point number.
  */
-bool TPGSettings::EvaluateLength( const TPGSettingDefinition *definition, const char *entered_value, double *pResult ) const
+bool TPGSettings::EvaluateLength( const Definition *definition, const char *entered_value, double *pResult ) const
 {	
 	QString evaluated_version;
 	if (this->EvaluateWithPython( definition, QString::fromAscii(entered_value), evaluated_version ))
@@ -1032,7 +1033,7 @@ bool TPGSettings::EvaluateLength( const TPGSettingDefinition *definition, const 
 }
 
 
-bool TPGLengthSettingDefinition::Evaluate( const char *formula, double *pResult ) const
+bool Settings::Length::Evaluate( const char *formula, double *pResult ) const
 {
 	if (! this->parent)
 	{
@@ -1043,7 +1044,7 @@ bool TPGLengthSettingDefinition::Evaluate( const char *formula, double *pResult 
 }
 
 
-bool TPGDoubleSettingDefinition::Evaluate( const char *formula, double *pResult ) const
+bool Settings::Double::Evaluate( const char *formula, double *pResult ) const
 {
 	if (! this->parent)
 	{
@@ -1062,7 +1063,7 @@ bool TPGDoubleSettingDefinition::Evaluate( const char *formula, double *pResult 
 	the conversion between the INI string used in the TPGFeature's 
 	property and the QColor value we use in the code.
  */
-bool TPGColorSettingDefinition::get(int &red, int &green, int &blue, int &alpha) const
+bool Settings::Color::get(int &red, int &green, int &blue, int &alpha) const
 {
 	try
 	{
@@ -1094,7 +1095,7 @@ bool TPGColorSettingDefinition::get(int &red, int &green, int &blue, int &alpha)
 	}
 }
 
-void TPGColorSettingDefinition::set(const int red, const int green, const int blue, const int alpha)
+void Settings::Color::set(const int red, const int green, const int blue, const int alpha)
 {
 	using boost::property_tree::ptree;
 	ptree pt;
@@ -1112,25 +1113,25 @@ void TPGColorSettingDefinition::set(const int red, const int green, const int bl
 
 
 
-TPGLengthSettingDefinition::TPGLengthSettingDefinition(
+Settings::Length::Length(
 		const char *name, 
 		const char *label, 
 		const char *helptext,
 		const double default_value,
 		const double minimum, 
 		const double maximum, 
-		const TPGSettingDefinition::Units_t units ):
-	  TPGSettingDefinition(name, label, SettingType_Length, "", "", helptext)
+		const Definition::Units_t units ):
+	  Definition(name, label, SettingType_Length, "", "", helptext)
 {
 	switch (units)
 	{
 	case Metric:
-		TPGSettingDefinition::units = QString::fromAscii("mm");
+		Definition::units = QString::fromAscii("mm");
 		break;
 
 	case Imperial:
 	default:
-		TPGSettingDefinition::units = QString::fromAscii("inch");
+		Definition::units = QString::fromAscii("inch");
 		break;
 	}
 
@@ -1140,43 +1141,43 @@ TPGLengthSettingDefinition::TPGLengthSettingDefinition(
 	std::ostringstream max;
 	max << maximum;
 
-	this->options.push_back( new TPGSettingOption(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
-	this->options.push_back( new TPGSettingOption(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
+	this->options.push_back( new Option(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
+	this->options.push_back( new Option(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
 
 	std::ostringstream def_val;
 	def_val << default_value;
-	TPGSettingDefinition::defaultvalue = QString::fromStdString(def_val.str());
+	Definition::defaultvalue = QString::fromStdString(def_val.str());
 }
 
-TPGLengthSettingDefinition::TPGLengthSettingDefinition(
+Settings::Length::Length(
 		const char *name, 
 		const char *label, 
 		const char *helptext,
 		const double default_value,
-		const TPGSettingDefinition::Units_t units ):
-	  TPGSettingDefinition(name, label, SettingType_Length, "", "", helptext)
+		const Definition::Units_t units ):
+	  Definition(name, label, SettingType_Length, "", "", helptext)
 {
 	switch (units)
 	{
 	case Metric:
-		TPGSettingDefinition::units = QString::fromAscii("mm");
+		Definition::units = QString::fromAscii("mm");
 		break;
 
 	case Imperial:
 	default:
-		TPGSettingDefinition::units = QString::fromAscii("inch");
+		Definition::units = QString::fromAscii("inch");
 		break;
 	}
 
 	std::ostringstream def_val;
 	def_val << default_value;
-	TPGSettingDefinition::defaultvalue = QString::fromStdString(def_val.str());
+	Definition::defaultvalue = QString::fromStdString(def_val.str());
 }
 
 
 
 
-TPGDoubleSettingDefinition::TPGDoubleSettingDefinition(
+Double::Double(
 		const char *name, 
 		const char *label, 
 		const char *helptext,
@@ -1184,7 +1185,7 @@ TPGDoubleSettingDefinition::TPGDoubleSettingDefinition(
 		const double minimum, 
 		const double maximum, 
 		const char *units ):
-	  TPGSettingDefinition(name, label, SettingType_Double, "", units, helptext)
+	  Definition(name, label, SettingType_Double, "", units, helptext)
 {
 	std::ostringstream min;
 	min << minimum;
@@ -1192,25 +1193,25 @@ TPGDoubleSettingDefinition::TPGDoubleSettingDefinition(
 	std::ostringstream max;
 	max << maximum;
 
-	this->options.push_back( new TPGSettingOption(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
-	this->options.push_back( new TPGSettingOption(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
+	this->options.push_back( new Option(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
+	this->options.push_back( new Option(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
 
 	std::ostringstream def_val;
 	def_val << default_value;
-	TPGSettingDefinition::defaultvalue = QString::fromStdString(def_val.str());
+	Definition::defaultvalue = QString::fromStdString(def_val.str());
 }
 
-TPGDoubleSettingDefinition::TPGDoubleSettingDefinition(
+Double::Double(
 		const char *name, 
 		const char *label, 
 		const char *helptext,
 		const double default_value,
 		const char * units ):
-	  TPGSettingDefinition(name, label, SettingType_Double, "", units, helptext)
+	  Definition(name, label, SettingType_Double, "", units, helptext)
 {
 	std::ostringstream def_val;
 	def_val << default_value;
-	TPGSettingDefinition::defaultvalue = QString::fromStdString(def_val.str());
+	Definition::defaultvalue = QString::fromStdString(def_val.str());
 }
 
 
@@ -1246,7 +1247,7 @@ TPGDoubleSettingDefinition::TPGDoubleSettingDefinition(
 	being used in the variable's value.  This allows one setting to refer to another
 	setting's value without worrying about which units each one is defined in.
  */
-bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+bool Definition::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
 {
 	// Replace any spaces within the variable name with underbars so that the
 	// name can be used as a Python variable name.
@@ -1301,7 +1302,7 @@ bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary, const QS
 
 			bool status = false;
 
-			TPGColorSettingDefinition *colour = (TPGColorSettingDefinition *) this;
+			Color *colour = (Color *) this;
 			int red, green, blue, alpha;
 			colour->get(red, green, blue, alpha);
 
@@ -1406,7 +1407,7 @@ bool TPGSettingDefinition::AddToPythonDictionary(PyObject *pDictionary, const QS
 bool TPGSettings::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
 {
 	bool status = false;
-	for (std::vector<TPGSettingDefinition*>::const_iterator itDef = this->settingDefs.begin(); itDef != this->settingDefs.end(); itDef++)
+	for (std::vector<Definition*>::const_iterator itDef = this->settingDefs.begin(); itDef != this->settingDefs.end(); itDef++)
 	{
 		if ((*itDef)->AddToPythonDictionary(pDictionary, requested_units, prefix))
 		{
@@ -1418,7 +1419,7 @@ bool TPGSettings::AddToPythonDictionary(PyObject *pDictionary, const QString req
 
 
 
-TPGObjectNamesForTypeSettingDefinition::TPGObjectNamesForTypeSettingDefinition(	const char *name, 
+ObjectNamesForType::ObjectNamesForType(	const char *name, 
 								const char *label, 
 								const char *helptext,
 								const char *delimiters,
@@ -1434,15 +1435,15 @@ TPGObjectNamesForTypeSettingDefinition::TPGObjectNamesForTypeSettingDefinition(	
 	this->addOption( QString::fromAscii("TypeId"), QString::fromAscii(object_type) );
 }
 
-void TPGObjectNamesForTypeSettingDefinition::Add(const char * object_type)
+void ObjectNamesForType::Add(const char * object_type)
 {
 	this->addOption( QString::fromAscii("TypeId"), QString::fromAscii(object_type) );
 }
 
-TPGSettingOption *TPGObjectNamesForTypeSettingDefinition::GetDelimitersOption() const
+Option *ObjectNamesForType::GetDelimitersOption() const
 {
-	TPGSettingOption *delimiters_option = NULL;
-	for (QList<TPGSettingOption*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
+	Option *delimiters_option = NULL;
+	for (QList<Option*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
 	{
 		if ((*itOption)->id.toUpper() == QString::fromAscii("Delimiters").toUpper())
 		{
@@ -1453,10 +1454,10 @@ TPGSettingOption *TPGObjectNamesForTypeSettingDefinition::GetDelimitersOption() 
 	return(NULL);	// not found.
 }
 
-void TPGObjectNamesForTypeSettingDefinition::SetDelimiters(const char * delimiters)
+void ObjectNamesForType::SetDelimiters(const char * delimiters)
 {
 
-	TPGSettingOption *delimiters_option = GetDelimitersOption();
+	Option *delimiters_option = GetDelimitersOption();
 	if (delimiters_option != NULL)
 	{
 		delimiters_option->label = QString::fromAscii(delimiters);
@@ -1468,11 +1469,11 @@ void TPGObjectNamesForTypeSettingDefinition::SetDelimiters(const char * delimite
 }
 
 
-QStringList TPGObjectNamesForTypeSettingDefinition::GetTypes() const
+QStringList ObjectNamesForType::GetTypes() const
 {
 	QStringList types;
 
-	for (QList<TPGSettingOption*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
+	for (QList<Option*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
 	{
 		if ((*itOption)->id.toUpper() == QString::fromAscii("TypeId").toUpper())
 		{
@@ -1483,10 +1484,10 @@ QStringList TPGObjectNamesForTypeSettingDefinition::GetTypes() const
 	return(types);
 }
 
-QStringList TPGObjectNamesForTypeSettingDefinition::GetNames() const
+QStringList ObjectNamesForType::GetNames() const
 {
 	QStringList names;
-	TPGSettingOption *delimiters_option = GetDelimitersOption();
+	Option *delimiters_option = GetDelimitersOption();
 	if (delimiters_option != NULL)
 	{
 		// Use a regular expression so that we use any one of the characters in the delimiters string
@@ -1506,4 +1507,5 @@ QStringList TPGObjectNamesForTypeSettingDefinition::GetNames() const
 
 
 
+} // end namespace Settings
 } // end namespace Cam

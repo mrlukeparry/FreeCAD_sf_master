@@ -40,20 +40,20 @@ namespace CamGui {
 
 class CamGuiExport CamComponent {
 protected:
-    Cam::TPGSettingDefinition *tpgsetting;
+    Cam::Settings::Definition *tpgsetting;
     QFormLayout* form;
     QList<QWidget*> rootComponents;
 
 	/**
 		The Validator class allows the QValidator mechanisms supported by the Qt library to ask
-		the Cam::TPGSettingDefinition class whether the value entered into the user interface
-		is valid.  This allows the Cam::TPGSettingDefinition::SettingType values to each implement
+		the Cam::Settings::Definition class whether the value entered into the user interface
+		is valid.  This allows the Cam::Settings::Definition::SettingType values to each implement
 		their own validation rules without the need to link with the Qt library.
 	 */
 	class Validator : public QValidator
 	{
 	public:
-		Validator( Cam::TPGSettingDefinition *setting_definition, QObject *widget ) : QValidator(widget)
+		Validator( Cam::Settings::Definition *setting_definition, QObject *widget ) : QValidator(widget)
 		{
 			this->setting_definition = setting_definition->grab();
 		}
@@ -69,7 +69,7 @@ protected:
 	virtual QValidator::State validate(QString &input, int &position) const;
 
 	private:
-		Cam::TPGSettingDefinition *setting_definition;
+		Cam::Settings::Definition *setting_definition;
 	}; // End Validator class definition
 
 	Validator *validator;
@@ -81,7 +81,7 @@ public:
     /**
      * Creates the UI for this component and loads the initial value
      */
-    virtual bool makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form);
+    virtual bool makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form);
 
     /**
      * Saves the values on the UI to the TPGSetting instance
@@ -99,7 +99,7 @@ public:
 class CamLineEdit : public QLineEdit
 {
 public:
-	CamLineEdit(QWidget *parent, Cam::TPGSettingDefinition *tpgsetting) : QLineEdit(parent) 
+	CamLineEdit(QWidget *parent, Cam::Settings::Definition *tpgsetting) : QLineEdit(parent) 
 	{
 		this->tpgSetting = tpgsetting->grab();
 	}
@@ -115,7 +115,7 @@ public:
 	virtual void focusOutEvent ( QFocusEvent * e );
 
 private:
-	Cam::TPGSettingDefinition *tpgSetting;
+	Cam::Settings::Definition *tpgSetting;
 };
 
 // ----- CamTextBoxComponent ---------------------------------------------------------
@@ -136,7 +136,7 @@ public:
     /**
      * Creates the UI for this component and loads the initial value
      */
-    virtual bool makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form);
+    virtual bool makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form);
 
     /**
      * Saves the values on the UI to the TPGSetting instance
@@ -168,7 +168,7 @@ public:
     /**
      * Creates the UI for this component and loads the initial value
      */
-    virtual bool makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form);
+    virtual bool makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form);
 
     /**
      * Saves the values on the UI to the TPGSetting instance
@@ -180,7 +180,7 @@ public:
 
 // ----- CamRadioComponent ---------------------------------------------------------
 /**
- * Object that manages a Cam::TPGSettingDefinition::SettingType_Enumeration setting
+ * Object that manages a Cam::Settings::Definition::SettingType_Enumeration setting
  */
 class CamGuiExport CamComboBoxComponent: public QObject, public CamComponent {
 
@@ -193,7 +193,7 @@ public:
     /**
      * Creates the UI for this component and loads the initial value
      */
-    virtual bool makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form);
+    virtual bool makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form);
 
     /**
      * Saves the values on the UI to the TPGSetting instance
@@ -233,7 +233,7 @@ public:
     /**
      * Creates the UI for this component and loads the initial value
      */
-    virtual bool makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form);
+    virtual bool makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form);
 
     /**
      * Saves the values on the UI to the TPGSetting instance
@@ -271,7 +271,7 @@ public:
     /**
      * Creates the UI for this component and loads the initial value
      */
-    virtual bool makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form);
+    virtual bool makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form);
 
     /**
      * Saves the values on the UI to the TPGSetting instance
@@ -309,7 +309,7 @@ public:
     /**
      * Creates the UI for this component and loads the initial value
      */
-    virtual bool makeUI(Cam::TPGSettingDefinition *tpgsetting, QFormLayout* form);
+    virtual bool makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form);
 
     /**
      * Saves the values on the UI to the TPGSetting instance

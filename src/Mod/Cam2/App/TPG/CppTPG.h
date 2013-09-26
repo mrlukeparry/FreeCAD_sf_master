@@ -106,7 +106,7 @@ public:
 	/*
 	 * Inherited from the TPG::onChanged() method.
 	 */
-	virtual void onChanged( TPGSettingDefinition *tpgSettingDefinition, QString previous_value, QString new_value);
+	virtual void onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value);
 };
 
 
