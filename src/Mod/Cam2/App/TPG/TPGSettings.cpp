@@ -304,32 +304,35 @@ TPGSettingDefinition::ValidationState TPGSettingDefinition::validateDouble(QStri
  */
 TPGSettingDefinition::ValidationState TPGSettingDefinition::validateObjectNamesForType(QString & input,int & position) const
 {
-	QString delimiters;
-	std::set<QString> valid_type_names;
+	// Cast this object to a TPGObjectNamesForTypeSettingDefinition object so we can use the helper functions
+	// to review the object's contents.
+	TPGObjectNamesForTypeSettingDefinition *pSetting = (TPGObjectNamesForTypeSettingDefinition *) this;
 
-	for (QList<TPGSettingOption*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
+	TPGSettingOption *delimiters_option = pSetting->GetDelimitersOption();
+	if (delimiters_option == NULL)
 	{
-		if ((*itOption)->id.toUpper() == QString::fromAscii("Delimiters").toUpper())
-		{
-			delimiters = (*itOption)->label;
-		}
-		else if ((*itOption)->id.toUpper() == QString::fromAscii("TypeId").toUpper())
-		{
-			valid_type_names.insert( (*itOption)->label );
-		}
+		return(this->Invalid);
 	}
 
-	QStringList tokens = input.split(delimiters, QString::SkipEmptyParts);
+	// Use a regular expression so that we use any one of the characters in the delimiters string
+	// as a delimiting character.
+	QString expression = QString::fromAscii("[") + delimiters_option->label + QString::fromAscii("]");
+	QRegExp regular_expression(expression);
+	QStringList object_names = input.split(regular_expression, QString::SkipEmptyParts);
+
+	QStringList valid_type_names = pSetting->GetTypes();
+	
 	App::Document *document = App::GetApplication().getActiveDocument();
 	if (document)
 	{
-		for (QStringList::size_type i=0; i<tokens.size(); i++)
+		for (QStringList::size_type i=0; i<object_names.size(); i++)
 		{
-			App::DocumentObject *object = document->getObject(tokens[i].toAscii().constData());
+			QString name = object_names[i];
+			App::DocumentObject *object = document->getObject(object_names[i].toAscii().constData());
 			if(object)
 			{
 				bool is_valid = false;
-				for (std::set<QString>::const_iterator itTypeName = valid_type_names.begin(); itTypeName != valid_type_names.end(); itTypeName++)
+				for (QStringList::const_iterator itTypeName = valid_type_names.begin(); itTypeName != valid_type_names.end(); itTypeName++)
 				{
 					if (object->isDerivedFrom(Base::Type::fromName((*itTypeName).toAscii().constData())))
 					{
@@ -1456,7 +1459,7 @@ void TPGObjectNamesForTypeSettingDefinition::SetDelimiters(const char * delimite
 	TPGSettingOption *delimiters_option = GetDelimitersOption();
 	if (delimiters_option != NULL)
 	{
-		delimiters_option->label = delimiters;
+		delimiters_option->label = QString::fromAscii(delimiters);
 		return;
 	}
 
@@ -1482,15 +1485,19 @@ QStringList TPGObjectNamesForTypeSettingDefinition::GetTypes() const
 
 QStringList TPGObjectNamesForTypeSettingDefinition::GetNames() const
 {
-	QStringList types;
+	QStringList names;
 	TPGSettingOption *delimiters_option = GetDelimitersOption();
 	if (delimiters_option != NULL)
 	{
+		// Use a regular expression so that we use any one of the characters in the delimiters string
+		// as a delimiting character.
 		QString value = this->getValue();
-		types = value.split(delimiters_option->label, QString::SkipEmptyParts);
+		QString expression = QString::fromAscii("[") + delimiters_option->label + QString::fromAscii("]");
+		QRegExp regular_expression(expression);
+		names = value.split(regular_expression, QString::SkipEmptyParts);
 	}
 
-	return(types);
+	return(names);
 }
 
 

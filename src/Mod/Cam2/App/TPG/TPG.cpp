@@ -82,23 +82,18 @@ TPG::~TPG()
 
 			QString action = QString::fromAscii("default");
 
-			TPGSettingDefinition *geometry_setting = new TPGSettingDefinition(settingName_Geometry().toAscii().constData(),
-																			 "Geometry",
-																			 TPGSettingDefinition::SettingType_ObjectNamesForType, 
-																			 "",
-																			 Part::Feature::getClassTypeId().getName(),
-																			 "Reference object names whose types are appropriate for this TPG.  Names must be separated by spaces and/or commas only.");
-			// The object names will be separated by commas and/or spaces.  Make sure we tell the TPGSettingDefinition object this fact so that
-			// it can parse out the object names during its data validation processing.
-			geometry_setting->addOption(QString::fromAscii("Delimiters"), QString::fromAscii(" \t,"));
-
-			// We need to specify object type names that can be passed into the Base::Type::fromName() method to validate the types of
-			// objects whose names are included in this setting.
-			geometry_setting->addOption(QString::fromAscii("TypeId"), QString::fromAscii(Part::Feature::getClassTypeId().getName()));
+			TPGSettingDefinition *geometry_setting = new TPGObjectNamesForTypeSettingDefinition(	
+																			settingName_Geometry().toAscii().constData(),
+																			"Geometry",
+																			"Reference object names whose types are appropriate for this TPG.  Names must be separated by spaces and/or commas only.",
+																			" \t,",
+																			Part::Feature::getClassTypeId().getName() );
 
 			settings->addSettingDefinition(action, geometry_setting);
 
 
+			// TODO: Change the tool from a Text type of setting to a ObjectNamesForType setting with the tool class's object
+			// type used  within its definition.
 			settings->addSettingDefinition(action, 
 											new TPGSettingDefinition(settingName_Tool().toAscii().constData(), 
 											"Tool", TPGSettingDefinition::SettingType_Text, "Tool01", "", "The tool to use for cutting"));

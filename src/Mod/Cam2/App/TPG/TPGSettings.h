@@ -396,8 +396,8 @@ public:
 								const char *delimiters,
 								const char *object_type );
 
-	void Add(const QString object_type);
-	void SetDelimiters(const QString object_type);
+	void Add(const char * object_type);
+	void SetDelimiters(const char * object_type);
 
 	QStringList GetTypes() const;
 	TPGSettingOption *GetDelimitersOption() const;
