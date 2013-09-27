@@ -151,7 +151,7 @@ CppExampleTPG::~CppExampleTPG() {
 																		 "Distance from the current Z location to the bottom of the hole.  Must be positive",
 																		 5.0,
 																		 Settings::Definition::Metric );
-		depth_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("0.0"));	// must be positive.  No maximum.
+		depth_setting->Minimum(0.0);	// must be positive.  No maximum.
 		settings->addSettingDefinition(qaction, depth_setting);
 
 		Settings::Length *standoff_setting = new Settings::Length(SettingName_Standoff.toAscii().constData(), 
@@ -162,13 +162,12 @@ CppExampleTPG::~CppExampleTPG() {
 
 		settings->addSettingDefinition(qaction, standoff_setting);
 
-		Settings::Definition *dwell_setting = new Settings::Definition(SettingName_Dwell.toAscii().constData(), 
+		Settings::Double *dwell_setting = new Settings::Double(SettingName_Dwell.toAscii().constData(), 
 																		 SettingName_Dwell.toAscii().constData(),
-																		 Settings::Definition::SettingType_Double, 
-																		 "0.0",
-																		 "seconds",
-																		 "Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'");
-		dwell_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("0.0"));
+																		 "Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'",
+																		 0.0,
+																		 "seconds" );
+		dwell_setting->Minimum(0.0);
 		
 		settings->addSettingDefinition(qaction, dwell_setting);
 
@@ -183,9 +182,8 @@ CppExampleTPG::~CppExampleTPG() {
 		std::ostringstream default_retract_mode;
 		default_retract_mode << int(eRapidRetract);	// Use the conversion method to retrieve the string used for retraction.
 
-		Settings::Definition *retract_mode_setting = new Settings::Definition(SettingName_RetractMode.toAscii().constData(), 
+		Settings::Enumeration *retract_mode_setting = new Settings::Enumeration(SettingName_RetractMode.toAscii().constData(), 
 																		 SettingName_RetractMode.toAscii().constData(),
-																		 Settings::Definition::SettingType_Enumeration, 
 																		 default_retract_mode.str().c_str(),
 																		 "mode",
 																		 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate.");
@@ -229,40 +227,36 @@ CppExampleTPG::~CppExampleTPG() {
 																		 55.0,
 																		 "mm/min" ));
 
-		Settings::Definition* speed = settings->addSettingDefinition(qaction, new Settings::Definition("speed", "Speed", Settings::Definition::SettingType_Radio, "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
+		Settings::Radio* speed = new Settings::Radio("speed", "Speed", "normal", "The speed of the algorithm.  Faster will use less accurate algorithm.");
+		settings->addSettingDefinition(qaction, speed);
+
 		speed->addOption("fast", "Fast");
 		speed->addOption("normal", "Normal");
 		speed->addOption("slow", "Slow");
 
-		settings->addSettingDefinition(qaction, new Settings::Definition("Filename", 
+		settings->addSettingDefinition(qaction, new Settings::Filename("Filename", 
 																		 "My Special Filename",
-																		 Settings::Definition::SettingType_Filename, 
 																		 "c:\\temp\\david.txt",
 																		 "Filename",
 																		 "Dummy setting to test the new SettingType_Filename enumeration."));
 
-		settings->addSettingDefinition(qaction, new Settings::Definition("Directory", 
+		settings->addSettingDefinition(qaction, new Settings::Directory("Directory", 
 																		 "My Special Directory",
-																		 Settings::Definition::SettingType_Directory, 
 																		 "c:\\temp",
 																		 "Directory",
 																		 "Dummy setting to test the new SettingType_Directory enumeration."));
 
-		settings->addSettingDefinition(qaction, new Settings::Definition("Colour", 
+		settings->addSettingDefinition(qaction, new Settings::Color("Colour", 
 																		 "My Special Colour",
-																		 Settings::Definition::SettingType_Color, 
-																		 "Blue",
-																		 "Colour",
 																		 "Dummy setting to test the new SettingType_Color enumeration."));
 
-		Settings::Definition *test_integer_setting = new Settings::Definition("Integer", 
+		Settings::Integer *test_integer_setting = new Settings::Integer("Integer", 
 																		 "My Special Integer",
-																		 Settings::Definition::SettingType_Integer,
-																		 "3",
+																		 3,
 																		 "an integer",
 																		 "Dummy setting to test the new SettingType_Integer. Must be between 0 and 10");
-		test_integer_setting->addOption(QString::fromAscii("minimum"), QString::fromAscii("1"));
-		test_integer_setting->addOption(QString::fromAscii("maximum"), QString::fromAscii("10"));
+		test_integer_setting->Minimum(1);
+		test_integer_setting->Maximum(10);
 
 		settings->addSettingDefinition(qaction, test_integer_setting);
 

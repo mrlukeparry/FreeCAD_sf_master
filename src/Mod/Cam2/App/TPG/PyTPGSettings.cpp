@@ -154,13 +154,20 @@ PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, Py
 		return -1;
 	}
 
+	// TODO: Add the ability to create settings of all supported types now that we're not using the Cam::Settings::Definition object directly any more.
 	QString qsType = QString::fromAscii(type);
 	Cam::Settings::Definition::SettingType data_type = Cam::Settings::Definition::SettingType_Text;
 
-	     if (qsType == QString::fromAscii("Cam::Text")) data_type = Cam::Settings::Definition::SettingType_Text;
-	else if (qsType == QString::fromAscii("Cam::Radio")) data_type = Cam::Settings::Definition::SettingType_Radio;
-	else if (qsType == QString::fromAscii("Cam::ObjectNamesForType")) data_type = Cam::Settings::Definition::SettingType_ObjectNamesForType;
-	else if (qsType == QString::fromAscii("Cam::Length")) data_type = Cam::Settings::Definition::SettingType_Length;
+	     if (qsType == QString::fromAscii("Cam::Text")) self->setting = new Cam::Settings::Text(name, label, defaultvalue, units, helptext);
+	else if (qsType == QString::fromAscii("Cam::Radio")) self->setting = new Cam::Settings::Radio(name, label, defaultvalue, helptext);
+	/*
+	else if (qsType == QString::fromAscii("Cam::ObjectNamesForType")) self->setting = new Cam::Settings::ObjectNamesForType(name, label, helptext, delimiters, defaultvalue);
+	else if (qsType == QString::fromAscii("Cam::Length")) 
+	{
+		double def = QString::fromAscii(defaultvalue).toDouble();
+		self->setting = new Cam::Settings::Length(name, label, helptext,uble def, Cam::Settings::Definition::Metric);
+		self->setting->units = units;
+	}
 	else if (qsType == QString::fromAscii("Cam::Filename")) data_type = Cam::Settings::Definition::SettingType_Filename;
 	else if (qsType == QString::fromAscii("Cam::Directory")) data_type = Cam::Settings::Definition::SettingType_Directory;
 	else if (qsType == QString::fromAscii("Cam::Color")) data_type = Cam::Settings::Definition::SettingType_Color;
@@ -170,6 +177,8 @@ PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, Py
 	else if (qsType == QString::fromAscii("Cam::Float")) data_type = Cam::Settings::Definition::SettingType_Double;
 
 	self->setting = new Cam::Settings::Definition(name, label, data_type, defaultvalue, units, helptext);
+	*/
+
     return 0;
 }
 

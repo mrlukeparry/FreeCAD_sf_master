@@ -95,8 +95,8 @@ TPG::~TPG()
 			// TODO: Change the tool from a Text type of setting to a ObjectNamesForType setting with the tool class's object
 			// type used  within its definitio
 			settings->addSettingDefinition(action, 
-											new Settings::Definition(settingName_Tool().toAscii().constData(), 
-											"Tool", Settings::Definition::SettingType_Text, "Tool01", "", "The tool to use for cutting"));
+											new Settings::Text(settingName_Tool().toAscii().constData(), 
+											"Tool", "Tool01", "Tool Object Name", "The tool to use for cutting"));
 		}
 	}
 

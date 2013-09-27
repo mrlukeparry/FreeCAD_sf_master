@@ -155,22 +155,16 @@ public:
 
 //	QString value; // deprecated: now uses FreeCAD data structure which is contained in TPGSettings.tpgFeature
 
+	// Making the constructors protected to force the use of the wrapper classes rather than using this class directly.
+protected:
 	Definition(const char *name, const char *label, const SettingType  type, const char *defaultvalue, const char *units, const char *helptext);
 	Definition(QString name, QString label, SettingType type, QString defaultvalue, QString units, QString helptext);
 	Definition();
 
 	~Definition();
 
-	ValidationState validate(QString & input, int & position) const;
-	ValidationState validateText(QString & input, int & position) const;
-	ValidationState validateObjectNamesForType(QString & input, int & position) const;
-	ValidationState validateEnumeration(QString & input,int & position) const;
-	ValidationState validateLength(QString & input,int & position) const;
-	ValidationState validateFilename(QString & input,int & position) const;
-	ValidationState validateDirectory(QString & input,int & position) const;
-	ValidationState validateColor(QString & input,int & position) const;
-	ValidationState validateInteger(QString & input,int & position) const;
-	ValidationState validateDouble(QString & input,int & position) const;
+public:
+	virtual ValidationState validate(QString & input, int & position) const;
 
 	/**
 	 * Perform a deep copy of this class
@@ -374,6 +368,7 @@ public:
 								const Definition::Units_t units );
 
 	bool Evaluate( const char *entered_value, double *pResult ) const;
+	virtual ValidationState validate(QString & input,int & position) const;
 
 	double Minimum() const;
 	void Minimum(const double value);
@@ -399,6 +394,13 @@ public:
 								const char *units );
 
 	bool Evaluate( const char *entered_value, double *pResult ) const;
+	virtual ValidationState validate(QString & input,int & position) const;
+
+	double Minimum() const;
+	void Minimum(const double value);
+
+	double Maximum() const;
+	void Maximum(const double value);
 };
 
 class CamExport ObjectNamesForType : public Definition
@@ -412,10 +414,82 @@ public:
 
 	void Add(const char * object_type);
 	void SetDelimiters(const char * object_type);
+	virtual ValidationState validate(QString & input,int & position) const;
 
 	QStringList GetTypes() const;
 	QStringList GetNames() const;
 };
+
+class CamExport Text : public Definition
+{
+public:
+	Text(const char *name, const char *label, const char *defaultvalue, const char *units, const char *helptext) :
+			Definition(name, label, SettingType_Text, defaultvalue, units, helptext)
+			{
+			}
+};
+
+class CamExport Radio : public Definition
+{
+public:
+	Radio(const char *name, const char *label, const char *defaultvalue, const char *helptext) :
+			Definition(name, label, SettingType_Radio, defaultvalue, "", helptext)
+			{
+			}
+};
+
+class CamExport Integer : public Definition
+{
+public:
+	Integer(const char *name, const char *label, const int defaultvalue, const char *units, const char *helptext) :
+			Definition(name, label, SettingType_Integer, "", units, helptext)
+			{
+				std::ostringstream def;
+				def << defaultvalue;
+				this->defaultvalue = QString::fromStdString(def.str());
+			}
+
+	virtual ValidationState validate(QString & input,int & position) const;
+
+	int Minimum() const;
+	void Minimum(const int value);
+
+	int Maximum() const;
+	void Maximum(const int value);
+};
+
+
+
+class CamExport Filename : public Definition
+{
+public:
+	Filename(const char *name, const char *label, const char * defaultvalue, const char *units, const char *helptext) :
+			Definition(name, label, SettingType_Filename, defaultvalue, units, helptext)
+			{
+			}
+};
+
+
+class CamExport Directory : public Definition
+{
+public:
+	Directory(const char *name, const char *label, const char * defaultvalue, const char *units, const char *helptext) :
+			Definition(name, label, SettingType_Directory, defaultvalue, units, helptext)
+			{
+			}
+};
+
+
+class CamExport Enumeration : public Definition
+{
+public:
+	Enumeration(const char *name, const char *label, const char * defaultvalue, const char *units, const char *helptext) :
+			Definition(name, label, SettingType_Enumeration, defaultvalue, units, helptext)
+			{
+			}
+};
+
+
 
 
 } // namespace Settings

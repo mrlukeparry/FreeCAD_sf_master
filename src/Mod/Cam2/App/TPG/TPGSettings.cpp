@@ -151,71 +151,23 @@ void Definition::addOption(const char *id, const char *label) {
 
 Definition::ValidationState Definition::validate(QString & input,int & position) const
 {
-	switch (this->type)
-	{
-	case SettingType_Text:
-		return(validateText(input, position));
-
-	case SettingType_ObjectNamesForType:
-		return(validateObjectNamesForType(input, position));
-
-	case SettingType_Radio:
-		// The radio gadgets used in the Cam::CamComponent class don't use the QValidator mechanisms so this
-		// won't ever be called.  It's included here only to avoid the compiler warning about not catering
-		// for all possible values within the enumerated type.
-		return(this->Acceptable);
-
-	case SettingType_Enumeration:
-		return(validateEnumeration(input, position));
-
-	case SettingType_Length:
-		return(validateLength(input, position));
-
-	case SettingType_Filename:
-		return(validateFilename(input, position));
-
-	case SettingType_Directory:
-		return(validateDirectory(input, position));
-
-	case SettingType_Color:
-		return(validateColor(input, position));
-
-	case SettingType_Integer:
-		return(validateInteger(input, position));
-
-	case SettingType_Double:
-		return(validateDouble(input, position));
-
-	default:
-		return(this->Acceptable);
-	}
+	return(this->Acceptable);	// If no type-specific validation is required then the value must be acceptable.
 }
 
-Definition::ValidationState Definition::validateText(QString & input,int & position) const
+/* virtual */ Definition::ValidationState Length::validate(QString & input,int & position) const
 {
-	return(this->Acceptable);
-}
+	if (input.length() == 0) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
 
-Definition::ValidationState Definition::validateFilename(QString & input,int & position) const
-{
-	return(this->Acceptable);
-}
+	Option *minOption = this->getOption(QString::fromAscii("minimum"));
+	Option *maxOption = this->getOption(QString::fromAscii("maximum"));
 
-Definition::ValidationState Definition::validateDirectory(QString & input,int & position) const
-{
-	return(this->Acceptable);
-}
-
-Definition::ValidationState Definition::validateColor(QString & input,int & position) const
-{
-	return(this->Acceptable);
-}
-
-Definition::ValidationState Definition::validateLength(QString & input,int & position) const
-{
 	double value;
 	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
+		if ((minOption) && (value <= minOption->label.toDouble())) return(this->Invalid);
+		if ((maxOption) && (value >= maxOption->label.toDouble())) return(this->Invalid);
 		return(this->Acceptable);
 	}
 	else
@@ -224,7 +176,7 @@ Definition::ValidationState Definition::validateLength(QString & input,int & pos
 	}
 }
 
-Definition::ValidationState Definition::validateInteger(QString & input,int & position) const
+Definition::ValidationState Integer::validate(QString & input,int & position) const
 {
 	if (input.length() == 0) return(this->Intermediate);
 	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
@@ -236,8 +188,8 @@ Definition::ValidationState Definition::validateInteger(QString & input,int & po
 	double value;
 	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		if ((minOption) && (value < minOption->label.toInt())) return(this->Invalid);
-		if ((maxOption) && (value > maxOption->label.toInt())) return(this->Invalid);
+		if ((minOption) && (value <= minOption->label.toInt())) return(this->Invalid);
+		if ((maxOption) && (value >= maxOption->label.toInt())) return(this->Invalid);
 		return(this->Acceptable);
 	}
 	else
@@ -246,7 +198,7 @@ Definition::ValidationState Definition::validateInteger(QString & input,int & po
 	}
 }
 
-Definition::ValidationState Definition::validateDouble(QString & input,int & position) const
+/* virtual */ Definition::ValidationState Double::validate(QString & input,int & position) const
 {
 	if (input.length() == 0) return(this->Intermediate);
 	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
@@ -258,8 +210,8 @@ Definition::ValidationState Definition::validateDouble(QString & input,int & pos
 	double value;
 	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		if ((minOption) && (value < minOption->label.toDouble())) return(this->Invalid);
-		if ((maxOption) && (value > maxOption->label.toDouble())) return(this->Invalid);
+		if ((minOption) && (value <= minOption->label.toDouble())) return(this->Invalid);
+		if ((maxOption) && (value >= maxOption->label.toDouble())) return(this->Invalid);
 		return(this->Acceptable);
 	}
 	else
@@ -279,7 +231,7 @@ Definition::ValidationState Definition::validateDouble(QString & input,int & pos
 		- id = "TypeId" label = "Part::Feature"
 		- id = "TypeId" label = "Cam::TPGFeature"
  */
-Definition::ValidationState Definition::validateObjectNamesForType(QString & input,int & position) const
+Definition::ValidationState ObjectNamesForType::validate(QString & input,int & position) const
 {
 	// Cast this object to a TPGObjectNamesForTypeSettingDefinition object so we can use the helper functions
 	// to review the object's contents.
@@ -328,16 +280,6 @@ Definition::ValidationState Definition::validateObjectNamesForType(QString & inp
 		}
 	}
 
-	return(this->Acceptable);
-}
-
-/**
-	This method is really just here for completeness.  Since the enumerated types are handled via a combo-box, I can't see
-	how their values could ever become invalid.  I'll leave it here for now just in case we need to perform some validation
-	(and I can still remember how it all fits together) but I suspect it's not necessary for this data type.
- */
-Definition::ValidationState Definition::validateEnumeration(QString & input,int & position) const
-{
 	return(this->Acceptable);
 }
 
@@ -1265,6 +1207,73 @@ Double::Double(
 	Definition::defaultvalue = QString::fromStdString(def_val.str());
 }
 
+	  
+double Settings::Double::Minimum() const
+{
+	Option *option = this->getOption(QString::fromAscii("minimum"));
+	if (option)
+	{
+		bool status;
+		double value = option->label.toDouble(&status);
+		if (status)
+		{
+			return(value);
+		}
+		else
+		{
+			return(0.0);
+		}
+	}
+	else
+	{
+		return(0.0);
+	}
+}
+
+void Settings::Double::Minimum(const double value)
+{
+	Option *option = this->getOption(QString::fromAscii("minimum"));
+	if (option)
+	{
+		std::ostringstream ossValue;
+		ossValue << value;
+		option->label = QString::fromStdString(ossValue.str());
+	}
+}
+
+double Settings::Double::Maximum() const
+{
+	Option *option = this->getOption(QString::fromAscii("maximum"));
+	if (option)
+	{
+		bool status;
+		double value = option->label.toDouble(&status);
+		if (status)
+		{
+			return(value);
+		}
+		else
+		{
+			return(0.0);
+		}
+	}
+	else
+	{
+		return(0.0);
+	}
+}
+void Settings::Double::Maximum(const double value)
+{
+	Option *option = this->getOption(QString::fromAscii("maximum"));
+	if (option)
+	{
+		std::ostringstream ossValue;
+		ossValue << value;
+		option->label = QString::fromStdString(ossValue.str());
+	}
+}
+
+
 
 
 /**
@@ -1538,6 +1547,74 @@ QStringList ObjectNamesForType::GetNames() const
 	return(names);
 }
 
+
+
+
+
+int Settings::Integer::Minimum() const
+{
+	Option *option = this->getOption(QString::fromAscii("minimum"));
+	if (option)
+	{
+		bool status;
+		int value = option->label.toInt(&status);
+		if (status)
+		{
+			return(value);
+		}
+		else
+		{
+			return(0.0);
+		}
+	}
+	else
+	{
+		return(0.0);
+	}
+}
+
+void Settings::Integer::Minimum(const int value)
+{
+	Option *option = this->getOption(QString::fromAscii("minimum"));
+	if (option)
+	{
+		std::ostringstream ossValue;
+		ossValue << value;
+		option->label = QString::fromStdString(ossValue.str());
+	}
+}
+
+int Settings::Integer::Maximum() const
+{
+	Option *option = this->getOption(QString::fromAscii("maximum"));
+	if (option)
+	{
+		bool status;
+		double value = option->label.toInt(&status);
+		if (status)
+		{
+			return(value);
+		}
+		else
+		{
+			return(0.0);
+		}
+	}
+	else
+	{
+		return(0.0);
+	}
+}
+void Settings::Integer::Maximum(const int value)
+{
+	Option *option = this->getOption(QString::fromAscii("maximum"));
+	if (option)
+	{
+		std::ostringstream ossValue;
+		ossValue << value;
+		option->label = QString::fromStdString(ossValue.str());
+	}
+}
 
 
 
