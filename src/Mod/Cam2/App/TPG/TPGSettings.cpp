@@ -1274,6 +1274,27 @@ void Settings::Double::Maximum(const double value)
 }
 
 
+std::string Definition::PythonName(const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name;
+	
+	if (prefix.isNull() == false)
+	{
+		processed_name = prefix.toStdString();
+		processed_name += "_";
+	}
+
+	processed_name += this->label.toStdString();
+	std::string::size_type offset;
+	while ((offset=processed_name.find(' ')) != std::string::npos)
+	{
+		processed_name[offset] = '_';
+	}
+
+	return(processed_name);
+}
 
 
 /**
@@ -1311,20 +1332,7 @@ bool Definition::AddToPythonDictionary(PyObject *pDictionary, const QString requ
 {
 	// Replace any spaces within the variable name with underbars so that the
 	// name can be used as a Python variable name.
-	std::string processed_name;
-	
-	if (prefix.isNull() == false)
-	{
-		processed_name = prefix.toStdString();
-		processed_name += "_";
-	}
-
-	processed_name += this->label.toStdString();
-	std::string::size_type offset;
-	while ((offset=processed_name.find(' ')) != std::string::npos)
-	{
-		processed_name[offset] = '_';
-	}
+	std::string processed_name = PythonName(prefix);
 
 	switch(this->type)
 	{
@@ -1462,6 +1470,253 @@ bool Definition::AddToPythonDictionary(PyObject *pDictionary, const QString requ
 
 	return(false);
 }
+
+
+bool Length::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
+
+	// Name=Value
+	bool status = false;
+	
+	QString string_value = this->getValue();
+	double value;
+	bool ok;
+	value = string_value.toDouble(&ok);
+	if (ok)
+	{
+		if (this->type == SettingType_Length)
+		{
+			if ((this->units == QString::fromAscii("mm")) && (requested_units == QString::fromAscii("inch")))
+			{
+				// We have mm but the setting being changed uses inches.  Convert now.
+				value /= 25.4;
+			}
+			else if ((this->units == QString::fromAscii("inch")) && (requested_units == QString::fromAscii("mm")))
+			{
+				// We're using inches but the setting being changed uses mm. Convert now.
+				value *= 25.4;
+			}
+		}				
+
+		PyObject *pName = PyString_FromString(processed_name.c_str());
+		PyObject *pValue = PyFloat_FromDouble(value);
+
+		if ((pName != NULL) && (pValue != NULL))
+		{
+			PyDict_SetItem(pDictionary, pName, pValue);
+			status = true;
+		}
+
+		Py_XDECREF(pName); pName=NULL;
+		Py_XDECREF(pValue); pValue=NULL;
+	}
+	return(status);
+}
+
+bool Double::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
+
+	// Name=Value
+	bool status = false;
+	
+	QString string_value = this->getValue();
+	double value;
+	bool ok;
+	value = string_value.toDouble(&ok);
+	if (ok)
+	{
+		if (this->type == SettingType_Length)
+		{
+			if ((this->units == QString::fromAscii("mm")) && (requested_units == QString::fromAscii("inch")))
+			{
+				// We have mm but the setting being changed uses inches.  Convert now.
+				value /= 25.4;
+			}
+			else if ((this->units == QString::fromAscii("inch")) && (requested_units == QString::fromAscii("mm")))
+			{
+				// We're using inches but the setting being changed uses mm. Convert now.
+				value *= 25.4;
+			}
+		}				
+
+		PyObject *pName = PyString_FromString(processed_name.c_str());
+		PyObject *pValue = PyFloat_FromDouble(value);
+
+		if ((pName != NULL) && (pValue != NULL))
+		{
+			PyDict_SetItem(pDictionary, pName, pValue);
+			status = true;
+		}
+
+		Py_XDECREF(pName); pName=NULL;
+		Py_XDECREF(pValue); pValue=NULL;
+	}
+	return(status);
+}
+
+
+bool Integer::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
+
+	// Name=Value
+	bool status = false;
+	
+	QString string_value = this->getValue();
+	long value;
+	bool ok;
+	value = string_value.toLong(&ok);
+	if (ok)
+	{
+		PyObject *pName = PyString_FromString(processed_name.c_str());
+		PyObject *pValue = PyInt_FromLong(value);
+
+		if ((pName != NULL) && (pValue != NULL))
+		{
+			PyDict_SetItem(pDictionary, pName, pValue);
+			status = true;
+		}
+
+		Py_XDECREF(pName); pName=NULL;
+		Py_XDECREF(pValue); pValue=NULL;
+	}
+	return(status);
+}
+
+bool Radio::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	return(false);
+}
+
+bool ObjectNamesForType::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	return(false);
+}
+
+bool Enumeration::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	return(false);
+}
+
+bool Color::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
+
+	// Name_red=int
+	// Name_green=int
+	// Name_blue=int
+	// Name_alpha=int
+
+	bool status = false;
+
+	Color *colour = (Color *) this;
+	int red, green, blue, alpha;
+	colour->get(red, green, blue, alpha);
+
+	std::set< std::pair< std::string, int > > values;
+	values.insert( std::make_pair( std::string( processed_name + "_red" ), red ) );
+	values.insert( std::make_pair( std::string( processed_name + "_green" ), green ) );
+	values.insert( std::make_pair( std::string( processed_name + "_blue" ), blue ) );
+	values.insert( std::make_pair( std::string( processed_name + "_alpha" ), alpha ) );
+
+	for (std::set< std::pair< std::string, int > >::iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	{
+		PyObject *pName = PyString_FromString(itValue->first.c_str());
+		PyObject *pValue = PyInt_FromLong(itValue->second);
+
+		if ((pName != NULL) && (pValue != NULL))
+		{
+			PyDict_SetItem(pDictionary, pName, pValue);
+			status = true;
+		}
+
+		Py_XDECREF(pName); pName=NULL;
+		Py_XDECREF(pValue); pValue=NULL;
+	}
+
+	return(status);
+}
+
+
+bool Filename::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
+
+	// Name=Value
+	bool status = false;
+	PyObject *pName = PyString_FromString(processed_name.c_str());
+	PyObject *pValue = PyString_FromString(this->getValue().toAscii().constData());
+
+	if ((pName != NULL) && (pValue != NULL))
+	{
+		PyDict_SetItem(pDictionary, pName, pValue);
+		status = true;
+	}
+
+	Py_XDECREF(pName); pName=NULL;
+	Py_XDECREF(pValue); pValue=NULL;
+	return(status);
+}
+
+
+bool Directory::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
+
+	// Name=Value
+	bool status = false;
+	PyObject *pName = PyString_FromString(processed_name.c_str());
+	PyObject *pValue = PyString_FromString(this->getValue().toAscii().constData());
+
+	if ((pName != NULL) && (pValue != NULL))
+	{
+		PyDict_SetItem(pDictionary, pName, pValue);
+		status = true;
+	}
+
+	Py_XDECREF(pName); pName=NULL;
+	Py_XDECREF(pValue); pValue=NULL;
+	return(status);
+}
+
+
+bool Text::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
+
+	// Name=Value
+	bool status = false;
+	PyObject *pName = PyString_FromString(processed_name.c_str());
+	PyObject *pValue = PyString_FromString(this->getValue().toAscii().constData());
+
+	if ((pName != NULL) && (pValue != NULL))
+	{
+		PyDict_SetItem(pDictionary, pName, pValue);
+		status = true;
+	}
+
+	Py_XDECREF(pName); pName=NULL;
+	Py_XDECREF(pValue); pValue=NULL;
+	return(status);
+}
+
+
 
 
 bool TPGSettings::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
@@ -1615,6 +1870,36 @@ void Settings::Integer::Maximum(const int value)
 		option->label = QString::fromStdString(ossValue.str());
 	}
 }
+
+
+
+std::map<int, QString> Settings::Enumeration::Values() const
+{
+	std::map<int, QString> data;
+
+	for (QList<Option *>::const_iterator itOption = this->options.begin(); itOption != this->options.end(); itOption++)
+	{
+		int id = (*itOption)->id.toInt();
+		data.insert( std::make_pair( id, (*itOption)->label ) );
+	}
+
+	return(data);
+}
+
+
+void Settings::Enumeration::Add(const int id, const QString label)
+{
+	std::ostringstream ossId;
+	ossId << id;
+
+	Settings::Option *existing_option = this->getOption(QString::fromStdString(ossId.str()));
+	if (existing_option == NULL)
+	{
+		Settings::Option *option = new Settings::Option(QString::fromStdString(ossId.str()), label);
+		options.push_back( option );
+	}
+}
+
 
 
 

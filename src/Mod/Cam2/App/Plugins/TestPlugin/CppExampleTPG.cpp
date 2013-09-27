@@ -179,12 +179,9 @@ CppExampleTPG::~CppExampleTPG() {
 																		 5.0,
 																		Settings::Definition::Metric));
 
-		std::ostringstream default_retract_mode;
-		default_retract_mode << int(eRapidRetract);	// Use the conversion method to retrieve the string used for retraction.
-
 		Settings::Enumeration *retract_mode_setting = new Settings::Enumeration(SettingName_RetractMode.toAscii().constData(), 
 																		 SettingName_RetractMode.toAscii().constData(),
-																		 default_retract_mode.str().c_str(),
+																		 int(eRapidRetract),
 																		 "mode",
 																		 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate.");
 
@@ -199,10 +196,7 @@ CppExampleTPG::~CppExampleTPG() {
 			QString label;
 			label << mode;		// use the operator<< override to convert from the enum to the string form.
 
-			std::ostringstream ossId;
-			ossId << int(mode);	// We want this to be the integer form so that it's language-independent.
-
-			retract_mode_setting->addOption(QString::fromStdString(ossId.str()), label);
+			retract_mode_setting->Add(int(mode), label);
 		}
 
 		settings->addSettingDefinition(qaction, retract_mode_setting);

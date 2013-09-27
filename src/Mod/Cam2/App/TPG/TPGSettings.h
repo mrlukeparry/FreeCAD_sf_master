@@ -199,9 +199,11 @@ public:
     QString getFullname() const;
 
 	/// Used by the TPGSetting::EvaluateWithPython() method.
-	bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 
 	Option *getOption(const QString id) const;
+
+	std::string PythonName(const QString prefix) const;
 };
 
 /** 
@@ -349,6 +351,7 @@ public:
 
 	bool get(int &red, int &green, int &blue, int &alpha) const;
 	void set(const int red, const int green, const int blue, const int alpha);
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
 class CamExport Length : public Definition
@@ -375,6 +378,7 @@ public:
 
 	double Maximum() const;
 	void Maximum(const double value);
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
 class CamExport Double : public Definition
@@ -401,6 +405,7 @@ public:
 
 	double Maximum() const;
 	void Maximum(const double value);
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
 class CamExport ObjectNamesForType : public Definition
@@ -418,6 +423,7 @@ public:
 
 	QStringList GetTypes() const;
 	QStringList GetNames() const;
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
 class CamExport Text : public Definition
@@ -427,6 +433,7 @@ public:
 			Definition(name, label, SettingType_Text, defaultvalue, units, helptext)
 			{
 			}
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
 class CamExport Radio : public Definition
@@ -436,6 +443,7 @@ public:
 			Definition(name, label, SettingType_Radio, defaultvalue, "", helptext)
 			{
 			}
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
 class CamExport Integer : public Definition
@@ -456,6 +464,7 @@ public:
 
 	int Maximum() const;
 	void Maximum(const int value);
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
 
@@ -467,6 +476,7 @@ public:
 			Definition(name, label, SettingType_Filename, defaultvalue, units, helptext)
 			{
 			}
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
 
@@ -477,16 +487,24 @@ public:
 			Definition(name, label, SettingType_Directory, defaultvalue, units, helptext)
 			{
 			}
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
 
 class CamExport Enumeration : public Definition
 {
 public:
-	Enumeration(const char *name, const char *label, const char * defaultvalue, const char *units, const char *helptext) :
-			Definition(name, label, SettingType_Enumeration, defaultvalue, units, helptext)
+	Enumeration(const char *name, const char *label, const int defaultvalue, const char *units, const char *helptext) :
+			Definition(name, label, SettingType_Enumeration, "", units, helptext)
 			{
+				std::ostringstream ossDefault;
+				ossDefault << defaultvalue;
+				this->defaultvalue = QString::fromStdString(ossDefault.str());
 			}
+
+	std::map<int, QString> Values() const;
+	void Add(const int id, const QString label);
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
 
