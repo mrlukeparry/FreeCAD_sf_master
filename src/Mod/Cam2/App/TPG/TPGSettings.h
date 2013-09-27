@@ -52,6 +52,15 @@ namespace Cam
 	{
 class CamExport TPGFeature; //TODO: work out why this is needed (must be some crazy cyclic including)
 
+
+/**
+	Setting definitions such as 'Enumeration' require options so that the user interface can
+	present the appropriate information.  Other setting definitions need extra pieces of information
+	to make the setting work for its particular data type.  Such values are stored in a list
+	of Option objects within the Definition class.  These options are effectively 'reference' data
+	for the setting.  i.e. these values are NOT written to the data file and are, therefore, not
+	restored when a new data file is openned.
+ */
 class CamExport Option
 {
 public:
@@ -72,7 +81,26 @@ public:
 };
 
 /**
- * A Class object to store the details of a single setting
+	Each setting is defined here.  This class contains mostly reference information (i.e. information
+	that remains the same throughout all instances of FreeCAD).  This reference information is not
+	stored away with the data file.  There are a couple of pieces of information that are stored
+	away with the data file.  Such pieces of information MUST be encoded into the 'value' which is
+	stored in the TPGFeature::PropTPGSettings map.  This Definition class and its owning TPGSettings
+	class have references back to the TPGFeature to which they belong.  The TPGFeature class
+	inherits from the DocumentObject class which means its direct contents are written to the data
+	file and restored when the file is subsequently reopenned.
+
+	Many of the setting types have a single value which can easily be stored in the PropTPGSettings
+	map.  Other setting types require more than one 'value' to be saved/restored in order to function
+	correctly.  eg: A Length setting only makes sense when we know both the 'value' and the 'units'.
+	Such values must encode all such information into a single string representation for storage
+	in the PropTPGSettings map (and thus into the data file).  We define a series of 'wrapper classes'
+	that perform such acts in a manner specific to their setting type.  By using these wrapper classes
+	we can get/set all the various values required for their setting type and such values are
+	written to the data file and re-instated when that data file is re-openned.  To that end, adding
+	settings by instantiating this class directly is to be avoided.  Indeed the constructor is
+	'protected' to avoid such.  It is safer to use the wrapper classes so that each piece of data
+	is encoded into the Definition object in a consistent manner.
  */
 class CamExport Definition
 {
@@ -121,6 +149,12 @@ public:
 		SettingType_Double
 	} SettingType;
 
+	/**
+		These mimic the QValidator state enumeration values.  We don't use them directly in this class
+		because the QValidator class relies on the QT user interface libraries while the Definition class
+		may be used in a non-user interface manner.  There is a routine that converts from one value
+		to the other within the CamGUI project.
+	 */
 	typedef enum {
         Invalid,
         Intermediate,
@@ -164,6 +198,10 @@ protected:
 	~Definition();
 
 public:
+	/**
+		The wrapper classes may overload this method to provide their own type-specific validation.  If no special
+		validation is required then this class's implementation simply returns 'ValidationState::Acceptable'.
+	 */	
 	virtual ValidationState validate(QString & input, int & position) const;
 
 	/**
@@ -201,8 +239,13 @@ public:
 	/// Used by the TPGSetting::EvaluateWithPython() method.
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 
+	/// Search for an option by the ID alone.  This method ignores case.
 	Option *getOption(const QString id) const;
 
+	/**
+		This method is used within the AddToPythonDictionary() implementations.  It's included here so that each
+		implementation produces a consistent variable name.
+	 */	
 	std::string PythonName(const QString prefix) const;
 };
 
@@ -304,6 +347,12 @@ public:
      */
     void release();
 
+	/**
+		These Python methods appear here so that each value entered by the operator may refer
+		to variables that represent the values of other settings in this class.  eg: the
+		operator may enter 'Diameter / 2' when defining a 'Peck Depth' setting's value.  These
+		methods allow such constructs.
+	 */
 	bool EvaluateLength( const Definition *definition, const char *entered_value, double *pResult ) const;
 	bool EvaluateWithPython( const Definition *definition, QString value, QString & evaluated_version ) const;
 	bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
@@ -337,10 +386,22 @@ private:
 
 
 // Declare some classes used to get/set Definition values depending on the
-// type of Definition object used.  Consider these 'helper classes' that
+// type of Definition object used.  Consider these 'wrapper classes' that
 // will allow a Cam::Setting::Definition to be correctly set and interpreted
 // when the various types of settings are defined.
 
+/**
+	The Color setting requires four integers to be retained within the data
+	file.  To this end it uses the boost::property_tree class to encode
+	all such values into a single string which is stored in the
+	PropTPGSettings map of the owning TPGFeature object.  This wrapper class
+	supports the encoding/decoding mechanisms required for this to occur.
+
+	No validation method is provided as the QColorPicker class ensures
+	the values are always valid.  i.e. the user doesn't get a chance to
+	change the values to somethat that can't be used.  This means we end up
+	using the Definition::validate() method which always returns Acceptable.
+ */
 class CamExport Color : public Definition
 {
 public:
@@ -354,6 +415,22 @@ public:
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
+
+/**
+	The Length setting requires both the 'double' value and the 'units'
+	to be retained within the datafile.  To this end it uses the
+	boost::property_tree class to encode
+	all such values into a single string which is stored in the
+	PropTPGSettings map of the owning TPGFeature object.  This wrapper class
+	supports the encoding/decoding mechanisms required for this to occur.
+
+	This class allows the value to be interpreted as a Python script so that
+	its value may be based on the values of other settings.  It also means
+	the operator may enter keywords describing the units so that any conversions
+	may occur as necessary.  eg: The operator may enter '1/8 inch' when
+	this setting's units are 'mm'.  In this case the value 3.175 will be
+	used.
+ */
 class CamExport Length : public Definition
 {
 public:
@@ -381,6 +458,19 @@ public:
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
+
+/**
+	The Double setting is similar to the Length setting except that
+	the 'units' field is free-format.  It still retains the 'units'
+	value encoded within the 'value'.  To this end it uses the
+	boost::property_tree class to encode
+	all such values into a single string which is stored in the
+	PropTPGSettings map of the owning TPGFeature object.  This wrapper class
+	supports the encoding/decoding mechanisms required for this to occur.
+
+	This class allows the value to be interpreted as a Python script so that
+	its value may be based on the values of other settings.
+ */
 class CamExport Double : public Definition
 {
 public:
@@ -458,13 +548,13 @@ public:
 			}
 
 	virtual ValidationState validate(QString & input,int & position) const;
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 
 	int Minimum() const;
 	void Minimum(const int value);
 
 	int Maximum() const;
 	void Maximum(const int value);
-	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
 
