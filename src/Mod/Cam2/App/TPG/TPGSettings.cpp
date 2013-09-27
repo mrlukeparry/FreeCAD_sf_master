@@ -792,6 +792,7 @@ bool TPGSettings::EvaluateWithPython( const Definition *definition, QString valu
 				patterns.push_back( std::make_pair(std::string("in"), std::string(" * 25.4")));
 				patterns.push_back( std::make_pair(std::string("mm"), std::string(" * 1.0")));
 				patterns.push_back( std::make_pair(std::string("MM"), std::string(" * 1.0")));
+				patterns.push_back( std::make_pair(std::string("ft"), std::string(" * 25.4 * 12")));
 			}
 			else
 			{
@@ -807,6 +808,7 @@ bool TPGSettings::EvaluateWithPython( const Definition *definition, QString valu
 				patterns.push_back( std::make_pair(std::string("in"), std::string(" * 1.0")));
 				patterns.push_back( std::make_pair(std::string("mm"), std::string(" / 25.4")));
 				patterns.push_back( std::make_pair(std::string("MM"), std::string(" / 25.4")));
+				patterns.push_back( std::make_pair(std::string("ft"), std::string(" / (25.4 * 12)")));
 			}
 
 			// NOTE: The patterns list must be arranged from most verbose to least verbose so that
