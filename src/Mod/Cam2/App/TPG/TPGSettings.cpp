@@ -819,6 +819,19 @@ bool TPGSettings::EvaluateWithPython( const Definition *definition, QString valu
 				std::string::size_type offset = std::string::npos;
 				while ((offset = interpreted_value.find(itPattern->first)) != std::string::npos)
 				{
+					// We need to see if the keyword was part of a variable name or a word by itself.
+					// If it's surrounded by '_' or aphabetic characters then it must be part of
+					// another word.
+					if (offset > 1)
+					{
+						if ((interpreted_value[offset-1] == '_') || ((interpreted_value[offset-1] >= 'a') && (interpreted_value[offset-1] <= 'Z'))) break;
+					}
+
+					if (interpreted_value.length() > (offset + itPattern->first.length()))
+					{
+						if ((interpreted_value[offset + itPattern->first.length()] == '_') || ((interpreted_value[offset + itPattern->first.length()] >= 'a') && (interpreted_value[offset + itPattern->first.length()] <= 'Z'))) break;
+					}
+
 					interpreted_value.insert(0,std::string("(("));
 					std::string replacement;
 					replacement = std::string(")") + itPattern->second + std::string(")");
@@ -1330,144 +1343,6 @@ std::string Definition::PythonName(const QString prefix) const
  */
 bool Definition::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
 {
-	// Replace any spaces within the variable name with underbars so that the
-	// name can be used as a Python variable name.
-	std::string processed_name = PythonName(prefix);
-
-	switch(this->type)
-	{
-	case SettingType_Filename:
-	case SettingType_Directory:
-	case SettingType_Text:
-		{
-			// Name=Value
-			bool status = false;
-			PyObject *pName = PyString_FromString(processed_name.c_str());
-			PyObject *pValue = PyString_FromString(this->getValue().toAscii().constData());
-
-			if ((pName != NULL) && (pValue != NULL))
-			{
-				PyDict_SetItem(pDictionary, pName, pValue);
-				status = true;
-			}
-
-			Py_XDECREF(pName); pName=NULL;
-			Py_XDECREF(pValue); pValue=NULL;
-			return(status);
-		}
-
-	case SettingType_Radio:
-	case SettingType_ObjectNamesForType:
-	case SettingType_Enumeration:
-		break;
-
-	case SettingType_Color:
-		{
-			// Name_red=int
-			// Name_green=int
-			// Name_blue=int
-			// Name_alpha=int
-
-			bool status = false;
-
-			Color *colour = (Color *) this;
-			int red, green, blue, alpha;
-			colour->get(red, green, blue, alpha);
-
-			std::set< std::pair< std::string, int > > values;
-			values.insert( std::make_pair( std::string( processed_name + "_red" ), red ) );
-			values.insert( std::make_pair( std::string( processed_name + "_green" ), green ) );
-			values.insert( std::make_pair( std::string( processed_name + "_blue" ), blue ) );
-			values.insert( std::make_pair( std::string( processed_name + "_alpha" ), alpha ) );
-
-			for (std::set< std::pair< std::string, int > >::iterator itValue = values.begin(); itValue != values.end(); itValue++)
-			{
-				PyObject *pName = PyString_FromString(itValue->first.c_str());
-				PyObject *pValue = PyInt_FromLong(itValue->second);
-
-				if ((pName != NULL) && (pValue != NULL))
-				{
-					PyDict_SetItem(pDictionary, pName, pValue);
-					status = true;
-				}
-
-				Py_XDECREF(pName); pName=NULL;
-				Py_XDECREF(pValue); pValue=NULL;
-			}
-
-			return(status);
-		}
-		break;
-
-	case SettingType_Integer:
-		{
-			// Name=Value
-			bool status = false;
-			
-			QString string_value = this->getValue();
-			long value;
-			bool ok;
-			value = string_value.toLong(&ok);
-			if (ok)
-			{
-				PyObject *pName = PyString_FromString(processed_name.c_str());
-				PyObject *pValue = PyInt_FromLong(value);
-
-				if ((pName != NULL) && (pValue != NULL))
-				{
-					PyDict_SetItem(pDictionary, pName, pValue);
-					status = true;
-				}
-
-				Py_XDECREF(pName); pName=NULL;
-				Py_XDECREF(pValue); pValue=NULL;
-			}
-			return(status);
-		}
-		break;
-
-	case SettingType_Length:
-	case SettingType_Double:
-		{
-			// Name=Value
-			bool status = false;
-			
-			QString string_value = this->getValue();
-			double value;
-			bool ok;
-			value = string_value.toDouble(&ok);
-			if (ok)
-			{
-				if (this->type == SettingType_Length)
-				{
-					if ((this->units == QString::fromAscii("mm")) && (requested_units == QString::fromAscii("inch")))
-					{
-						// We have mm but the setting being changed uses inches.  Convert now.
-						value /= 25.4;
-					}
-					else if ((this->units == QString::fromAscii("inch")) && (requested_units == QString::fromAscii("mm")))
-					{
-						// We're using inches but the setting being changed uses mm. Convert now.
-						value *= 25.4;
-					}
-				}				
-
-				PyObject *pName = PyString_FromString(processed_name.c_str());
-				PyObject *pValue = PyFloat_FromDouble(value);
-
-				if ((pName != NULL) && (pValue != NULL))
-				{
-					PyDict_SetItem(pDictionary, pName, pValue);
-					status = true;
-				}
-
-				Py_XDECREF(pName); pName=NULL;
-				Py_XDECREF(pValue); pValue=NULL;
-			}
-			return(status);
-		}
-	} // End switch
-
 	return(false);
 }
 
