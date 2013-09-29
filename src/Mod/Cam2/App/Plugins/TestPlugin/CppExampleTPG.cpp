@@ -387,7 +387,7 @@ void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QSt
 	// returned by the getValue() method is always going to be in mm.
 
 	// Retrieve the various settings and convert them to the appropriate units for inclusion in the ToolPath.
-	double depth = settings->getValue( action, SettingName_Depth ).toDouble() / units;
+	double depth = settings->Length( action, SettingName_Depth )->get(Settings::Definition::Metric);
 	double standoff = settings->getValue( action, SettingName_Standoff ).toDouble() / units;
 	double dwell = settings->getValue( action, SettingName_Dwell ).toDouble();
 	double peck_depth = settings->getValue( action, SettingName_PeckDepth ).toDouble() / units;

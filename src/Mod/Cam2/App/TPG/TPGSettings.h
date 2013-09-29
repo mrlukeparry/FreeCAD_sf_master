@@ -34,6 +34,18 @@ namespace Cam {
 	class CamExport Option;
 	class CamExport Definition;
 	class CamExport TPGSettings;
+
+	// Forward declarations of the wrapper classes.
+	class CamExport Text;
+	class CamExport Radio;
+	class CamExport Color;
+	class CamExport ObjectNamesForType;
+	class CamExport Enumeration;
+	class CamExport Length;
+	class CamExport Filename;
+	class CamExport Directory;
+	class CamExport Integer;
+	class CamExport Double;
 	}
 }
 
@@ -51,6 +63,7 @@ namespace Cam
 	namespace Settings 
 	{
 class CamExport TPGFeature; //TODO: work out why this is needed (must be some crazy cyclic including)
+class CamExport Color;
 
 
 /**
@@ -357,6 +370,22 @@ public:
 	bool EvaluateWithPython( const Definition *definition, QString value, QString & evaluated_version ) const;
 	bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 
+	Settings::Definition *getDefinition(const QString action, const QString name) const;
+
+	// These methods find a setting by name and return a pointer to that object's wrapper
+	// class based on the setting's type.  If the name doesn't match the type requested then
+	// a NULL pointer is returned.
+	Settings::Text	*Text(const QString action, const QString name) const;
+	Settings::Radio	*Radio(const QString action, const QString name) const;
+	Settings::Color	*Color(const QString action, const QString name) const;
+	Settings::ObjectNamesForType	*ObjectNamesForType(const QString action, const QString name) const;
+	Settings::Enumeration *Enumeration(const QString action, const QString name) const;
+	Settings::Length	*Length(const QString action, const QString name) const;
+	Settings::Filename	*Filename(const QString action, const QString name) const;
+	Settings::Directory	*Directory(const QString action, const QString name) const;
+	Settings::Integer		*Integer(const QString action, const QString name) const;
+	Settings::Double		*Double(const QString action, const QString name) const;
+
 protected:
 
     /// the action that is selected (i.e. algorithm and group of settings to use)
@@ -456,6 +485,9 @@ public:
 	double Maximum() const;
 	void Maximum(const double value);
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+
+	double get(const Definition::Units_t requested_units) const;
+	void   set(const double value);
 };
 
 

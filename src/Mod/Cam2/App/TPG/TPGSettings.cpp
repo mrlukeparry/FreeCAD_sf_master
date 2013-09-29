@@ -480,7 +480,7 @@ const QString TPGSettings::getValue(QString name) const
 {
 	if (action.isNull() || action.isEmpty())
 		return QString::null;
-	return getValue(name, action);
+	return getValue(action, name);
 }
 
 /**
@@ -1105,6 +1105,70 @@ Settings::Length::Length(
 	def_val << default_value;
 	Definition::defaultvalue = QString::fromStdString(def_val.str());
 }
+
+
+/**
+	The Length setting can change both its 'value' and its 'units' so it
+	is necessary to store both of these values in the TPGFeature::PropTPGSettings
+	map.  This way, they are both saved/restored to/from the data file.
+	Now that we're trying to get the value alone, we need to retrieve
+	the encoded version (i.e. the string that includes both the value
+	and the units) and decode just the value part of it.  We then need
+	to interpret that value as a double and convert, if necessary, to
+	the units the caller has asked the value to be expressed in.
+*/
+double Settings::Length::get(const Definition::Units_t requested_units) const
+{
+	try
+	{
+		using boost::property_tree::ptree;
+		ptree pt;
+
+		std::stringstream encoded_value;
+		encoded_value << this->getValue().toAscii().constData();
+		
+		read_json(encoded_value, pt);
+
+		double value = pt.get<double>("length.value");
+		std::string these_units = pt.get<std::string>("length.units");
+	
+		if ((requested_units == Settings::Definition::Metric) && (these_units == std::string("inch"))) return(value / 25.4);
+		if ((requested_units == Settings::Definition::Imperial) && (these_units == std::string("mm"))) return(value * 25.4);
+
+		return(value);	// The units must be the same.
+	}
+	catch(boost::property_tree::ptree_error const & error)
+	{
+		qWarning("%s\n", error.what());
+		return(0.0);	// failure.
+	}
+}
+
+
+void Settings::Length::set(const double value)
+{
+	using boost::property_tree::ptree;
+	ptree pt;
+
+	pt.put("length.value",  value);
+	pt.put("length.units", this->units);
+
+	std::ostringstream encoded_value;
+
+	write_json(encoded_value, pt);
+	this->setValue(QString::fromStdString(encoded_value.str()));
+}
+
+
+
+
+
+
+
+
+
+
+
 
 Settings::Option *Settings::Definition::getOption(const QString id) const
 {
@@ -1777,6 +1841,98 @@ void Settings::Enumeration::Add(const int id, const QString label)
 	}
 }
 
+
+Settings::Definition *Settings::TPGSettings::getDefinition(const QString action, const QString name) const
+{
+	if (action.isNull() || action.isEmpty()) {
+		Base::Console().Message("action not set\n");
+		return(NULL);
+	}
+
+	// compute full setting name (<action>::<name>)
+	QString qname = makeName(action, name);
+
+    // get setting value
+	if (tpgFeature != NULL) {
+		std::map<QString, Settings::Definition *>::const_iterator itDef = settingDefsMap.find(qname);
+		if (itDef != settingDefsMap.end()) {
+			return(itDef->second);
+		}
+	}
+	Base::Console().Message("Can't find setting!\n");
+    return(NULL);
+}
+
+
+Settings::Text	*Settings::TPGSettings::Text(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Text)) return((Settings::Text *) definition);
+	return(NULL);
+}
+
+Settings::Radio	*Settings::TPGSettings::Radio(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Radio)) return((Settings::Radio *) definition);
+	return(NULL);
+}
+
+Settings::Color	*Settings::TPGSettings::Color(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Color)) return((Settings::Color *) definition);
+	return(NULL);
+}
+
+Settings::ObjectNamesForType	*Settings::TPGSettings::ObjectNamesForType(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_ObjectNamesForType)) return((Settings::ObjectNamesForType *) definition);
+	return(NULL);
+}
+
+Settings::Enumeration *Settings::TPGSettings::Enumeration(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Enumeration)) return((Settings::Enumeration *) definition);
+	return(NULL);
+}
+
+Settings::Length *Settings::TPGSettings::Length(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Length)) return((Settings::Length *) definition);
+	return(NULL);
+}
+
+Settings::Filename *Settings::TPGSettings::Filename(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Filename)) return((Settings::Filename *) definition);
+	return(NULL);
+}
+
+Settings::Directory	*Settings::TPGSettings::Directory(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Directory)) return((Settings::Directory *) definition);
+	return(NULL);
+}
+
+Settings::Integer *Settings::TPGSettings::Integer(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Integer)) return((Settings::Integer *) definition);
+	return(NULL);
+}
+
+Settings::Double *Settings::TPGSettings::Double(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Double)) return((Settings::Double *) definition);
+	return(NULL);
+}
 
 
 
