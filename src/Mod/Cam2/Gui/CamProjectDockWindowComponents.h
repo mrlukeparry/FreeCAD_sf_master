@@ -152,6 +152,49 @@ public Q_SLOTS:
 
 };
 
+
+
+// ----- CamLengthComponent ---------------------------------------------------------
+/**
+ * Object that manages a Cam::Length setting
+ */
+class CamGuiExport CamLengthComponent: public QObject, public CamComponent {
+
+	Q_OBJECT
+
+protected:
+    CamLineEdit *camLineEdit;
+
+public:
+
+    CamLengthComponent();
+
+    /**
+     * Creates the UI for this component and loads the initial value
+     */
+    virtual bool makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form);
+
+    /**
+     * Saves the values on the UI to the TPGSetting instance
+     */
+    virtual bool close();
+
+public Q_SLOTS:
+
+    /**
+     * Slot to receive messages when the user changes the text value
+     */
+    void editingFinished();
+	void currentIndexChanged(int index);
+
+private:
+	typedef QString Id_t;
+	typedef QString Label_t;
+	std::vector< std::pair< Id_t, Label_t > > values;
+
+};
+
+
 // ----- CamRadioComponent ---------------------------------------------------------
 /**
  * Object that manages a Cam::Radio setting

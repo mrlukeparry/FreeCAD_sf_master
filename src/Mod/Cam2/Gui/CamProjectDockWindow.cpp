@@ -109,7 +109,7 @@ bool CamProjectDockWindow::editSettings(Cam::Settings::TPGSettings* newSettings,
 				else if (setting->type == Cam::Settings::Definition::SettingType_Enumeration)
 					comp = new CamComboBoxComponent();
 				else if (setting->type == Cam::Settings::Definition::SettingType_Length)
-                    comp = new CamTextBoxComponent();
+                    comp = new CamLengthComponent();
 				else if (setting->type == Cam::Settings::Definition::SettingType_Filename)
                     comp = new CamFilenameComponent();
 				else if (setting->type == Cam::Settings::Definition::SettingType_Directory)

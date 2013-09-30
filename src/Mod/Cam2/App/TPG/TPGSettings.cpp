@@ -329,17 +329,11 @@ QString Definition::getValue() const
 bool Definition::setValue(QString value) {
 	int position = value.length();
 	if (position > 0) position -= 1;
-	if (this->validate(value,position) == this->Acceptable)
-	{
-		if (this->parent != NULL) {
-			return parent->setValue(action, name, value);
-		}
-		Base::Console().Warning("Setting doesn't have parent!\n");
+	if (this->parent != NULL) {
+		return parent->setValue(action, name, value);
 	}
-	else
-	{
-		Base::Console().Warning("Invalid value\n");
-	}
+		
+	Base::Console().Warning("Setting doesn't have parent!\n");
 	return false;
 }
 
@@ -1076,9 +1070,7 @@ Settings::Length::Length(
 	this->options.push_back( new Option(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
 	this->options.push_back( new Option(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
 
-	std::ostringstream def_val;
-	def_val << default_value;
-	Definition::defaultvalue = QString::fromStdString(def_val.str());
+	this->set(default_value);
 }
 
 Settings::Length::Length(
@@ -1101,9 +1093,7 @@ Settings::Length::Length(
 		break;
 	}
 
-	std::ostringstream def_val;
-	def_val << default_value;
-	Definition::defaultvalue = QString::fromStdString(def_val.str());
+	this->set(default_value);
 }
 
 
@@ -1151,7 +1141,7 @@ void Settings::Length::set(const double value)
 	ptree pt;
 
 	pt.put("length.value",  value);
-	pt.put("length.units", this->units);
+	pt.put("length.units", this->units.toStdString());
 
 	std::ostringstream encoded_value;
 
@@ -1160,8 +1150,101 @@ void Settings::Length::set(const double value)
 }
 
 
+Settings::Definition::Units_t Settings::Length::getUnits() const
+{
+	if (this->units == QString::fromAscii("inch")) return(Definition::Imperial);
+	else return(Definition::Metric);	
+}
+
+// Convert between the class and the QString version of units.
+QString & operator<< ( QString & verbose, const Settings::Definition::Units_t class_of_units )
+{
+	switch (class_of_units)
+	{
+	case Definition::Imperial:
+		verbose = QString::fromAscii("inch");
+		return(verbose);
+
+	case Definition::Metric:
+	default:
+		verbose = QString::fromAscii("mm");
+		return(verbose);
+	}
+}
+
+void Settings::Length::setUnits(const Settings::Definition::Units_t class_of_units)
+{
+	QString verbose;
+	verbose << class_of_units;
+	this->units = verbose;
+}
 
 
+
+double Settings::Double::get() const
+{
+	return(this->getValue().toDouble());
+}
+
+
+void Settings::Double::set(const double value)
+{
+	std::ostringstream encoded_value;
+
+	encoded_value << value;
+	this->setValue(QString::fromStdString(encoded_value.str()));
+}
+
+
+int Settings::Integer::get() const
+{
+	return(this->getValue().toInt());
+}
+
+
+void Settings::Integer::set(const int value)
+{
+	std::ostringstream encoded_value;
+
+	encoded_value << value;
+	this->setValue(QString::fromStdString(encoded_value.str()));
+}
+
+
+Settings::Enumeration::Pair_t Settings::Enumeration::get() const
+{
+	// The 'value' stored in the TPGFeature::PropTPGSettings map is the integer portion of the
+	// enumerated type.
+	int id = this->getValue().toInt();
+	Map_t data = this->Values();
+	if (data.find(id) == data.end())
+	{
+		return(Pair_t(-1, QString::null));
+	}
+	else
+	{
+		return(*(data.find(id)));
+	}
+}
+
+
+bool Settings::Enumeration::set(const int id)
+{
+	Map_t data = this->Values();
+	if (data.find(id) == data.end())
+	{
+		return(false);
+	}
+	else
+	{
+		// The id has been found in this object's options and must, therefore, be valid.
+		// Encode it as a string in the 'value' for this setting.
+		std::ostringstream ossValue;
+		ossValue << id;
+		this->setValue(QString::fromStdString(ossValue.str()));
+		return(true);
+	}
+}
 
 
 

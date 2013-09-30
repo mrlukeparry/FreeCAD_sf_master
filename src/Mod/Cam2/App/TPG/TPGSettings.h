@@ -486,6 +486,9 @@ public:
 	void Maximum(const double value);
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 
+	Definition::Units_t getUnits() const;
+	void setUnits(const Definition::Units_t class_of_units);
+
 	double get(const Definition::Units_t requested_units) const;
 	void   set(const double value);
 };
@@ -528,6 +531,9 @@ public:
 	double Maximum() const;
 	void Maximum(const double value);
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+
+	double get() const;
+	void   set(const double value);
 };
 
 class CamExport ObjectNamesForType : public Definition
@@ -587,6 +593,9 @@ public:
 
 	int Maximum() const;
 	void Maximum(const int value);
+
+	int get() const;
+	void set(const int value);
 };
 
 
@@ -624,9 +633,15 @@ public:
 				this->defaultvalue = QString::fromStdString(ossDefault.str());
 			}
 
-	std::map<int, QString> Values() const;
+	typedef std::pair<int, QString> Pair_t;
+	typedef std::map<int, QString> Map_t;
+
+	Map_t Values() const;
 	void Add(const int id, const QString label);
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+
+	Pair_t get() const;
+	bool set(const int id);
 };
 
 
