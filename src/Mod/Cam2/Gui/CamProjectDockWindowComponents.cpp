@@ -175,19 +175,42 @@ void CamLineEdit::focusOutEvent ( QFocusEvent * e )
 	}
 }
 
+/**
+	This is a button handler for the dialog that is created
+	within the CamTextBoxComponent::handleButton() method.  This
+	handler is called when the add_button is pressed.
+ */
 void CamTextBoxComponent::handleAddObjectNameButton()
 {
-	int j=3;
-	int k=j;
 }
 
+/**
+	This is a button handler for the dialog that is created
+	within the CamTextBoxComponent::handleButton() method.  This
+	handler is called when the ok_button is pressed.
+ */
 void CamTextBoxComponent::handleOKButton()
 {
-	int j=3;
-	int k=j;
-	close();
 }
 
+/**
+	This is a button handler for the small QToolButton presented next
+	to a Cam::Text setting in the settings user interface.  The QToolButton
+	has the three period (...) name in the hope that it denotes an 'edit' function.
+
+	The intent of this method is to generate a dialog 'on the fly' that will allow
+	the operator to view and select objects from the main document whose types
+	are included within this setting's options.  eg: Cast the
+	this->tpgsetting pointer to a Setting::ObjectNamesForType pointer and use
+	the GetTypes() method to retrieve a list of object type strings.
+
+	In the end, we need to re-create a single QString value that includes a comma
+	delimited list of object names. This single QString will form the 'value' of
+	the setting.
+
+	At this stage, this is really just a place-holder for a proper dialog
+	implementation.
+ */
 void CamTextBoxComponent::handleButton()
 {
 	if (this->tpgsetting->type == Cam::Settings::Definition::SettingType_ObjectNamesForType)
@@ -223,6 +246,10 @@ void CamTextBoxComponent::handleButton()
 
 /**
  * Creates the UI for this component and loads the initial value
+ *
+ * This type of object is used for settings whose 'value' can be expressed
+ * as a single string.  i.e. SettingType_Text, SettingType_Double, SettingType_Filename
+ * SettingType_Directory and SettingType_ObjectNamesForType
  */
 bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form) {
     if (tpgsetting != NULL)
@@ -312,7 +339,6 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
             rootComponents.push_back(labelWidget);
             rootComponents.push_back(widget);
 			
-
             return true;
         }
         Base::Console().Warning("Warning: Unable to find parent widget for (%p)\n", form->parent());
@@ -338,8 +364,12 @@ CamLengthComponent::CamLengthComponent()
 : QObject(), CamComponent() {
     this->camLineEdit = NULL;
 
-	this->values.push_back( std::make_pair(QString::fromAscii("mm"), QString::fromAscii("mm")) );
-	this->values.push_back( std::make_pair(QString::fromAscii("inch"), QString::fromAscii("inch")) );
+	QString metric, imperial;
+	metric << Cam::Settings::Definition::Metric;
+	imperial << Cam::Settings::Definition::Imperial;
+
+	this->values.push_back( std::make_pair(metric, metric) );
+	this->values.push_back( std::make_pair(imperial, imperial) );
 }
 
 /**
@@ -494,8 +524,14 @@ CamRateComponent::CamRateComponent()
 : QObject(), CamComponent() {
     this->camLineEdit = NULL;
 
-	this->values.push_back( std::make_pair(QString::fromAscii("mm/min"), QString::fromAscii("mm/min")) );
-	this->values.push_back( std::make_pair(QString::fromAscii("inch/min"), QString::fromAscii("inch/min")) );
+	QString metric, imperial;
+	metric << Cam::Settings::Definition::Metric;
+	metric += QString::fromAscii("/min");
+	imperial << Cam::Settings::Definition::Imperial;
+	imperial += QString::fromAscii("/min");
+
+	this->values.push_back( std::make_pair(metric, metric) );
+	this->values.push_back( std::make_pair(imperial, imperial) );
 }
 
 /**
@@ -1048,7 +1084,7 @@ bool CamDirectoryComponent::close() {
 void CamDirectoryComponent::handleButton()
 {
 	QString caption = QString::fromAscii("Caption");
-	QString directory = QString::fromAscii("c:\\david");
+	QString directory = QDir::homePath();
 	QString filter = QString::fromAscii("*.*");
 
 	QString dir = QFileDialog::getExistingDirectory(NULL, caption, directory, QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);

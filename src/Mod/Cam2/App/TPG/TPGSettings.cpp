@@ -1089,21 +1089,7 @@ void Settings::Color::set(const int red, const int green, const int blue, const 
 
 
 
-// Convert between the class and the QString version of units.
-QString & operator<< ( QString & verbose, const Settings::Definition::Units_t class_of_units )
-{
-	switch (class_of_units)
-	{
-	case Definition::Imperial:
-		verbose = QString::fromAscii("inch");
-		return(verbose);
 
-	case Definition::Metric:
-	default:
-		verbose = QString::fromAscii("mm");
-		return(verbose);
-	}
-}
 
 
 Settings::Length::Length(

@@ -67,6 +67,7 @@ class CamExport TPGFeature; //TODO: work out why this is needed (must be some cr
 class CamExport Color;
 
 
+
 /**
 	Setting definitions such as 'Enumeration' require options so that the user interface can
 	present the appropriate information.  Other setting definitions need extra pieces of information
@@ -701,7 +702,21 @@ public:
 	bool set(const int id);
 };
 
+// Convert between the class and the QString version of units.
+inline QString & operator<< ( QString & verbose, const Definition::Units_t class_of_units )
+{
+	switch (class_of_units)
+	{
+	case Definition::Imperial:
+		verbose = QString::fromAscii("inch");
+		return(verbose);
 
+	case Definition::Metric:
+	default:
+		verbose = QString::fromAscii("mm");
+		return(verbose);
+	}
+}
 
 
 } // namespace Settings
