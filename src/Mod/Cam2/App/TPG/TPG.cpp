@@ -42,6 +42,9 @@ TPG::TPG()
     this->refcnt = 1;
     this->settings = NULL;
 	this->tpgFeature = NULL;
+
+	this->geometry = NULL;
+	this->tool = NULL;
 }
 
 TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription)
@@ -52,10 +55,16 @@ TPG::TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescrip
   this->description = TPGDescription;
   this->settings = NULL;
   this->tpgFeature = NULL;
+
+  this->geometry = NULL;
+  this->tool = NULL;
 }
 
 TPG::~TPG()
 {
+	if (this->geometry) this->geometry->release();
+	if (this->tool) this->tool->release();
+
 	if (this->settings) 
 	{
 		this->settings->release();
@@ -82,21 +91,20 @@ TPG::~TPG()
 
 			QString action = QString::fromAscii("default");
 
-			Settings::Definition *geometry_setting = new Settings::ObjectNamesForType(	
-																			settingName_Geometry().toAscii().constData(),
-																			"Geometry",
-																			"Reference object names whose types are appropriate for this TPG.  Names must be separated by spaces and/or commas only.",
-																			" \t,",
-																			Part::Feature::getClassTypeId().getName() );
+			this->geometry = new Settings::ObjectNamesForType(	settingName_Geometry().toAscii().constData(),
+																"Geometry",
+																"Reference object names whose types are appropriate for this TPG.  Names must be separated by spaces and/or commas only.",
+																" \t,",
+																Part::Feature::getClassTypeId().getName() );
 
-			settings->addSettingDefinition(action, geometry_setting);
+			settings->addSettingDefinition(action, this->geometry);
 
 
 			// TODO: Change the tool from a Text type of setting to a ObjectNamesForType setting with the tool class's object
-			// type used  within its definitio
-			settings->addSettingDefinition(action, 
-											new Settings::Text(settingName_Tool().toAscii().constData(), 
-											"Tool", "Tool01", "Tool Object Name", "The tool to use for cutting"));
+			// type used  within its definition
+			this->tool = new Settings::ObjectNamesForType(settingName_Tool().toAscii().constData(), 
+											"Tool", "The tool to use for cutting", " \t,", "Cam::Tool" );
+			settings->addSettingDefinition(action, this->tool);
 		}
 	}
 
@@ -192,8 +200,25 @@ void TPG::release() {
 
 /* virtual */ void TPG::onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value)
 {
-	qDebug("TPG::onChanged(%s changed from %s to %s)\n", 
+	if (tpgSettingDefinition == this->geometry)
+	{
+		qDebug("TPG::onChanged(%s changed from %s to %s)\n", 
 				tpgSettingDefinition->getFullname().toAscii().constData(),
 				previous_value.toAscii().constData(), 
 				new_value.toAscii().constData());
+	}
+	else if (tpgSettingDefinition == this->tool)
+	{
+		qDebug("TPG::onChanged(%s changed from %s to %s)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				previous_value.toAscii().constData(), 
+				new_value.toAscii().constData());
+	}
+	else
+	{
+		qDebug("TPG::onChanged(%s changed from %s to %s)\n", 
+					tpgSettingDefinition->getFullname().toAscii().constData(),
+					previous_value.toAscii().constData(), 
+					new_value.toAscii().constData());
+	}
 }

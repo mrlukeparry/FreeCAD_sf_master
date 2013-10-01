@@ -73,18 +73,6 @@ extern "C" Q_DECL_EXPORT Cam::CppTPG* getTPG(QString id) {
 /// TPG Implementation ///
 namespace Cam {
 
-// Define the names used for this TPG's settings once here to avoid inconsistencies.
-/* static */ QString CppExampleTPG::SettingName_Depth = QString::fromAscii("Relative Depth");
-/* static */ QString CppExampleTPG::SettingName_Standoff = QString::fromAscii("Standoff");
-/* static */ QString CppExampleTPG::SettingName_Dwell = QString::fromAscii("Dwell");
-/* static */ QString CppExampleTPG::SettingName_PeckDepth = QString::fromAscii("Peck Depth");
-/* static */ QString CppExampleTPG::SettingName_RetractMode = QString::fromAscii("Retract Mode");
-/* static */ QString CppExampleTPG::SettingName_Clearance = QString::fromAscii("Clearance Relative Height");
-/* static */ QString CppExampleTPG::SettingName_SpindleSpeed = QString::fromAscii("Spindle Speed");
-/* static */ QString CppExampleTPG::SettingName_FeedRate = QString::fromAscii("Feed Rate");
-/* static */ QString CppExampleTPG::SettingName_ReferenceObjects = QString::fromAscii("Reference Objects");
-
-
 /* friend */ QString & operator<< ( QString & buf, const CppExampleTPG::RetractMode_t & retract_mode )
 {
 	switch (retract_mode)
@@ -130,10 +118,26 @@ CppExampleTPG::CppExampleTPG()
 
     QString qaction = QS("default");
     actions.push_back(qaction);
+
+	depth = NULL;
+	standoff = NULL;
+	dwell = NULL;
+	peck_depth = NULL;
+	retract_mode = NULL;
+	clearance_height = NULL;
+	spindle_speed = NULL;
+	feed_rate = NULL;
 }
 
 CppExampleTPG::~CppExampleTPG() {
-    
+	if (depth) depth->release();
+	if (standoff) standoff->release();
+	if (dwell) dwell->release();
+	if (peck_depth) peck_depth->release();
+	if (retract_mode) retract_mode->release();
+	if (clearance_height) clearance_height->release();
+	if (spindle_speed) spindle_speed->release();
+	if (feed_rate) feed_rate->release();    
 }
 
 
@@ -145,45 +149,52 @@ CppExampleTPG::~CppExampleTPG() {
 
 	if (settings != NULL)
 	{
+		// Define the names used for this TPG's settings once here to avoid inconsistencies.
+
+
+
 		// We should have a settings pointer by now due to the CppTPG::initialise() call
-		Settings::Length *depth_setting = new Settings::Length(SettingName_Depth.toAscii().constData(), 
-																		 SettingName_Depth.toAscii().constData(),
-																		 "Distance from the current Z location to the bottom of the hole.  Must be positive",
-																		 5.0,
-																		 Settings::Definition::Metric );
-		depth_setting->Minimum(0.0);	// must be positive.  No maximum.
-		settings->addSettingDefinition(qaction, depth_setting);
+		this->depth = new Settings::Length(	"Relative Depth", 
+											 "Relative Depth",
+											 "Distance from the current Z location to the bottom of the hole.  Must be positive",
+											 5.0,
+											 Settings::Definition::Metric );
+		depth->Minimum(0.0);	// must be positive.  No maximum.
+		settings->addSettingDefinition(qaction, depth);
 
-		Settings::Length *standoff_setting = new Settings::Length(SettingName_Standoff.toAscii().constData(), 
-																		 SettingName_Standoff.toAscii().constData(),
-																		 "Distance above the drilling point location to retract to following the drilling cycle.",
-																		 5.0,
-																		 Settings::Definition::Metric );
+		this->standoff = new Settings::Length(	"Standoff", 
+												"Standoff",
+												"Distance above the drilling point location to retract to following the drilling cycle.",
+												5.0,
+												Settings::Definition::Metric );
 
-		settings->addSettingDefinition(qaction, standoff_setting);
+		settings->addSettingDefinition(qaction, standoff);
 
-		Settings::Double *dwell_setting = new Settings::Double(SettingName_Dwell.toAscii().constData(), 
-																		 SettingName_Dwell.toAscii().constData(),
-																		 "Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'",
-																		 0.0,
-																		 "seconds" );
-		dwell_setting->Minimum(0.0);
+		this->dwell = new Settings::Double(	"Dwell", 
+											"Dwell",
+											"Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'",
+											0.0,
+											"seconds" );
+		this->dwell->Minimum(0.0);
 		
-		settings->addSettingDefinition(qaction, dwell_setting);
+		settings->addSettingDefinition(qaction, this->dwell);
 
 
 
-		settings->addSettingDefinition(qaction, new Settings::Length(SettingName_PeckDepth.toAscii().constData(), 
-																		 SettingName_PeckDepth.toAscii().constData(),
-																		 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled.",
-																		 5.0,
-																		Settings::Definition::Metric));
 
-		Settings::Enumeration *retract_mode_setting = new Settings::Enumeration(SettingName_RetractMode.toAscii().constData(), 
-																		 SettingName_RetractMode.toAscii().constData(),
-																		 int(eRapidRetract),
-																		 "mode",
-																		 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate.");
+	
+		this->peck_depth = new Settings::Length( "Peck Depth", 
+												 "Peck Depth",
+												 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled.",
+												 5.0,
+												 Settings::Definition::Metric);
+		settings->addSettingDefinition(qaction, this->peck_depth);
+
+		this->retract_mode = new Settings::Enumeration(	 "Retract Mode", 
+														 "Retract Mode",
+														 int(eRapidRetract),
+														 "mode",
+														 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate.");
 
 		// Enumerated types MUST have one option for each different value.  For each option, the Id must be the integer form and the Label must
 		// be the string (verbose) form.  Only the verbose forms are used on the user interface but the values used in the TPGSettingDefinition.value will
@@ -196,30 +207,33 @@ CppExampleTPG::~CppExampleTPG() {
 			QString label;
 			label << mode;		// use the operator<< override to convert from the enum to the string form.
 
-			retract_mode_setting->Add(int(mode), label);
+			this->retract_mode->Add(int(mode), label);
 		}
 
-		settings->addSettingDefinition(qaction, retract_mode_setting);
+		settings->addSettingDefinition(qaction, this->retract_mode);
 
 
 
-		settings->addSettingDefinition(qaction, new Settings::Length(SettingName_Clearance.toAscii().constData(), 
-																		 SettingName_Clearance.toAscii().constData(),
-																		 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece.",
-																		 30.0,
-																		 Settings::Definition::Metric ));
+		this->clearance_height = new Settings::Length(	 "Clearance Relative Height", 
+														 "Clearance Relative Height",
+														 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece.",
+														 30.0,
+														 Settings::Definition::Metric );
+		settings->addSettingDefinition(qaction, this->clearance_height);
 
-		settings->addSettingDefinition(qaction, new Settings::Double(SettingName_SpindleSpeed.toAscii().constData(), 
-																		 SettingName_SpindleSpeed.toAscii().constData(),
-																		 "Spindle Speed.", 
-																		 700.0,
-																		 "RPM" ));
+		this->spindle_speed = new Settings::Double(	"Spindle Speed", 
+													"Spindle Speed",
+													"Spindle Speed.", 
+													700.0,
+													"RPM" );
+		settings->addSettingDefinition(qaction, this->spindle_speed);
 
-		settings->addSettingDefinition(qaction, new Settings::Double(SettingName_FeedRate.toAscii().constData(), 
-																		 SettingName_FeedRate.toAscii().constData(),
-																		 "Feed Rate.", 
-																		 55.0,
-																		 "mm/min" ));
+		this->feed_rate = new Settings::Rate(	"Feed Rate", 
+												"Feed Rate",
+												"Feed Rate.", 
+												55.0,
+												Settings::Definition::Metric );
+		settings->addSettingDefinition(qaction, this->feed_rate);
 
 		Settings::Radio* speed = new Settings::Radio("speed", "Speed", "normal", "The speed of the algorithm.  Faster will use less accurate algorithm.");
 		settings->addSettingDefinition(qaction, speed);
@@ -370,31 +384,16 @@ void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QSt
 	paths.Add( Cam::Edge( Cam::Point(50.0, 0.0, 0.0), Cam::Point(50.0, 100.0, 0.0) ) );
 	*/
 
-	double units = 1.0;	// TODO Get some setting that indicates metric or imperial units for GCode.
+	Settings::Definition::Units_t units = Settings::Definition::Metric;	// TODO Get some setting that indicates metric or imperial units for GCode.
 	// For now, figure out the units by looking at the resolution of the Python code.
 	if (python.RequiredDecimalPlaces() == 3)
 	{
-		units = 1.0;	// metric.
+		units = Settings::Definition::Metric;	// metric.
 	}
 	else
 	{
-		units = 25.4;	// imperial
+		units = Settings::Definition::Imperial;	// imperial
 	}
-
-	// TODO - this arrangement with settings isn't going to work as it is.  We need to be able
-	// to include enumerated types, register callback routines and also know what units
-	// the values are in.  I've divided by a units value here on the assumption that the value
-	// returned by the getValue() method is always going to be in mm.
-
-	// Retrieve the various settings and convert them to the appropriate units for inclusion in the ToolPath.
-	double depth = settings->Length( action, SettingName_Depth )->get(Settings::Definition::Metric);
-	double standoff = settings->getValue( action, SettingName_Standoff ).toDouble() / units;
-	double dwell = settings->getValue( action, SettingName_Dwell ).toDouble();
-	double peck_depth = settings->getValue( action, SettingName_PeckDepth ).toDouble() / units;
-	RetractMode_t retract_mode = toRetractMode(settings->getValue( action, SettingName_RetractMode ));
-	double clearance_height = settings->getValue( action, SettingName_Clearance ).toDouble() / units;
-	double spindle_speed = settings->getValue( action, SettingName_SpindleSpeed ).toDouble() / units;
-	double feed_rate = settings->getValue( action, SettingName_FeedRate ).toDouble() / units;
 
 	// Mark the beginning and end of the GCode generated by this TPG just in case we want to find
 	// it again from the whole GCode program (for highlighting etc.)
@@ -407,8 +406,8 @@ void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QSt
 	// TODO - select the appropriate fixture
 	// TODO - select the appropriate tool
 
-	python << "spindle(s=" << spindle_speed << ", clockwise=True)\n";
-	python << "feedrate(" << feed_rate << ")\n";	
+	python << "spindle(s=" << this->spindle_speed->get() << ", clockwise=True)\n";
+	// python << "feedrate(" << this->feed_rate.get(units) << ")\n";	
 
 	// Generate the drilling locations from the Paths objects.  i.e. points as well as intersecting sketches etc.
 	Cam::Paths::Locations_t locations = paths.PointLocationData();
@@ -425,12 +424,12 @@ void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QSt
 				<< "x=" << point.X()/units << ", "
 				<< "y=" << point.Y()/units << ", "
 				<< "z=" << point.Z()/units << ", "
-				<< "depth=" << depth << ", "
-				<< "standoff=" << standoff << ", "
-				<< "dwell=" << dwell << ", "
-				<< "peck_depth=" << peck_depth << ", "
-				<< "retract_mode=" << int(retract_mode) << ", "
-				<< "clearance_height=" << clearance_height
+				<< "depth=" << this->depth->get(units) << ", "
+				<< "standoff=" << this->standoff->get(units) << ", "
+				<< "dwell=" << this->dwell->get() << ", "
+				<< "peck_depth=" << this->peck_depth->get(units) << ", "
+				<< "retract_mode=" << this->retract_mode->get().first << ", "
+				<< "clearance_height=" << this->clearance_height->get(units)
 				<< ")\n";
         // pMachineState->Location(point); // Remember where we are.
 	} // End for
@@ -732,10 +731,61 @@ void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QSt
 
 /* virtual */ void CppExampleTPG::onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value )
 {
-	qDebug("CppExampleTPG::onChanged(%s changed from %s to %s)\n", 
+	if (tpgSettingDefinition == depth)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
 				tpgSettingDefinition->getFullname().toAscii().constData(),
-				previous_value.toAscii().constData(), 
-				new_value.toAscii().constData());
+				depth->get(depth->getUnits()));
+	}
+	else if (tpgSettingDefinition == standoff)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				standoff->get(standoff->getUnits()));
+	}
+	else if (tpgSettingDefinition == dwell)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				dwell->get());
+	}
+	else if (tpgSettingDefinition == peck_depth)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				peck_depth->get(peck_depth->getUnits()));
+	}
+	else if (tpgSettingDefinition == retract_mode)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %s)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				retract_mode->get().second.toAscii().constData());
+	}
+	else if (tpgSettingDefinition == clearance_height)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				clearance_height->get(clearance_height->getUnits()));
+	}
+	else if (tpgSettingDefinition == spindle_speed)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				spindle_speed->get());
+	}
+	else if (tpgSettingDefinition == feed_rate)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				feed_rate->get(feed_rate->getUnits()));
+	}
+	else
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed from %s to %s)\n", 
+					tpgSettingDefinition->getFullname().toAscii().constData(),
+					previous_value.toAscii().constData(), 
+					new_value.toAscii().constData());
+	}
 
 	CppTPG::onChanged( tpgSettingDefinition, previous_value, new_value );
 }

@@ -130,6 +130,20 @@ void CamTextBoxComponent::editingFinished() {
 			}
 			break;
 
+		case Cam::Settings::Definition::SettingType_Rate:
+			{
+				Cam::Settings::Length *length_setting = (Cam::Settings::Length *) tpgsetting;
+				if (length_setting)
+				{
+					double value;
+					if (length_setting->Evaluate(widget->text().toAscii().constData(), &value))
+					{
+						length_setting->set(value);
+					}
+				}
+			}
+			break;
+
 		case Cam::Settings::Definition::SettingType_Double:
 			{
 				Cam::Settings::Double *double_setting = (Cam::Settings::Double *) tpgsetting;
@@ -213,7 +227,32 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
             // make the edit box
             widget = new CamLineEdit(parent, tpgsetting);
             widget->setObjectName(qname);
-            widget->setText(tpgsetting->getValue());
+
+			switch(tpgsetting->type)
+			{
+			case Cam::Settings::Definition::SettingType_Double:
+				{
+					Cam::Settings::Double *double_setting = dynamic_cast<Cam::Settings::Double *>(tpgsetting);
+					std::ostringstream ossValue;
+					ossValue << double_setting->get();
+					widget->setText(QString::fromStdString(ossValue.str()));
+				}
+				break;
+
+			case Cam::Settings::Definition::SettingType_Text:
+			case Cam::Settings::Definition::SettingType_ObjectNamesForType:
+			case Cam::Settings::Definition::SettingType_Integer:
+			default:
+				if (tpgsetting->getValue() != QString::null)
+				{
+					widget->setText(tpgsetting->getValue());
+				}
+				else
+				{
+					widget->setText(tpgsetting->defaultvalue);
+				}
+			}
+
             widget->setToolTip(tpgsetting->helptext);
 			widget->setPlaceholderText(tpgsetting->helptext);
 
@@ -265,13 +304,13 @@ CamLengthComponent::CamLengthComponent()
 void CamLengthComponent::editingFinished() {
 	if (camLineEdit != NULL && tpgsetting != NULL) {
 		QString qvalue = camLineEdit->text();
-		Cam::Settings::Length *length = (Cam::Settings::Length *) tpgsetting;
+		Cam::Settings::Length *length = dynamic_cast<Cam::Settings::Length *>(this->tpgsetting);
 		double value;
 		if (length->Evaluate(camLineEdit->text().toAscii().constData(), &value))
 		{
 			length->set( value );
 			std::ostringstream ossValue;
-			ossValue << value;
+			ossValue << length->get(length->getUnits());
 			camLineEdit->setText(QString::fromStdString(ossValue.str()));
 		}
 	}
@@ -286,26 +325,22 @@ void CamLengthComponent::currentIndexChanged ( int current_index )
 {
 	if ((current_index >= 0) && (current_index < int(values.size())))
 	{
-		Cam::Settings::Length *length = (Cam::Settings::Length *) this->tpgsetting;
+		Cam::Settings::Length *length = dynamic_cast<Cam::Settings::Length *>(this->tpgsetting);
 
-		if ((this->tpgsetting->units == QString::fromAscii("mm")) && (values[current_index].first == QString::fromAscii("inch")))
+		if (values[current_index].first == QString::fromAscii("inch"))
 		{
-			length->set(length->get(Cam::Settings::Definition::Imperial));
 			length->setUnits(Cam::Settings::Definition::Imperial);
 			std::ostringstream ossValue;
-			ossValue << length->get(Cam::Settings::Definition::Imperial);
+			ossValue << length->get(length->getUnits());
 			camLineEdit->setText(QString::fromStdString(ossValue.str()));
 		}
-		else if ((this->tpgsetting->units == QString::fromAscii("inch")) && (values[current_index].first == QString::fromAscii("mm")))
+		else
 		{
-			length->set(length->get(Cam::Settings::Definition::Metric));
 			length->setUnits(Cam::Settings::Definition::Metric);
 			std::ostringstream ossValue;
-			ossValue << length->get(Cam::Settings::Definition::Metric);
+			ossValue << length->get(length->getUnits());
 			camLineEdit->setText(QString::fromStdString(ossValue.str()));
 		}
-
-		
 	}
 }
 
@@ -404,6 +439,159 @@ bool CamLengthComponent::close() {
     return true;
 }
 
+
+
+
+//--- CamRateComponent ---
+
+CamRateComponent::CamRateComponent()
+: QObject(), CamComponent() {
+    this->camLineEdit = NULL;
+
+	this->values.push_back( std::make_pair(QString::fromAscii("mm/min"), QString::fromAscii("mm/min")) );
+	this->values.push_back( std::make_pair(QString::fromAscii("inch/min"), QString::fromAscii("inch/min")) );
+}
+
+/**
+ * Slot to receive messages when the user changes the text value
+ */
+void CamRateComponent::editingFinished() {
+	if (camLineEdit != NULL && tpgsetting != NULL) {
+		QString qvalue = camLineEdit->text();
+		Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgsetting);
+		double value;
+		if (rate->Evaluate(camLineEdit->text().toAscii().constData(), &value))
+		{
+			rate->set( value );
+			std::ostringstream ossValue;
+			ossValue << rate->get(rate->getUnits());
+			camLineEdit->setText(QString::fromStdString(ossValue.str()));
+		}
+	}
+	else
+		Base::Console().Error("Saving a setting failed!\n");
+}
+
+/**
+ * Apply the changed setting to the TPGFeature so that any interested parties are notified of the change.
+ */
+void CamRateComponent::currentIndexChanged ( int current_index )
+{
+	if ((current_index >= 0) && (current_index < int(values.size())))
+	{
+		Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgsetting);
+
+		if (values[current_index].first == QString::fromAscii("inch/min"))
+		{
+			rate->setUnits(Cam::Settings::Definition::Imperial);
+			std::ostringstream ossValue;
+			ossValue << rate->get(rate->getUnits());
+			camLineEdit->setText(QString::fromStdString(ossValue.str()));
+		}
+		else
+		{
+			rate->setUnits(Cam::Settings::Definition::Metric);
+			std::ostringstream ossValue;
+			ossValue << rate->get(rate->getUnits());
+			camLineEdit->setText(QString::fromStdString(ossValue.str()));
+		}
+	}
+}
+
+/**
+ * Creates the UI for this component and loads the initial value
+ */
+bool CamRateComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout* form) {
+    if (tpgsetting != NULL)
+    {
+        // grab a copy of the setting so we can save it later
+        this->tpgsetting = tpgsetting->grab();
+
+        // construct the ui
+        QWidget *parent = dynamic_cast<QWidget*>(form->parent());
+        if (parent != NULL) {
+            int row = form->rowCount();
+            QString qname = tpgsetting->getFullname();
+
+            // make the label
+            QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
+            form->setWidget(row, QFormLayout::LabelRole, labelWidget);
+            labelWidget->setToolTip(tpgsetting->helptext);
+
+            // make the container
+            QWidget *widget = new QWidget(parent);
+            QHBoxLayout *layout = new QHBoxLayout(widget);
+            layout->setContentsMargins(0,0,0,0);
+            widget->setLayout(layout);
+            widget->setObjectName(qname);
+            widget->setToolTip(tpgsetting->helptext);
+			form->setWidget(row, QFormLayout::FieldRole, widget);
+
+			// make the edit box
+            camLineEdit = new CamLineEdit(parent, tpgsetting);
+            camLineEdit->setObjectName(qname);
+
+			Cam::Settings::Rate *length = (Cam::Settings::Rate *) this->tpgsetting;
+			std::ostringstream ossValue;
+			ossValue << length->get( length->getUnits() );
+			camLineEdit->setText(QString::fromStdString(ossValue.str()));
+            camLineEdit->setToolTip(tpgsetting->helptext);
+			camLineEdit->setPlaceholderText(tpgsetting->helptext);
+			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
+			camLineEdit->setValidator(validator);
+            // connect events
+        	QObject::connect(camLineEdit, SIGNAL(editingFinished()), this,
+        			SLOT(editingFinished()));
+			layout->addWidget(camLineEdit);
+
+            QComboBox *combo_box = new QComboBox(parent);
+			int index = 0;
+			for (std::vector< std::pair< Id_t, Label_t > >::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+			{
+				combo_box->addItem(itValue->first);
+				if (this->tpgsetting->units == itValue->first)
+				{
+					combo_box->setCurrentIndex(index);
+				}
+				index++;
+			}
+
+            combo_box->setObjectName(qname);
+            combo_box->setToolTip(tpgsetting->helptext);
+
+			this->validator = new Validator(tpgsetting->grab(), combo_box);
+			combo_box->setValidator(validator);
+
+            form->setWidget(row, QFormLayout::FieldRole, combo_box);
+
+            // connect events
+        	QObject::connect(combo_box, SIGNAL(currentIndexChanged(int)), this,
+        			SLOT(currentIndexChanged(int)));
+            layout->addWidget(combo_box);
+
+            // keep reference to widgets for later cleanup
+            rootComponents.push_back(labelWidget);
+
+            return true;
+        }
+        Base::Console().Warning("Warning: Unable to find parent widget for (%p)\n", form->parent());
+    }
+
+    Base::Console().Warning("Warning: Not given a TPGSettingDefinition\n");
+    return false;
+}
+
+/**
+ * Saves the values on the UI to the TPGSetting instance
+ */
+bool CamRateComponent::close() {
+//    if (widget != NULL && tpgsetting != NULL) {
+//    	QString qvalue = widget->text();
+//        return tpgsetting->setValue(qvalue);
+//    }
+    return true;
+}
 
 
 

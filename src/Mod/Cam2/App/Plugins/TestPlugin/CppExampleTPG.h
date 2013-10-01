@@ -70,18 +70,15 @@ public:
 	 */
 	virtual void onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value );
 
-private:
-	// Declare some static settings names once here so that they're consistent
-	// throughout the various TPG references to them.
-	static QString SettingName_Depth;
-	static QString SettingName_Standoff;
-	static QString SettingName_Dwell;
-	static QString SettingName_PeckDepth;
-	static QString SettingName_RetractMode;
-	static QString SettingName_Clearance;
-	static QString SettingName_SpindleSpeed;
-	static QString SettingName_FeedRate;
-	static QString SettingName_ReferenceObjects;
+public:
+	Settings::Length	*depth;
+	Settings::Length	*standoff;
+	Settings::Double	*dwell;
+	Settings::Length	*peck_depth;
+	Settings::Enumeration *retract_mode;
+	Settings::Length	*clearance_height;
+	Settings::Double	*spindle_speed;
+	Settings::Rate		*feed_rate;
 
 	typedef enum
 	{

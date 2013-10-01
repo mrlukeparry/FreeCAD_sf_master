@@ -46,6 +46,7 @@ namespace Cam {
 	class CamExport Directory;
 	class CamExport Integer;
 	class CamExport Double;
+	class CamExport Rate;
 	}
 }
 
@@ -159,7 +160,8 @@ public:
 		SettingType_Directory,
 		SettingType_Color,
 		SettingType_Integer,
-		SettingType_Double
+		SettingType_Double,
+		SettingType_Rate
 	} SettingType;
 
 	/**
@@ -375,16 +377,17 @@ public:
 	// These methods find a setting by name and return a pointer to that object's wrapper
 	// class based on the setting's type.  If the name doesn't match the type requested then
 	// a NULL pointer is returned.
-	Settings::Text	*Text(const QString action, const QString name) const;
-	Settings::Radio	*Radio(const QString action, const QString name) const;
-	Settings::Color	*Color(const QString action, const QString name) const;
-	Settings::ObjectNamesForType	*ObjectNamesForType(const QString action, const QString name) const;
-	Settings::Enumeration *Enumeration(const QString action, const QString name) const;
-	Settings::Length	*Length(const QString action, const QString name) const;
-	Settings::Filename	*Filename(const QString action, const QString name) const;
-	Settings::Directory	*Directory(const QString action, const QString name) const;
-	Settings::Integer		*Integer(const QString action, const QString name) const;
-	Settings::Double		*Double(const QString action, const QString name) const;
+	Settings::Text		*asText(const QString action, const QString name) const;
+	Settings::Radio		*asRadio(const QString action, const QString name) const;
+	Settings::Color		*asColor(const QString action, const QString name) const;
+	Settings::ObjectNamesForType	*asObjectNamesForType(const QString action, const QString name) const;
+	Settings::Enumeration *asEnumeration(const QString action, const QString name) const;
+	Settings::Length	*asLength(const QString action, const QString name) const;
+	Settings::Filename	*asFilename(const QString action, const QString name) const;
+	Settings::Directory	*asDirectory(const QString action, const QString name) const;
+	Settings::Integer	*asInteger(const QString action, const QString name) const;
+	Settings::Double	*asDouble(const QString action, const QString name) const;
+	Settings::Rate		*asRate(const QString action, const QString name) const;
 
 protected:
 
@@ -442,6 +445,7 @@ public:
 	bool get(int &red, int &green, int &blue, int &alpha) const;
 	void set(const int red, const int green, const int blue, const int alpha);
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+	QString encode(const int red, const int green, const int blue, const int alpha) const;
 };
 
 
@@ -464,17 +468,18 @@ class CamExport Length : public Definition
 {
 public:
 	Length(	const char *name, 
-								const char *label, 
-								const char *helptext,
-								const double default_value,
-								const double minimum, 
-								const double maximum, 
-								const Definition::Units_t units );
+			const char *label, 
+			const char *helptext,
+			const double default_value,
+			const double minimum, 
+			const double maximum, 
+			const Definition::Units_t units );
+
 	Length(	const char *name, 
-								const char *label, 
-								const char *helptext,
-								const double default_value,
-								const Definition::Units_t units );
+			const char *label, 
+			const char *helptext,
+			const double default_value,
+			const Definition::Units_t units );
 
 	bool Evaluate( const char *entered_value, double *pResult ) const;
 	virtual ValidationState validate(QString & input,int & position) const;
@@ -491,8 +496,60 @@ public:
 
 	double get(const Definition::Units_t requested_units) const;
 	void   set(const double value);
+	void   set(const double value, const Settings::Definition::Units_t units);
+	QString encode(const double value, const Definition::Units_t units) const;
 };
 
+
+/**
+	The Length setting requires both the 'double' value and the 'units'
+	to be retained within the datafile.  To this end it uses the
+	boost::property_tree class to encode
+	all such values into a single string which is stored in the
+	PropTPGSettings map of the owning TPGFeature object.  This wrapper class
+	supports the encoding/decoding mechanisms required for this to occur.
+
+	This class allows the value to be interpreted as a Python script so that
+	its value may be based on the values of other settings.  It also means
+	the operator may enter keywords describing the units so that any conversions
+	may occur as necessary.  eg: The operator may enter '1/8 inch' when
+	this setting's units are 'mm'.  In this case the value 3.175 will be
+	used.
+ */
+class CamExport Rate : public Definition
+{
+public:
+	Rate(	const char *name, 
+			const char *label, 
+			const char *helptext,
+			const double default_value,
+			const double minimum, 
+			const double maximum, 
+			const Definition::Units_t units );
+	Rate(	const char *name, 
+			const char *label, 
+			const char *helptext,
+			const double default_value,
+			const Definition::Units_t units );
+
+	bool Evaluate( const char *entered_value, double *pResult ) const;
+	virtual ValidationState validate(QString & input,int & position) const;
+
+	double Minimum() const;
+	void Minimum(const double value);
+
+	double Maximum() const;
+	void Maximum(const double value);
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+
+	Definition::Units_t getUnits() const;
+	void setUnits(const Definition::Units_t class_of_units);
+
+	double get(const Definition::Units_t requested_units) const;
+	void   set(const double value);
+	void   set(const double value, const Settings::Definition::Units_t units);
+	QString encode(const double value, const Definition::Units_t units) const;
+};
 
 /**
 	The Double setting is similar to the Length setting except that

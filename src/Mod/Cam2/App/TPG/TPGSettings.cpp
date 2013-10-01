@@ -176,6 +176,29 @@ Definition::ValidationState Definition::validate(QString & input,int & position)
 	}
 }
 
+/* virtual */ Definition::ValidationState Rate::validate(QString & input,int & position) const
+{
+	if (input.length() == 0) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
+
+	Option *minOption = this->getOption(QString::fromAscii("minimum"));
+	Option *maxOption = this->getOption(QString::fromAscii("maximum"));
+
+	double value;
+	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
+	{
+		if ((minOption) && (value <= minOption->label.toDouble())) return(this->Invalid);
+		if ((maxOption) && (value >= maxOption->label.toDouble())) return(this->Invalid);
+		return(this->Acceptable);
+	}
+	else
+	{
+		return(this->Intermediate);
+	}
+}
+
+
 Definition::ValidationState Integer::validate(QString & input,int & position) const
 {
 	if (input.length() == 0) return(this->Intermediate);
@@ -426,6 +449,7 @@ Definition* TPGSettings::addSettingDefinition(QString action, Definition* settin
 			}
 		}
 
+		/*
 		// Look to see if the properties map already has a value for this
 		// name.  If not, assign the default value for now.
 		if (this->tpgFeature)
@@ -441,6 +465,7 @@ Definition* TPGSettings::addSettingDefinition(QString action, Definition* settin
 		{
 			this->setValue( action, setting->name, setting->defaultvalue );
 		}
+		*/
 	}
 
 	// return setting for convenience
@@ -971,6 +996,16 @@ bool Settings::Length::Evaluate( const char *formula, double *pResult ) const
 }
 
 
+bool Settings::Rate::Evaluate( const char *formula, double *pResult ) const
+{
+	if (! this->parent)
+	{
+		return(false);
+	}
+
+	return(this->parent->EvaluateLength( this, formula, pResult ));
+}
+
 bool Settings::Double::Evaluate( const char *formula, double *pResult ) const
 {
 	if (! this->parent)
@@ -982,46 +1017,7 @@ bool Settings::Double::Evaluate( const char *formula, double *pResult ) const
 }
 
 
-/**
-	The color's value is encoded in an INI document describing
-	all the various properties required to define a QColor object.  This
-	XML document forms the 'value' part within the PropTPGSetting
-	map.  We use the TPGColorSettingDefinition class to handle
-	the conversion between the INI string used in the TPGFeature's 
-	property and the QColor value we use in the code.
- */
-bool Settings::Color::get(int &red, int &green, int &blue, int &alpha) const
-{
-	try
-	{
-		using boost::property_tree::ptree;
-		ptree pt;
-
-		std::stringstream encoded_value;
-		encoded_value << this->getValue().toAscii().constData();
-		
-		read_json(encoded_value, pt);
-
-		red   = pt.get<int>("color.red");
-		green = pt.get<int>("color.green");
-		blue  = pt.get<int>("color.blue");
-		alpha = pt.get<int>("color.alpha");
-
-		return(true);	// success.
-	}
-	catch(boost::property_tree::ptree_error const & error)
-	{
-		qWarning("%s\n", error.what());
-		red = 0;
-		green = 255;
-		blue = 0;
-		alpha = 255;
-
-		return(false);	// failure.
-	}
-}
-
-void Settings::Color::set(const int red, const int green, const int blue, const int alpha)
+QString Settings::Color::encode(const int red, const int green, const int blue, const int alpha) const
 {
 	using boost::property_tree::ptree;
 	ptree pt;
@@ -1034,127 +1030,64 @@ void Settings::Color::set(const int red, const int green, const int blue, const 
 	std::ostringstream encoded_value;
 
 	write_json(encoded_value, pt);
-	this->setValue(QString::fromStdString(encoded_value.str()));
+	return(QString::fromStdString(encoded_value.str()));
 }
-
-
-
-Settings::Length::Length(
-		const char *name, 
-		const char *label, 
-		const char *helptext,
-		const double default_value,
-		const double minimum, 
-		const double maximum, 
-		const Definition::Units_t units ):
-	  Definition(name, label, SettingType_Length, "", "", helptext)
-{
-	switch (units)
-	{
-	case Metric:
-		Definition::units = QString::fromAscii("mm");
-		break;
-
-	case Imperial:
-	default:
-		Definition::units = QString::fromAscii("inch");
-		break;
-	}
-
-	std::ostringstream min;
-	min << minimum;
-
-	std::ostringstream max;
-	max << maximum;
-
-	this->options.push_back( new Option(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
-	this->options.push_back( new Option(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
-
-	this->set(default_value);
-}
-
-Settings::Length::Length(
-		const char *name, 
-		const char *label, 
-		const char *helptext,
-		const double default_value,
-		const Definition::Units_t units ):
-	  Definition(name, label, SettingType_Length, "", "", helptext)
-{
-	switch (units)
-	{
-	case Metric:
-		Definition::units = QString::fromAscii("mm");
-		break;
-
-	case Imperial:
-	default:
-		Definition::units = QString::fromAscii("inch");
-		break;
-	}
-
-	this->set(default_value);
-}
-
 
 /**
-	The Length setting can change both its 'value' and its 'units' so it
-	is necessary to store both of these values in the TPGFeature::PropTPGSettings
-	map.  This way, they are both saved/restored to/from the data file.
-	Now that we're trying to get the value alone, we need to retrieve
-	the encoded version (i.e. the string that includes both the value
-	and the units) and decode just the value part of it.  We then need
-	to interpret that value as a double and convert, if necessary, to
-	the units the caller has asked the value to be expressed in.
-*/
-double Settings::Length::get(const Definition::Units_t requested_units) const
+	The color's value is encoded in an INI document describing
+	all the various properties required to define a QColor object.  This
+	XML document forms the 'value' part within the PropTPGSetting
+	map.  We use the TPGColorSettingDefinition class to handle
+	the conversion between the INI string used in the TPGFeature's 
+	property and the QColor value we use in the code.
+ */
+bool Settings::Color::get(int &red, int &green, int &blue, int &alpha) const
 {
-	try
+	std::list<QString> values;
+	values.push_back( this->getValue() );
+	values.push_back( this->defaultvalue );
+	for (std::list<QString>::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
 	{
-		using boost::property_tree::ptree;
-		ptree pt;
+		if (itValue->isNull() == false)
+		{
+			try
+			{
+				using boost::property_tree::ptree;
+				ptree pt;
 
-		std::stringstream encoded_value;
-		encoded_value << this->getValue().toAscii().constData();
-		
-		read_json(encoded_value, pt);
+				std::stringstream encoded_value;
+				encoded_value << itValue->toAscii().constData();
+				
+				read_json(encoded_value, pt);
 
-		double value = pt.get<double>("length.value");
-		std::string these_units = pt.get<std::string>("length.units");
-	
-		if ((requested_units == Settings::Definition::Metric) && (these_units == std::string("inch"))) return(value / 25.4);
-		if ((requested_units == Settings::Definition::Imperial) && (these_units == std::string("mm"))) return(value * 25.4);
+				red   = pt.get<int>("color.red");
+				green = pt.get<int>("color.green");
+				blue  = pt.get<int>("color.blue");
+				alpha = pt.get<int>("color.alpha");
 
-		return(value);	// The units must be the same.
+				return(true);	// success.
+			}
+			catch(boost::property_tree::ptree_error const & error)
+			{
+				qWarning("%s\n", error.what());
+			}
+		}
 	}
-	catch(boost::property_tree::ptree_error const & error)
-	{
-		qWarning("%s\n", error.what());
-		return(0.0);	// failure.
-	}
+
+	red = 0;
+	green = 255;
+	blue = 0;
+	alpha = 255;
+
+	return(false);	// failure.
 }
 
-
-void Settings::Length::set(const double value)
+void Settings::Color::set(const int red, const int green, const int blue, const int alpha)
 {
-	using boost::property_tree::ptree;
-	ptree pt;
-
-	pt.put("length.value",  value);
-	pt.put("length.units", this->units.toStdString());
-
-	std::ostringstream encoded_value;
-
-	write_json(encoded_value, pt);
-	this->setValue(QString::fromStdString(encoded_value.str()));
+	this->setValue(this->encode(red, green, blue, alpha));
 }
 
 
-Settings::Definition::Units_t Settings::Length::getUnits() const
-{
-	if (this->units == QString::fromAscii("inch")) return(Definition::Imperial);
-	else return(Definition::Metric);	
-}
 
 // Convert between the class and the QString version of units.
 QString & operator<< ( QString & verbose, const Settings::Definition::Units_t class_of_units )
@@ -1172,18 +1105,285 @@ QString & operator<< ( QString & verbose, const Settings::Definition::Units_t cl
 	}
 }
 
+
+Settings::Length::Length(
+		const char *name, 
+		const char *label, 
+		const char *helptext,
+		const double default_value,
+		const double minimum, 
+		const double maximum, 
+		const Definition::Units_t units ):
+	  Definition(name, label, SettingType_Length, "", "", helptext)
+{
+	std::ostringstream min;
+	min << minimum;
+
+	std::ostringstream max;
+	max << maximum;
+
+	this->options.push_back( new Option(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
+	this->options.push_back( new Option(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
+
+	this->set(default_value, units);
+	this->defaultvalue = this->encode( default_value, units );
+}
+
+Settings::Length::Length(
+		const char *name, 
+		const char *label, 
+		const char *helptext,
+		const double default_value,
+		const Definition::Units_t units ):
+	  Definition(name, label, SettingType_Length, "", "", helptext)
+{
+	this->set(default_value, units);
+	this->defaultvalue = this->encode( default_value, units );
+}
+
+
+/**
+	The Length setting can change both its 'value' and its 'units' so it
+	is necessary to store both of these values in the TPGFeature::PropTPGSettings
+	map.  This way, they are both saved/restored to/from the data file.
+	Now that we're trying to get the value alone, we need to retrieve
+	the encoded version (i.e. the string that includes both the value
+	and the units) and decode just the value part of it.  We then need
+	to interpret that value as a double and convert, if necessary, to
+	the units the caller has asked the value to be expressed in.
+*/
+double Settings::Length::get(const Definition::Units_t requested_units) const
+{
+	std::list<QString> values;
+	values.push_back( this->getValue() );
+	values.push_back( this->defaultvalue );
+	for (std::list<QString>::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	{
+		if (itValue->isNull() == false)
+		{
+			try
+			{
+				using boost::property_tree::ptree;
+				ptree pt;
+
+				std::stringstream encoded_value;
+				encoded_value << itValue->toAscii().constData();
+				
+				read_json(encoded_value, pt);
+
+				double value = pt.get<double>("length.value");
+				std::string these_units = pt.get<std::string>("length.units");
+
+				QString metric, imperial;
+				metric << Settings::Definition::Metric;
+				imperial << Settings::Definition::Imperial;
+			
+				if ((requested_units == Settings::Definition::Metric) && (these_units == imperial.toStdString())) return(value * 25.4);
+				if ((requested_units == Settings::Definition::Imperial) && (these_units == metric.toStdString())) return(value / 25.4);
+
+				return(value);	// The units must be the same.
+			}
+			catch(boost::property_tree::ptree_error const & error)
+			{
+				qWarning("%s\n", error.what());
+			}
+		}
+	}
+
+	return(0.0);
+}
+
+QString Settings::Length::encode(const double value, const Settings::Definition::Units_t class_of_units) const
+{
+	using boost::property_tree::ptree;
+	ptree pt;
+
+	QString units;
+	units << class_of_units;
+
+	pt.put("length.value",  value);
+	pt.put("length.units", units.toStdString());
+
+	std::ostringstream encoded_value;
+
+	write_json(encoded_value, pt);
+	return(QString::fromStdString(encoded_value.str()));
+}
+
+void Settings::Length::set(const double value)
+{
+	this->set(value, this->getUnits());
+}
+
+void Settings::Length::set(const double value, const Settings::Definition::Units_t class_of_units)
+{
+	this->units << class_of_units;
+	this->setValue(this->encode(value, class_of_units));
+}
+
+
+Settings::Definition::Units_t Settings::Length::getUnits() const
+{
+	if (this->units == QString::fromAscii("inch")) return(Definition::Imperial);
+	else return(Definition::Metric);	
+}
+
+
+
 void Settings::Length::setUnits(const Settings::Definition::Units_t class_of_units)
 {
-	QString verbose;
-	verbose << class_of_units;
-	this->units = verbose;
+	this->units << class_of_units;
+	this->set(this->get(class_of_units), class_of_units);
 }
+
+
+
+
+
+
+
+
+
+
+Settings::Rate::Rate(
+		const char *name, 
+		const char *label, 
+		const char *helptext,
+		const double default_value,
+		const double minimum, 
+		const double maximum, 
+		const Definition::Units_t units ):
+	  Definition(name, label, SettingType_Rate, "", "", helptext)
+{
+	std::ostringstream min;
+	min << minimum;
+
+	std::ostringstream max;
+	max << maximum;
+
+	this->options.push_back( new Option(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
+	this->options.push_back( new Option(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
+
+	this->set(default_value, units);
+	this->defaultvalue = this->encode( default_value, units );
+}
+
+Settings::Rate::Rate(
+		const char *name, 
+		const char *label, 
+		const char *helptext,
+		const double default_value,
+		const Definition::Units_t units ):
+	  Definition(name, label, SettingType_Rate, "", "", helptext)
+{
+	this->set(default_value, units);
+	this->defaultvalue = this->encode( default_value, units );
+}
+
+
+/**
+	The Length setting can change both its 'value' and its 'units' so it
+	is necessary to store both of these values in the TPGFeature::PropTPGSettings
+	map.  This way, they are both saved/restored to/from the data file.
+	Now that we're trying to get the value alone, we need to retrieve
+	the encoded version (i.e. the string that includes both the value
+	and the units) and decode just the value part of it.  We then need
+	to interpret that value as a double and convert, if necessary, to
+	the units the caller has asked the value to be expressed in.
+*/
+double Settings::Rate::get(const Definition::Units_t requested_units) const
+{
+	std::list<QString> values;
+	values.push_back( this->getValue() );
+	values.push_back( this->defaultvalue );
+	for (std::list<QString>::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	{
+		if (itValue->isNull() == false)
+		{
+			try
+			{
+				using boost::property_tree::ptree;
+				ptree pt;
+
+				std::stringstream encoded_value;
+				encoded_value << itValue->toAscii().constData();
+				
+				read_json(encoded_value, pt);
+
+				double value = pt.get<double>("rate.value");
+				std::string these_units = pt.get<std::string>("rate.units");
+			
+				QString metric, imperial;
+				metric << Settings::Definition::Metric;
+				imperial << Settings::Definition::Imperial;
+			
+				if ((requested_units == Settings::Definition::Metric) && (these_units == imperial.toStdString())) return(value * 25.4);
+				if ((requested_units == Settings::Definition::Imperial) && (these_units == metric.toStdString())) return(value / 25.4);
+
+				return(value);	// The units must be the same.
+			}
+			catch(boost::property_tree::ptree_error const & error)
+			{
+				qWarning("%s\n", error.what());
+				
+			}
+		}
+	}
+
+	return(0.0);	// failure.
+}
+
+QString Settings::Rate::encode(const double value, const Settings::Definition::Units_t class_of_units) const
+{
+	using boost::property_tree::ptree;
+	ptree pt;
+
+	QString units;
+	units << class_of_units;
+	units += QString::fromAscii("/min");
+
+	pt.put("rate.value",  value);
+	pt.put("rate.units", units.toStdString());
+
+	std::ostringstream encoded_value;
+
+	write_json(encoded_value, pt);
+	return(QString::fromStdString(encoded_value.str()));
+}
+
+
+void Settings::Rate::set(const double value)
+{
+	this->set(value, this->getUnits());
+}
+
+
+void Settings::Rate::set(const double value, const Settings::Definition::Units_t units)
+{
+	this->units << units;
+	this->units += QString::fromAscii("/min");
+
+	this->setValue(this->encode(value, units));
+}
+
+Settings::Definition::Units_t Settings::Rate::getUnits() const
+{
+	if (this->units == QString::fromAscii("inch/min")) return(Definition::Imperial);
+	else return(Definition::Metric);	
+}
+
+void Settings::Rate::setUnits(const Settings::Definition::Units_t class_of_units)
+{
+	this->set(this->get(class_of_units), class_of_units);
+}
+
 
 
 
 double Settings::Double::get() const
 {
-	return(this->getValue().toDouble());
+	if (this->getValue().isNull() == false)	return(this->getValue().toDouble());
+	return(this->defaultvalue.toDouble());
 }
 
 
@@ -1198,7 +1398,8 @@ void Settings::Double::set(const double value)
 
 int Settings::Integer::get() const
 {
-	return(this->getValue().toInt());
+	if (this->getValue().isNull() == false)	return(this->getValue().toInt());
+	return(this->defaultvalue.toInt());
 }
 
 
@@ -1332,6 +1533,77 @@ void Settings::Length::Maximum(const double value)
 }
 
 
+
+
+
+double Settings::Rate::Minimum() const
+{
+	Option *option = this->getOption(QString::fromAscii("minimum"));
+	if (option)
+	{
+		bool status;
+		double value = option->label.toDouble(&status);
+		if (status)
+		{
+			return(value);
+		}
+		else
+		{
+			return(0.0);
+		}
+	}
+	else
+	{
+		return(0.0);
+	}
+}
+
+void Settings::Rate::Minimum(const double value)
+{
+	Option *option = this->getOption(QString::fromAscii("minimum"));
+	if (option)
+	{
+		std::ostringstream ossValue;
+		ossValue << value;
+		option->label = QString::fromStdString(ossValue.str());
+	}
+}
+
+double Settings::Rate::Maximum() const
+{
+	Option *option = this->getOption(QString::fromAscii("maximum"));
+	if (option)
+	{
+		bool status;
+		double value = option->label.toDouble(&status);
+		if (status)
+		{
+			return(value);
+		}
+		else
+		{
+			return(0.0);
+		}
+	}
+	else
+	{
+		return(0.0);
+	}
+}
+void Settings::Rate::Maximum(const double value)
+{
+	Option *option = this->getOption(QString::fromAscii("maximum"));
+	if (option)
+	{
+		std::ostringstream ossValue;
+		ossValue << value;
+		option->label = QString::fromStdString(ossValue.str());
+	}
+}
+
+
+
+
 Double::Double(
 		const char *name, 
 		const char *label, 
@@ -1353,7 +1625,7 @@ Double::Double(
 
 	std::ostringstream def_val;
 	def_val << default_value;
-	Definition::defaultvalue = QString::fromStdString(def_val.str());
+	this->defaultvalue = QString::fromStdString(def_val.str());
 }
 
 Double::Double(
@@ -1366,7 +1638,7 @@ Double::Double(
 {
 	std::ostringstream def_val;
 	def_val << default_value;
-	Definition::defaultvalue = QString::fromStdString(def_val.str());
+	this->defaultvalue = QString::fromStdString(def_val.str());
 }
 
 	  
@@ -1539,6 +1811,52 @@ bool Length::AddToPythonDictionary(PyObject *pDictionary, const QString requeste
 	}
 	return(status);
 }
+
+
+bool Rate::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
+
+	// Name=Value
+	bool status = false;
+	
+	QString string_value = this->getValue();
+	double value;
+	bool ok;
+	value = string_value.toDouble(&ok);
+	if (ok)
+	{
+		if (this->type == SettingType_Rate)
+		{
+			if ((this->units == QString::fromAscii("mm/min")) && (requested_units == QString::fromAscii("inch/min")))
+			{
+				// We have mm but the setting being changed uses inches.  Convert now.
+				value /= 25.4;
+			}
+			else if ((this->units == QString::fromAscii("inch/min")) && (requested_units == QString::fromAscii("mm/min")))
+			{
+				// We're using inches but the setting being changed uses mm. Convert now.
+				value *= 25.4;
+			}
+		}				
+
+		PyObject *pName = PyString_FromString(processed_name.c_str());
+		PyObject *pValue = PyFloat_FromDouble(value);
+
+		if ((pName != NULL) && (pValue != NULL))
+		{
+			PyDict_SetItem(pDictionary, pName, pValue);
+			status = true;
+		}
+
+		Py_XDECREF(pName); pName=NULL;
+		Py_XDECREF(pValue); pValue=NULL;
+	}
+	return(status);
+}
+
 
 bool Double::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
 {
@@ -1947,76 +2265,82 @@ Settings::Definition *Settings::TPGSettings::getDefinition(const QString action,
 }
 
 
-Settings::Text	*Settings::TPGSettings::Text(const QString action, const QString name) const
+Settings::Text	*Settings::TPGSettings::asText(const QString action, const QString name) const
 {
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Text)) return((Settings::Text *) definition);
 	return(NULL);
 }
 
-Settings::Radio	*Settings::TPGSettings::Radio(const QString action, const QString name) const
+Settings::Radio	*Settings::TPGSettings::asRadio(const QString action, const QString name) const
 {
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Radio)) return((Settings::Radio *) definition);
 	return(NULL);
 }
 
-Settings::Color	*Settings::TPGSettings::Color(const QString action, const QString name) const
+Settings::Color	*Settings::TPGSettings::asColor(const QString action, const QString name) const
 {
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Color)) return((Settings::Color *) definition);
 	return(NULL);
 }
 
-Settings::ObjectNamesForType	*Settings::TPGSettings::ObjectNamesForType(const QString action, const QString name) const
+Settings::ObjectNamesForType	*Settings::TPGSettings::asObjectNamesForType(const QString action, const QString name) const
 {
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_ObjectNamesForType)) return((Settings::ObjectNamesForType *) definition);
 	return(NULL);
 }
 
-Settings::Enumeration *Settings::TPGSettings::Enumeration(const QString action, const QString name) const
+Settings::Enumeration *Settings::TPGSettings::asEnumeration(const QString action, const QString name) const
 {
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Enumeration)) return((Settings::Enumeration *) definition);
 	return(NULL);
 }
 
-Settings::Length *Settings::TPGSettings::Length(const QString action, const QString name) const
+Settings::Length *Settings::TPGSettings::asLength(const QString action, const QString name) const
 {
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Length)) return((Settings::Length *) definition);
 	return(NULL);
 }
 
-Settings::Filename *Settings::TPGSettings::Filename(const QString action, const QString name) const
+Settings::Filename *Settings::TPGSettings::asFilename(const QString action, const QString name) const
 {
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Filename)) return((Settings::Filename *) definition);
 	return(NULL);
 }
 
-Settings::Directory	*Settings::TPGSettings::Directory(const QString action, const QString name) const
+Settings::Directory	*Settings::TPGSettings::asDirectory(const QString action, const QString name) const
 {
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Directory)) return((Settings::Directory *) definition);
 	return(NULL);
 }
 
-Settings::Integer *Settings::TPGSettings::Integer(const QString action, const QString name) const
+Settings::Integer *Settings::TPGSettings::asInteger(const QString action, const QString name) const
 {
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Integer)) return((Settings::Integer *) definition);
 	return(NULL);
 }
 
-Settings::Double *Settings::TPGSettings::Double(const QString action, const QString name) const
+Settings::Double *Settings::TPGSettings::asDouble(const QString action, const QString name) const
 {
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Double)) return((Settings::Double *) definition);
 	return(NULL);
 }
 
+Settings::Rate *Settings::TPGSettings::asRate(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Rate)) return((Settings::Rate *) definition);
+	return(NULL);
+}
 
 
 

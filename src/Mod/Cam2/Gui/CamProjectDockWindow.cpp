@@ -110,6 +110,8 @@ bool CamProjectDockWindow::editSettings(Cam::Settings::TPGSettings* newSettings,
 					comp = new CamComboBoxComponent();
 				else if (setting->type == Cam::Settings::Definition::SettingType_Length)
                     comp = new CamLengthComponent();
+				else if (setting->type == Cam::Settings::Definition::SettingType_Rate)
+                    comp = new CamRateComponent();
 				else if (setting->type == Cam::Settings::Definition::SettingType_Filename)
                     comp = new CamFilenameComponent();
 				else if (setting->type == Cam::Settings::Definition::SettingType_Directory)

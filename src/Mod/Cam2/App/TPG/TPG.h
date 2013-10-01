@@ -209,6 +209,10 @@ protected:
 //    std::map<QString, TPGSettings*> settings; ///< e.g. settings[<action>] // Action has been moved into TPGSettings object
     Settings::TPGSettings* settings; ///< the setting definitions for this TPG
 
+	// Declare some pointers to individual settings definitions for ease of use.
+	Settings::ObjectNamesForType *geometry;
+	Settings::ObjectNamesForType *tool;
+
     int refcnt; ///< reference counter
 
 public:
