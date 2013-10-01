@@ -1315,7 +1315,9 @@ double Settings::Rate::get(const Definition::Units_t requested_units) const
 			
 				QString metric, imperial;
 				metric << Settings::Definition::Metric;
+				metric += QString::fromAscii("/min");
 				imperial << Settings::Definition::Imperial;
+				imperial += QString::fromAscii("/min");
 			
 				if ((requested_units == Settings::Definition::Metric) && (these_units == imperial.toStdString())) return(value * 25.4);
 				if ((requested_units == Settings::Definition::Imperial) && (these_units == metric.toStdString())) return(value / 25.4);
@@ -1374,6 +1376,8 @@ Settings::Definition::Units_t Settings::Rate::getUnits() const
 
 void Settings::Rate::setUnits(const Settings::Definition::Units_t class_of_units)
 {
+	this->units << class_of_units;
+	this->units += QString::fromAscii("/min");
 	this->set(this->get(class_of_units), class_of_units);
 }
 

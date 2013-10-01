@@ -282,7 +282,7 @@ CppExampleTPG::~CppExampleTPG() {
 				{
 					value.append(QString::fromAscii(" "));
 					value.append(QString::fromAscii((*itGeometry)->getNameInDocument()));
-					settings->setValue(qaction, settingName_Geometry(), value);
+					this->geometry->setValue(value);
 				}
 			}
 		}

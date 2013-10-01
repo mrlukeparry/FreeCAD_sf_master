@@ -149,6 +149,9 @@ public Q_SLOTS:
      * Slot to receive messages when the user changes the text value
      */
     void editingFinished();
+	void handleButton();
+	void handleAddObjectNameButton();
+	void handleOKButton();
 
 };
 

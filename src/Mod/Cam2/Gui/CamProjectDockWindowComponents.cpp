@@ -116,34 +116,6 @@ void CamTextBoxComponent::editingFinished() {
 	if (widget != NULL && tpgsetting != NULL) {
 		switch (tpgsetting->type)
 		{
-		case Cam::Settings::Definition::SettingType_Length:
-			{
-				Cam::Settings::Length *length_setting = (Cam::Settings::Length *) tpgsetting;
-				if (length_setting)
-				{
-					double value;
-					if (length_setting->Evaluate(widget->text().toAscii().constData(), &value))
-					{
-						length_setting->set(value);
-					}
-				}
-			}
-			break;
-
-		case Cam::Settings::Definition::SettingType_Rate:
-			{
-				Cam::Settings::Length *length_setting = (Cam::Settings::Length *) tpgsetting;
-				if (length_setting)
-				{
-					double value;
-					if (length_setting->Evaluate(widget->text().toAscii().constData(), &value))
-					{
-						length_setting->set(value);
-					}
-				}
-			}
-			break;
-
 		case Cam::Settings::Definition::SettingType_Double:
 			{
 				Cam::Settings::Double *double_setting = (Cam::Settings::Double *) tpgsetting;
@@ -203,6 +175,52 @@ void CamLineEdit::focusOutEvent ( QFocusEvent * e )
 	}
 }
 
+void CamTextBoxComponent::handleAddObjectNameButton()
+{
+	int j=3;
+	int k=j;
+}
+
+void CamTextBoxComponent::handleOKButton()
+{
+	int j=3;
+	int k=j;
+	close();
+}
+
+void CamTextBoxComponent::handleButton()
+{
+	if (this->tpgsetting->type == Cam::Settings::Definition::SettingType_ObjectNamesForType)
+	{
+		boost::scoped_ptr<QDialog> dialog(new QDialog);
+		boost::scoped_ptr<QVBoxLayout> layout(new QVBoxLayout);
+		boost::scoped_ptr<QPushButton> add_button(new QPushButton);
+		boost::scoped_ptr<QPushButton> ok_button(new QPushButton);
+		boost::scoped_ptr<QLineEdit> dummy_edit(new QLineEdit);
+
+		add_button->setText(QString::fromAscii("Add"));
+		ok_button->setText(QString::fromAscii("OK"));
+		dummy_edit->setText(QString::fromAscii("One day this dialog will present a list of all objects whose types match this setting and allow the object names to be selected"));
+
+		add_button->connect( add_button.get(), SIGNAL(clicked()), this, SLOT(handleAddObjectNameButton()));
+		layout->addWidget(add_button.get());
+
+		ok_button->connect( ok_button.get(), SIGNAL(clicked()), this, SLOT(handleOKButton()));
+		layout->addWidget(ok_button.get());
+
+		layout->addWidget(dummy_edit.get());
+
+		dialog->setGeometry(0,0,200,100);
+		QString title = QString::fromAscii("Edit object names list");
+		dialog->setWindowTitle(title);
+		dialog->setLayout(layout.get());
+		dialog->setWindowFlags(Qt::Dialog);		
+
+		dialog->show();
+		dialog->exec();
+	}
+}
+
 /**
  * Creates the UI for this component and loads the initial value
  */
@@ -224,9 +242,18 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
             form->setWidget(row, QFormLayout::LabelRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
 
-            // make the edit box
-            widget = new CamLineEdit(parent, tpgsetting);
+			// make the container
+            QWidget *widget = new QWidget(parent);
+            QHBoxLayout *layout = new QHBoxLayout(widget);
+            layout->setContentsMargins(0,0,0,0);
+            widget->setLayout(layout);
             widget->setObjectName(qname);
+            widget->setToolTip(tpgsetting->helptext);
+			form->setWidget(row, QFormLayout::FieldRole, widget);
+
+            // make the edit box
+            CamLineEdit *camLineEdit = new CamLineEdit(parent, tpgsetting);
+            camLineEdit->setObjectName(qname);
 
 			switch(tpgsetting->type)
 			{
@@ -235,7 +262,7 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 					Cam::Settings::Double *double_setting = dynamic_cast<Cam::Settings::Double *>(tpgsetting);
 					std::ostringstream ossValue;
 					ossValue << double_setting->get();
-					widget->setText(QString::fromStdString(ossValue.str()));
+					camLineEdit->setText(QString::fromStdString(ossValue.str()));
 				}
 				break;
 
@@ -245,29 +272,46 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 			default:
 				if (tpgsetting->getValue() != QString::null)
 				{
-					widget->setText(tpgsetting->getValue());
+					camLineEdit->setText(tpgsetting->getValue());
 				}
 				else
 				{
-					widget->setText(tpgsetting->defaultvalue);
+					camLineEdit->setText(tpgsetting->defaultvalue);
 				}
 			}
 
-            widget->setToolTip(tpgsetting->helptext);
-			widget->setPlaceholderText(tpgsetting->helptext);
+            camLineEdit->setToolTip(tpgsetting->helptext);
+			camLineEdit->setPlaceholderText(tpgsetting->helptext);
 
-			this->validator = new Validator(tpgsetting->grab(), widget);
-			widget->setValidator(validator);
+			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
+			camLineEdit->setValidator(validator);
 
-            form->setWidget(row, QFormLayout::FieldRole, widget);
+            form->setWidget(row, QFormLayout::FieldRole, camLineEdit);
 
             // connect events
         	QObject::connect(widget, SIGNAL(editingFinished()), this,
         			SLOT(editingFinished()));
 
+			layout->addWidget(camLineEdit);
+
+			if (this->tpgsetting->type == Cam::Settings::Definition::SettingType_ObjectNamesForType)
+			{
+				// make the push button
+				QString qvalue = tpgsetting->getValue();
+				QToolButton *button = new QToolButton(widget);
+				button->setObjectName(QString::fromAscii("SelectFile"));
+				button->setText(QString::fromAscii("..."));
+				// connect events
+        		QObject::connect(button, SIGNAL(pressed()), this,
+        				SLOT(handleButton()));
+				layout->addWidget(button);
+				rootComponents.push_back(button);
+			}
+
             // keep reference to widgets for later cleanup
             rootComponents.push_back(labelWidget);
             rootComponents.push_back(widget);
+			
 
             return true;
         }
@@ -418,6 +462,8 @@ bool CamLengthComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayo
 
             // keep reference to widgets for later cleanup
             rootComponents.push_back(labelWidget);
+			rootComponents.push_back(camLineEdit);
+			rootComponents.push_back(combo_box);
 
             return true;
         }
@@ -498,6 +544,7 @@ void CamRateComponent::currentIndexChanged ( int current_index )
 	}
 }
 
+
 /**
  * Creates the UI for this component and loads the initial value
  */
@@ -532,9 +579,9 @@ bool CamRateComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout
             camLineEdit = new CamLineEdit(parent, tpgsetting);
             camLineEdit->setObjectName(qname);
 
-			Cam::Settings::Rate *length = (Cam::Settings::Rate *) this->tpgsetting;
+			Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgsetting);
 			std::ostringstream ossValue;
-			ossValue << length->get( length->getUnits() );
+			ossValue << rate->get( rate->getUnits() );
 			camLineEdit->setText(QString::fromStdString(ossValue.str()));
             camLineEdit->setToolTip(tpgsetting->helptext);
 			camLineEdit->setPlaceholderText(tpgsetting->helptext);
@@ -572,6 +619,8 @@ bool CamRateComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout
 
             // keep reference to widgets for later cleanup
             rootComponents.push_back(labelWidget);
+			rootComponents.push_back(camLineEdit);
+			rootComponents.push_back(combo_box);
 
             return true;
         }
@@ -850,7 +899,9 @@ bool CamFilenameComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 
             // keep reference to widgets for later cleanup
             rootComponents.push_back(labelWidget);
-            rootComponents.push_back(widget);
+            rootComponents.push_back(camLineEdit);
+			rootComponents.push_back(button);
+			rootComponents.push_back(widget);
 
             return true;
         }
@@ -970,6 +1021,8 @@ bool CamDirectoryComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormL
 
             // keep reference to widgets for later cleanup
             rootComponents.push_back(labelWidget);
+			rootComponents.push_back(camLineEdit);
+			rootComponents.push_back(button);
             rootComponents.push_back(widget);
 
             return true;
