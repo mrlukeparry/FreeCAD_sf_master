@@ -114,36 +114,11 @@ CamTextBoxComponent::CamTextBoxComponent()
  */
 void CamTextBoxComponent::editingFinished() {
 	if (widget != NULL && tpgsetting != NULL) {
-		switch (tpgsetting->type)
+		QString qvalue = widget->text();
+		if (!tpgsetting->setValue(qvalue))
 		{
-		case Cam::Settings::Definition::SettingType_Double:
-			{
-				Cam::Settings::Double *double_setting = (Cam::Settings::Double *) tpgsetting;
-				if (double_setting)
-				{
-					double value;
-					if (double_setting->Evaluate(widget->text().toAscii().constData(), &value))
-					{
-						double_setting->set(value);
-					}
-					else
-					{
-						widget->setText(tpgsetting->getValue());
-					}
-				}
-			}
-			break;
-
-		default:
-			{
-				QString qvalue = widget->text();
-				if (!tpgsetting->setValue(qvalue))
-				{
-					Base::Console().Error("Saving failed: '%s'\n", tpgsetting->name.toStdString().c_str());
-					widget->setText(tpgsetting->getValue());
-				}
-			}
-			break;
+			Base::Console().Error("Saving failed: '%s'\n", tpgsetting->name.toStdString().c_str());
+			widget->setText(tpgsetting->getValue());
 		}
 	}
 	else
@@ -215,7 +190,6 @@ void CamLineEdit::focusOutEvent ( QFocusEvent * e )
 	}
 	else
 	{
-		this->editingFinished();	// Save the result.
 		QLineEdit::focusOutEvent(e);
 	}
 }
@@ -315,17 +289,17 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
             labelWidget->setToolTip(tpgsetting->helptext);
 
 			// make the container
-            QWidget *widget = new QWidget(parent);
-            QHBoxLayout *layout = new QHBoxLayout(widget);
+            QWidget *container = new QWidget(parent);
+            QHBoxLayout *layout = new QHBoxLayout(container);
             layout->setContentsMargins(0,0,0,0);
-            widget->setLayout(layout);
-            widget->setObjectName(qname);
-            widget->setToolTip(tpgsetting->helptext);
-			form->setWidget(row, QFormLayout::FieldRole, widget);
+            container->setLayout(layout);
+            container->setObjectName(qname);
+            container->setToolTip(tpgsetting->helptext);
+			form->setWidget(row, QFormLayout::FieldRole, container);
 
             // make the edit box
-            CamLineEdit *camLineEdit = new CamLineEdit(parent, tpgsetting);
-            camLineEdit->setObjectName(qname);
+            this->widget = new CamLineEdit(parent, tpgsetting);
+            this->widget->setObjectName(qname);
 
 			switch(tpgsetting->type)
 			{
@@ -334,7 +308,7 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 					Cam::Settings::Double *double_setting = dynamic_cast<Cam::Settings::Double *>(tpgsetting);
 					std::ostringstream ossValue;
 					ossValue << double_setting->get();
-					camLineEdit->setText(QString::fromStdString(ossValue.str()));
+					this->widget->setText(QString::fromStdString(ossValue.str()));
 				}
 				break;
 
@@ -344,33 +318,33 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 			default:
 				if (tpgsetting->getValue() != QString::null)
 				{
-					camLineEdit->setText(tpgsetting->getValue());
+					this->widget->setText(tpgsetting->getValue());
 				}
 				else
 				{
-					camLineEdit->setText(tpgsetting->defaultvalue);
+					this->widget->setText(tpgsetting->defaultvalue);
 				}
 			}
 
-            camLineEdit->setToolTip(tpgsetting->helptext);
-			camLineEdit->setPlaceholderText(tpgsetting->helptext);
+            this->widget->setToolTip(tpgsetting->helptext);
+			this->widget->setPlaceholderText(tpgsetting->helptext);
 
-			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
-			camLineEdit->setValidator(validator);
+			this->validator = new Validator(tpgsetting->grab(), this->widget);
+			this->widget->setValidator(validator);
 
-            form->setWidget(row, QFormLayout::FieldRole, camLineEdit);
+            form->setWidget(row, QFormLayout::FieldRole, this->widget);
 
             // connect events
-        	QObject::connect(camLineEdit, SIGNAL(editingFinished()), this,
+        	QObject::connect(widget, SIGNAL(editingFinished()), this,
         			SLOT(editingFinished()));
 
-			layout->addWidget(camLineEdit);
+			layout->addWidget(this->widget);
 
 			if (this->tpgsetting->type == Cam::Settings::Definition::SettingType_ObjectNamesForType)
 			{
 				// make the push button
 				QString qvalue = tpgsetting->getValue();
-				QToolButton *button = new QToolButton(widget);
+				QToolButton *button = new QToolButton(container);
 				button->setObjectName(QString::fromAscii("SelectFile"));
 				button->setText(QString::fromAscii("..."));
 				// connect events
@@ -382,7 +356,8 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 
             // keep reference to widgets for later cleanup
             rootComponents.push_back(labelWidget);
-            rootComponents.push_back(widget);
+            rootComponents.push_back(container);
+			rootComponents.push_back(this->widget);
 			
             return true;
         }
