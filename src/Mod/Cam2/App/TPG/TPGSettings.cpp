@@ -796,8 +796,15 @@ bool TPGSettings::EvaluateWithPython( const Definition *definition, QString valu
 
 			typedef std::list< std::pair<std::string, std::string> >  Patterns_t;
 			Patterns_t patterns;
+			QString metric;
+			metric << Settings::Definition::Metric;
 
-			if (definition->units == QString::fromAscii("mm"))
+			if (definition->type == Settings::Definition::SettingType_Rate)
+			{
+				metric += QString::fromAscii("/min");
+			}
+
+			if (definition->units == metric)
 			{
 				// We're using mm.
 				patterns.push_back( std::make_pair(std::string("Inches"), std::string(" * 25.4")));
@@ -1773,19 +1780,20 @@ bool Length::AddToPythonDictionary(PyObject *pDictionary, const QString requeste
 	value = string_value.toDouble(&ok);
 	if (ok)
 	{
-		if (this->type == SettingType_Length)
+		QString metric, imperial;
+		metric << Definition::Metric;
+		imperial << Definition::Imperial;
+
+		if ((this->units == metric) && (requested_units == imperial))
 		{
-			if ((this->units == QString::fromAscii("mm")) && (requested_units == QString::fromAscii("inch")))
-			{
-				// We have mm but the setting being changed uses inches.  Convert now.
-				value /= 25.4;
-			}
-			else if ((this->units == QString::fromAscii("inch")) && (requested_units == QString::fromAscii("mm")))
-			{
-				// We're using inches but the setting being changed uses mm. Convert now.
-				value *= 25.4;
-			}
-		}				
+			// We have mm but the setting being changed uses inches.  Convert now.
+			value /= 25.4;
+		}
+		else if ((this->units == imperial) && (requested_units == metric))
+		{
+			// We're using inches but the setting being changed uses mm. Convert now.
+			value *= 25.4;
+		}
 
 		PyObject *pName = PyString_FromString(processed_name.c_str());
 		PyObject *pValue = PyFloat_FromDouble(value);
@@ -1818,19 +1826,22 @@ bool Rate::AddToPythonDictionary(PyObject *pDictionary, const QString requested_
 	value = string_value.toDouble(&ok);
 	if (ok)
 	{
-		if (this->type == SettingType_Rate)
+		QString metric, imperial;
+		metric << Definition::Metric;
+		metric += QString::fromAscii("/min");
+		imperial << Definition::Imperial;
+		imperial += QString::fromAscii("/min");
+
+		if ((this->units == metric) && (requested_units == imperial))
 		{
-			if ((this->units == QString::fromAscii("mm/min")) && (requested_units == QString::fromAscii("inch/min")))
-			{
-				// We have mm but the setting being changed uses inches.  Convert now.
-				value /= 25.4;
-			}
-			else if ((this->units == QString::fromAscii("inch/min")) && (requested_units == QString::fromAscii("mm/min")))
-			{
-				// We're using inches but the setting being changed uses mm. Convert now.
-				value *= 25.4;
-			}
-		}				
+			// We have mm but the setting being changed uses inches.  Convert now.
+			value /= 25.4;
+		}
+		else if ((this->units == imperial) && (requested_units == metric))
+		{
+			// We're using inches but the setting being changed uses mm. Convert now.
+			value *= 25.4;
+		}	
 
 		PyObject *pName = PyString_FromString(processed_name.c_str());
 		PyObject *pValue = PyFloat_FromDouble(value);
@@ -1863,20 +1874,6 @@ bool Double::AddToPythonDictionary(PyObject *pDictionary, const QString requeste
 	value = string_value.toDouble(&ok);
 	if (ok)
 	{
-		if (this->type == SettingType_Length)
-		{
-			if ((this->units == QString::fromAscii("mm")) && (requested_units == QString::fromAscii("inch")))
-			{
-				// We have mm but the setting being changed uses inches.  Convert now.
-				value /= 25.4;
-			}
-			else if ((this->units == QString::fromAscii("inch")) && (requested_units == QString::fromAscii("mm")))
-			{
-				// We're using inches but the setting being changed uses mm. Convert now.
-				value *= 25.4;
-			}
-		}				
-
 		PyObject *pName = PyString_FromString(processed_name.c_str());
 		PyObject *pValue = PyFloat_FromDouble(value);
 

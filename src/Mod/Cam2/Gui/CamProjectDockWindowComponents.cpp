@@ -126,6 +126,10 @@ void CamTextBoxComponent::editingFinished() {
 					{
 						double_setting->set(value);
 					}
+					else
+					{
+						widget->setText(tpgsetting->getValue());
+					}
 				}
 			}
 			break;
@@ -162,7 +166,47 @@ void CamLineEdit::focusOutEvent ( QFocusEvent * e )
 		int response = message_box.exec();
 		if (response == QMessageBox::Discard)
 		{
-			this->setText(this->tpgSetting->getValue());
+			switch(this->tpgSetting->type)
+			{
+			case Cam::Settings::Definition::SettingType_Length:
+				{
+					Cam::Settings::Length *length = dynamic_cast<Cam::Settings::Length *>(this->tpgSetting);
+					std::ostringstream ossValue;
+					ossValue << length->get(length->getUnits());
+					this->setText(QString::fromStdString(ossValue.str()));
+				}
+				break;
+
+			case Cam::Settings::Definition::SettingType_Rate:
+				{
+					Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgSetting);
+					std::ostringstream ossValue;
+					ossValue << rate->get(rate->getUnits());
+					this->setText(QString::fromStdString(ossValue.str()));
+				}
+				break;
+
+			case Cam::Settings::Definition::SettingType_Double:
+				{
+					Cam::Settings::Double *double_setting = dynamic_cast<Cam::Settings::Double *>(this->tpgSetting);
+					std::ostringstream ossValue;
+					ossValue << double_setting->get();
+					this->setText(QString::fromStdString(ossValue.str()));
+				}
+				break;
+
+			case Cam::Settings::Definition::SettingType_Integer:
+				{
+					Cam::Settings::Integer *integer_setting = dynamic_cast<Cam::Settings::Integer *>(this->tpgSetting);
+					std::ostringstream ossValue;
+					ossValue << integer_setting->get();
+					this->setText(QString::fromStdString(ossValue.str()));
+				}
+				break;
+
+			default:
+				this->setText(this->tpgSetting->getValue());
+			}
 		}
 		else
 		{
@@ -171,6 +215,7 @@ void CamLineEdit::focusOutEvent ( QFocusEvent * e )
 	}
 	else
 	{
+		this->editingFinished();	// Save the result.
 		QLineEdit::focusOutEvent(e);
 	}
 }
@@ -316,7 +361,7 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
             form->setWidget(row, QFormLayout::FieldRole, camLineEdit);
 
             // connect events
-        	QObject::connect(widget, SIGNAL(editingFinished()), this,
+        	QObject::connect(camLineEdit, SIGNAL(editingFinished()), this,
         			SLOT(editingFinished()));
 
 			layout->addWidget(camLineEdit);
