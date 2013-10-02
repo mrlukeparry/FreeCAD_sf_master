@@ -66,6 +66,10 @@ const char* ts(QString *str)
 
 ////////// TPGSetting //////////
 
+#ifdef WIN32
+#pragma region "Settings::Definition"
+#endif
+
 Definition::Definition(const char *name, const char *label, const SettingType type, const char *defaultvalue, const char *units, const char *helptext)
 {
 	this->refcnt = 1;
@@ -154,157 +158,10 @@ Definition::ValidationState Definition::validate(QString & input,int & position)
 	return(this->Acceptable);	// If no type-specific validation is required then the value must be acceptable.
 }
 
-/* virtual */ Definition::ValidationState Length::validate(QString & input,int & position) const
-{
-	if (input.length() == 0) return(this->Intermediate);
-	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
-	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
-
-	Option *minOption = this->getOption(QString::fromAscii("minimum"));
-	Option *maxOption = this->getOption(QString::fromAscii("maximum"));
-
-	double value;
-	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
-	{
-		if ((minOption) && (value <= minOption->label.toDouble())) return(this->Invalid);
-		if ((maxOption) && (value >= maxOption->label.toDouble())) return(this->Invalid);
-		return(this->Acceptable);
-	}
-	else
-	{
-		return(this->Intermediate);
-	}
-}
-
-/* virtual */ Definition::ValidationState Rate::validate(QString & input,int & position) const
-{
-	if (input.length() == 0) return(this->Intermediate);
-	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
-	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
-
-	Option *minOption = this->getOption(QString::fromAscii("minimum"));
-	Option *maxOption = this->getOption(QString::fromAscii("maximum"));
-
-	double value;
-	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
-	{
-		if ((minOption) && (value <= minOption->label.toDouble())) return(this->Invalid);
-		if ((maxOption) && (value >= maxOption->label.toDouble())) return(this->Invalid);
-		return(this->Acceptable);
-	}
-	else
-	{
-		return(this->Intermediate);
-	}
-}
 
 
-Definition::ValidationState Integer::validate(QString & input,int & position) const
-{
-	if (input.length() == 0) return(this->Intermediate);
-	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
-	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
 
-	Option *minOption = this->getOption(QString::fromAscii("minimum"));
-	Option *maxOption = this->getOption(QString::fromAscii("maximum"));
-	
-	double value;
-	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
-	{
-		if ((minOption) && (value <= minOption->label.toInt())) return(this->Invalid);
-		if ((maxOption) && (value >= maxOption->label.toInt())) return(this->Invalid);
-		return(this->Acceptable);
-	}
-	else
-	{
-		return(this->Intermediate);
-	}
-}
 
-/* virtual */ Definition::ValidationState Double::validate(QString & input,int & position) const
-{
-	if (input.length() == 0) return(this->Intermediate);
-	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
-	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
-
-	Option *minOption = this->getOption(QString::fromAscii("minimum"));
-	Option *maxOption = this->getOption(QString::fromAscii("maximum"));
-
-	double value;
-	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
-	{
-		if ((minOption) && (value <= minOption->label.toDouble())) return(this->Invalid);
-		if ((maxOption) && (value >= maxOption->label.toDouble())) return(this->Invalid);
-		return(this->Acceptable);
-	}
-	else
-	{
-		return(this->Intermediate);
-	}
-}
-
-/**
-	Settings whose type is SettingType_ObjectNamesForType are expected to have a value that includes
-	a list of object names.  The characters that delimit the names must be found in an option
-	whose ID = "Delimiters".  Once the value has been parsed into separate object names
-	using these delimiting characters, pointers to them are retrieved using their names alone.  Once
-	found, their types MUST be included within the options whose ID = "TypeId".  eg: for this a
-	name might be "Circle01, Line74", the options might be;
-		- id = "Delimiters" label = " \n\t,"
-		- id = "TypeId" label = "Part::Feature"
-		- id = "TypeId" label = "Cam::TPGFeature"
- */
-Definition::ValidationState ObjectNamesForType::validate(QString & input,int & position) const
-{
-	// Cast this object to a TPGObjectNamesForTypeSettingDefinition object so we can use the helper functions
-	// to review the object's contents.
-	ObjectNamesForType *pSetting = (ObjectNamesForType *) this;
-
-	Option *delimiters_option = this->getOption(QString::fromAscii("Delimiters"));
-	if (delimiters_option == NULL)
-	{
-		return(this->Invalid);
-	}
-
-	// Use a regular expression so that we use any one of the characters in the delimiters string
-	// as a delimiting character.
-	QString expression = QString::fromAscii("[") + delimiters_option->label + QString::fromAscii("]");
-	QRegExp regular_expression(expression);
-	QStringList object_names = input.split(regular_expression, QString::SkipEmptyParts);
-
-	QStringList valid_type_names = pSetting->GetTypes();
-	
-	App::Document *document = App::GetApplication().getActiveDocument();
-	if (document)
-	{
-		for (QStringList::size_type i=0; i<object_names.size(); i++)
-		{
-			QString name = object_names[i];
-			App::DocumentObject *object = document->getObject(object_names[i].toAscii().constData());
-			if(object)
-			{
-				bool is_valid = false;
-				for (QStringList::const_iterator itTypeName = valid_type_names.begin(); itTypeName != valid_type_names.end(); itTypeName++)
-				{
-					if (object->isDerivedFrom(Base::Type::fromName((*itTypeName).toAscii().constData())))
-					{
-						is_valid = true;
-					}
-				}
-				if (! is_valid)
-				{
-					return(this->Intermediate);	// They may be half way through typing it.  Give them the bennefit of the doubt.
-				}
-			}
-			else
-			{
-				return(this->Intermediate);	// They may be half way through typing it.  Give them the bennefit of the doubt.
-			}
-		}
-	}
-
-	return(this->Acceptable);
-}
 
 
 void Definition::print() const
@@ -368,7 +225,89 @@ QString Definition::getFullname() const
 	return action + QString::fromAscii("::") + name;
 }
 
+
+Settings::Option *Settings::Definition::getOption(const QString id) const
+{
+	for (QList<Option*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
+	{
+		if ((*itOption)->id.toUpper() == id.toUpper())
+		{
+			return(*itOption);
+		}
+	}
+
+	return(NULL);
+}
+
+std::string Definition::PythonName(const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name;
+	
+	if (prefix.isNull() == false)
+	{
+		processed_name = prefix.toStdString();
+		processed_name += "_";
+	}
+
+	processed_name += this->label.toStdString();
+	std::string::size_type offset;
+	while ((offset=processed_name.find(' ')) != std::string::npos)
+	{
+		processed_name[offset] = '_';
+	}
+
+	return(processed_name);
+}
+
+
+/**
+	This method is called once for each setting in the TPGSettings object prior
+	to any 'Length' or 'Double' setting's interpretation within the Python
+	environment.  This method adds variable=value pairs to the Python dictionary
+	passed in so that such variables may be used when calculating the value
+	of other settings.
+
+	eg: If we're changing the 'Peck Depth' of a drilling operation then we might
+	enter "Tool_Diameter/2" into the dialog box.  The "Tool_Diameter" variable
+	will have been added by this method and its value will be divided by two
+	before assigning the result to the 'Peck Depth' setting.
+
+	For text-based settings such as 'text', 'filename' and 'directory', the
+	variable name will be the setting's label (with spaces replaced by
+	underbar characters).  The value will simply be the setting's value.
+
+	For floating point settings such as 'Double' and 'Length', the name
+	will be the label (processed as above) and the value will be the value
+	of the setting.
+
+	For Color settings we define four separate variables.  The 'label' of
+	the color setting will be pre-processed as mentioned above.  Appended
+	to this label will be "_red", "_green", "_blue" and "_alpha".  eg:
+	If the color setting's label is "My Color" then the following
+	variable names will be added to the Python dictionary;
+	"My_Color_red", "My_Color_green", "My_Color_blue" and "My_Color_alpha"
+
+	NOTE: Any Length settings will be converted to the 'units' passed in prior to
+	being used in the variable's value.  This allows one setting to refer to another
+	setting's value without worrying about which units each one is defined in.
+ */
+bool Definition::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	return(false);
+}
+
+
+#ifdef WIN32
+#pragma endregion "Settings::Definition"
+#endif
+
+
 // ----- TPGSettings ----------------------------------------------------------
+#ifdef WIN32
+#pragma region "Settings::TPGSettings"
+#endif
 
 TPGSettings::TPGSettings()
 {
@@ -448,24 +387,6 @@ Definition* TPGSettings::addSettingDefinition(QString action, Definition* settin
 				it->second.push_back(setting);
 			}
 		}
-
-		/*
-		// Look to see if the properties map already has a value for this
-		// name.  If not, assign the default value for now.
-		if (this->tpgFeature)
-		{
-			const std::map<std::string,std::string> existing_values = this->tpgFeature->PropTPGSettings.getValues();
-			std::map<std::string,std::string>::const_iterator itValue = existing_values.find(qname.toAscii().constData());
-			if (itValue == existing_values.end())
-			{
-				this->setValue( action, setting->name, setting->defaultvalue );
-			}
-		}
-		else
-		{
-			this->setValue( action, setting->name, setting->defaultvalue );
-		}
-		*/
 	}
 
 	// return setting for convenience
@@ -992,26 +913,315 @@ bool TPGSettings::EvaluateLength( const Definition *definition, const char *ente
 }
 
 
-bool Settings::Length::Evaluate( const char *formula, double *pResult ) const
+bool TPGSettings::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
 {
-	if (! this->parent)
+	bool status = false;
+	for (std::vector<Definition*>::const_iterator itDef = this->settingDefs.begin(); itDef != this->settingDefs.end(); itDef++)
 	{
-		return(false);
+		if ((*itDef)->AddToPythonDictionary(pDictionary, requested_units, prefix))
+		{
+			status = true;	// We have at least one.
+		}
 	}
-
-	return(this->parent->EvaluateLength( this, formula, pResult ));
+	return(status);
 }
 
 
-bool Settings::Rate::Evaluate( const char *formula, double *pResult ) const
+Settings::Definition *Settings::TPGSettings::getDefinition(const QString action, const QString name) const
 {
-	if (! this->parent)
-	{
-		return(false);
+	if (action.isNull() || action.isEmpty()) {
+		Base::Console().Message("action not set\n");
+		return(NULL);
 	}
 
-	return(this->parent->EvaluateLength( this, formula, pResult ));
+	// compute full setting name (<action>::<name>)
+	QString qname = makeName(action, name);
+
+    // get setting value
+	if (tpgFeature != NULL) {
+		std::map<QString, Settings::Definition *>::const_iterator itDef = settingDefsMap.find(qname);
+		if (itDef != settingDefsMap.end()) {
+			return(itDef->second);
+		}
+	}
+	Base::Console().Message("Can't find setting!\n");
+    return(NULL);
 }
+
+
+#ifdef WIN32
+#pragma endregion "Settings::TPGSettings"
+#endif
+
+
+// ----------------Settings::Filename------------------------------
+#ifdef WIN32
+#pragma region "Settings::Filename"
+#endif
+
+
+bool Filename::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
+
+	// Name=Value
+	bool status = false;
+	PyObject *pName = PyString_FromString(processed_name.c_str());
+	PyObject *pValue = PyString_FromString(this->getValue().toAscii().constData());
+
+	if ((pName != NULL) && (pValue != NULL))
+	{
+		PyDict_SetItem(pDictionary, pName, pValue);
+		status = true;
+	}
+
+	Py_XDECREF(pName); pName=NULL;
+	Py_XDECREF(pValue); pValue=NULL;
+	return(status);
+}
+
+Settings::Filename *Settings::TPGSettings::asFilename(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Filename)) return((Settings::Filename *) definition);
+	return(NULL);
+}
+
+#ifdef WIN32
+#pragma endregion "Settings::Filename"
+#endif
+
+
+// ----------------Settings::Text------------------------------
+#ifdef WIN32
+#pragma region "Settings::Text"
+#endif
+
+Settings::Text	*Settings::TPGSettings::asText(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Text)) return((Settings::Text *) definition);
+	return(NULL);
+}
+
+
+bool Text::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
+
+	// Name=Value
+	bool status = false;
+	PyObject *pName = PyString_FromString(processed_name.c_str());
+	PyObject *pValue = PyString_FromString(this->getValue().toAscii().constData());
+
+	if ((pName != NULL) && (pValue != NULL))
+	{
+		PyDict_SetItem(pDictionary, pName, pValue);
+		status = true;
+	}
+
+	Py_XDECREF(pName); pName=NULL;
+	Py_XDECREF(pValue); pValue=NULL;
+	return(status);
+}
+
+#ifdef WIN32
+#pragma endregion "Settings::Text"
+#endif
+
+
+
+
+
+Settings::Color	*Settings::TPGSettings::asColor(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Color)) return((Settings::Color *) definition);
+	return(NULL);
+}
+
+Settings::ObjectNamesForType	*Settings::TPGSettings::asObjectNamesForType(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_ObjectNamesForType)) return((Settings::ObjectNamesForType *) definition);
+	return(NULL);
+}
+
+Settings::Enumeration *Settings::TPGSettings::asEnumeration(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Enumeration)) return((Settings::Enumeration *) definition);
+	return(NULL);
+}
+
+Settings::Length *Settings::TPGSettings::asLength(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Length)) return((Settings::Length *) definition);
+	return(NULL);
+}
+
+
+
+// ----------------Settings::Double------------------------------
+#ifdef WIN32
+#pragma region "Settings::Double"
+#endif
+
+bool Double::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
+
+	// Name=Value
+	bool status = false;
+	
+	QString string_value = this->getValue();
+	double value;
+	bool ok;
+	value = string_value.toDouble(&ok);
+	if (ok)
+	{
+		PyObject *pName = PyString_FromString(processed_name.c_str());
+		PyObject *pValue = PyFloat_FromDouble(value);
+
+		if ((pName != NULL) && (pValue != NULL))
+		{
+			PyDict_SetItem(pDictionary, pName, pValue);
+			status = true;
+		}
+
+		Py_XDECREF(pName); pName=NULL;
+		Py_XDECREF(pValue); pValue=NULL;
+	}
+	return(status);
+}
+
+
+Double::Double(
+		const char *name, 
+		const char *label, 
+		const char *helptext,
+		const double default_value,
+		const double minimum, 
+		const double maximum, 
+		const char *units ):
+	  Definition(name, label, SettingType_Double, "", units, helptext)
+{
+	std::ostringstream min;
+	min << minimum;
+
+	std::ostringstream max;
+	max << maximum;
+
+	this->options.push_back( new Option(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
+	this->options.push_back( new Option(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
+
+	std::ostringstream def_val;
+	def_val << default_value;
+	this->defaultvalue = QString::fromStdString(def_val.str());
+}
+
+Double::Double(
+		const char *name, 
+		const char *label, 
+		const char *helptext,
+		const double default_value,
+		const char * units ):
+	  Definition(name, label, SettingType_Double, "", units, helptext)
+{
+	std::ostringstream def_val;
+	def_val << default_value;
+	this->defaultvalue = QString::fromStdString(def_val.str());
+}
+
+	  
+double Settings::Double::Minimum() const
+{
+	Option *option = this->getOption(QString::fromAscii("minimum"));
+	if (option)
+	{
+		bool status;
+		double value = option->label.toDouble(&status);
+		if (status)
+		{
+			return(value);
+		}
+		else
+		{
+			return(0.0);
+		}
+	}
+	else
+	{
+		return(0.0);
+	}
+}
+
+void Settings::Double::Minimum(const double value)
+{
+	Option *option = this->getOption(QString::fromAscii("minimum"));
+	if (option)
+	{
+		std::ostringstream ossValue;
+		ossValue << value;
+		option->label = QString::fromStdString(ossValue.str());
+	}
+}
+
+double Settings::Double::Maximum() const
+{
+	Option *option = this->getOption(QString::fromAscii("maximum"));
+	if (option)
+	{
+		bool status;
+		double value = option->label.toDouble(&status);
+		if (status)
+		{
+			return(value);
+		}
+		else
+		{
+			return(0.0);
+		}
+	}
+	else
+	{
+		return(0.0);
+	}
+}
+void Settings::Double::Maximum(const double value)
+{
+	Option *option = this->getOption(QString::fromAscii("maximum"));
+	if (option)
+	{
+		std::ostringstream ossValue;
+		ossValue << value;
+		option->label = QString::fromStdString(ossValue.str());
+	}
+}
+
+
+double Settings::Double::get() const
+{
+	if (this->getValue().isNull() == false)	return(this->getValue().toDouble());
+	return(this->defaultvalue.toDouble());
+}
+
+
+void Settings::Double::set(const double value)
+{
+	std::ostringstream encoded_value;
+
+	encoded_value << value;
+	this->setValue(QString::fromStdString(encoded_value.str()));
+}
+
 
 bool Settings::Double::Evaluate( const char *formula, double *pResult ) const
 {
@@ -1024,219 +1234,45 @@ bool Settings::Double::Evaluate( const char *formula, double *pResult ) const
 }
 
 
-QString Settings::Color::encode(const int red, const int green, const int blue, const int alpha) const
+/* virtual */ Definition::ValidationState Double::validate(QString & input,int & position) const
 {
-	using boost::property_tree::ptree;
-	ptree pt;
+	if (input.length() == 0) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
 
-	pt.put("color.red",  red);
-	pt.put("color.green", green);
-	pt.put("color.blue", blue);
-	pt.put("color.alpha", alpha);
+	Option *minOption = this->getOption(QString::fromAscii("minimum"));
+	Option *maxOption = this->getOption(QString::fromAscii("maximum"));
 
-	std::ostringstream encoded_value;
-
-	write_json(encoded_value, pt);
-	return(QString::fromStdString(encoded_value.str()));
-}
-
-/**
-	The color's value is encoded in an INI document describing
-	all the various properties required to define a QColor object.  This
-	XML document forms the 'value' part within the PropTPGSetting
-	map.  We use the TPGColorSettingDefinition class to handle
-	the conversion between the INI string used in the TPGFeature's 
-	property and the QColor value we use in the code.
- */
-bool Settings::Color::get(int &red, int &green, int &blue, int &alpha) const
-{
-	std::list<QString> values;
-	values.push_back( this->getValue() );
-	values.push_back( this->defaultvalue );
-	for (std::list<QString>::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	double value;
+	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		if (itValue->isNull() == false)
-		{
-			try
-			{
-				using boost::property_tree::ptree;
-				ptree pt;
-
-				std::stringstream encoded_value;
-				encoded_value << itValue->toAscii().constData();
-				
-				read_json(encoded_value, pt);
-
-				red   = pt.get<int>("color.red");
-				green = pt.get<int>("color.green");
-				blue  = pt.get<int>("color.blue");
-				alpha = pt.get<int>("color.alpha");
-
-				return(true);	// success.
-			}
-			catch(boost::property_tree::ptree_error const & error)
-			{
-				qWarning("%s\n", error.what());
-			}
-		}
+		if ((minOption) && (value <= minOption->label.toDouble())) return(this->Invalid);
+		if ((maxOption) && (value >= maxOption->label.toDouble())) return(this->Invalid);
+		return(this->Acceptable);
 	}
-
-	red = 0;
-	green = 255;
-	blue = 0;
-	alpha = 255;
-
-	return(false);	// failure.
-}
-
-void Settings::Color::set(const int red, const int green, const int blue, const int alpha)
-{
-	this->setValue(this->encode(red, green, blue, alpha));
-}
-
-
-
-
-
-
-Settings::Length::Length(
-		const char *name, 
-		const char *label, 
-		const char *helptext,
-		const double default_value,
-		const double minimum, 
-		const double maximum, 
-		const Definition::Units_t units ):
-	  Definition(name, label, SettingType_Length, "", "", helptext)
-{
-	std::ostringstream min;
-	min << minimum;
-
-	std::ostringstream max;
-	max << maximum;
-
-	this->options.push_back( new Option(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
-	this->options.push_back( new Option(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
-
-	this->set(default_value, units);
-	this->defaultvalue = this->encode( default_value, units );
-}
-
-Settings::Length::Length(
-		const char *name, 
-		const char *label, 
-		const char *helptext,
-		const double default_value,
-		const Definition::Units_t units ):
-	  Definition(name, label, SettingType_Length, "", "", helptext)
-{
-	this->set(default_value, units);
-	this->defaultvalue = this->encode( default_value, units );
-}
-
-
-/**
-	The Length setting can change both its 'value' and its 'units' so it
-	is necessary to store both of these values in the TPGFeature::PropTPGSettings
-	map.  This way, they are both saved/restored to/from the data file.
-	Now that we're trying to get the value alone, we need to retrieve
-	the encoded version (i.e. the string that includes both the value
-	and the units) and decode just the value part of it.  We then need
-	to interpret that value as a double and convert, if necessary, to
-	the units the caller has asked the value to be expressed in.
-*/
-double Settings::Length::get(const Definition::Units_t requested_units) const
-{
-	std::list<QString> values;
-	values.push_back( this->getValue() );
-	values.push_back( this->defaultvalue );
-	for (std::list<QString>::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	else
 	{
-		if (itValue->isNull() == false)
-		{
-			try
-			{
-				using boost::property_tree::ptree;
-				ptree pt;
-
-				std::stringstream encoded_value;
-				encoded_value << itValue->toAscii().constData();
-				
-				read_json(encoded_value, pt);
-
-				double value = pt.get<double>("length.value");
-				std::string these_units = pt.get<std::string>("length.units");
-
-				QString metric, imperial;
-				metric << Settings::Definition::Metric;
-				imperial << Settings::Definition::Imperial;
-			
-				if ((requested_units == Settings::Definition::Metric) && (these_units == imperial.toStdString())) return(value * 25.4);
-				if ((requested_units == Settings::Definition::Imperial) && (these_units == metric.toStdString())) return(value / 25.4);
-
-				return(value);	// The units must be the same.
-			}
-			catch(boost::property_tree::ptree_error const & error)
-			{
-				qWarning("%s\n", error.what());
-			}
-		}
+		return(this->Intermediate);
 	}
-
-	return(0.0);
 }
 
-QString Settings::Length::encode(const double value, const Settings::Definition::Units_t class_of_units) const
+
+Settings::Double *Settings::TPGSettings::asDouble(const QString action, const QString name) const
 {
-	using boost::property_tree::ptree;
-	ptree pt;
-
-	QString units;
-	units << class_of_units;
-
-	pt.put("length.value",  value);
-	pt.put("length.units", units.toStdString());
-
-	std::ostringstream encoded_value;
-
-	write_json(encoded_value, pt);
-	return(QString::fromStdString(encoded_value.str()));
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Double)) return((Settings::Double *) definition);
+	return(NULL);
 }
 
-void Settings::Length::set(const double value)
-{
-	this->set(value, this->getUnits());
-}
-
-void Settings::Length::set(const double value, const Settings::Definition::Units_t class_of_units)
-{
-	this->units << class_of_units;
-	this->setValue(this->encode(value, class_of_units));
-}
+#ifdef WIN32
+#pragma endregion "Settings::Double"
+#endif
 
 
-Settings::Definition::Units_t Settings::Length::getUnits() const
-{
-	if (this->units == QString::fromAscii("inch")) return(Definition::Imperial);
-	else return(Definition::Metric);	
-}
-
-
-
-void Settings::Length::setUnits(const Settings::Definition::Units_t class_of_units)
-{
-	this->units << class_of_units;
-	this->set(this->get(class_of_units), class_of_units);
-}
-
-
-
-
-
-
-
-
-
+// ----------------Settings::Rate------------------------------
+#ifdef WIN32
+#pragma region "Settings::Rate"
+#endif
 
 Settings::Rate::Rate(
 		const char *name, 
@@ -1376,161 +1412,38 @@ void Settings::Rate::setUnits(const Settings::Definition::Units_t class_of_units
 
 
 
-
-double Settings::Double::get() const
+bool Settings::Rate::Evaluate( const char *formula, double *pResult ) const
 {
-	if (this->getValue().isNull() == false)	return(this->getValue().toDouble());
-	return(this->defaultvalue.toDouble());
-}
-
-
-void Settings::Double::set(const double value)
-{
-	std::ostringstream encoded_value;
-
-	encoded_value << value;
-	this->setValue(QString::fromStdString(encoded_value.str()));
-}
-
-
-int Settings::Integer::get() const
-{
-	if (this->getValue().isNull() == false)	return(this->getValue().toInt());
-	return(this->defaultvalue.toInt());
-}
-
-
-void Settings::Integer::set(const int value)
-{
-	std::ostringstream encoded_value;
-
-	encoded_value << value;
-	this->setValue(QString::fromStdString(encoded_value.str()));
-}
-
-
-Settings::Enumeration::Pair_t Settings::Enumeration::get() const
-{
-	// The 'value' stored in the TPGFeature::PropTPGSettings map is the integer portion of the
-	// enumerated type.
-	int id = this->getValue().toInt();
-	Map_t data = this->Values();
-	if (data.find(id) == data.end())
-	{
-		return(Pair_t(-1, QString::null));
-	}
-	else
-	{
-		return(*(data.find(id)));
-	}
-}
-
-
-bool Settings::Enumeration::set(const int id)
-{
-	Map_t data = this->Values();
-	if (data.find(id) == data.end())
+	if (! this->parent)
 	{
 		return(false);
 	}
-	else
-	{
-		// The id has been found in this object's options and must, therefore, be valid.
-		// Encode it as a string in the 'value' for this setting.
-		std::ostringstream ossValue;
-		ossValue << id;
-		this->setValue(QString::fromStdString(ossValue.str()));
-		return(true);
-	}
+
+	return(this->parent->EvaluateLength( this, formula, pResult ));
 }
 
 
-
-
-
-
-
-
-Settings::Option *Settings::Definition::getOption(const QString id) const
+/* virtual */ Definition::ValidationState Rate::validate(QString & input,int & position) const
 {
-	for (QList<Option*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
-	{
-		if ((*itOption)->id.toUpper() == id.toUpper())
-		{
-			return(*itOption);
-		}
-	}
+	if (input.length() == 0) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
 
-	return(NULL);
-}
+	Option *minOption = this->getOption(QString::fromAscii("minimum"));
+	Option *maxOption = this->getOption(QString::fromAscii("maximum"));
 
-double Settings::Length::Minimum() const
-{
-	Option *option = this->getOption(QString::fromAscii("minimum"));
-	if (option)
+	double value;
+	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		bool status;
-		double value = option->label.toDouble(&status);
-		if (status)
-		{
-			return(value);
-		}
-		else
-		{
-			return(0.0);
-		}
+		if ((minOption) && (value <= minOption->label.toDouble())) return(this->Invalid);
+		if ((maxOption) && (value >= maxOption->label.toDouble())) return(this->Invalid);
+		return(this->Acceptable);
 	}
 	else
 	{
-		return(0.0);
+		return(this->Intermediate);
 	}
 }
-
-void Settings::Length::Minimum(const double value)
-{
-	Option *option = this->getOption(QString::fromAscii("minimum"));
-	if (option)
-	{
-		std::ostringstream ossValue;
-		ossValue << value;
-		option->label = QString::fromStdString(ossValue.str());
-	}
-}
-
-double Settings::Length::Maximum() const
-{
-	Option *option = this->getOption(QString::fromAscii("maximum"));
-	if (option)
-	{
-		bool status;
-		double value = option->label.toDouble(&status);
-		if (status)
-		{
-			return(value);
-		}
-		else
-		{
-			return(0.0);
-		}
-	}
-	else
-	{
-		return(0.0);
-	}
-}
-void Settings::Length::Maximum(const double value)
-{
-	Option *option = this->getOption(QString::fromAscii("maximum"));
-	if (option)
-	{
-		std::ostringstream ossValue;
-		ossValue << value;
-		option->label = QString::fromStdString(ossValue.str());
-	}
-}
-
-
-
 
 
 double Settings::Rate::Minimum() const
@@ -1599,218 +1512,6 @@ void Settings::Rate::Maximum(const double value)
 }
 
 
-
-
-Double::Double(
-		const char *name, 
-		const char *label, 
-		const char *helptext,
-		const double default_value,
-		const double minimum, 
-		const double maximum, 
-		const char *units ):
-	  Definition(name, label, SettingType_Double, "", units, helptext)
-{
-	std::ostringstream min;
-	min << minimum;
-
-	std::ostringstream max;
-	max << maximum;
-
-	this->options.push_back( new Option(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
-	this->options.push_back( new Option(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
-
-	std::ostringstream def_val;
-	def_val << default_value;
-	this->defaultvalue = QString::fromStdString(def_val.str());
-}
-
-Double::Double(
-		const char *name, 
-		const char *label, 
-		const char *helptext,
-		const double default_value,
-		const char * units ):
-	  Definition(name, label, SettingType_Double, "", units, helptext)
-{
-	std::ostringstream def_val;
-	def_val << default_value;
-	this->defaultvalue = QString::fromStdString(def_val.str());
-}
-
-	  
-double Settings::Double::Minimum() const
-{
-	Option *option = this->getOption(QString::fromAscii("minimum"));
-	if (option)
-	{
-		bool status;
-		double value = option->label.toDouble(&status);
-		if (status)
-		{
-			return(value);
-		}
-		else
-		{
-			return(0.0);
-		}
-	}
-	else
-	{
-		return(0.0);
-	}
-}
-
-void Settings::Double::Minimum(const double value)
-{
-	Option *option = this->getOption(QString::fromAscii("minimum"));
-	if (option)
-	{
-		std::ostringstream ossValue;
-		ossValue << value;
-		option->label = QString::fromStdString(ossValue.str());
-	}
-}
-
-double Settings::Double::Maximum() const
-{
-	Option *option = this->getOption(QString::fromAscii("maximum"));
-	if (option)
-	{
-		bool status;
-		double value = option->label.toDouble(&status);
-		if (status)
-		{
-			return(value);
-		}
-		else
-		{
-			return(0.0);
-		}
-	}
-	else
-	{
-		return(0.0);
-	}
-}
-void Settings::Double::Maximum(const double value)
-{
-	Option *option = this->getOption(QString::fromAscii("maximum"));
-	if (option)
-	{
-		std::ostringstream ossValue;
-		ossValue << value;
-		option->label = QString::fromStdString(ossValue.str());
-	}
-}
-
-
-std::string Definition::PythonName(const QString prefix) const
-{
-	// Replace any spaces within the variable name with underbars so that the
-	// name can be used as a Python variable name.
-	std::string processed_name;
-	
-	if (prefix.isNull() == false)
-	{
-		processed_name = prefix.toStdString();
-		processed_name += "_";
-	}
-
-	processed_name += this->label.toStdString();
-	std::string::size_type offset;
-	while ((offset=processed_name.find(' ')) != std::string::npos)
-	{
-		processed_name[offset] = '_';
-	}
-
-	return(processed_name);
-}
-
-
-/**
-	This method is called once for each setting in the TPGSettings object prior
-	to any 'Length' or 'Double' setting's interpretation within the Python
-	environment.  This method adds variable=value pairs to the Python dictionary
-	passed in so that such variables may be used when calculating the value
-	of other settings.
-
-	eg: If we're changing the 'Peck Depth' of a drilling operation then we might
-	enter "Tool_Diameter/2" into the dialog box.  The "Tool_Diameter" variable
-	will have been added by this method and its value will be divided by two
-	before assigning the result to the 'Peck Depth' setting.
-
-	For text-based settings such as 'text', 'filename' and 'directory', the
-	variable name will be the setting's label (with spaces replaced by
-	underbar characters).  The value will simply be the setting's value.
-
-	For floating point settings such as 'Double' and 'Length', the name
-	will be the label (processed as above) and the value will be the value
-	of the setting.
-
-	For Color settings we define four separate variables.  The 'label' of
-	the color setting will be pre-processed as mentioned above.  Appended
-	to this label will be "_red", "_green", "_blue" and "_alpha".  eg:
-	If the color setting's label is "My Color" then the following
-	variable names will be added to the Python dictionary;
-	"My_Color_red", "My_Color_green", "My_Color_blue" and "My_Color_alpha"
-
-	NOTE: Any Length settings will be converted to the 'units' passed in prior to
-	being used in the variable's value.  This allows one setting to refer to another
-	setting's value without worrying about which units each one is defined in.
- */
-bool Definition::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
-{
-	return(false);
-}
-
-
-bool Length::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
-{
-	// Replace any spaces within the variable name with underbars so that the
-	// name can be used as a Python variable name.
-	std::string processed_name = PythonName(prefix);
-
-	// Name=Value
-	bool status = false;
-	
-	QString string_value = this->getValue();
-	double value;
-	bool ok;
-	value = string_value.toDouble(&ok);
-	if (ok)
-	{
-		QString metric, imperial;
-		metric << Definition::Metric;
-		imperial << Definition::Imperial;
-
-		if ((this->units == metric) && (requested_units == imperial))
-		{
-			// We have mm but the setting being changed uses inches.  Convert now.
-			value /= 25.4;
-		}
-		else if ((this->units == imperial) && (requested_units == metric))
-		{
-			// We're using inches but the setting being changed uses mm. Convert now.
-			value *= 25.4;
-		}
-
-		PyObject *pName = PyString_FromString(processed_name.c_str());
-		PyObject *pValue = PyFloat_FromDouble(value);
-
-		if ((pName != NULL) && (pValue != NULL))
-		{
-			PyDict_SetItem(pDictionary, pName, pValue);
-			status = true;
-		}
-
-		Py_XDECREF(pName); pName=NULL;
-		Py_XDECREF(pValue); pValue=NULL;
-	}
-	return(status);
-}
-
-
 bool Rate::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
 {
 	// Replace any spaces within the variable name with underbars so that the
@@ -1859,36 +1560,60 @@ bool Rate::AddToPythonDictionary(PyObject *pDictionary, const QString requested_
 }
 
 
-bool Double::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+
+Settings::Rate *Settings::TPGSettings::asRate(const QString action, const QString name) const
 {
-	// Replace any spaces within the variable name with underbars so that the
-	// name can be used as a Python variable name.
-	std::string processed_name = PythonName(prefix);
-
-	// Name=Value
-	bool status = false;
-	
-	QString string_value = this->getValue();
-	double value;
-	bool ok;
-	value = string_value.toDouble(&ok);
-	if (ok)
-	{
-		PyObject *pName = PyString_FromString(processed_name.c_str());
-		PyObject *pValue = PyFloat_FromDouble(value);
-
-		if ((pName != NULL) && (pValue != NULL))
-		{
-			PyDict_SetItem(pDictionary, pName, pValue);
-			status = true;
-		}
-
-		Py_XDECREF(pName); pName=NULL;
-		Py_XDECREF(pValue); pValue=NULL;
-	}
-	return(status);
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Rate)) return((Settings::Rate *) definition);
+	return(NULL);
 }
 
+#ifdef WIN32
+#pragma endregion "Settings::Rate"
+#endif
+
+
+// ----------------Settings::Integer------------------------------
+#ifdef WIN32
+#pragma region "Settings::Integer"
+#endif
+
+Definition::ValidationState Integer::validate(QString & input,int & position) const
+{
+	if (input.length() == 0) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
+
+	Option *minOption = this->getOption(QString::fromAscii("minimum"));
+	Option *maxOption = this->getOption(QString::fromAscii("maximum"));
+	
+	double value;
+	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
+	{
+		if ((minOption) && (value <= minOption->label.toInt())) return(this->Invalid);
+		if ((maxOption) && (value >= maxOption->label.toInt())) return(this->Invalid);
+		return(this->Acceptable);
+	}
+	else
+	{
+		return(this->Intermediate);
+	}
+}
+
+int Settings::Integer::get() const
+{
+	if (this->getValue().isNull() == false)	return(this->getValue().toInt());
+	return(this->defaultvalue.toInt());
+}
+
+
+void Settings::Integer::set(const int value)
+{
+	std::ostringstream encoded_value;
+
+	encoded_value << value;
+	this->setValue(QString::fromStdString(encoded_value.str()));
+}
 
 bool Integer::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
 {
@@ -1920,85 +1645,95 @@ bool Integer::AddToPythonDictionary(PyObject *pDictionary, const QString request
 	return(status);
 }
 
-bool Radio::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+int Settings::Integer::Minimum() const
 {
-	return(false);
-}
-
-bool ObjectNamesForType::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
-{
-	return(false);
-}
-
-bool Enumeration::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
-{
-	return(false);
-}
-
-bool Color::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
-{
-	// Replace any spaces within the variable name with underbars so that the
-	// name can be used as a Python variable name.
-	std::string processed_name = PythonName(prefix);
-
-	// Name_red=int
-	// Name_green=int
-	// Name_blue=int
-	// Name_alpha=int
-
-	bool status = false;
-
-	Color *colour = (Color *) this;
-	int red, green, blue, alpha;
-	colour->get(red, green, blue, alpha);
-
-	std::set< std::pair< std::string, int > > values;
-	values.insert( std::make_pair( std::string( processed_name + "_red" ), red ) );
-	values.insert( std::make_pair( std::string( processed_name + "_green" ), green ) );
-	values.insert( std::make_pair( std::string( processed_name + "_blue" ), blue ) );
-	values.insert( std::make_pair( std::string( processed_name + "_alpha" ), alpha ) );
-
-	for (std::set< std::pair< std::string, int > >::iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	Option *option = this->getOption(QString::fromAscii("minimum"));
+	if (option)
 	{
-		PyObject *pName = PyString_FromString(itValue->first.c_str());
-		PyObject *pValue = PyInt_FromLong(itValue->second);
-
-		if ((pName != NULL) && (pValue != NULL))
+		bool status;
+		int value = option->label.toInt(&status);
+		if (status)
 		{
-			PyDict_SetItem(pDictionary, pName, pValue);
-			status = true;
+			return(value);
 		}
-
-		Py_XDECREF(pName); pName=NULL;
-		Py_XDECREF(pValue); pValue=NULL;
+		else
+		{
+			return(0.0);
+		}
 	}
-
-	return(status);
-}
-
-
-bool Filename::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
-{
-	// Replace any spaces within the variable name with underbars so that the
-	// name can be used as a Python variable name.
-	std::string processed_name = PythonName(prefix);
-
-	// Name=Value
-	bool status = false;
-	PyObject *pName = PyString_FromString(processed_name.c_str());
-	PyObject *pValue = PyString_FromString(this->getValue().toAscii().constData());
-
-	if ((pName != NULL) && (pValue != NULL))
+	else
 	{
-		PyDict_SetItem(pDictionary, pName, pValue);
-		status = true;
+		return(0.0);
 	}
-
-	Py_XDECREF(pName); pName=NULL;
-	Py_XDECREF(pValue); pValue=NULL;
-	return(status);
 }
 
+void Settings::Integer::Minimum(const int value)
+{
+	Option *option = this->getOption(QString::fromAscii("minimum"));
+	if (option)
+	{
+		std::ostringstream ossValue;
+		ossValue << value;
+		option->label = QString::fromStdString(ossValue.str());
+	}
+}
+
+int Settings::Integer::Maximum() const
+{
+	Option *option = this->getOption(QString::fromAscii("maximum"));
+	if (option)
+	{
+		bool status;
+		double value = option->label.toInt(&status);
+		if (status)
+		{
+			return(value);
+		}
+		else
+		{
+			return(0.0);
+		}
+	}
+	else
+	{
+		return(0.0);
+	}
+}
+void Settings::Integer::Maximum(const int value)
+{
+	Option *option = this->getOption(QString::fromAscii("maximum"));
+	if (option)
+	{
+		std::ostringstream ossValue;
+		ossValue << value;
+		option->label = QString::fromStdString(ossValue.str());
+	}
+}
+
+
+Settings::Integer *Settings::TPGSettings::asInteger(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Integer)) return((Settings::Integer *) definition);
+	return(NULL);
+}
+
+#ifdef WIN32
+#pragma endregion "Settings::Integer"
+#endif
+
+
+// ----------------Settings::Directory------------------------------
+#ifdef WIN32
+#pragma region "Settings::Directory"
+#endif
+
+Settings::Directory	*Settings::TPGSettings::asDirectory(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Directory)) return((Settings::Directory *) definition);
+	return(NULL);
+}
 
 bool Directory::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
 {
@@ -2022,46 +1757,84 @@ bool Directory::AddToPythonDictionary(PyObject *pDictionary, const QString reque
 	return(status);
 }
 
+#ifdef WIN32
+#pragma endregion "Settings::Directory"
+#endif
 
-bool Text::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+
+// ----------------Settings::ObjectNamesForType------------------------------
+#ifdef WIN32
+#pragma region "Settings::ObjectNamesForType"
+#endif
+
+/**
+	Settings whose type is SettingType_ObjectNamesForType are expected to have a value that includes
+	a list of object names.  The characters that delimit the names must be found in an option
+	whose ID = "Delimiters".  Once the value has been parsed into separate object names
+	using these delimiting characters, pointers to them are retrieved using their names alone.  Once
+	found, their types MUST be included within the options whose ID = "TypeId".  eg: for this a
+	name might be "Circle01, Line74", the options might be;
+		- id = "Delimiters" label = " \n\t,"
+		- id = "TypeId" label = "Part::Feature"
+		- id = "TypeId" label = "Cam::TPGFeature"
+ */
+Definition::ValidationState ObjectNamesForType::validate(QString & input,int & position) const
 {
-	// Replace any spaces within the variable name with underbars so that the
-	// name can be used as a Python variable name.
-	std::string processed_name = PythonName(prefix);
+	// Cast this object to a TPGObjectNamesForTypeSettingDefinition object so we can use the helper functions
+	// to review the object's contents.
+	ObjectNamesForType *pSetting = (ObjectNamesForType *) this;
 
-	// Name=Value
-	bool status = false;
-	PyObject *pName = PyString_FromString(processed_name.c_str());
-	PyObject *pValue = PyString_FromString(this->getValue().toAscii().constData());
-
-	if ((pName != NULL) && (pValue != NULL))
+	Option *delimiters_option = this->getOption(QString::fromAscii("Delimiters"));
+	if (delimiters_option == NULL)
 	{
-		PyDict_SetItem(pDictionary, pName, pValue);
-		status = true;
+		return(this->Invalid);
 	}
 
-	Py_XDECREF(pName); pName=NULL;
-	Py_XDECREF(pValue); pValue=NULL;
-	return(status);
-}
+	// Use a regular expression so that we use any one of the characters in the delimiters string
+	// as a delimiting character.
+	QString expression = QString::fromAscii("[") + delimiters_option->label + QString::fromAscii("]");
+	QRegExp regular_expression(expression);
+	QStringList object_names = input.split(regular_expression, QString::SkipEmptyParts);
 
-
-
-
-bool TPGSettings::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
-{
-	bool status = false;
-	for (std::vector<Definition*>::const_iterator itDef = this->settingDefs.begin(); itDef != this->settingDefs.end(); itDef++)
+	QStringList valid_type_names = pSetting->GetTypes();
+	
+	App::Document *document = App::GetApplication().getActiveDocument();
+	if (document)
 	{
-		if ((*itDef)->AddToPythonDictionary(pDictionary, requested_units, prefix))
+		for (QStringList::size_type i=0; i<object_names.size(); i++)
 		{
-			status = true;	// We have at least one.
+			QString name = object_names[i];
+			App::DocumentObject *object = document->getObject(object_names[i].toAscii().constData());
+			if(object)
+			{
+				bool is_valid = false;
+				for (QStringList::const_iterator itTypeName = valid_type_names.begin(); itTypeName != valid_type_names.end(); itTypeName++)
+				{
+					if (object->isDerivedFrom(Base::Type::fromName((*itTypeName).toAscii().constData())))
+					{
+						is_valid = true;
+					}
+				}
+				if (! is_valid)
+				{
+					return(this->Intermediate);	// They may be half way through typing it.  Give them the bennefit of the doubt.
+				}
+			}
+			else
+			{
+				return(this->Intermediate);	// They may be half way through typing it.  Give them the bennefit of the doubt.
+			}
 		}
 	}
-	return(status);
+
+	return(this->Acceptable);
 }
 
 
+bool ObjectNamesForType::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	return(false);
+}
 
 ObjectNamesForType::ObjectNamesForType(	const char *name, 
 								const char *label, 
@@ -2131,17 +1904,188 @@ QStringList ObjectNamesForType::GetNames() const
 	return(names);
 }
 
+#ifdef WIN32
+#pragma endregion "Settings::ObjectNamesForType"
+#endif
+
+
+// ----------------Settings::Length------------------------------
+#ifdef WIN32
+#pragma region "Settings::Length"
+#endif
+
+/* virtual */ Definition::ValidationState Length::validate(QString & input,int & position) const
+{
+	if (input.length() == 0) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("-"))) return(this->Intermediate);
+	if ((input.length() == 1) && (input == QString::fromAscii("+"))) return(this->Intermediate);
+
+	Option *minOption = this->getOption(QString::fromAscii("minimum"));
+	Option *maxOption = this->getOption(QString::fromAscii("maximum"));
+
+	double value;
+	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
+	{
+		if ((minOption) && (value <= minOption->label.toDouble())) return(this->Invalid);
+		if ((maxOption) && (value >= maxOption->label.toDouble())) return(this->Invalid);
+		return(this->Acceptable);
+	}
+	else
+	{
+		return(this->Intermediate);
+	}
+}
+
+
+bool Settings::Length::Evaluate( const char *formula, double *pResult ) const
+{
+	if (! this->parent)
+	{
+		return(false);
+	}
+
+	return(this->parent->EvaluateLength( this, formula, pResult ));
+}
+
+
+Settings::Length::Length(
+		const char *name, 
+		const char *label, 
+		const char *helptext,
+		const double default_value,
+		const double minimum, 
+		const double maximum, 
+		const Definition::Units_t units ):
+	  Definition(name, label, SettingType_Length, "", "", helptext)
+{
+	std::ostringstream min;
+	min << minimum;
+
+	std::ostringstream max;
+	max << maximum;
+
+	this->options.push_back( new Option(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
+	this->options.push_back( new Option(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
+
+	this->set(default_value, units);
+	this->defaultvalue = this->encode( default_value, units );
+}
+
+Settings::Length::Length(
+		const char *name, 
+		const char *label, 
+		const char *helptext,
+		const double default_value,
+		const Definition::Units_t units ):
+	  Definition(name, label, SettingType_Length, "", "", helptext)
+{
+	this->set(default_value, units);
+	this->defaultvalue = this->encode( default_value, units );
+}
+
+
+/**
+	The Length setting can change both its 'value' and its 'units' so it
+	is necessary to store both of these values in the TPGFeature::PropTPGSettings
+	map.  This way, they are both saved/restored to/from the data file.
+	Now that we're trying to get the value alone, we need to retrieve
+	the encoded version (i.e. the string that includes both the value
+	and the units) and decode just the value part of it.  We then need
+	to interpret that value as a double and convert, if necessary, to
+	the units the caller has asked the value to be expressed in.
+*/
+double Settings::Length::get(const Definition::Units_t requested_units) const
+{
+	std::list<QString> values;
+	values.push_back( this->getValue() );
+	values.push_back( this->defaultvalue );
+	for (std::list<QString>::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	{
+		if (itValue->isNull() == false)
+		{
+			try
+			{
+				using boost::property_tree::ptree;
+				ptree pt;
+
+				std::stringstream encoded_value;
+				encoded_value << itValue->toAscii().constData();
+				
+				read_json(encoded_value, pt);
+
+				double value = pt.get<double>("length.value");
+				std::string these_units = pt.get<std::string>("length.units");
+
+				QString metric, imperial;
+				metric << Settings::Definition::Metric;
+				imperial << Settings::Definition::Imperial;
+			
+				if ((requested_units == Settings::Definition::Metric) && (these_units == imperial.toStdString())) return(value * 25.4);
+				if ((requested_units == Settings::Definition::Imperial) && (these_units == metric.toStdString())) return(value / 25.4);
+
+				return(value);	// The units must be the same.
+			}
+			catch(boost::property_tree::ptree_error const & error)
+			{
+				qWarning("%s\n", error.what());
+			}
+		}
+	}
+
+	return(0.0);
+}
+
+QString Settings::Length::encode(const double value, const Settings::Definition::Units_t class_of_units) const
+{
+	using boost::property_tree::ptree;
+	ptree pt;
+
+	QString units;
+	units << class_of_units;
+
+	pt.put("length.value",  value);
+	pt.put("length.units", units.toStdString());
+
+	std::ostringstream encoded_value;
+
+	write_json(encoded_value, pt);
+	return(QString::fromStdString(encoded_value.str()));
+}
+
+void Settings::Length::set(const double value)
+{
+	this->set(value, this->getUnits());
+}
+
+void Settings::Length::set(const double value, const Settings::Definition::Units_t class_of_units)
+{
+	this->units << class_of_units;
+	this->setValue(this->encode(value, class_of_units));
+}
+
+
+Settings::Definition::Units_t Settings::Length::getUnits() const
+{
+	if (this->units == QString::fromAscii("inch")) return(Definition::Imperial);
+	else return(Definition::Metric);	
+}
 
 
 
+void Settings::Length::setUnits(const Settings::Definition::Units_t class_of_units)
+{
+	this->units << class_of_units;
+	this->set(this->get(class_of_units), class_of_units);
+}
 
-int Settings::Integer::Minimum() const
+
+double Settings::Length::Minimum() const
 {
 	Option *option = this->getOption(QString::fromAscii("minimum"));
 	if (option)
 	{
 		bool status;
-		int value = option->label.toInt(&status);
+		double value = option->label.toDouble(&status);
 		if (status)
 		{
 			return(value);
@@ -2157,7 +2101,7 @@ int Settings::Integer::Minimum() const
 	}
 }
 
-void Settings::Integer::Minimum(const int value)
+void Settings::Length::Minimum(const double value)
 {
 	Option *option = this->getOption(QString::fromAscii("minimum"));
 	if (option)
@@ -2168,13 +2112,13 @@ void Settings::Integer::Minimum(const int value)
 	}
 }
 
-int Settings::Integer::Maximum() const
+double Settings::Length::Maximum() const
 {
 	Option *option = this->getOption(QString::fromAscii("maximum"));
 	if (option)
 	{
 		bool status;
-		double value = option->label.toInt(&status);
+		double value = option->label.toDouble(&status);
 		if (status)
 		{
 			return(value);
@@ -2189,7 +2133,7 @@ int Settings::Integer::Maximum() const
 		return(0.0);
 	}
 }
-void Settings::Integer::Maximum(const int value)
+void Settings::Length::Maximum(const double value)
 {
 	Option *option = this->getOption(QString::fromAscii("maximum"));
 	if (option)
@@ -2200,7 +2144,84 @@ void Settings::Integer::Maximum(const int value)
 	}
 }
 
+bool Length::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
 
+	// Name=Value
+	bool status = false;
+	
+	QString string_value = this->getValue();
+	double value;
+	bool ok;
+	value = string_value.toDouble(&ok);
+	if (ok)
+	{
+		QString metric, imperial;
+		metric << Definition::Metric;
+		imperial << Definition::Imperial;
+
+		if ((this->units == metric) && (requested_units == imperial))
+		{
+			// We have mm but the setting being changed uses inches.  Convert now.
+			value /= 25.4;
+		}
+		else if ((this->units == imperial) && (requested_units == metric))
+		{
+			// We're using inches but the setting being changed uses mm. Convert now.
+			value *= 25.4;
+		}
+
+		PyObject *pName = PyString_FromString(processed_name.c_str());
+		PyObject *pValue = PyFloat_FromDouble(value);
+
+		if ((pName != NULL) && (pValue != NULL))
+		{
+			PyDict_SetItem(pDictionary, pName, pValue);
+			status = true;
+		}
+
+		Py_XDECREF(pName); pName=NULL;
+		Py_XDECREF(pValue); pValue=NULL;
+	}
+	return(status);
+}
+
+#ifdef WIN32
+#pragma endregion "Settings::Length"
+#endif
+
+
+// ----------------Settings::Enumeration------------------------------
+#ifdef WIN32
+#pragma region "Settings::Enumeration"
+#endif
+
+bool Settings::Enumeration::set(const int id)
+{
+	Map_t data = this->Values();
+	if (data.find(id) == data.end())
+	{
+		return(false);
+	}
+	else
+	{
+		// The id has been found in this object's options and must, therefore, be valid.
+		// Encode it as a string in the 'value' for this setting.
+		std::ostringstream ossValue;
+		ossValue << id;
+		this->setValue(QString::fromStdString(ossValue.str()));
+		return(true);
+	}
+}
+
+
+bool Enumeration::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	return(false);
+}
 
 std::map<int, QString> Settings::Enumeration::Values() const
 {
@@ -2230,34 +2251,162 @@ void Settings::Enumeration::Add(const int id, const QString label)
 }
 
 
-Settings::Definition *Settings::TPGSettings::getDefinition(const QString action, const QString name) const
+Settings::Enumeration::Pair_t Settings::Enumeration::get() const
 {
-	if (action.isNull() || action.isEmpty()) {
-		Base::Console().Message("action not set\n");
-		return(NULL);
+	// The 'value' stored in the TPGFeature::PropTPGSettings map is the integer portion of the
+	// enumerated type.
+	int id = this->getValue().toInt();
+	Map_t data = this->Values();
+	if (data.find(id) == data.end())
+	{
+		return(Pair_t(-1, QString::null));
 	}
+	else
+	{
+		return(*(data.find(id)));
+	}
+}
 
-	// compute full setting name (<action>::<name>)
-	QString qname = makeName(action, name);
+#ifdef WIN32
+#pragma endregion "Settings::Enumeration"
+#endif
 
-    // get setting value
-	if (tpgFeature != NULL) {
-		std::map<QString, Settings::Definition *>::const_iterator itDef = settingDefsMap.find(qname);
-		if (itDef != settingDefsMap.end()) {
-			return(itDef->second);
+
+
+// ----------------Settings::Color------------------------------
+#ifdef WIN32
+#pragma region "Settings::Color"
+#endif
+
+QString Settings::Color::encode(const int red, const int green, const int blue, const int alpha) const
+{
+	using boost::property_tree::ptree;
+	ptree pt;
+
+	pt.put("color.red",  red);
+	pt.put("color.green", green);
+	pt.put("color.blue", blue);
+	pt.put("color.alpha", alpha);
+
+	std::ostringstream encoded_value;
+
+	write_json(encoded_value, pt);
+	return(QString::fromStdString(encoded_value.str()));
+}
+
+
+/**
+	The color's value is encoded in an INI document describing
+	all the various properties required to define a QColor object.  This
+	XML document forms the 'value' part within the PropTPGSetting
+	map.  We use the TPGColorSettingDefinition class to handle
+	the conversion between the INI string used in the TPGFeature's 
+	property and the QColor value we use in the code.
+ */
+bool Settings::Color::get(int &red, int &green, int &blue, int &alpha) const
+{
+	std::list<QString> values;
+	values.push_back( this->getValue() );
+	values.push_back( this->defaultvalue );
+	for (std::list<QString>::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	{
+		if (itValue->isNull() == false)
+		{
+			try
+			{
+				using boost::property_tree::ptree;
+				ptree pt;
+
+				std::stringstream encoded_value;
+				encoded_value << itValue->toAscii().constData();
+				
+				read_json(encoded_value, pt);
+
+				red   = pt.get<int>("color.red");
+				green = pt.get<int>("color.green");
+				blue  = pt.get<int>("color.blue");
+				alpha = pt.get<int>("color.alpha");
+
+				return(true);	// success.
+			}
+			catch(boost::property_tree::ptree_error const & error)
+			{
+				qWarning("%s\n", error.what());
+			}
 		}
 	}
-	Base::Console().Message("Can't find setting!\n");
-    return(NULL);
+
+	red = 0;
+	green = 255;
+	blue = 0;
+	alpha = 255;
+
+	return(false);	// failure.
 }
 
-
-Settings::Text	*Settings::TPGSettings::asText(const QString action, const QString name) const
+void Settings::Color::set(const int red, const int green, const int blue, const int alpha)
 {
-	Settings::Definition *definition = this->getDefinition(action, name);
-	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Text)) return((Settings::Text *) definition);
-	return(NULL);
+	this->setValue(this->encode(red, green, blue, alpha));
 }
+
+
+bool Color::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	// Replace any spaces within the variable name with underbars so that the
+	// name can be used as a Python variable name.
+	std::string processed_name = PythonName(prefix);
+
+	// Name_red=int
+	// Name_green=int
+	// Name_blue=int
+	// Name_alpha=int
+
+	bool status = false;
+
+	Color *colour = (Color *) this;
+	int red, green, blue, alpha;
+	colour->get(red, green, blue, alpha);
+
+	std::set< std::pair< std::string, int > > values;
+	values.insert( std::make_pair( std::string( processed_name + "_red" ), red ) );
+	values.insert( std::make_pair( std::string( processed_name + "_green" ), green ) );
+	values.insert( std::make_pair( std::string( processed_name + "_blue" ), blue ) );
+	values.insert( std::make_pair( std::string( processed_name + "_alpha" ), alpha ) );
+
+	for (std::set< std::pair< std::string, int > >::iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	{
+		PyObject *pName = PyString_FromString(itValue->first.c_str());
+		PyObject *pValue = PyInt_FromLong(itValue->second);
+
+		if ((pName != NULL) && (pValue != NULL))
+		{
+			PyDict_SetItem(pDictionary, pName, pValue);
+			status = true;
+		}
+
+		Py_XDECREF(pName); pName=NULL;
+		Py_XDECREF(pValue); pValue=NULL;
+	}
+
+	return(status);
+}
+
+#ifdef WIN32
+#pragma endregion "Settings::Color"
+#endif
+
+
+// ----------------Settings::Radio------------------------------
+
+#ifdef WIN32
+#pragma region "Settings::Radio"
+#endif
+
+bool Radio::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	return(false);
+}
+
 
 Settings::Radio	*Settings::TPGSettings::asRadio(const QString action, const QString name) const
 {
@@ -2266,70 +2415,9 @@ Settings::Radio	*Settings::TPGSettings::asRadio(const QString action, const QStr
 	return(NULL);
 }
 
-Settings::Color	*Settings::TPGSettings::asColor(const QString action, const QString name) const
-{
-	Settings::Definition *definition = this->getDefinition(action, name);
-	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Color)) return((Settings::Color *) definition);
-	return(NULL);
-}
-
-Settings::ObjectNamesForType	*Settings::TPGSettings::asObjectNamesForType(const QString action, const QString name) const
-{
-	Settings::Definition *definition = this->getDefinition(action, name);
-	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_ObjectNamesForType)) return((Settings::ObjectNamesForType *) definition);
-	return(NULL);
-}
-
-Settings::Enumeration *Settings::TPGSettings::asEnumeration(const QString action, const QString name) const
-{
-	Settings::Definition *definition = this->getDefinition(action, name);
-	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Enumeration)) return((Settings::Enumeration *) definition);
-	return(NULL);
-}
-
-Settings::Length *Settings::TPGSettings::asLength(const QString action, const QString name) const
-{
-	Settings::Definition *definition = this->getDefinition(action, name);
-	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Length)) return((Settings::Length *) definition);
-	return(NULL);
-}
-
-Settings::Filename *Settings::TPGSettings::asFilename(const QString action, const QString name) const
-{
-	Settings::Definition *definition = this->getDefinition(action, name);
-	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Filename)) return((Settings::Filename *) definition);
-	return(NULL);
-}
-
-Settings::Directory	*Settings::TPGSettings::asDirectory(const QString action, const QString name) const
-{
-	Settings::Definition *definition = this->getDefinition(action, name);
-	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Directory)) return((Settings::Directory *) definition);
-	return(NULL);
-}
-
-Settings::Integer *Settings::TPGSettings::asInteger(const QString action, const QString name) const
-{
-	Settings::Definition *definition = this->getDefinition(action, name);
-	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Integer)) return((Settings::Integer *) definition);
-	return(NULL);
-}
-
-Settings::Double *Settings::TPGSettings::asDouble(const QString action, const QString name) const
-{
-	Settings::Definition *definition = this->getDefinition(action, name);
-	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Double)) return((Settings::Double *) definition);
-	return(NULL);
-}
-
-Settings::Rate *Settings::TPGSettings::asRate(const QString action, const QString name) const
-{
-	Settings::Definition *definition = this->getDefinition(action, name);
-	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Rate)) return((Settings::Rate *) definition);
-	return(NULL);
-}
-
-
+#ifdef WIN32
+#pragma endregion "Settings::Radio"
+#endif
 
 
 

@@ -340,8 +340,7 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 				button->setObjectName(QString::fromAscii("SelectFile"));
 				button->setText(QString::fromAscii("..."));
 				// connect events
-        		QObject::connect(button, SIGNAL(pressed()), this,
-        				SLOT(handleButton()));
+        		QObject::connect(button, SIGNAL(pressed()), this, SLOT(handleButton()));
 				layout->addWidget(button);
 				rootComponents.push_back(button);
 			}
@@ -358,7 +357,6 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
             // keep reference to widgets for later cleanup
             rootComponents.push_back(labelWidget);
             rootComponents.push_back(container);
-			rootComponents.push_back(this->widget);
 			
             return true;
         }
