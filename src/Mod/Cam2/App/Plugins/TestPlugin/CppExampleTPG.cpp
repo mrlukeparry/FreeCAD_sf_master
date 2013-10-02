@@ -261,7 +261,7 @@ CppExampleTPG::~CppExampleTPG() {
 		Settings::Integer *test_integer_setting = new Settings::Integer("Integer", 
 																		 "My Special Integer",
 																		 3,
-																		 "an integer",
+																		 "",
 																		 "Dummy setting to test the new SettingType_Integer. Must be between 0 and 10");
 		test_integer_setting->Minimum(1);
 		test_integer_setting->Maximum(10);

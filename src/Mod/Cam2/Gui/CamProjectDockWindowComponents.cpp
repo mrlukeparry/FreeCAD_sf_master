@@ -304,14 +304,6 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 			switch(tpgsetting->type)
 			{
 			case Cam::Settings::Definition::SettingType_Double:
-				{
-					Cam::Settings::Double *double_setting = dynamic_cast<Cam::Settings::Double *>(tpgsetting);
-					std::ostringstream ossValue;
-					ossValue << double_setting->get();
-					this->widget->setText(QString::fromStdString(ossValue.str()));
-				}
-				break;
-
 			case Cam::Settings::Definition::SettingType_Text:
 			case Cam::Settings::Definition::SettingType_ObjectNamesForType:
 			case Cam::Settings::Definition::SettingType_Integer:
@@ -352,6 +344,15 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
         				SLOT(handleButton()));
 				layout->addWidget(button);
 				rootComponents.push_back(button);
+			}
+			else
+			{
+				if (this->tpgsetting->units.length() > 0)
+				{
+					QLabel *units_widget = new QLabel(this->tpgsetting->units, parent);
+					layout->addWidget( units_widget );
+					rootComponents.push_back( units_widget );
+				}
 			}
 
             // keep reference to widgets for later cleanup
