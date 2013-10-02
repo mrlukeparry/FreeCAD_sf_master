@@ -63,9 +63,7 @@ namespace Cam
 {
 	namespace Settings 
 	{
-class CamExport TPGFeature; //TODO: work out why this is needed (must be some crazy cyclic including)
-class CamExport Color;
-
+class CamExport TPGFeature; // Forward declaration so that the TPGFeature and the TPGSettings classes can both refer to each other.
 
 
 /**
@@ -134,21 +132,6 @@ public:
 		their corresponding ASCII equivalents (used via the Python interface)
 		must also be updated.  Such values are defined within the
 		PyDefinition_init() method of the PyTPGSettings.cpp file.
-
-		NOTE: The SettingType_ObjectNamesForType setting type assumes that
-		the Options list has been populated with the following entries;
-			- id = "Delimiters" (as a keyword) and label = <all characters that delimit separate values in the setting>
-			- id = "TypeId" (the keyword) and label = <a single class type ID as would be used within the Base::Type::fromName() method>
-
-		There must be only one option with an option.id="Delimiters" but there may be many options with an id="TypeId".
-
-		NOTE: For SettingType_Enumeration, the 'value' is always going to be the integer form.  When it's presented
-		in the QComboBox (i.e. the user interface) the verbose (string) form is always used but, once that interaction
-		is complete, the value written to the Definition object will always be the integer form.
-		To this end, settings of this type must have options whose ID is the integer form and whose LABEL is the string form.
-		Since Python is all string-based it might make sense to just use the string form for the value too.  The problem with
-		this is that it precludes language changes.  If we use the integer form for the value then the files should carry
-		between languages better.
 	 */
 	typedef enum
 	{
@@ -503,7 +486,7 @@ public:
 
 
 /**
-	The Length setting requires both the 'double' value and the 'units'
+	The Rate setting requires both the 'double' value and the 'units'
 	to be retained within the datafile.  To this end it uses the
 	boost::property_tree class to encode
 	all such values into a single string which is stored in the
@@ -511,11 +494,7 @@ public:
 	supports the encoding/decoding mechanisms required for this to occur.
 
 	This class allows the value to be interpreted as a Python script so that
-	its value may be based on the values of other settings.  It also means
-	the operator may enter keywords describing the units so that any conversions
-	may occur as necessary.  eg: The operator may enter '1/8 inch' when
-	this setting's units are 'mm'.  In this case the value 3.175 will be
-	used.
+	its value may be based on the values of other settings.
  */
 class CamExport Rate : public Definition
 {
@@ -554,12 +533,7 @@ public:
 
 /**
 	The Double setting is similar to the Length setting except that
-	the 'units' field is free-format.  It still retains the 'units'
-	value encoded within the 'value'.  To this end it uses the
-	boost::property_tree class to encode
-	all such values into a single string which is stored in the
-	PropTPGSettings map of the owning TPGFeature object.  This wrapper class
-	supports the encoding/decoding mechanisms required for this to occur.
+	the 'units' field is free-format.
 
 	This class allows the value to be interpreted as a Python script so that
 	its value may be based on the values of other settings.
@@ -594,6 +568,14 @@ public:
 	void   set(const double value);
 };
 
+/**
+	NOTE: The SettingType_ObjectNamesForType setting type assumes that
+	the Options list has been populated with the following entries;
+		- id = "Delimiters" (as a keyword) and label = <all characters that delimit separate values in the setting>
+		- id = "TypeId" (the keyword) and label = <a single class type ID as would be used within the Base::Type::fromName() method>
+
+	There must be only one option with an option.id="Delimiters" but there may be many options with an id="TypeId".
+ */
 class CamExport ObjectNamesForType : public Definition
 {
 public:
@@ -680,6 +662,15 @@ public:
 };
 
 
+/**
+	For SettingType_Enumeration, the 'value' is always going to be the integer form.  When it's presented
+	in the QComboBox (i.e. the user interface) the verbose (string) form is always used but, once that interaction
+	is complete, the value written to the Definition object will always be the integer form.
+	To this end, settings of this type must have options whose ID is the integer form and whose LABEL is the string form.
+	Since Python is all string-based it might make sense to just use the string form for the value too.  The problem with
+	this is that it precludes language changes.  If we use the integer form for the value then the files should carry
+	between languages better.
+ */
 class CamExport Enumeration : public Definition
 {
 public:
