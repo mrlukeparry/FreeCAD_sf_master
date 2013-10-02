@@ -304,14 +304,10 @@ void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QSt
 //	}
 
 	// Look at the list of object names and see if we can use any of them as input geometry.
-	// If so, arrange them into the Cam::Paths object for use later.
-	QString geometry = settings->getValue(action, settingName_Geometry());
-	
+	// If so, arrange them into the Cam::Paths object for use later.	
 	Cam::Paths paths;
-	paths.Add( geometry.split(QRegExp(QString::fromAscii("[ ,]")), QString::SkipEmptyParts) );
+	paths.Add( this->geometry->GetNames() );
 
-	// Now generate a new toolpath.
-//	this->toolpath = new ToolPath(this);
 	ToolPath &python = *(toolpath);	// for readability only.
 
 	// TODO We really need to define which machine post processor is used at the CamFeature
@@ -319,18 +315,6 @@ void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QSt
 	python << "from nc import *" << "\n";
 	python << "import hm50" << "\n";
 	
-	// TODO: Understand how 'units' are handled in FreeCAD.
-	// In HeeksCNC, we always store values in millimeters (mm) and convert to whatever external
-	// units are configured at the last moment.  We store a 'units' value as 1.0 for mm and
-	// 25.4 for inches.  This way, we always divide the internal representation by the
-	// units value to produce a number suitable for the 'external' world.
-	// When I say 'external world' I mean either presentation as a 'setting' so the operator
-	// can change it or as a value being written to the Python program for GCode generation
-	// (i.e. a ToolPath in the Cam workbench)
-	// When the operator changes the units from one value to another, we need to change
-	// the ToolPath::RequiredDecimalPlaces() value to either 3 (for metric) or 4 (for
-	// imperial) so that the Python/GCode is generated using the correct resolution.
-
 	python.RequiredDecimalPlaces(3);	// assume metric.
 
 	/*
@@ -420,10 +404,13 @@ void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QSt
 
 		gp_Pnt point = itLocation->Location();	// Just for now...
 
+		// TODO: Figure out where our GCode units settings are defined and convert the coordinates
+		// from the graphics into those units required for GCode.
+
 		python	<< "drill("
-				<< "x=" << point.X()/units << ", "
-				<< "y=" << point.Y()/units << ", "
-				<< "z=" << point.Z()/units << ", "
+				<< "x=" << point.X() << ", "
+				<< "y=" << point.Y() << ", "
+				<< "z=" << point.Z() << ", "
 				<< "depth=" << this->depth->get(units) << ", "
 				<< "standoff=" << this->standoff->get(units) << ", "
 				<< "dwell=" << this->dwell->get() << ", "
