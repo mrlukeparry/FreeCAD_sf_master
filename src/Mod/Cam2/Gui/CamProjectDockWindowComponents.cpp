@@ -100,6 +100,63 @@ bool CamComponent::close() {
     return false;
 }
 
+/**
+	Find a fraction that represents this floating point number.  We use this
+	purely for readability purposes.  It only looks accurate to the nearest 1/64th
+
+	eg: 0.125 -> "1/8"
+	    1.125 -> "1+(1/8)"
+	    0.109375 -> "7/64"
+ */
+/* static */ QString CamComponent::FractionalRepresentation( const double original_value, const int max_denominator /* = 64 */ )
+{
+
+	std::ostringstream result;
+	double _value(original_value);
+	double tolerance = 0.00001;
+
+	if (floor(_value) > 0)
+	{
+		result << floor(_value);
+		_value -= floor(_value);
+	} // End if - then
+
+	double fraction = 0.0;
+	if ( ((_value > fraction) && ((_value - fraction) < tolerance)) ||
+	     ((_value < fraction) && ((fraction - _value) < tolerance)) ||
+	     (_value == fraction) )
+	{
+		return(QString::fromStdString(result.str()));
+	} // End if - then
+
+	if (result.str().length() > 0)
+	{
+	    result << "+(";
+	}
+
+	// We only want even numbers between 2 and 64 for the denominator.  The others just look 'wierd'.
+	for (int denominator = 2; denominator <= max_denominator; denominator *= 2)
+	{
+		for (int numerator = 1; numerator < denominator; numerator++)
+		{
+			double fraction = double( double(numerator) / double(denominator) );
+			if ( ((_value > fraction) && ((_value - fraction) < tolerance)) ||
+			     ((_value < fraction) && ((fraction - _value) < tolerance)) ||
+			     (_value == fraction) )
+			{
+				result << numerator << "/" << denominator;
+				if (result.str().find('+') != std::string::npos)
+				{
+					result << ")";
+				}
+				return(QString::fromStdString(result.str()));
+			} // End if - then
+		} // End for
+	} // End for
+
+	return(QString::null); // It's not a recognisable fraction.  Return nothing to indicate such.
+} // End FractionalRepresentation() method
+
 
 // ----- CamTextBoxComponent ---------------------------------------------------------
 
@@ -402,9 +459,28 @@ void CamLengthComponent::editingFinished() {
 		if (length->Evaluate(camLineEdit->text().toAscii().constData(), &value))
 		{
 			length->set( value );
-			std::ostringstream ossValue;
-			ossValue << length->get(length->getUnits());
-			camLineEdit->setText(QString::fromStdString(ossValue.str()));
+
+			if (length->getUnits() == Cam::Settings::Definition::Imperial)
+			{
+				// See if the value happens to also be a fractional value.  They just 'look' better for imperial measurements.
+				QString fraction = FractionalRepresentation( value );
+				if (fraction.isNull() == false)
+				{
+					camLineEdit->setText(fraction);
+				}
+				else
+				{
+					std::ostringstream ossValue;
+					ossValue << length->get(length->getUnits());
+					camLineEdit->setText(QString::fromStdString(ossValue.str()));
+				}
+			}
+			else
+			{
+				std::ostringstream ossValue;
+				ossValue << length->get(length->getUnits());
+				camLineEdit->setText(QString::fromStdString(ossValue.str()));
+			}
 		}
 	}
 	else
@@ -420,12 +496,27 @@ void CamLengthComponent::currentIndexChanged ( int current_index )
 	{
 		Cam::Settings::Length *length = dynamic_cast<Cam::Settings::Length *>(this->tpgsetting);
 
-		if (values[current_index].first == QString::fromAscii("inch"))
+		// Call the one routine that converts from enumerated type to QString so that
+		// we always produce a consistent result.
+		QString imperial;
+		imperial << Cam::Settings::Definition::Imperial;	
+
+		if (values[current_index].first == imperial)
 		{
 			length->setUnits(Cam::Settings::Definition::Imperial);
-			std::ostringstream ossValue;
-			ossValue << length->get(length->getUnits());
-			camLineEdit->setText(QString::fromStdString(ossValue.str()));
+
+			// See if the value happens to also be a fractional value.  They just 'look' better for imperial measurements.
+			QString fraction = FractionalRepresentation( length->get(length->getUnits()) );
+			if (fraction.isNull() == false)
+			{
+				camLineEdit->setText(fraction);
+			}
+			else
+			{
+				std::ostringstream ossValue;
+				ossValue << length->get(length->getUnits());
+				camLineEdit->setText(QString::fromStdString(ossValue.str()));
+			}
 		}
 		else
 		{
@@ -472,9 +563,20 @@ bool CamLengthComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayo
             camLineEdit->setObjectName(qname);
 
 			Cam::Settings::Length *length = (Cam::Settings::Length *) this->tpgsetting;
-			std::ostringstream ossValue;
-			ossValue << length->get( length->getUnits() );
-			camLineEdit->setText(QString::fromStdString(ossValue.str()));
+
+			// See if the value happens to also be a fractional value.  They just 'look' better for imperial measurements.
+			QString fraction = FractionalRepresentation( length->get(length->getUnits()) );
+			if (fraction.isNull() == false)
+			{
+				camLineEdit->setText(fraction);
+			}
+			else
+			{
+				std::ostringstream ossValue;
+				ossValue << length->get(length->getUnits());
+				camLineEdit->setText(QString::fromStdString(ossValue.str()));
+			}
+
             camLineEdit->setToolTip(tpgsetting->helptext);
 			camLineEdit->setPlaceholderText(tpgsetting->helptext);
 			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
@@ -486,10 +588,12 @@ bool CamLengthComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayo
 
             QComboBox *combo_box = new QComboBox(parent);
 			int index = 0;
+			QString strUnits;
+			strUnits << length->getUnits();
 			for (std::vector< std::pair< Id_t, Label_t > >::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
 			{
 				combo_box->addItem(itValue->first);
-				if (this->tpgsetting->units == itValue->first)
+				if (strUnits == itValue->first)
 				{
 					combo_box->setCurrentIndex(index);
 				}

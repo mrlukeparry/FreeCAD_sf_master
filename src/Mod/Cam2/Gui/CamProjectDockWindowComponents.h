@@ -94,6 +94,8 @@ public:
     const char* name() {
     	return tpgsetting->name.toStdString().c_str();
     }
+
+	static QString FractionalRepresentation( const double original_value, const int max_denominator = 64 );
 };
 
 class CamLineEdit : public QLineEdit

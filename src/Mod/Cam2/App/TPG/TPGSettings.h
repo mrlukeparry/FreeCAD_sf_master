@@ -482,6 +482,7 @@ public:
 	void   set(const double value);
 	void   set(const double value, const Settings::Definition::Units_t units);
 	QString encode(const double value, const Definition::Units_t units) const;
+	bool decode(double *pValue, Settings::Definition::Units_t *pUnits) const;
 };
 
 

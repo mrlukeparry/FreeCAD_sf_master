@@ -1983,18 +1983,7 @@ Settings::Length::Length(
 	this->defaultvalue = this->encode( default_value, units );
 }
 
-
-/**
-	The Length setting can change both its 'value' and its 'units' so it
-	is necessary to store both of these values in the TPGFeature::PropTPGSettings
-	map.  This way, they are both saved/restored to/from the data file.
-	Now that we're trying to get the value alone, we need to retrieve
-	the encoded version (i.e. the string that includes both the value
-	and the units) and decode just the value part of it.  We then need
-	to interpret that value as a double and convert, if necessary, to
-	the units the caller has asked the value to be expressed in.
-*/
-double Settings::Length::get(const Definition::Units_t requested_units) const
+bool Settings::Length::decode(double *pValue, Settings::Definition::Units_t *pUnits) const
 {
 	std::list<QString> values;
 	values.push_back( this->getValue() );
@@ -2020,10 +2009,24 @@ double Settings::Length::get(const Definition::Units_t requested_units) const
 				metric << Settings::Definition::Metric;
 				imperial << Settings::Definition::Imperial;
 			
-				if ((requested_units == Settings::Definition::Metric) && (these_units == imperial.toStdString())) return(value * 25.4);
-				if ((requested_units == Settings::Definition::Imperial) && (these_units == metric.toStdString())) return(value / 25.4);
+				if (pUnits != NULL)
+				{
+					if (QString::fromStdString(these_units) == imperial)
+					{
+						*pUnits = Settings::Definition::Imperial;
+					}
+					else
+					{
+						*pUnits = Settings::Definition::Metric;
+					}
+				}
 
-				return(value);	// The units must be the same.
+				if (pValue != NULL)
+				{
+					*pValue = value;
+				}
+
+				return(true);
 			}
 			catch(boost::property_tree::ptree_error const & error)
 			{
@@ -2032,7 +2035,32 @@ double Settings::Length::get(const Definition::Units_t requested_units) const
 		}
 	}
 
-	return(0.0);
+	return(false);
+}
+
+/**
+	The Length setting can change both its 'value' and its 'units' so it
+	is necessary to store both of these values in the TPGFeature::PropTPGSettings
+	map.  This way, they are both saved/restored to/from the data file.
+	Now that we're trying to get the value alone, we need to retrieve
+	the encoded version (i.e. the string that includes both the value
+	and the units) and decode just the value part of it.  We then need
+	to interpret that value as a double and convert, if necessary, to
+	the units the caller has asked the value to be expressed in.
+*/
+double Settings::Length::get(const Definition::Units_t requested_units) const
+{
+	double value;
+	Settings::Definition::Units_t units;
+
+	if (this->decode(&value, &units))
+	{
+		return(value);
+	}
+	else
+	{
+		return(0.0);
+	}
 }
 
 QString Settings::Length::encode(const double value, const Settings::Definition::Units_t class_of_units) const
@@ -2066,16 +2094,40 @@ void Settings::Length::set(const double value, const Settings::Definition::Units
 
 Settings::Definition::Units_t Settings::Length::getUnits() const
 {
-	if (this->units == QString::fromAscii("inch")) return(Definition::Imperial);
-	else return(Definition::Metric);	
+	double value;
+	Settings::Definition::Units_t units;
+
+	if (this->decode(&value, &units))
+	{
+		return(units);
+	}
+	else
+	{
+		return(Definition::Metric);
+	}
 }
 
 
 
 void Settings::Length::setUnits(const Settings::Definition::Units_t class_of_units)
 {
+	double value;
+	Definition::Units_t units;
+	this->decode( &value, &units );
+
+	if ((units == Metric) && (class_of_units == Imperial))
+	{
+		value /= 25.4;
+	}
+	else
+	{
+		if ((units == Imperial) && (class_of_units == Metric))
+		{
+			value *= 25.4;
+		}
+	}
 	this->units << class_of_units;
-	this->set(this->get(class_of_units), class_of_units);
+	this->set(value, class_of_units);
 }
 
 
