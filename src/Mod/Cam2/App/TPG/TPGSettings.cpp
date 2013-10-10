@@ -1051,6 +1051,14 @@ Settings::ObjectNamesForType	*Settings::TPGSettings::asObjectNamesForType(const 
 	return(NULL);
 }
 
+Settings::SingleObjectNameForType	*Settings::TPGSettings::asSingleObjectNameForType(const QString action, const QString name) const
+{
+	Settings::Definition *definition = this->getDefinition(action, name);
+	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_SingleObjectNameForType)) return((Settings::SingleObjectNameForType *) definition);
+	return(NULL);
+}
+
+
 Settings::Enumeration *Settings::TPGSettings::asEnumeration(const QString action, const QString name) const
 {
 	Settings::Definition *definition = this->getDefinition(action, name);
@@ -1841,13 +1849,8 @@ ObjectNamesForType::ObjectNamesForType(	const char *name,
 								const char *helptext,
 								const char *delimiters,
 								const char *object_type )
+								 : Definition(name, label, SettingType_ObjectNamesForType, "", "", helptext)
 {
-	this->name = QString::fromAscii(name);
-	this->label = QString::fromAscii(label);
-	this->helptext = QString::fromAscii(helptext);
-	this->type = SettingType_ObjectNamesForType;
-	this->units = QString::fromAscii("");
-
 	this->addOption( QString::fromAscii("Delimiters"), QString::fromAscii(delimiters) );
 	this->addOption( QString::fromAscii("TypeId"), QString::fromAscii(object_type) );
 }
@@ -1906,6 +1909,91 @@ QStringList ObjectNamesForType::GetNames() const
 
 #ifdef WIN32
 #pragma endregion "Settings::ObjectNamesForType"
+#endif
+
+
+
+
+// ----------------Settings::SingleObjectNameForType------------------------------
+#ifdef WIN32
+#pragma region "Settings::SingleObjectNameForType"
+#endif
+
+/**
+	Settings whose type is SettingType_SingleObjectNameForType are expected to have a value that includes
+	a single object name.  That named object MUST be of the type found within the option whose ID = "TypeId".  eg: for this a
+	name might be "Centre Drill #4 HSS", the options might be;
+		- id = "TypeId" label = "Cam::Tool"
+ */
+Definition::ValidationState SingleObjectNameForType::validate(QString & input,int & position) const
+{
+	// Cast this object to a TPGObjectNamesForTypeSettingDefinition object so we can use the helper functions
+	// to review the object's contents.
+	SingleObjectNameForType *pSetting = (SingleObjectNameForType *) this;
+
+	App::Document *document = App::GetApplication().getActiveDocument();
+	if (document)
+	{
+		App::DocumentObject *object = document->getObject(pSetting->GetName().toAscii().constData());
+		if(object)
+		{
+			if (object->isDerivedFrom(Base::Type::fromName(pSetting->GetType().toAscii().constData())))
+			{
+				return(this->Acceptable);
+			}
+			else
+			{
+				return(this->Intermediate);	// They may be half way through typing it.  Give them the bennefit of the doubt.
+			}
+		}
+		else
+		{
+			return(this->Intermediate);	// They may be half way through typing it.  Give them the bennefit of the doubt.
+		}
+	}
+
+	return(this->Intermediate);
+}
+
+
+bool SingleObjectNameForType::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
+{
+	return(false);
+}
+
+SingleObjectNameForType::SingleObjectNameForType(	const char *name, 
+								const char *label, 
+								const char *helptext,
+								const char *object_type ) : Definition(name, label, SettingType_SingleObjectNameForType, object_type, "", helptext)
+{
+	this->addOption( QString::fromAscii("TypeId"), QString::fromAscii(object_type) );
+}
+
+void SingleObjectNameForType::Add(const char * object_type)
+{
+	this->addOption( QString::fromAscii("TypeId"), QString::fromAscii(object_type) );
+}
+
+QString SingleObjectNameForType::GetType() const
+{
+	for (QList<Option*>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
+	{
+		if ((*itOption)->id.toUpper() == QString::fromAscii("TypeId").toUpper())
+		{
+			return((*itOption)->label);
+		}
+	}
+
+	return(QString::null);
+}
+
+QString SingleObjectNameForType::GetName() const
+{
+	return(this->getValue());
+}
+
+#ifdef WIN32
+#pragma endregion "Settings::SingleObjectNameForType"
 #endif
 
 

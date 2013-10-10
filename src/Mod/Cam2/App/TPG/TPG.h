@@ -211,7 +211,7 @@ protected:
 
 	// Declare some pointers to individual settings definitions for ease of use.
 	Settings::ObjectNamesForType *geometry;
-	Settings::ObjectNamesForType *tool;
+	Settings::SingleObjectNameForType *tool;
 
     int refcnt; ///< reference counter
 

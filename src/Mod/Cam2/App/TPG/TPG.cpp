@@ -102,8 +102,9 @@ TPG::~TPG()
 
 			// TODO: Change the tool from a Text type of setting to a ObjectNamesForType setting with the tool class's object
 			// type used  within its definition
-			this->tool = new Settings::ObjectNamesForType(settingName_Tool().toAscii().constData(), 
-											"Tool", "The tool to use for cutting", " \t,", "Cam::Tool" );
+			this->tool = new Settings::SingleObjectNameForType(settingName_Tool().toAscii().constData(), 
+											// "Tool", "The tool to use for cutting", "Cam::Tool" );
+											"Tool", "The tool to use for cutting", Part::Feature::getClassTypeId().getName() );
 			settings->addSettingDefinition(action, this->tool);
 		}
 	}

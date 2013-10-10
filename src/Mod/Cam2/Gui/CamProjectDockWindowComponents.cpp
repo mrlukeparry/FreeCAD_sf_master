@@ -36,6 +36,10 @@
 
 #include <Base/Console.h>
 
+#include <App/Document.h>
+#include <App/Application.h>
+#include <App/DocumentObject.h>
+
 #include "CamProjectDockWindowComponents.h"
 
 namespace CamGui {
@@ -919,15 +923,46 @@ bool CamComboBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 			// looks for which one was chosen).
 			QComboBox *combo_box = new QComboBox(parent);
 			int index = 0;
-			for (QList<Cam::Settings::Option *>::const_iterator itOption = this->tpgsetting->options.begin(); itOption != this->tpgsetting->options.end(); itOption++)
+			if (this->tpgsetting->type == Cam::Settings::Definition::SettingType_SingleObjectNameForType)
 			{
-				combo_box->addItem((*itOption)->label);
-				if (this->tpgsetting->getValue() == (*itOption)->id)
+				Cam::Settings::SingleObjectNameForType *pSetting = (Cam::Settings::SingleObjectNameForType *) this->tpgsetting;
+				// We need to search the current document for objects whose type matches GetType() and add their names
+				// as options to the combo-box.
+
+				App::Document *doc = App::GetApplication().getActiveDocument();
+				if (doc != NULL)
 				{
-					combo_box->setCurrentIndex(index);
+					Base::Type type = Base::Type::fromName( pSetting->GetType().toAscii().constData() );
+					if (type.isBad() == false)
+					{
+						std::vector<App::DocumentObject *> objects = doc->getObjectsOfType( type );
+						for (std::vector<App::DocumentObject *>::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
+						{
+							QString name = QString::fromAscii((*itObject)->getNameInDocument());
+							combo_box->addItem( name );
+							if (pSetting->GetName() == name)
+							{
+								combo_box->setCurrentIndex(index);
+							}
+
+							values.push_back( std::make_pair( name, name ));
+							index++;
+						}
+					}
 				}
-				values.push_back( std::make_pair( (*itOption)->id, (*itOption)->label ) );
-				index++;
+			}
+			else if (this->tpgsetting->type == Cam::Settings::Definition::SettingType_Enumeration)
+			{
+				for (QList<Cam::Settings::Option *>::const_iterator itOption = this->tpgsetting->options.begin(); itOption != this->tpgsetting->options.end(); itOption++)
+				{
+					combo_box->addItem((*itOption)->label);
+					if (this->tpgsetting->getValue() == (*itOption)->id)
+					{
+						combo_box->setCurrentIndex(index);
+					}
+					values.push_back( std::make_pair( (*itOption)->id, (*itOption)->label ) );
+					index++;
+				}
 			}
 
             combo_box->setObjectName(qname);

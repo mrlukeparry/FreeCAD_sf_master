@@ -40,6 +40,7 @@ namespace Cam {
 	class CamExport Radio;
 	class CamExport Color;
 	class CamExport ObjectNamesForType;
+	class CamExport SingleObjectNameForType;
 	class CamExport Enumeration;
 	class CamExport Length;
 	class CamExport Filename;
@@ -138,6 +139,7 @@ public:
 		SettingType_Text = 0,	// Values of this type are stored in TPGFeature::PropTPGSettings
 		SettingType_Radio,		// Values of this type are stored in TPGFeature::PropTPGSettings
 		SettingType_ObjectNamesForType,	// Object names whose types are included in the list of options.
+		SettingType_SingleObjectNameForType,	// Object name whose type is defined within the list of options.
 		SettingType_Enumeration,	// Produces a combo-box whose values include the verbose forms of the enumerated type.
 		SettingType_Length,			// MUST have units of 'mm' or 'inch' for this to make sense.
 		SettingType_Filename,
@@ -365,6 +367,7 @@ public:
 	Settings::Radio		*asRadio(const QString action, const QString name) const;
 	Settings::Color		*asColor(const QString action, const QString name) const;
 	Settings::ObjectNamesForType	*asObjectNamesForType(const QString action, const QString name) const;
+	Settings::SingleObjectNameForType	*asSingleObjectNameForType(const QString action, const QString name) const;
 	Settings::Enumeration *asEnumeration(const QString action, const QString name) const;
 	Settings::Length	*asLength(const QString action, const QString name) const;
 	Settings::Filename	*asFilename(const QString action, const QString name) const;
@@ -592,6 +595,22 @@ public:
 
 	QStringList GetTypes() const;
 	QStringList GetNames() const;
+	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+};
+
+class CamExport SingleObjectNameForType : public Definition
+{
+public:
+	SingleObjectNameForType(	const char *name, 
+								const char *label, 
+								const char *helptext,
+								const char *object_type );
+
+	void Add(const char * object_type);
+	virtual ValidationState validate(QString & input,int & position) const;
+
+	QString GetType() const;
+	QString GetName() const;
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
