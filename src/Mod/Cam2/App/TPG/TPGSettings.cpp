@@ -81,6 +81,7 @@ Definition::Definition(const char *name, const char *label, const SettingType ty
 	this->defaultvalue = QString::fromAscii(defaultvalue);
 	this->units = QString::fromAscii(units);
 	this->helptext = QString::fromAscii(helptext);
+	this->visible = true;
 }
 Definition::Definition(QString name, QString label, SettingType type, QString defaultvalue, QString units, QString helptext)
 {
@@ -93,10 +94,12 @@ Definition::Definition(QString name, QString label, SettingType type, QString de
 	this->defaultvalue = defaultvalue;
 	this->units = units;
 	this->helptext = helptext;
+	this->visible = true;
 }
 Definition::Definition() {
 	this->refcnt = 1;
     this->parent = NULL;
+	this->visible = true;
 }
 
 Definition::~Definition() {
@@ -124,19 +127,65 @@ bool Definition::operator== ( const Definition & rhs ) const
 /**
  * Perform a deep copy of this class
  */
-Definition* Definition::clone()
+Definition * Color::clone() const
 {
-    Definition* clone = new Definition(name, label, type, defaultvalue, units, helptext);
-	QList<Settings::Option*>::iterator it = this->options.begin();
-
-    for (; it != this->options.end(); ++it)
-        clone->addOption((*it)->id, (*it)->label);
-
-	clone->action = this->action;
-	clone->parent = this->parent;
+	Color* clone = new Color(name.toAscii().constData(), label.toAscii().constData(), helptext.toAscii().constData());
+	((Definition *)clone)->operator=( *this );	// Call the assignment operator.
 
     return clone;
 }
+
+Definition::Definition( const Definition & rhs )
+{
+	*this = rhs;	// call the assignment operator.
+}
+
+Definition & operator= ( const Definition & rhs )
+{
+	if (this != &rhs)
+	{
+		rhs->grab();	// Make sure it doesn't go away while we're looking at it.
+
+		this->refcnt = 1;
+		if (this->parent)
+		{
+			this->parent->release();
+			this->parent = NULL;
+		}
+
+		this->parent = rhs.parent;
+		if (this->parent)
+		{
+			this->parent->grab();
+		}
+
+		this->action = rhs.action;
+
+		this->name = rhs.name;
+		this->label = rhs.label;
+		this->type = rhs.type;
+		this->defaultvalue = rhs.defaultvalue;
+		this->units = rhs.units;
+		this->helptext = rhs.helptext;
+
+		for (QList<Option *>::iterator itOption = options.begin(); itOption != options.end(); itOption++)
+		{
+			delete (*itOption);
+		}
+		options.clear();
+
+		for (QList<Option *>::const_iterator itRhsOption = rhs.options.begin(); itRhsOption != rhs.options.end(); itRhsOption++)
+		{
+			this->options.push_back(new Settings::Option(*(*itRhsOption)));
+		}
+
+		this->visible = rhs.visible;
+		rhs->release();
+	}
+
+	return(*this);
+}
+
 
 /**
  * add an option for the value of this setting
@@ -989,6 +1038,18 @@ Settings::Filename *Settings::TPGSettings::asFilename(const QString action, cons
 	return(NULL);
 }
 
+/* virtual */ bool Settings::Filename::Visible() const
+{
+	return(this->visible);
+}
+
+/* virtual */ void Settings::Filename::Visible(const bool value)
+{
+	this->visible = value;
+	this->setValue(this->encode());
+}
+
+
 #ifdef WIN32
 #pragma endregion "Settings::Filename"
 #endif
@@ -1027,6 +1088,17 @@ bool Text::AddToPythonDictionary(PyObject *pDictionary, const QString requested_
 	Py_XDECREF(pName); pName=NULL;
 	Py_XDECREF(pValue); pValue=NULL;
 	return(status);
+}
+
+/* virtual */ bool Settings::Text::Visible() const
+{
+	return(this->visible);
+}
+
+/* virtual */ void Settings::Text::Visible(const bool value)
+{
+	this->visible = value;
+	this->setValue(this->encode());
 }
 
 #ifdef WIN32
@@ -1072,6 +1144,7 @@ Settings::Length *Settings::TPGSettings::asLength(const QString action, const QS
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Length)) return((Settings::Length *) definition);
 	return(NULL);
 }
+
 
 
 
@@ -1225,7 +1298,6 @@ double Settings::Double::get() const
 void Settings::Double::set(const double value)
 {
 	std::ostringstream encoded_value;
-
 	encoded_value << value;
 	this->setValue(QString::fromStdString(encoded_value.str()));
 }
@@ -1270,6 +1342,17 @@ Settings::Double *Settings::TPGSettings::asDouble(const QString action, const QS
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Double)) return((Settings::Double *) definition);
 	return(NULL);
+}
+
+/* virtual */ bool Settings::Double::Visible() const
+{
+	return(this->visible);
+}
+
+/* virtual */ void Settings::Double::Visible(const bool value)
+{
+	this->visible = value;
+	this->setValue(this->encode());
 }
 
 #ifdef WIN32
@@ -1576,6 +1659,19 @@ Settings::Rate *Settings::TPGSettings::asRate(const QString action, const QStrin
 	return(NULL);
 }
 
+
+/* virtual */ bool Settings::Rate::Visible() const
+{
+	return(this->visible);
+}
+
+/* virtual */ void Settings::Rate::Visible(const bool value)
+{
+	this->visible = value;
+	this->setValue(this->encode());
+}
+
+
 #ifdef WIN32
 #pragma endregion "Settings::Rate"
 #endif
@@ -1726,6 +1822,18 @@ Settings::Integer *Settings::TPGSettings::asInteger(const QString action, const 
 	return(NULL);
 }
 
+
+/* virtual */ bool Settings::Integer::Visible() const
+{
+	return(this->visible);
+}
+
+/* virtual */ void Settings::Integer::Visible(const bool value)
+{
+	this->visible = value;
+	this->setValue(this->encode());
+}
+
 #ifdef WIN32
 #pragma endregion "Settings::Integer"
 #endif
@@ -1763,6 +1871,17 @@ bool Directory::AddToPythonDictionary(PyObject *pDictionary, const QString reque
 	Py_XDECREF(pName); pName=NULL;
 	Py_XDECREF(pValue); pValue=NULL;
 	return(status);
+}
+
+/* virtual */ bool Settings::Directory::Visible() const
+{
+	return(this->visible);
+}
+
+/* virtual */ void Settings::Directory::Visible(const bool value)
+{
+	this->visible = value;
+	this->setValue(this->encode());
 }
 
 #ifdef WIN32
@@ -1907,6 +2026,17 @@ QStringList ObjectNamesForType::GetNames() const
 	return(names);
 }
 
+/* virtual */ bool Settings::Directory::Visible() const
+{
+	return(this->visible);
+}
+
+/* virtual */ void Settings::Directory::Visible(const bool value)
+{
+	this->visible = value;
+	this->setValue(this->encode());
+}
+
 #ifdef WIN32
 #pragma endregion "Settings::ObjectNamesForType"
 #endif
@@ -1990,6 +2120,17 @@ QString SingleObjectNameForType::GetType() const
 QString SingleObjectNameForType::GetName() const
 {
 	return(this->getValue());
+}
+
+/* virtual */ bool Settings::Directory::Visible() const
+{
+	return(this->visible);
+}
+
+/* virtual */ void Settings::Directory::Visible(const bool value)
+{
+	this->visible = value;
+	this->setValue(this->encode());
 }
 
 #ifdef WIN32
@@ -2329,6 +2470,17 @@ bool Length::AddToPythonDictionary(PyObject *pDictionary, const QString requeste
 	return(status);
 }
 
+/* virtual */ bool Settings::Length::Visible() const
+{
+	return(this->visible);
+}
+
+/* virtual */ void Settings::Length::Visible(const bool value)
+{
+	this->visible = value;
+	this->setValue(this->encode());
+}
+
 #ifdef WIN32
 #pragma endregion "Settings::Length"
 #endif
@@ -2405,6 +2557,17 @@ Settings::Enumeration::Pair_t Settings::Enumeration::get() const
 	{
 		return(*(data.find(id)));
 	}
+}
+
+/* virtual */ bool Settings::Enumeration::Visible() const
+{
+	return(this->visible);
+}
+
+/* virtual */ void Settings::Enumeration::Visible(const bool value)
+{
+	this->visible = value;
+	this->setValue(this->encode());
 }
 
 #ifdef WIN32
@@ -2531,6 +2694,17 @@ bool Color::AddToPythonDictionary(PyObject *pDictionary, const QString requested
 	return(status);
 }
 
+/* virtual */ bool Settings::Color::Visible() const
+{
+	return(this->visible);
+}
+
+/* virtual */ void Settings::Color::Visible(const bool value)
+{
+	this->visible = value;
+	this->setValue(this->encode());
+}
+
 #ifdef WIN32
 #pragma endregion "Settings::Color"
 #endif
@@ -2553,6 +2727,17 @@ Settings::Radio	*Settings::TPGSettings::asRadio(const QString action, const QStr
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Radio)) return((Settings::Radio *) definition);
 	return(NULL);
+}
+
+/* virtual */ bool Settings::Radio::Visible() const
+{
+	return(this->visible);
+}
+
+/* virtual */ void Settings::Radio::Visible(const bool value)
+{
+	this->visible = value;
+	this->setValue(this->encode());
 }
 
 #ifdef WIN32

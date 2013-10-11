@@ -60,6 +60,8 @@ namespace Cam {
 
 #include <App/PropertyStandard.h>
 
+#include <boost/tuple/tuple.hpp>
+
 namespace Cam
 {
 	namespace Settings 
@@ -92,6 +94,22 @@ public:
         this->id = QString::fromUtf8(id);
         this->label = QString::fromUtf8(label);
     }
+
+	Option( const Option & rhs )
+	{
+		*this = rhs;	// Call the assignment operator.
+	}
+
+	Option & operator= ( const Option & rhs )
+	{
+		if (this != &rhs)
+		{
+			this->id = rhs.id;
+			this->label = rhs.label;
+		}
+
+		return(*this);
+	}
 };
 
 /**
@@ -186,7 +204,15 @@ public:
 	QString defaultvalue;
 	QString units;
 	QString helptext;
+	
 	QList<Option*> options;
+
+private:
+	// The following members are marked as private to ensure that their values are written/read via the helper classes
+	// that inherit from this Definition class.  This ensures that the encode() and decode() functionality also
+	// occurs when such values change.
+
+	bool	visible;			// Used to hide settings from the editor dialog while retaining their existence in the FreeCAD data file.
 
 //	QString value; // deprecated: now uses FreeCAD data structure which is contained in TPGSettings.tpgFeature
 
@@ -195,6 +221,9 @@ protected:
 	Definition(const char *name, const char *label, const SettingType  type, const char *defaultvalue, const char *units, const char *helptext);
 	Definition(QString name, QString label, SettingType type, QString defaultvalue, QString units, QString helptext);
 	Definition();
+
+	Definition( const Definition & rhs );
+	Definition & operator= ( const Definition & rhs );
 
 	~Definition();
 
@@ -208,7 +237,7 @@ public:
 	/**
 	 * Perform a deep copy of this class
 	 */
-    Definition* clone();
+    virtual Definition* clone() const = 0;
 
     void print() const;
 
@@ -248,6 +277,12 @@ public:
 		implementation produces a consistent variable name.
 	 */	
 	std::string PythonName(const QString prefix) const;
+
+	// We MUST overload these methods in our helper classes for those classes that encode the visible flag along with
+	// other values prior to saving them in the FreeCAD data file.
+
+	virtual bool Visible() const = 0;
+	virtual void Visible(const bool value) = 0;
 };
 
 /** 
@@ -424,6 +459,18 @@ private:
 class CamExport Color : public Definition
 {
 public:
+	typedef int Red_t;
+	typedef int Green_t;
+	typedef int Blue_t;
+	typedef int Alpha_t;
+	typedef bool Visible_t;
+
+	typedef boost::tuple<Red_t, Green_t, Blue_t, Alpha_t, Visible_t> Encode_t;
+
+	QString encode() const;
+	Encode_t decode() const;
+
+public:
 	Color(const char *name, const char *label, const char *helptext ):
 	  Definition(name, label, SettingType_Color, "", "", helptext)
 	{
@@ -433,6 +480,11 @@ public:
 	void set(const int red, const int green, const int blue, const int alpha);
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 	QString encode(const int red, const int green, const int blue, const int alpha) const;
+
+	virtual bool Visible() const;
+	virtual void Visible(const bool value);
+
+	virtual Definition* clone() const;
 };
 
 
@@ -453,6 +505,16 @@ public:
  */
 class CamExport Length : public Definition
 {
+public:
+	typedef double Value_t;
+	// Definition::Units_t
+	typedef bool Visible_t;
+
+	typedef boost::tuple<Value_t, Definition::Units_t, Visible_t> Encode_t;
+
+	QString encode() const;
+	Encode_t decode() const;
+
 public:
 	Length(	const char *name, 
 			const char *label, 
@@ -486,6 +548,9 @@ public:
 	void   set(const double value, const Settings::Definition::Units_t units);
 	QString encode(const double value, const Definition::Units_t units) const;
 	bool decode(double *pValue, Settings::Definition::Units_t *pUnits) const;
+
+	virtual bool Visible() const;
+	virtual void Visible(const bool value);
 };
 
 
@@ -502,6 +567,16 @@ public:
  */
 class CamExport Rate : public Definition
 {
+public:
+	typedef double Value_t;
+	// Definition::Units_t
+	typedef bool Visible_t;
+
+	typedef boost::tuple<Value_t, Definition::Units_t, Visible_t> Encode_t;
+
+	QString encode() const;
+	Encode_t decode() const;
+
 public:
 	Rate(	const char *name, 
 			const char *label, 
@@ -533,6 +608,9 @@ public:
 	void   set(const double value);
 	void   set(const double value, const Settings::Definition::Units_t units);
 	QString encode(const double value, const Definition::Units_t units) const;
+
+	virtual bool Visible() const;
+	virtual void Visible(const bool value);
 };
 
 /**
@@ -544,6 +622,15 @@ public:
  */
 class CamExport Double : public Definition
 {
+public:
+	typedef double Value_t;
+	typedef bool Visible_t;
+
+	typedef boost::tuple<Value_t, Visible_t> Encode_t;
+
+	QString encode() const;
+	Encode_t decode() const;
+
 public:
 	Double(	const char *name, 
 								const char *label, 
@@ -570,6 +657,9 @@ public:
 
 	double get() const;
 	void   set(const double value);
+
+	virtual bool Visible() const;
+	virtual void Visible(const bool value);
 };
 
 /**
@@ -582,6 +672,15 @@ public:
  */
 class CamExport ObjectNamesForType : public Definition
 {
+public:
+	typedef QString Value_t;
+	typedef bool Visible_t;
+
+	typedef boost::tuple<Value_t, Visible_t> Encode_t;
+
+	QString encode() const;
+	Encode_t decode() const;
+
 public:
 	ObjectNamesForType(	const char *name, 
 								const char *label, 
@@ -596,10 +695,22 @@ public:
 	QStringList GetTypes() const;
 	QStringList GetNames() const;
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+
+	virtual bool Visible() const;
+	virtual void Visible(const bool value);
 };
 
 class CamExport SingleObjectNameForType : public Definition
 {
+public:
+	typedef QString Value_t;
+	typedef bool Visible_t;
+
+	typedef boost::tuple<Value_t, Visible_t> Encode_t;
+
+	QString encode() const;
+	Encode_t decode() const;
+
 public:
 	SingleObjectNameForType(	const char *name, 
 								const char *label, 
@@ -612,30 +723,66 @@ public:
 	QString GetType() const;
 	QString GetName() const;
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+
+	virtual bool Visible() const;
+	virtual void Visible(const bool value);
 };
 
 class CamExport Text : public Definition
 {
+public:
+	typedef QString Value_t;
+	typedef bool Visible_t;
+
+	typedef boost::tuple<Value_t, Visible_t> Encode_t;
+
+	QString encode() const;
+	Encode_t decode() const;
+
 public:
 	Text(const char *name, const char *label, const char *defaultvalue, const char *units, const char *helptext) :
 			Definition(name, label, SettingType_Text, defaultvalue, units, helptext)
 			{
 			}
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+
+	virtual bool Visible() const;
+	virtual void Visible(const bool value);
 };
 
 class CamExport Radio : public Definition
 {
+public:
+	typedef QString Value_t;
+	typedef bool Visible_t;
+
+	typedef boost::tuple<Value_t, Visible_t> Encode_t;
+
+	QString encode() const;
+	Encode_t decode() const;
+
 public:
 	Radio(const char *name, const char *label, const char *defaultvalue, const char *helptext) :
 			Definition(name, label, SettingType_Radio, defaultvalue, "", helptext)
 			{
 			}
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+
+	virtual bool Visible() const;
+	virtual void Visible(const bool value);
 };
 
 class CamExport Integer : public Definition
 {
+public:
+	typedef int Value_t;
+	typedef bool Visible_t;
+
+	typedef boost::tuple<Value_t, Visible_t> Encode_t;
+
+	QString encode() const;
+	Encode_t decode() const;
+
 public:
 	Integer(const char *name, const char *label, const int defaultvalue, const char *units, const char *helptext) :
 			Definition(name, label, SettingType_Integer, "", units, helptext)
@@ -656,6 +803,9 @@ public:
 
 	int get() const;
 	void set(const int value);
+
+	virtual bool Visible() const;
+	virtual void Visible(const bool value);
 };
 
 
@@ -663,22 +813,46 @@ public:
 class CamExport Filename : public Definition
 {
 public:
+	typedef int Path_t;
+	typedef bool Visible_t;
+
+	typedef boost::tuple<Path_t, Visible_t> Encode_t;
+
+	QString encode() const;
+	Encode_t decode() const;
+
+public:
 	Filename(const char *name, const char *label, const char * defaultvalue, const char *units, const char *helptext) :
 			Definition(name, label, SettingType_Filename, defaultvalue, units, helptext)
 			{
 			}
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+
+	virtual bool Visible() const;
+	virtual void Visible(const bool value);
 };
 
 
 class CamExport Directory : public Definition
 {
 public:
+	typedef QString Path_t;
+	typedef bool Visible_t;
+
+	typedef boost::tuple<Path_t, Visible_t> Encode_t;
+
+	QString encode() const;
+	Encode_t decode() const;
+
+public:
 	Directory(const char *name, const char *label, const char * defaultvalue, const char *units, const char *helptext) :
 			Definition(name, label, SettingType_Directory, defaultvalue, units, helptext)
 			{
 			}
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+
+	virtual bool Visible() const;
+	virtual void Visible(const bool value);
 };
 
 
@@ -693,6 +867,15 @@ public:
  */
 class CamExport Enumeration : public Definition
 {
+public:
+	typedef int IntegerValue_t;
+	typedef bool Visible_t;
+
+	typedef boost::tuple<IntegerValue_t, Visible_t> Encode_t;
+
+	QString encode() const;
+	Encode_t decode() const;
+
 public:
 	Enumeration(const char *name, const char *label, const int defaultvalue, const char *units, const char *helptext) :
 			Definition(name, label, SettingType_Enumeration, "", units, helptext)
@@ -711,6 +894,9 @@ public:
 
 	Pair_t get() const;
 	bool set(const int id);
+
+	virtual bool Visible() const;
+	virtual void Visible(const bool value);
 };
 
 // Convert between the class and the QString version of units.
