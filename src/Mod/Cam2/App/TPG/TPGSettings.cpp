@@ -127,24 +127,37 @@ bool Definition::operator== ( const Definition & rhs ) const
 /**
  * Perform a deep copy of this class
  */
-Definition * Color::clone() const
+Definition * Color::clone()
 {
 	Color* clone = new Color(name.toAscii().constData(), label.toAscii().constData(), helptext.toAscii().constData());
+	*((Definition *)clone) = *this;	// Call the assignment operator.
+
+    return clone;
+}
+
+Definition * Text::clone()
+{
+	Text* clone = new Text(name.toAscii().constData(), label.toAscii().constData(), defaultvalue.toAscii().constData(), units.toAscii().constData(), helptext.toAscii().constData());
 	((Definition *)clone)->operator=( *this );	// Call the assignment operator.
 
     return clone;
 }
 
-Definition::Definition( const Definition & rhs )
+
+Definition::Definition( Definition & rhs )
 {
+	this->refcnt = 1;
+    this->parent = NULL;
+	this->visible = true;
+
 	*this = rhs;	// call the assignment operator.
 }
 
-Definition & operator= ( const Definition & rhs )
+Definition & Definition::operator= ( Definition & rhs )
 {
 	if (this != &rhs)
 	{
-		rhs->grab();	// Make sure it doesn't go away while we're looking at it.
+		rhs.grab();	// Make sure it doesn't go away while we're looking at it.
 
 		this->refcnt = 1;
 		if (this->parent)
@@ -180,7 +193,7 @@ Definition & operator= ( const Definition & rhs )
 		}
 
 		this->visible = rhs.visible;
-		rhs->release();
+		rhs.release();
 	}
 
 	return(*this);
@@ -1038,18 +1051,6 @@ Settings::Filename *Settings::TPGSettings::asFilename(const QString action, cons
 	return(NULL);
 }
 
-/* virtual */ bool Settings::Filename::Visible() const
-{
-	return(this->visible);
-}
-
-/* virtual */ void Settings::Filename::Visible(const bool value)
-{
-	this->visible = value;
-	this->setValue(this->encode());
-}
-
-
 #ifdef WIN32
 #pragma endregion "Settings::Filename"
 #endif
@@ -1088,17 +1089,6 @@ bool Text::AddToPythonDictionary(PyObject *pDictionary, const QString requested_
 	Py_XDECREF(pName); pName=NULL;
 	Py_XDECREF(pValue); pValue=NULL;
 	return(status);
-}
-
-/* virtual */ bool Settings::Text::Visible() const
-{
-	return(this->visible);
-}
-
-/* virtual */ void Settings::Text::Visible(const bool value)
-{
-	this->visible = value;
-	this->setValue(this->encode());
 }
 
 #ifdef WIN32
@@ -1344,17 +1334,6 @@ Settings::Double *Settings::TPGSettings::asDouble(const QString action, const QS
 	return(NULL);
 }
 
-/* virtual */ bool Settings::Double::Visible() const
-{
-	return(this->visible);
-}
-
-/* virtual */ void Settings::Double::Visible(const bool value)
-{
-	this->visible = value;
-	this->setValue(this->encode());
-}
-
 #ifdef WIN32
 #pragma endregion "Settings::Double"
 #endif
@@ -1384,8 +1363,12 @@ Settings::Rate::Rate(
 	this->options.push_back( new Option(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
 	this->options.push_back( new Option(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
 
-	this->set(default_value, units);
-	this->defaultvalue = this->encode( default_value, units );
+	Encode_t data = this->decode();
+	boost::tuples::get<valueOffset>(data) = default_value;
+	boost::tuples::get<unitsOffset>(data) = int(units);
+	
+	this->setValue(this->encode(data));
+	this->defaultvalue = this->encode( data );
 }
 
 Settings::Rate::Rate(
@@ -1396,8 +1379,11 @@ Settings::Rate::Rate(
 		const Definition::Units_t units ):
 	  Definition(name, label, SettingType_Rate, "", "", helptext)
 {
-	this->set(default_value, units);
-	this->defaultvalue = this->encode( default_value, units );
+	Encode_t data;
+	boost::tuples::get<valueOffset>(data) = default_value;
+	boost::tuples::get<unitsOffset>(data) = int(units);
+
+	this->defaultvalue = this->encode(data);
 }
 
 
@@ -1431,16 +1417,10 @@ double Settings::Rate::get(const Definition::Units_t requested_units) const
 				read_json(encoded_value, pt);
 
 				double value = pt.get<double>("rate.value");
-				std::string these_units = pt.get<std::string>("rate.units");
+				Definition::Units_t these_units = Definition::Units_t(pt.get<int>("rate.units"));
 			
-				QString metric, imperial;
-				metric << Settings::Definition::Metric;
-				metric += QString::fromAscii("/min");
-				imperial << Settings::Definition::Imperial;
-				imperial += QString::fromAscii("/min");
-			
-				if ((requested_units == Settings::Definition::Metric) && (these_units == imperial.toStdString())) return(value * 25.4);
-				if ((requested_units == Settings::Definition::Imperial) && (these_units == metric.toStdString())) return(value / 25.4);
+				if ((requested_units == Settings::Definition::Metric) && (these_units == Settings::Definition::Imperial)) return(value * 25.4);
+				if ((requested_units == Settings::Definition::Imperial) && (these_units == Settings::Definition::Metric)) return(value / 25.4);
 
 				return(value);	// The units must be the same.
 			}
@@ -1455,17 +1435,13 @@ double Settings::Rate::get(const Definition::Units_t requested_units) const
 	return(0.0);	// failure.
 }
 
-QString Settings::Rate::encode(const double value, const Settings::Definition::Units_t class_of_units) const
+QString Settings::Rate::encode(const Encode_t data) const
 {
 	using boost::property_tree::ptree;
 	ptree pt;
 
-	QString units;
-	units << class_of_units;
-	units += QString::fromAscii("/min");
-
-	pt.put("rate.value",  value);
-	pt.put("rate.units", units.toStdString());
+	pt.put("rate.value",  boost::tuples::get<valueOffset>(data));
+	pt.put("rate.units",  boost::tuples::get<unitsOffset>(data));
 
 	std::ostringstream encoded_value;
 
@@ -1485,20 +1461,25 @@ void Settings::Rate::set(const double value, const Settings::Definition::Units_t
 	this->units << units;
 	this->units += QString::fromAscii("/min");
 
-	this->setValue(this->encode(value, units));
+	Encode_t data = this->decode();
+	boost::tuples::get<unitsOffset>(data) = int(units);
+	this->setValue(this->encode(data));
 }
 
 Settings::Definition::Units_t Settings::Rate::getUnits() const
 {
-	if (this->units == QString::fromAscii("inch/min")) return(Definition::Imperial);
-	else return(Definition::Metric);	
+	Encode_t data = this->decode();
+	return(Definition::Units_t(boost::tuples::get<unitsOffset>(data)));
 }
 
 void Settings::Rate::setUnits(const Settings::Definition::Units_t class_of_units)
 {
 	this->units << class_of_units;
 	this->units += QString::fromAscii("/min");
-	this->set(this->get(class_of_units), class_of_units);
+
+	Encode_t data = this->decode();
+	boost::tuples::get<unitsOffset>(data) = int(class_of_units);
+	this->setValue(this->encode(data));
 }
 
 
@@ -1659,19 +1640,6 @@ Settings::Rate *Settings::TPGSettings::asRate(const QString action, const QStrin
 	return(NULL);
 }
 
-
-/* virtual */ bool Settings::Rate::Visible() const
-{
-	return(this->visible);
-}
-
-/* virtual */ void Settings::Rate::Visible(const bool value)
-{
-	this->visible = value;
-	this->setValue(this->encode());
-}
-
-
 #ifdef WIN32
 #pragma endregion "Settings::Rate"
 #endif
@@ -1823,17 +1791,6 @@ Settings::Integer *Settings::TPGSettings::asInteger(const QString action, const 
 }
 
 
-/* virtual */ bool Settings::Integer::Visible() const
-{
-	return(this->visible);
-}
-
-/* virtual */ void Settings::Integer::Visible(const bool value)
-{
-	this->visible = value;
-	this->setValue(this->encode());
-}
-
 #ifdef WIN32
 #pragma endregion "Settings::Integer"
 #endif
@@ -1871,17 +1828,6 @@ bool Directory::AddToPythonDictionary(PyObject *pDictionary, const QString reque
 	Py_XDECREF(pName); pName=NULL;
 	Py_XDECREF(pValue); pValue=NULL;
 	return(status);
-}
-
-/* virtual */ bool Settings::Directory::Visible() const
-{
-	return(this->visible);
-}
-
-/* virtual */ void Settings::Directory::Visible(const bool value)
-{
-	this->visible = value;
-	this->setValue(this->encode());
 }
 
 #ifdef WIN32
@@ -2026,17 +1972,6 @@ QStringList ObjectNamesForType::GetNames() const
 	return(names);
 }
 
-/* virtual */ bool Settings::Directory::Visible() const
-{
-	return(this->visible);
-}
-
-/* virtual */ void Settings::Directory::Visible(const bool value)
-{
-	this->visible = value;
-	this->setValue(this->encode());
-}
-
 #ifdef WIN32
 #pragma endregion "Settings::ObjectNamesForType"
 #endif
@@ -2122,17 +2057,6 @@ QString SingleObjectNameForType::GetName() const
 	return(this->getValue());
 }
 
-/* virtual */ bool Settings::Directory::Visible() const
-{
-	return(this->visible);
-}
-
-/* virtual */ void Settings::Directory::Visible(const bool value)
-{
-	this->visible = value;
-	this->setValue(this->encode());
-}
-
 #ifdef WIN32
 #pragma endregion "Settings::SingleObjectNameForType"
 #endif
@@ -2196,8 +2120,11 @@ Settings::Length::Length(
 	this->options.push_back( new Option(QString::fromAscii("minimum"), QString::fromStdString(min.str()) ));
 	this->options.push_back( new Option(QString::fromAscii("maximum"), QString::fromStdString(max.str()) ));
 
-	this->set(default_value, units);
-	this->defaultvalue = this->encode( default_value, units );
+	Encode_t data;
+	boost::tuples::get<valueOffset>(data) = default_value;
+	boost::tuples::get<unitsOffset>(data) = int(units);
+
+	this->defaultvalue = this->encode( data );
 }
 
 Settings::Length::Length(
@@ -2208,11 +2135,14 @@ Settings::Length::Length(
 		const Definition::Units_t units ):
 	  Definition(name, label, SettingType_Length, "", "", helptext)
 {
-	this->set(default_value, units);
-	this->defaultvalue = this->encode( default_value, units );
+	Encode_t data;
+	boost::tuples::get<valueOffset>(data) = default_value;
+	boost::tuples::get<unitsOffset>(data) = int(units);
+
+	this->defaultvalue = this->encode( data );
 }
 
-bool Settings::Length::decode(double *pValue, Settings::Definition::Units_t *pUnits) const
+Settings::Length::Encode_t Settings::Length::decode() const
 {
 	std::list<QString> values;
 	values.push_back( this->getValue() );
@@ -2231,31 +2161,11 @@ bool Settings::Length::decode(double *pValue, Settings::Definition::Units_t *pUn
 				
 				read_json(encoded_value, pt);
 
-				double value = pt.get<double>("length.value");
-				std::string these_units = pt.get<std::string>("length.units");
+				Encode_t data;
+				boost::tuples::get<valueOffset>(data) = pt.get<double>("length.value");
+				boost::tuples::get<unitsOffset>(data) = Definition::Units_t(pt.get<int>("length.units"));
 
-				QString metric, imperial;
-				metric << Settings::Definition::Metric;
-				imperial << Settings::Definition::Imperial;
-			
-				if (pUnits != NULL)
-				{
-					if (QString::fromStdString(these_units) == imperial)
-					{
-						*pUnits = Settings::Definition::Imperial;
-					}
-					else
-					{
-						*pUnits = Settings::Definition::Metric;
-					}
-				}
-
-				if (pValue != NULL)
-				{
-					*pValue = value;
-				}
-
-				return(true);
+				return(data);
 			}
 			catch(boost::property_tree::ptree_error const & error)
 			{
@@ -2264,7 +2174,11 @@ bool Settings::Length::decode(double *pValue, Settings::Definition::Units_t *pUn
 		}
 	}
 
-	return(false);
+	Encode_t data;
+	boost::tuples::get<valueOffset>(data) = 0.0;
+	boost::tuples::get<unitsOffset>(data) = int(Settings::Definition::Metric);
+
+	return(data);
 }
 
 /**
@@ -2279,29 +2193,23 @@ bool Settings::Length::decode(double *pValue, Settings::Definition::Units_t *pUn
 */
 double Settings::Length::get(const Definition::Units_t requested_units) const
 {
-	double value;
-	Settings::Definition::Units_t units;
+	Encode_t data = this->decode();
 
-	if (this->decode(&value, &units))
-	{
-		return(value);
-	}
-	else
-	{
-		return(0.0);
-	}
+	double value = boost::tuples::get<valueOffset>(data);
+	Settings::Definition::Units_t units = Settings::Definition::Units_t(boost::tuples::get<unitsOffset>(data));
+
+	if (units == requested_units) return(value);
+	if ((units == Definition::Metric) && (requested_units == Definition::Imperial)) return(value / 25.4);
+	if ((units == Definition::Imperial) && (requested_units == Definition::Metric)) return(value * 25.4);
 }
 
-QString Settings::Length::encode(const double value, const Settings::Definition::Units_t class_of_units) const
+QString Settings::Length::encode(const Settings::Length::Encode_t data) const
 {
 	using boost::property_tree::ptree;
 	ptree pt;
 
-	QString units;
-	units << class_of_units;
-
-	pt.put("length.value",  value);
-	pt.put("length.units", units.toStdString());
+	pt.put("length.value", boost::tuples::get<valueOffset>(data));
+	pt.put("length.units", boost::tuples::get<unitsOffset>(data));
 
 	std::ostringstream encoded_value;
 
@@ -2311,52 +2219,57 @@ QString Settings::Length::encode(const double value, const Settings::Definition:
 
 void Settings::Length::set(const double value)
 {
-	this->set(value, this->getUnits());
+	Encode_t data = this->decode();
+	boost::tuples::get<valueOffset>(data) = value;
+	this->setValue(this->encode(data));
 }
 
 void Settings::Length::set(const double value, const Settings::Definition::Units_t class_of_units)
 {
+	Encode_t data = this->decode();
+	boost::tuples::get<valueOffset>(data) = value;
+	boost::tuples::get<unitsOffset>(data) = int(class_of_units);
+	this->setValue(this->encode(data));
+
 	this->units << class_of_units;
-	this->setValue(this->encode(value, class_of_units));
 }
 
 
 Settings::Definition::Units_t Settings::Length::getUnits() const
 {
-	double value;
-	Settings::Definition::Units_t units;
-
-	if (this->decode(&value, &units))
-	{
-		return(units);
-	}
-	else
-	{
-		return(Definition::Metric);
-	}
+	Encode_t data = this->decode();
+	return(Definition::Units_t(boost::tuples::get<unitsOffset>(data)));
 }
 
 
 
 void Settings::Length::setUnits(const Settings::Definition::Units_t class_of_units)
 {
-	double value;
-	Definition::Units_t units;
-	this->decode( &value, &units );
+	Encode_t data = this->decode();
+	
+	Definition::Units_t units = Definition::Units_t(boost::tuples::get<unitsOffset>(data));
 
-	if ((units == Metric) && (class_of_units == Imperial))
+	if (units == class_of_units) return;
+	if ((units == Definition::Metric) && (class_of_units == Definition::Imperial))
 	{
-		value /= 25.4;
+		boost::tuples::get<valueOffset>(data) /= 25.4;
+		boost::tuples::get<unitsOffset>(data) = int(class_of_units);
+		this->units << class_of_units;
+		this->setValue(this->encode(data));
+		return;
 	}
-	else
+
+	if ((units == Definition::Imperial) && (class_of_units == Definition::Metric))
 	{
-		if ((units == Imperial) && (class_of_units == Metric))
-		{
-			value *= 25.4;
-		}
+		boost::tuples::get<valueOffset>(data) *= 25.4;
+		boost::tuples::get<unitsOffset>(data) = int(class_of_units);
+		this->units << class_of_units;
+		this->setValue(this->encode(data));
+		return;
 	}
+
 	this->units << class_of_units;
-	this->set(value, class_of_units);
+	this->setValue(this->encode(data));
 }
 
 
@@ -2470,17 +2383,6 @@ bool Length::AddToPythonDictionary(PyObject *pDictionary, const QString requeste
 	return(status);
 }
 
-/* virtual */ bool Settings::Length::Visible() const
-{
-	return(this->visible);
-}
-
-/* virtual */ void Settings::Length::Visible(const bool value)
-{
-	this->visible = value;
-	this->setValue(this->encode());
-}
-
 #ifdef WIN32
 #pragma endregion "Settings::Length"
 #endif
@@ -2559,16 +2461,54 @@ Settings::Enumeration::Pair_t Settings::Enumeration::get() const
 	}
 }
 
-/* virtual */ bool Settings::Enumeration::Visible() const
+QString Enumeration::encode(Enumeration::Encode_t data) const
 {
-	return(this->visible);
+	using boost::property_tree::ptree;
+	ptree pt;
+
+	pt.put("enumeration.value",  boost::tuples::get<valueOffset>(data) );
+
+	std::ostringstream encoded_value;
+
+	write_json(encoded_value, pt);
+	return(QString::fromStdString(encoded_value.str()));
 }
 
-/* virtual */ void Settings::Enumeration::Visible(const bool value)
+Enumeration::Encode_t Enumeration::decode() const
 {
-	this->visible = value;
-	this->setValue(this->encode());
+	std::list<QString> values;
+	values.push_back( this->getValue() );
+	values.push_back( this->defaultvalue );
+	for (std::list<QString>::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	{
+		if (itValue->isNull() == false)
+		{
+			try
+			{
+				using boost::property_tree::ptree;
+				ptree pt;
+
+				std::stringstream encoded_value;
+				encoded_value << itValue->toAscii().constData();
+				
+				read_json(encoded_value, pt);
+
+				Encode_t data;
+				boost::tuples::get<valueOffset>(data) = pt.get<int>("enumeration.value");
+				return(data);
+			}
+			catch(boost::property_tree::ptree_error const & error)
+			{
+				qWarning("%s\n", error.what());				
+			}
+		}
+	}
+
+	Encode_t data;
+	boost::tuples::get<valueOffset>(data) = -1;
+	return(data);
 }
+
 
 #ifdef WIN32
 #pragma endregion "Settings::Enumeration"
@@ -2581,15 +2521,15 @@ Settings::Enumeration::Pair_t Settings::Enumeration::get() const
 #pragma region "Settings::Color"
 #endif
 
-QString Settings::Color::encode(const int red, const int green, const int blue, const int alpha) const
+QString Settings::Color::encode(const Settings::Color::Encode_t data) const
 {
 	using boost::property_tree::ptree;
 	ptree pt;
 
-	pt.put("color.red",  red);
-	pt.put("color.green", green);
-	pt.put("color.blue", blue);
-	pt.put("color.alpha", alpha);
+	pt.put("color.red",  boost::tuples::get<redOffset>(data));
+	pt.put("color.green", boost::tuples::get<greenOffset>(data));
+	pt.put("color.blue", boost::tuples::get<blueOffset>(data));
+	pt.put("color.alpha", boost::tuples::get<alphaOffset>(data));
 
 	std::ostringstream encoded_value;
 
@@ -2597,6 +2537,48 @@ QString Settings::Color::encode(const int red, const int green, const int blue, 
 	return(QString::fromStdString(encoded_value.str()));
 }
 
+Settings::Color::Encode_t Settings::Color::decode() const
+{
+	std::list<QString> values;
+	values.push_back( this->getValue() );
+	values.push_back( this->defaultvalue );
+	for (std::list<QString>::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	{
+		if (itValue->isNull() == false)
+		{
+			try
+			{
+				using boost::property_tree::ptree;
+				ptree pt;
+
+				std::stringstream encoded_value;
+				encoded_value << itValue->toAscii().constData();
+				
+				read_json(encoded_value, pt);
+
+				Encode_t data;
+				boost::tuples::get<redOffset>(data) = pt.get<int>("color.red");
+				boost::tuples::get<greenOffset>(data) = pt.get<int>("color.green");
+				boost::tuples::get<blueOffset>(data) = pt.get<int>("color.blue");
+				boost::tuples::get<alphaOffset>(data) = pt.get<int>("color.alpha");
+
+				return(data);
+			}
+			catch(boost::property_tree::ptree_error const & error)
+			{
+				qWarning("%s\n", error.what());
+			}
+		}
+	}
+
+	Encode_t data;
+	boost::tuples::get<redOffset>(data) = 0;
+	boost::tuples::get<greenOffset>(data) = 0;
+	boost::tuples::get<blueOffset>(data) = 0;
+	boost::tuples::get<alphaOffset>(data) = 255;
+
+	return(data);
+}
 
 /**
 	The color's value is encoded in an INI document describing
@@ -2608,6 +2590,8 @@ QString Settings::Color::encode(const int red, const int green, const int blue, 
  */
 bool Settings::Color::get(int &red, int &green, int &blue, int &alpha) const
 {
+	Encode_t data = this->decode();
+
 	std::list<QString> values;
 	values.push_back( this->getValue() );
 	values.push_back( this->defaultvalue );
@@ -2649,7 +2633,13 @@ bool Settings::Color::get(int &red, int &green, int &blue, int &alpha) const
 
 void Settings::Color::set(const int red, const int green, const int blue, const int alpha)
 {
-	this->setValue(this->encode(red, green, blue, alpha));
+	Encode_t data = this->decode();
+	boost::tuples::get<redOffset>(data) = red;
+	boost::tuples::get<greenOffset>(data) = green;
+	boost::tuples::get<blueOffset>(data) = blue;
+	boost::tuples::get<alphaOffset>(data) = alpha;
+	
+	this->setValue(this->encode(data));
 }
 
 
@@ -2694,17 +2684,6 @@ bool Color::AddToPythonDictionary(PyObject *pDictionary, const QString requested
 	return(status);
 }
 
-/* virtual */ bool Settings::Color::Visible() const
-{
-	return(this->visible);
-}
-
-/* virtual */ void Settings::Color::Visible(const bool value)
-{
-	this->visible = value;
-	this->setValue(this->encode());
-}
-
 #ifdef WIN32
 #pragma endregion "Settings::Color"
 #endif
@@ -2727,17 +2706,6 @@ Settings::Radio	*Settings::TPGSettings::asRadio(const QString action, const QStr
 	Settings::Definition *definition = this->getDefinition(action, name);
 	if ((definition != NULL) && (definition->type == Settings::Definition::SettingType_Radio)) return((Settings::Radio *) definition);
 	return(NULL);
-}
-
-/* virtual */ bool Settings::Radio::Visible() const
-{
-	return(this->visible);
-}
-
-/* virtual */ void Settings::Radio::Visible(const bool value)
-{
-	this->visible = value;
-	this->setValue(this->encode());
 }
 
 #ifdef WIN32
