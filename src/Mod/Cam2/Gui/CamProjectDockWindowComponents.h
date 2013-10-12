@@ -193,7 +193,7 @@ public Q_SLOTS:
 	void currentIndexChanged(int index);
 
 private:
-	typedef QString Id_t;
+	typedef Cam::Settings::Definition::Units_t Id_t;
 	typedef QString Label_t;
 	std::vector< std::pair< Id_t, Label_t > > values;
 
@@ -235,7 +235,7 @@ public Q_SLOTS:
 	void currentIndexChanged(int index);
 
 private:
-	typedef QString Id_t;
+	typedef Cam::Settings::Definition::Units_t Id_t;
 	typedef QString Label_t;
 	std::vector< std::pair< Id_t, Label_t > > values;
 

@@ -211,7 +211,7 @@ public:
 //	QString value; // deprecated: now uses FreeCAD data structure which is contained in TPGSettings.tpgFeature
 
 	// Making the constructors protected to force the use of the wrapper classes rather than using this class directly.
-protected:
+public:
 	Definition(const char *name, const char *label, const SettingType  type, const char *defaultvalue, const char *units, const char *helptext);
 	Definition(QString name, QString label, SettingType type, QString defaultvalue, QString units, QString helptext);
 	Definition();
@@ -232,7 +232,7 @@ public:
 	/**
 	 * Perform a deep copy of this class
 	 */
-    virtual Definition* clone() = 0;
+	Definition* clone();
 
     void print() const;
 
@@ -473,8 +473,6 @@ public:
 	bool get(int &red, int &green, int &blue, int &alpha) const;
 	void set(const int red, const int green, const int blue, const int alpha);
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
-
-	virtual Definition* clone();
 };
 
 
@@ -503,7 +501,7 @@ public:
 	static const ::SIZE_T valueOffset = 0;
 	static const ::SIZE_T unitsOffset = 1;
 	
-	typedef boost::tuple<Value_t, int> Encode_t;
+	typedef boost::tuple<Value_t, Definition::Units_t> Encode_t;
 
 	QString encode(const Encode_t data) const;
 	Encode_t decode() const;
@@ -539,8 +537,6 @@ public:
 	double get(const Definition::Units_t requested_units) const;
 	void   set(const double value);
 	void   set(const double value, const Settings::Definition::Units_t units);
-
-	virtual Definition* clone();
 };
 
 
@@ -565,7 +561,7 @@ public:
 	static const ::SIZE_T valueOffset = 0;
 	static const ::SIZE_T unitsOffset = 1;
 
-	typedef boost::tuple<Value_t, int> Encode_t;
+	typedef boost::tuple<Value_t, Definition::Units_t> Encode_t;
 
 	QString encode(const Encode_t data) const;
 	Encode_t decode() const;
@@ -600,8 +596,6 @@ public:
 	double get(const Definition::Units_t requested_units) const;
 	void   set(const double value);
 	void   set(const double value, const Settings::Definition::Units_t units);
-	
-	virtual Definition* clone();
 };
 
 /**
@@ -613,17 +607,6 @@ public:
  */
 class CamExport Double : public Definition
 {
-public:
-	typedef double Value_t;
-
-	// NOTE: These offset values MUST align with the Encode_t definition.
-	static const ::SIZE_T valueOffset = 0;
-
-	typedef boost::tuple<Value_t> Encode_t;
-
-	QString encode(const Encode_t data) const;
-	Encode_t decode() const;
-
 public:
 	Double(	const char *name, 
 								const char *label, 
@@ -650,8 +633,6 @@ public:
 
 	double get() const;
 	void   set(const double value);
-
-	virtual Definition* clone();
 };
 
 /**
@@ -664,17 +645,6 @@ public:
  */
 class CamExport ObjectNamesForType : public Definition
 {
-public:
-	typedef QString Value_t;
-
-	// NOTE: These offset values MUST align with the Encode_t definition.
-	static const ::SIZE_T valueOffset = 0;
-
-	typedef boost::tuple<Value_t> Encode_t;
-
-	QString encode(const Encode_t data) const;
-	Encode_t decode() const;
-
 public:
 	ObjectNamesForType(	const char *name, 
 								const char *label, 
@@ -689,23 +659,10 @@ public:
 	QStringList GetTypes() const;
 	QStringList GetNames() const;
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
-
-	virtual Definition* clone();
 };
 
 class CamExport SingleObjectNameForType : public Definition
 {
-public:
-	typedef QString Value_t;
-
-	// NOTE: These offset values MUST align with the Encode_t definition.
-	static const ::SIZE_T valueOffset = 0;
-	
-	typedef boost::tuple<Value_t> Encode_t;
-
-	QString encode(const Encode_t data) const;
-	Encode_t decode() const;
-
 public:
 	SingleObjectNameForType(	const char *name, 
 								const char *label, 
@@ -718,72 +675,30 @@ public:
 	QString GetType() const;
 	QString GetName() const;
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
-
-	virtual Definition* clone();
 };
 
 class CamExport Text : public Definition
 {
-public:
-	typedef QString Value_t;
-
-	// NOTE: These offset values MUST align with the Encode_t definition.
-	static const ::SIZE_T valueOffset = 0;
-
-	typedef boost::tuple<Value_t> Encode_t;
-
-	QString encode(const Encode_t data) const;
-	Encode_t decode() const;
-
 public:
 	Text(const char *name, const char *label, const char *defaultvalue, const char *units, const char *helptext) :
 			Definition(name, label, SettingType_Text, defaultvalue, units, helptext)
 			{
 			}
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
-
-	virtual bool Visible() const;
-	virtual void Visible(const bool value);
-
-	virtual Definition* clone();
 };
 
 class CamExport Radio : public Definition
 {
-public:
-	typedef QString Value_t;
-
-	// NOTE: These offset values MUST align with the Encode_t definition.
-	static const ::SIZE_T valueOffset = 0;
-
-	typedef boost::tuple<Value_t> Encode_t;
-
-	QString encode(const Encode_t data) const;
-	Encode_t decode() const;
-
 public:
 	Radio(const char *name, const char *label, const char *defaultvalue, const char *helptext) :
 			Definition(name, label, SettingType_Radio, defaultvalue, "", helptext)
 			{
 			}
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
-
-	virtual Definition* clone();
 };
 
 class CamExport Integer : public Definition
 {
-public:
-	typedef int Value_t;
-
-	// NOTE: These offset values MUST align with the Encode_t definition.
-	static const ::SIZE_T valueOffset = 0;
-	
-	typedef boost::tuple<Value_t> Encode_t;
-
-	QString encode(const Encode_t data) const;
-	Encode_t decode() const;
-
 public:
 	Integer(const char *name, const char *label, const int defaultvalue, const char *units, const char *helptext) :
 			Definition(name, label, SettingType_Integer, "", units, helptext)
@@ -804,8 +719,6 @@ public:
 
 	int get() const;
 	void set(const int value);
-
-	virtual Definition* clone();
 };
 
 
@@ -813,51 +726,22 @@ public:
 class CamExport Filename : public Definition
 {
 public:
-	typedef QString Filename_t;
-
-	// NOTE: These offset values MUST align with the Encode_t definition.
-	static const ::SIZE_T filenameOffset = 0;
-
-	typedef boost::tuple<Filename_t> Encode_t;
-
-	QString encode(const Encode_t data) const;
-	Encode_t decode() const;
-
-public:
 	Filename(const char *name, const char *label, const char * defaultvalue, const char *units, const char *helptext) :
 			Definition(name, label, SettingType_Filename, defaultvalue, units, helptext)
 			{
 			}
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
-
-	virtual Definition* clone();
 };
 
 
 class CamExport Directory : public Definition
 {
 public:
-	typedef QString Path_t;
-
-	// NOTE: These offset values MUST align with the Encode_t definition.
-	static const ::SIZE_T pathOffset = 0;
-
-	typedef boost::tuple<Path_t> Encode_t;
-
-	QString encode(const Encode_t data) const;
-	Encode_t decode() const;
-
-public:
 	Directory(const char *name, const char *label, const char * defaultvalue, const char *units, const char *helptext) :
 			Definition(name, label, SettingType_Directory, defaultvalue, units, helptext)
 			{
 			}
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
-
-	virtual bool Visible() const;
-	virtual void Visible(const bool value);
-
-	virtual Definition* clone();
 };
 
 
@@ -872,17 +756,6 @@ public:
  */
 class CamExport Enumeration : public Definition
 {
-public:
-	typedef int IntegerValue_t;
-
-	// NOTE: These offset values MUST align with the Encode_t definition.
-	static const ::SIZE_T valueOffset = 0;
-
-	typedef boost::tuple<IntegerValue_t> Encode_t;
-
-	QString encode(const Encode_t data) const;
-	Encode_t decode() const;
-
 public:
 	Enumeration(const char *name, const char *label, const int defaultvalue, const char *units, const char *helptext) :
 			Definition(name, label, SettingType_Enumeration, "", units, helptext)
@@ -901,8 +774,6 @@ public:
 
 	Pair_t get() const;
 	bool set(const int id);
-
-	virtual Definition* clone();
 };
 
 // Convert between the class and the QString version of units.

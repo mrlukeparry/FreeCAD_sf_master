@@ -124,24 +124,24 @@ bool Definition::operator== ( const Definition & rhs ) const
 	return(true);
 }
 
+
 /**
  * Perform a deep copy of this class
  */
-Definition * Color::clone()
+Definition* Definition::clone()
 {
-	Color* clone = new Color(name.toAscii().constData(), label.toAscii().constData(), helptext.toAscii().constData());
-	*((Definition *)clone) = *this;	// Call the assignment operator.
+    Definition* clone = new Definition(name, label, type, defaultvalue, units, helptext);
+	QList<Settings::Option*>::iterator it = this->options.begin();
+
+    for (; it != this->options.end(); ++it)
+        clone->addOption((*it)->id, (*it)->label);
+
+	clone->action = this->action;
+	clone->parent = this->parent;
 
     return clone;
 }
 
-Definition * Text::clone()
-{
-	Text* clone = new Text(name.toAscii().constData(), label.toAscii().constData(), defaultvalue.toAscii().constData(), units.toAscii().constData(), helptext.toAscii().constData());
-	((Definition *)clone)->operator=( *this );	// Call the assignment operator.
-
-    return clone;
-}
 
 
 Definition::Definition( Definition & rhs )
@@ -1365,7 +1365,7 @@ Settings::Rate::Rate(
 
 	Encode_t data = this->decode();
 	boost::tuples::get<valueOffset>(data) = default_value;
-	boost::tuples::get<unitsOffset>(data) = int(units);
+	boost::tuples::get<unitsOffset>(data) = units;
 	
 	this->setValue(this->encode(data));
 	this->defaultvalue = this->encode( data );
@@ -1381,7 +1381,7 @@ Settings::Rate::Rate(
 {
 	Encode_t data;
 	boost::tuples::get<valueOffset>(data) = default_value;
-	boost::tuples::get<unitsOffset>(data) = int(units);
+	boost::tuples::get<unitsOffset>(data) = units;
 
 	this->defaultvalue = this->encode(data);
 }
@@ -1398,6 +1398,34 @@ Settings::Rate::Rate(
 	the units the caller has asked the value to be expressed in.
 */
 double Settings::Rate::get(const Definition::Units_t requested_units) const
+{
+	Encode_t data = this->decode();
+
+	double value = boost::tuples::get<valueOffset>(data);
+	Definition::Units_t these_units = boost::tuples::get<unitsOffset>(data);
+
+	if ((requested_units == Settings::Definition::Metric) && (these_units == Settings::Definition::Imperial)) return(value * 25.4);
+	if ((requested_units == Settings::Definition::Imperial) && (these_units == Settings::Definition::Metric)) return(value / 25.4);
+
+	return(value);	// The units must be the same.
+}
+
+QString Settings::Rate::encode(const Encode_t data) const
+{
+	using boost::property_tree::ptree;
+	ptree pt;
+
+	pt.put("rate.value",  boost::tuples::get<valueOffset>(data));
+	pt.put("rate.units",  int(boost::tuples::get<unitsOffset>(data)));
+
+	std::ostringstream encoded_value;
+
+	write_json(encoded_value, pt);
+	return(QString::fromStdString(encoded_value.str()));
+}
+
+
+Settings::Rate::Encode_t Settings::Rate::decode() const
 {
 	std::list<QString> values;
 	values.push_back( this->getValue() );
@@ -1416,13 +1444,12 @@ double Settings::Rate::get(const Definition::Units_t requested_units) const
 				
 				read_json(encoded_value, pt);
 
-				double value = pt.get<double>("rate.value");
-				Definition::Units_t these_units = Definition::Units_t(pt.get<int>("rate.units"));
-			
-				if ((requested_units == Settings::Definition::Metric) && (these_units == Settings::Definition::Imperial)) return(value * 25.4);
-				if ((requested_units == Settings::Definition::Imperial) && (these_units == Settings::Definition::Metric)) return(value / 25.4);
+				Encode_t data;
 
-				return(value);	// The units must be the same.
+				boost::tuples::get<valueOffset>(data) = pt.get<double>("rate.value");
+				boost::tuples::get<unitsOffset>(data) = Definition::Units_t(pt.get<int>("rate.units"));
+
+				return(data);
 			}
 			catch(boost::property_tree::ptree_error const & error)
 			{
@@ -1432,21 +1459,12 @@ double Settings::Rate::get(const Definition::Units_t requested_units) const
 		}
 	}
 
-	return(0.0);	// failure.
-}
+	Encode_t data;
 
-QString Settings::Rate::encode(const Encode_t data) const
-{
-	using boost::property_tree::ptree;
-	ptree pt;
+	boost::tuples::get<valueOffset>(data) = 0.0;
+	boost::tuples::get<unitsOffset>(data) = Definition::Metric;
 
-	pt.put("rate.value",  boost::tuples::get<valueOffset>(data));
-	pt.put("rate.units",  boost::tuples::get<unitsOffset>(data));
-
-	std::ostringstream encoded_value;
-
-	write_json(encoded_value, pt);
-	return(QString::fromStdString(encoded_value.str()));
+	return(data);
 }
 
 
@@ -1462,14 +1480,14 @@ void Settings::Rate::set(const double value, const Settings::Definition::Units_t
 	this->units += QString::fromAscii("/min");
 
 	Encode_t data = this->decode();
-	boost::tuples::get<unitsOffset>(data) = int(units);
+	boost::tuples::get<unitsOffset>(data) = units;
 	this->setValue(this->encode(data));
 }
 
 Settings::Definition::Units_t Settings::Rate::getUnits() const
 {
 	Encode_t data = this->decode();
-	return(Definition::Units_t(boost::tuples::get<unitsOffset>(data)));
+	return(boost::tuples::get<unitsOffset>(data));
 }
 
 void Settings::Rate::setUnits(const Settings::Definition::Units_t class_of_units)
@@ -1478,7 +1496,12 @@ void Settings::Rate::setUnits(const Settings::Definition::Units_t class_of_units
 	this->units += QString::fromAscii("/min");
 
 	Encode_t data = this->decode();
-	boost::tuples::get<unitsOffset>(data) = int(class_of_units);
+
+	Definition::Units_t these_units = boost::tuples::get<unitsOffset>(data);
+	if ((these_units == Definition::Metric) && (class_of_units == Definition::Imperial)) boost::tuples::get<valueOffset>(data) /= 25.4;
+	if ((these_units == Definition::Imperial) && (class_of_units == Definition::Metric)) boost::tuples::get<valueOffset>(data) *= 25.4;
+
+	boost::tuples::get<unitsOffset>(data) = class_of_units;
 	this->setValue(this->encode(data));
 }
 
@@ -2122,7 +2145,7 @@ Settings::Length::Length(
 
 	Encode_t data;
 	boost::tuples::get<valueOffset>(data) = default_value;
-	boost::tuples::get<unitsOffset>(data) = int(units);
+	boost::tuples::get<unitsOffset>(data) = units;
 
 	this->defaultvalue = this->encode( data );
 }
@@ -2137,7 +2160,7 @@ Settings::Length::Length(
 {
 	Encode_t data;
 	boost::tuples::get<valueOffset>(data) = default_value;
-	boost::tuples::get<unitsOffset>(data) = int(units);
+	boost::tuples::get<unitsOffset>(data) = units;
 
 	this->defaultvalue = this->encode( data );
 }
@@ -2176,7 +2199,7 @@ Settings::Length::Encode_t Settings::Length::decode() const
 
 	Encode_t data;
 	boost::tuples::get<valueOffset>(data) = 0.0;
-	boost::tuples::get<unitsOffset>(data) = int(Settings::Definition::Metric);
+	boost::tuples::get<unitsOffset>(data) = Settings::Definition::Metric;
 
 	return(data);
 }
@@ -2196,11 +2219,13 @@ double Settings::Length::get(const Definition::Units_t requested_units) const
 	Encode_t data = this->decode();
 
 	double value = boost::tuples::get<valueOffset>(data);
-	Settings::Definition::Units_t units = Settings::Definition::Units_t(boost::tuples::get<unitsOffset>(data));
+	Settings::Definition::Units_t units = boost::tuples::get<unitsOffset>(data);
 
-	if (units == requested_units) return(value);
 	if ((units == Definition::Metric) && (requested_units == Definition::Imperial)) return(value / 25.4);
 	if ((units == Definition::Imperial) && (requested_units == Definition::Metric)) return(value * 25.4);
+
+	// The units must be the same.
+	return(value);
 }
 
 QString Settings::Length::encode(const Settings::Length::Encode_t data) const
@@ -2209,7 +2234,7 @@ QString Settings::Length::encode(const Settings::Length::Encode_t data) const
 	ptree pt;
 
 	pt.put("length.value", boost::tuples::get<valueOffset>(data));
-	pt.put("length.units", boost::tuples::get<unitsOffset>(data));
+	pt.put("length.units", int(boost::tuples::get<unitsOffset>(data)));
 
 	std::ostringstream encoded_value;
 
@@ -2228,7 +2253,7 @@ void Settings::Length::set(const double value, const Settings::Definition::Units
 {
 	Encode_t data = this->decode();
 	boost::tuples::get<valueOffset>(data) = value;
-	boost::tuples::get<unitsOffset>(data) = int(class_of_units);
+	boost::tuples::get<unitsOffset>(data) = class_of_units;
 	this->setValue(this->encode(data));
 
 	this->units << class_of_units;
@@ -2238,7 +2263,7 @@ void Settings::Length::set(const double value, const Settings::Definition::Units
 Settings::Definition::Units_t Settings::Length::getUnits() const
 {
 	Encode_t data = this->decode();
-	return(Definition::Units_t(boost::tuples::get<unitsOffset>(data)));
+	return(boost::tuples::get<unitsOffset>(data));
 }
 
 
@@ -2247,13 +2272,13 @@ void Settings::Length::setUnits(const Settings::Definition::Units_t class_of_uni
 {
 	Encode_t data = this->decode();
 	
-	Definition::Units_t units = Definition::Units_t(boost::tuples::get<unitsOffset>(data));
+	Definition::Units_t units = boost::tuples::get<unitsOffset>(data);
 
 	if (units == class_of_units) return;
 	if ((units == Definition::Metric) && (class_of_units == Definition::Imperial))
 	{
 		boost::tuples::get<valueOffset>(data) /= 25.4;
-		boost::tuples::get<unitsOffset>(data) = int(class_of_units);
+		boost::tuples::get<unitsOffset>(data) = class_of_units;
 		this->units << class_of_units;
 		this->setValue(this->encode(data));
 		return;
@@ -2262,7 +2287,7 @@ void Settings::Length::setUnits(const Settings::Definition::Units_t class_of_uni
 	if ((units == Definition::Imperial) && (class_of_units == Definition::Metric))
 	{
 		boost::tuples::get<valueOffset>(data) *= 25.4;
-		boost::tuples::get<unitsOffset>(data) = int(class_of_units);
+		boost::tuples::get<unitsOffset>(data) = class_of_units;
 		this->units << class_of_units;
 		this->setValue(this->encode(data));
 		return;
@@ -2460,55 +2485,6 @@ Settings::Enumeration::Pair_t Settings::Enumeration::get() const
 		return(*(data.find(id)));
 	}
 }
-
-QString Enumeration::encode(Enumeration::Encode_t data) const
-{
-	using boost::property_tree::ptree;
-	ptree pt;
-
-	pt.put("enumeration.value",  boost::tuples::get<valueOffset>(data) );
-
-	std::ostringstream encoded_value;
-
-	write_json(encoded_value, pt);
-	return(QString::fromStdString(encoded_value.str()));
-}
-
-Enumeration::Encode_t Enumeration::decode() const
-{
-	std::list<QString> values;
-	values.push_back( this->getValue() );
-	values.push_back( this->defaultvalue );
-	for (std::list<QString>::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
-	{
-		if (itValue->isNull() == false)
-		{
-			try
-			{
-				using boost::property_tree::ptree;
-				ptree pt;
-
-				std::stringstream encoded_value;
-				encoded_value << itValue->toAscii().constData();
-				
-				read_json(encoded_value, pt);
-
-				Encode_t data;
-				boost::tuples::get<valueOffset>(data) = pt.get<int>("enumeration.value");
-				return(data);
-			}
-			catch(boost::property_tree::ptree_error const & error)
-			{
-				qWarning("%s\n", error.what());				
-			}
-		}
-	}
-
-	Encode_t data;
-	boost::tuples::get<valueOffset>(data) = -1;
-	return(data);
-}
-
 
 #ifdef WIN32
 #pragma endregion "Settings::Enumeration"

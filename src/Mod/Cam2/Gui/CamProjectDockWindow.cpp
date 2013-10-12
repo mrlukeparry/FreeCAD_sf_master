@@ -98,7 +98,7 @@ bool CamProjectDockWindow::editSettings(Cam::Settings::TPGSettings* newSettings,
         for (; it != settings.end(); ++it)
         {
             Cam::Settings::Definition* setting = *it;
-            if (setting != NULL)
+            if ((setting != NULL) && (setting->visible))
             {
 				if (setting->type == Cam::Settings::Definition::SettingType_Text)
                     comp = new CamTextBoxComponent();

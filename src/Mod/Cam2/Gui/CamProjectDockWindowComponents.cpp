@@ -54,6 +54,8 @@ CamComponent::CamComponent() {
 
 CamComponent::~CamComponent() {
 
+	close();
+
     // release my hold on the settings object
     if (tpgsetting != NULL) {
         tpgsetting->release();
@@ -448,8 +450,8 @@ CamLengthComponent::CamLengthComponent()
 	metric << Cam::Settings::Definition::Metric;
 	imperial << Cam::Settings::Definition::Imperial;
 
-	this->values.push_back( std::make_pair(metric, metric) );
-	this->values.push_back( std::make_pair(imperial, imperial) );
+	this->values.push_back( std::make_pair(Cam::Settings::Definition::Metric, metric) );
+	this->values.push_back( std::make_pair(Cam::Settings::Definition::Imperial, imperial) );
 }
 
 /**
@@ -505,7 +507,7 @@ void CamLengthComponent::currentIndexChanged ( int current_index )
 		QString imperial;
 		imperial << Cam::Settings::Definition::Imperial;	
 
-		if (values[current_index].first == imperial)
+		if (values[current_index].first == Cam::Settings::Definition::Imperial)
 		{
 			length->setUnits(Cam::Settings::Definition::Imperial);
 
@@ -592,12 +594,10 @@ bool CamLengthComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayo
 
             QComboBox *combo_box = new QComboBox(parent);
 			int index = 0;
-			QString strUnits;
-			strUnits << length->getUnits();
 			for (std::vector< std::pair< Id_t, Label_t > >::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
 			{
-				combo_box->addItem(itValue->first);
-				if (strUnits == itValue->first)
+				combo_box->addItem(itValue->second);
+				if (length->getUnits() == itValue->first)
 				{
 					combo_box->setCurrentIndex(index);
 				}
@@ -657,8 +657,8 @@ CamRateComponent::CamRateComponent()
 	imperial << Cam::Settings::Definition::Imperial;
 	imperial += QString::fromAscii("/min");
 
-	this->values.push_back( std::make_pair(metric, metric) );
-	this->values.push_back( std::make_pair(imperial, imperial) );
+	this->values.push_back( std::make_pair(Cam::Settings::Definition::Metric, metric) );
+	this->values.push_back( std::make_pair(Cam::Settings::Definition::Imperial, imperial) );
 }
 
 /**
@@ -690,16 +690,9 @@ void CamRateComponent::currentIndexChanged ( int current_index )
 	{
 		Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgsetting);
 
-		if (values[current_index].first == QString::fromAscii("inch/min"))
+		if (rate)
 		{
-			rate->setUnits(Cam::Settings::Definition::Imperial);
-			std::ostringstream ossValue;
-			ossValue << rate->get(rate->getUnits());
-			camLineEdit->setText(QString::fromStdString(ossValue.str()));
-		}
-		else
-		{
-			rate->setUnits(Cam::Settings::Definition::Metric);
+			rate->setUnits(values[current_index].first);
 			std::ostringstream ossValue;
 			ossValue << rate->get(rate->getUnits());
 			camLineEdit->setText(QString::fromStdString(ossValue.str()));
@@ -759,8 +752,8 @@ bool CamRateComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout
 			int index = 0;
 			for (std::vector< std::pair< Id_t, Label_t > >::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
 			{
-				combo_box->addItem(itValue->first);
-				if (this->tpgsetting->units == itValue->first)
+				combo_box->addItem(itValue->second);
+				if (rate->getUnits() == itValue->first)
 				{
 					combo_box->setCurrentIndex(index);
 				}

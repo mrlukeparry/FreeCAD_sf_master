@@ -127,6 +127,7 @@ CppExampleTPG::CppExampleTPG()
 	clearance_height = NULL;
 	spindle_speed = NULL;
 	feed_rate = NULL;
+	sometimes_hidden = NULL;
 }
 
 CppExampleTPG::~CppExampleTPG() {
@@ -212,6 +213,19 @@ CppExampleTPG::~CppExampleTPG() {
 
 		settings->addSettingDefinition(qaction, this->retract_mode);
 
+
+		this->sometimes_hidden = new Settings::Integer("Gets Hidden","Gets Hidden", 7, "", "Gets hidden when retract mode is rapid");
+
+		settings->addSettingDefinition(qaction, this->sometimes_hidden);
+
+		if (this->retract_mode->get().first == eRapidRetract) 
+		{
+			this->sometimes_hidden->visible = false;
+		}
+		else
+		{
+			this->sometimes_hidden->visible = true;
+		}
 
 
 		this->clearance_height = new Settings::Length(	 "Clearance Relative Height", 
@@ -747,6 +761,15 @@ void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QSt
 		qDebug("CppExampleTPG::onChanged(%s changed to %s)\n", 
 				tpgSettingDefinition->getFullname().toAscii().constData(),
 				retract_mode->get().second.toAscii().constData());
+
+		if (this->retract_mode->get().first == eRapidRetract) 
+		{
+			this->sometimes_hidden->visible = false;
+		}
+		else
+		{
+			this->sometimes_hidden->visible = true;
+		}
 	}
 	else if (tpgSettingDefinition == clearance_height)
 	{
