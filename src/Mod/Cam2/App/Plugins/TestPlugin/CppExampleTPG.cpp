@@ -762,6 +762,12 @@ void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QSt
 				tpgSettingDefinition->getFullname().toAscii().constData(),
 				retract_mode->get().second.toAscii().constData());
 
+		// If we set the visible flag here, the settings editor dialog box will be updated
+		// to reflect the change.  We can use this to hide or display settings when other
+		// settings change value.  eg: If one setting describes the 'number of tabs' in a
+		// Contour operation then the setting for 'tab height' and/or 'tab width' need only
+		// be displayed if the 'number of tabs' value is greater than zero.
+
 		if (this->retract_mode->get().first == eRapidRetract) 
 		{
 			this->sometimes_hidden->visible = false;
