@@ -298,7 +298,11 @@ private:
 /**
  * Object that manages a Cam::Radio setting
  */
+
+
 class CamGuiExport CamRadioComponent: public CamComponent {
+	Q_OBJECT;
+
 protected:
 //    QList<QRadioButton *> radios;
     QMap<QString, QRadioButton*> radios;
@@ -306,6 +310,7 @@ protected:
 public:
 
     CamRadioComponent();
+	~CamRadioComponent();
 
     /**
      * Creates the UI for this component and loads the initial value
@@ -317,10 +322,13 @@ public:
      */
     virtual bool close();
 
+public Q_SLOTS:
+		void clicked(bool checked);
+
 };
 
 
-// ----- CamRadioComponent ---------------------------------------------------------
+// ----- CamComboBoxComponent ---------------------------------------------------------
 /**
  * Object that manages a Cam::Settings::Definition::SettingType_Enumeration setting
  */

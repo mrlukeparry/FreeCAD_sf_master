@@ -261,36 +261,48 @@ void CamLineEdit::focusOutEvent ( QFocusEvent * e )
 			case Cam::Settings::Definition::SettingType_Length:
 				{
 					Cam::Settings::Length *length = dynamic_cast<Cam::Settings::Length *>(this->tpgSetting);
-					std::ostringstream ossValue;
-					ossValue << length->get(length->getUnits());
-					this->setText(QString::fromStdString(ossValue.str()));
+					if (length != NULL)
+					{
+						std::ostringstream ossValue;
+						ossValue << length->get(length->getUnits());
+						this->setText(QString::fromStdString(ossValue.str()));
+					}
 				}
 				break;
 
 			case Cam::Settings::Definition::SettingType_Rate:
 				{
 					Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgSetting);
-					std::ostringstream ossValue;
-					ossValue << rate->get(rate->getUnits());
-					this->setText(QString::fromStdString(ossValue.str()));
+					if (rate != NULL)
+					{
+						std::ostringstream ossValue;
+						ossValue << rate->get(rate->getUnits());
+						this->setText(QString::fromStdString(ossValue.str()));
+					}
 				}
 				break;
 
 			case Cam::Settings::Definition::SettingType_Double:
 				{
 					Cam::Settings::Double *double_setting = dynamic_cast<Cam::Settings::Double *>(this->tpgSetting);
-					std::ostringstream ossValue;
-					ossValue << double_setting->get();
-					this->setText(QString::fromStdString(ossValue.str()));
+					if (double_setting != NULL)
+					{
+						std::ostringstream ossValue;
+						ossValue << double_setting->get();
+						this->setText(QString::fromStdString(ossValue.str()));
+					}
 				}
 				break;
 
 			case Cam::Settings::Definition::SettingType_Integer:
 				{
 					Cam::Settings::Integer *integer_setting = dynamic_cast<Cam::Settings::Integer *>(this->tpgSetting);
-					std::ostringstream ossValue;
-					ossValue << integer_setting->get();
-					this->setText(QString::fromStdString(ossValue.str()));
+					if (integer_setting != NULL)
+					{
+						std::ostringstream ossValue;
+						ossValue << integer_setting->get();
+						this->setText(QString::fromStdString(ossValue.str()));
+					}
 				}
 				break;
 
@@ -523,18 +535,27 @@ void CamLengthComponent::editingFinished() {
 	if (camLineEdit != NULL && tpgsetting != NULL) {
 		QString qvalue = camLineEdit->text();
 		Cam::Settings::Length *length = dynamic_cast<Cam::Settings::Length *>(this->tpgsetting);
-		double value;
-		if (length->Evaluate(camLineEdit->text().toAscii().constData(), &value))
+		if (length != NULL)
 		{
-			length->set( value );
-
-			if (length->getUnits() == Cam::Settings::Definition::Imperial)
+			double value;
+			if (length->Evaluate(camLineEdit->text().toAscii().constData(), &value))
 			{
-				// See if the value happens to also be a fractional value.  They just 'look' better for imperial measurements.
-				QString fraction = FractionalRepresentation( value );
-				if (fraction.isNull() == false)
+				length->set( value );
+
+				if (length->getUnits() == Cam::Settings::Definition::Imperial)
 				{
-					camLineEdit->setText(fraction);
+					// See if the value happens to also be a fractional value.  They just 'look' better for imperial measurements.
+					QString fraction = FractionalRepresentation( value );
+					if (fraction.isNull() == false)
+					{
+						camLineEdit->setText(fraction);
+					}
+					else
+					{
+						std::ostringstream ossValue;
+						ossValue << length->get(length->getUnits());
+						camLineEdit->setText(QString::fromStdString(ossValue.str()));
+					}
 				}
 				else
 				{
@@ -542,12 +563,6 @@ void CamLengthComponent::editingFinished() {
 					ossValue << length->get(length->getUnits());
 					camLineEdit->setText(QString::fromStdString(ossValue.str()));
 				}
-			}
-			else
-			{
-				std::ostringstream ossValue;
-				ossValue << length->get(length->getUnits());
-				camLineEdit->setText(QString::fromStdString(ossValue.str()));
 			}
 		}
 	}
@@ -563,35 +578,37 @@ void CamLengthComponent::currentIndexChanged ( int current_index )
 	if ((current_index >= 0) && (current_index < int(values.size())))
 	{
 		Cam::Settings::Length *length = dynamic_cast<Cam::Settings::Length *>(this->tpgsetting);
-
-		// Call the one routine that converts from enumerated type to QString so that
-		// we always produce a consistent result.
-		QString imperial;
-		imperial << Cam::Settings::Definition::Imperial;	
-
-		if (values[current_index].first == Cam::Settings::Definition::Imperial)
+		if (length != NULL)
 		{
-			length->setUnits(Cam::Settings::Definition::Imperial);
+			// Call the one routine that converts from enumerated type to QString so that
+			// we always produce a consistent result.
+			QString imperial;
+			imperial << Cam::Settings::Definition::Imperial;	
 
-			// See if the value happens to also be a fractional value.  They just 'look' better for imperial measurements.
-			QString fraction = FractionalRepresentation( length->get(length->getUnits()) );
-			if (fraction.isNull() == false)
+			if (values[current_index].first == Cam::Settings::Definition::Imperial)
 			{
-				camLineEdit->setText(fraction);
+				length->setUnits(Cam::Settings::Definition::Imperial);
+
+				// See if the value happens to also be a fractional value.  They just 'look' better for imperial measurements.
+				QString fraction = FractionalRepresentation( length->get(length->getUnits()) );
+				if (fraction.isNull() == false)
+				{
+					camLineEdit->setText(fraction);
+				}
+				else
+				{
+					std::ostringstream ossValue;
+					ossValue << length->get(length->getUnits());
+					camLineEdit->setText(QString::fromStdString(ossValue.str()));
+				}
 			}
 			else
 			{
+				length->setUnits(Cam::Settings::Definition::Metric);
 				std::ostringstream ossValue;
 				ossValue << length->get(length->getUnits());
 				camLineEdit->setText(QString::fromStdString(ossValue.str()));
 			}
-		}
-		else
-		{
-			length->setUnits(Cam::Settings::Definition::Metric);
-			std::ostringstream ossValue;
-			ossValue << length->get(length->getUnits());
-			camLineEdit->setText(QString::fromStdString(ossValue.str()));
 		}
 	}
 
@@ -612,90 +629,92 @@ bool CamLengthComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayo
         // construct the ui
         QWidget *parent = dynamic_cast<QWidget*>(form->parent());
         if (parent != NULL) {
-            int row = form->rowCount();
-            QString qname = tpgsetting->getFullname();
-
-            // make the label
-            QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
-			widgets_to_be_signalled.push_back(labelWidget);
-			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
-            form->setWidget(row, QFormLayout::LabelRole, labelWidget);
-            labelWidget->setToolTip(tpgsetting->helptext);
-			labelWidget->setVisible(tpgsetting->visible);
-
-            // make the container
-            QWidget *widget = new QWidget(parent);
-			widgets_to_be_signalled.push_back(widget);
-            QHBoxLayout *layout = new QHBoxLayout(widget);
-            layout->setContentsMargins(0,0,0,0);
-            widget->setLayout(layout);
-            widget->setObjectName(qname);
-            widget->setToolTip(tpgsetting->helptext);
-			widget->setVisible(tpgsetting->visible);
-			form->setWidget(row, QFormLayout::FieldRole, widget);
-
-			// make the edit box
-            camLineEdit = new CamLineEdit(parent, tpgsetting);
-			widgets_to_be_signalled.push_back(camLineEdit);
-            camLineEdit->setObjectName(qname);
-
-			Cam::Settings::Length *length = (Cam::Settings::Length *) this->tpgsetting;
-
-			// See if the value happens to also be a fractional value.  They just 'look' better for imperial measurements.
-			QString fraction = FractionalRepresentation( length->get(length->getUnits()) );
-			if (fraction.isNull() == false)
+			Cam::Settings::Length *length = dynamic_cast<Cam::Settings::Length *>(this->tpgsetting);
+			if (length != NULL)
 			{
-				camLineEdit->setText(fraction);
-			}
-			else
-			{
-				std::ostringstream ossValue;
-				ossValue << length->get(length->getUnits());
-				camLineEdit->setText(QString::fromStdString(ossValue.str()));
-			}
+				int row = form->rowCount();
+				QString qname = tpgsetting->getFullname();
 
-            camLineEdit->setToolTip(tpgsetting->helptext);
-			camLineEdit->setPlaceholderText(tpgsetting->helptext);
-			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
-			camLineEdit->setValidator(validator);
-            // connect events
-        	QObject::connect(camLineEdit, SIGNAL(editingFinished()), this,
-        			SLOT(editingFinished()));
-			layout->addWidget(camLineEdit);
+				// make the label
+				QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+				widgets_to_be_signalled.push_back(labelWidget);
+				labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
+				form->setWidget(row, QFormLayout::LabelRole, labelWidget);
+				labelWidget->setToolTip(tpgsetting->helptext);
+				labelWidget->setVisible(tpgsetting->visible);
 
-            QComboBox *combo_box = new QComboBox(parent);
-			widgets_to_be_signalled.push_back(combo_box);
-			int index = 0;
-			for (std::vector< std::pair< Id_t, Label_t > >::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
-			{
-				combo_box->addItem(itValue->second);
-				if (length->getUnits() == itValue->first)
+				// make the container
+				QWidget *widget = new QWidget(parent);
+				widgets_to_be_signalled.push_back(widget);
+				QHBoxLayout *layout = new QHBoxLayout(widget);
+				layout->setContentsMargins(0,0,0,0);
+				widget->setLayout(layout);
+				widget->setObjectName(qname);
+				widget->setToolTip(tpgsetting->helptext);
+				widget->setVisible(tpgsetting->visible);
+				form->setWidget(row, QFormLayout::FieldRole, widget);
+
+				// make the edit box
+				camLineEdit = new CamLineEdit(parent, tpgsetting);
+				widgets_to_be_signalled.push_back(camLineEdit);
+				camLineEdit->setObjectName(qname);
+
+				// See if the value happens to also be a fractional value.  They just 'look' better for imperial measurements.
+				QString fraction = FractionalRepresentation( length->get(length->getUnits()) );
+				if (fraction.isNull() == false)
 				{
-					combo_box->setCurrentIndex(index);
+					camLineEdit->setText(fraction);
 				}
-				index++;
+				else
+				{
+					std::ostringstream ossValue;
+					ossValue << length->get(length->getUnits());
+					camLineEdit->setText(QString::fromStdString(ossValue.str()));
+				}
+
+				camLineEdit->setToolTip(tpgsetting->helptext);
+				camLineEdit->setPlaceholderText(tpgsetting->helptext);
+				this->validator = new Validator(tpgsetting->grab(), camLineEdit);
+				camLineEdit->setValidator(validator);
+				// connect events
+        		QObject::connect(camLineEdit, SIGNAL(editingFinished()), this,
+        				SLOT(editingFinished()));
+				layout->addWidget(camLineEdit);
+
+				QComboBox *combo_box = new QComboBox(parent);
+				widgets_to_be_signalled.push_back(combo_box);
+				int index = 0;
+				for (std::vector< std::pair< Id_t, Label_t > >::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+				{
+					combo_box->addItem(itValue->second);
+					if (length->getUnits() == itValue->first)
+					{
+						combo_box->setCurrentIndex(index);
+					}
+					index++;
+				}
+
+				combo_box->setObjectName(qname);
+				combo_box->setToolTip(tpgsetting->helptext);
+				combo_box->setVisible(tpgsetting->visible);
+
+				this->validator = new Validator(tpgsetting->grab(), combo_box);
+				combo_box->setValidator(validator);
+
+				form->setWidget(row, QFormLayout::FieldRole, combo_box);
+
+				// connect events
+        		QObject::connect(combo_box, SIGNAL(currentIndexChanged(int)), this,
+        				SLOT(currentIndexChanged(int)));
+				layout->addWidget(combo_box);
+
+				// keep reference to widgets for later cleanup
+				rootComponents.push_back(labelWidget);
+				rootComponents.push_back(camLineEdit);
+				rootComponents.push_back(combo_box);
+
+				return true;
 			}
-
-            combo_box->setObjectName(qname);
-            combo_box->setToolTip(tpgsetting->helptext);
-			combo_box->setVisible(tpgsetting->visible);
-
-			this->validator = new Validator(tpgsetting->grab(), combo_box);
-			combo_box->setValidator(validator);
-
-            form->setWidget(row, QFormLayout::FieldRole, combo_box);
-
-            // connect events
-        	QObject::connect(combo_box, SIGNAL(currentIndexChanged(int)), this,
-        			SLOT(currentIndexChanged(int)));
-            layout->addWidget(combo_box);
-
-            // keep reference to widgets for later cleanup
-            rootComponents.push_back(labelWidget);
-			rootComponents.push_back(camLineEdit);
-			rootComponents.push_back(combo_box);
-
-            return true;
         }
         Base::Console().Warning("Warning: Unable to find parent widget for (%p)\n", form->parent());
     }
@@ -741,13 +760,16 @@ void CamRateComponent::editingFinished() {
 	if (camLineEdit != NULL && tpgsetting != NULL) {
 		QString qvalue = camLineEdit->text();
 		Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgsetting);
-		double value;
-		if (rate->Evaluate(camLineEdit->text().toAscii().constData(), &value))
+		if (rate != NULL)
 		{
-			rate->set( value );
-			std::ostringstream ossValue;
-			ossValue << rate->get(rate->getUnits());
-			camLineEdit->setText(QString::fromStdString(ossValue.str()));
+			double value;
+			if (rate->Evaluate(camLineEdit->text().toAscii().constData(), &value))
+			{
+				rate->set( value );
+				std::ostringstream ossValue;
+				ossValue << rate->get(rate->getUnits());
+				camLineEdit->setText(QString::fromStdString(ossValue.str()));
+			}
 		}
 	}
 	else
@@ -766,8 +788,7 @@ void CamRateComponent::currentIndexChanged ( int current_index )
 	if ((current_index >= 0) && (current_index < int(values.size())))
 	{
 		Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgsetting);
-
-		if (rate)
+		if (rate != NULL)
 		{
 			rate->setUnits(values[current_index].first);
 			std::ostringstream ossValue;
@@ -794,80 +815,83 @@ bool CamRateComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout
         // construct the ui
         QWidget *parent = dynamic_cast<QWidget*>(form->parent());
         if (parent != NULL) {
-            int row = form->rowCount();
-            QString qname = tpgsetting->getFullname();
-
-            // make the label
-            QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
-			widgets_to_be_signalled.push_back(labelWidget);
-			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
-            form->setWidget(row, QFormLayout::LabelRole, labelWidget);
-            labelWidget->setToolTip(tpgsetting->helptext);
-			labelWidget->setVisible(tpgsetting->visible);
-
-            // make the container
-            QWidget *widget = new QWidget(parent);
-			widgets_to_be_signalled.push_back(widget);
-            QHBoxLayout *layout = new QHBoxLayout(widget);
-            layout->setContentsMargins(0,0,0,0);
-            widget->setLayout(layout);
-            widget->setObjectName(qname);
-            widget->setToolTip(tpgsetting->helptext);
-			widget->setVisible(tpgsetting->visible);
-			form->setWidget(row, QFormLayout::FieldRole, widget);
-
-			// make the edit box
-            camLineEdit = new CamLineEdit(parent, tpgsetting);
-			widgets_to_be_signalled.push_back(camLineEdit);
-            camLineEdit->setObjectName(qname);
-			camLineEdit->setVisible(tpgsetting->visible);
-
 			Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgsetting);
-			std::ostringstream ossValue;
-			ossValue << rate->get( rate->getUnits() );
-			camLineEdit->setText(QString::fromStdString(ossValue.str()));
-            camLineEdit->setToolTip(tpgsetting->helptext);
-			camLineEdit->setPlaceholderText(tpgsetting->helptext);
-			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
-			camLineEdit->setValidator(validator);
-            // connect events
-        	QObject::connect(camLineEdit, SIGNAL(editingFinished()), this,
-        			SLOT(editingFinished()));
-			layout->addWidget(camLineEdit);
-
-            QComboBox *combo_box = new QComboBox(parent);
-			widgets_to_be_signalled.push_back(combo_box);
-			int index = 0;
-			for (std::vector< std::pair< Id_t, Label_t > >::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+			if (rate != NULL)
 			{
-				combo_box->addItem(itValue->second);
-				if (rate->getUnits() == itValue->first)
+				int row = form->rowCount();
+				QString qname = tpgsetting->getFullname();
+
+				// make the label
+				QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+				widgets_to_be_signalled.push_back(labelWidget);
+				labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
+				form->setWidget(row, QFormLayout::LabelRole, labelWidget);
+				labelWidget->setToolTip(tpgsetting->helptext);
+				labelWidget->setVisible(tpgsetting->visible);
+
+				// make the container
+				QWidget *widget = new QWidget(parent);
+				widgets_to_be_signalled.push_back(widget);
+				QHBoxLayout *layout = new QHBoxLayout(widget);
+				layout->setContentsMargins(0,0,0,0);
+				widget->setLayout(layout);
+				widget->setObjectName(qname);
+				widget->setToolTip(tpgsetting->helptext);
+				widget->setVisible(tpgsetting->visible);
+				form->setWidget(row, QFormLayout::FieldRole, widget);
+
+				// make the edit box
+				camLineEdit = new CamLineEdit(parent, tpgsetting);
+				widgets_to_be_signalled.push_back(camLineEdit);
+				camLineEdit->setObjectName(qname);
+				camLineEdit->setVisible(tpgsetting->visible);
+
+				std::ostringstream ossValue;
+				ossValue << rate->get( rate->getUnits() );
+				camLineEdit->setText(QString::fromStdString(ossValue.str()));
+				camLineEdit->setToolTip(tpgsetting->helptext);
+				camLineEdit->setPlaceholderText(tpgsetting->helptext);
+				this->validator = new Validator(tpgsetting->grab(), camLineEdit);
+				camLineEdit->setValidator(validator);
+				// connect events
+        		QObject::connect(camLineEdit, SIGNAL(editingFinished()), this,
+        				SLOT(editingFinished()));
+				layout->addWidget(camLineEdit);
+
+				QComboBox *combo_box = new QComboBox(parent);
+				widgets_to_be_signalled.push_back(combo_box);
+				int index = 0;
+				for (std::vector< std::pair< Id_t, Label_t > >::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
 				{
-					combo_box->setCurrentIndex(index);
+					combo_box->addItem(itValue->second);
+					if (rate->getUnits() == itValue->first)
+					{
+						combo_box->setCurrentIndex(index);
+					}
+					index++;
 				}
-				index++;
+
+				combo_box->setObjectName(qname);
+				combo_box->setToolTip(tpgsetting->helptext);
+				combo_box->setVisible(tpgsetting->visible);
+
+				this->validator = new Validator(tpgsetting->grab(), combo_box);
+				combo_box->setValidator(validator);
+
+				form->setWidget(row, QFormLayout::FieldRole, combo_box);
+
+				// connect events
+        		QObject::connect(combo_box, SIGNAL(currentIndexChanged(int)), this,
+        				SLOT(currentIndexChanged(int)));
+				layout->addWidget(combo_box);
+
+				// keep reference to widgets for later cleanup
+				rootComponents.push_back(labelWidget);
+				rootComponents.push_back(camLineEdit);
+				rootComponents.push_back(combo_box);
+
+				return true;
 			}
-
-            combo_box->setObjectName(qname);
-            combo_box->setToolTip(tpgsetting->helptext);
-			combo_box->setVisible(tpgsetting->visible);
-
-			this->validator = new Validator(tpgsetting->grab(), combo_box);
-			combo_box->setValidator(validator);
-
-            form->setWidget(row, QFormLayout::FieldRole, combo_box);
-
-            // connect events
-        	QObject::connect(combo_box, SIGNAL(currentIndexChanged(int)), this,
-        			SLOT(currentIndexChanged(int)));
-            layout->addWidget(combo_box);
-
-            // keep reference to widgets for later cleanup
-            rootComponents.push_back(labelWidget);
-			rootComponents.push_back(camLineEdit);
-			rootComponents.push_back(combo_box);
-
-            return true;
         }
         Base::Console().Warning("Warning: Unable to find parent widget for (%p)\n", form->parent());
     }
@@ -894,6 +918,30 @@ bool CamRateComponent::close() {
 CamRadioComponent::CamRadioComponent()
 : CamComponent() {
 }
+
+CamRadioComponent::~CamRadioComponent()
+{
+	for (QMap<QString, QRadioButton*>::iterator itRadio = radios.begin(); itRadio != radios.end(); itRadio++)
+	{
+		QObject::disconnect( itRadio.value(), SIGNAL(clicked(bool)), this, SLOT(clicked(bool)));
+	}
+}
+
+
+void CamRadioComponent::clicked(bool checked)
+{
+	QMap<QString, QRadioButton*>::const_iterator it = radios.constBegin();
+	for (; it != radios.constEnd(); ++it) {
+		if (it.value()->isChecked()) {
+			QString qvalue = it.key();
+			tpgsetting->setValue(qvalue);
+		}
+	}
+
+	signalUpdated();
+}
+
+
 
 /**
  * Creates the UI for this component and loads the initial value
@@ -935,10 +983,15 @@ bool CamRadioComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayou
             for (; it != tpgsetting->options.end(); ++it) {
                 QRadioButton *btn = new QRadioButton(widget);
 				widgets_to_be_signalled.push_back(btn);
+
+				QObject::connect( btn, SIGNAL(clicked(bool)), this, SLOT(clicked(bool)));
+
                 btn->setObjectName(qname + (*it)->id);
 				btn->setVisible(tpgsetting->visible);
                 if (qvalue.compare((*it)->id) == 0)
+				{
                     btn->setChecked(true);
+				}
                 btn->setText((*it)->label);
                 layout->addWidget(btn);
 				radios.insert((*it)->id, btn);
@@ -1462,31 +1515,34 @@ bool CamColorComponent::close() {
 
 void CamColorComponent::handleButton()
 {
-	Cam::Settings::Color *pColorSetting = (Cam::Settings::Color *) this->tpgsetting;
+	Cam::Settings::Color *pColorSetting = dynamic_cast<Cam::Settings::Color *>(this->tpgsetting);
 
-	int red, green, blue, alpha;
-	pColorSetting->get(red, green, blue, alpha);
-	QColor initial(red, green, blue, alpha);
-
-	QColor color = QColorDialog::getColor(initial, NULL);
-	if (color.isValid())
+	if (pColorSetting)
 	{
-		QPalette palette(color);
-		this->button->setPalette(palette);
-		this->button->setAutoFillBackground(true);
-		this->button->setFlat(true);
+		int red, green, blue, alpha;
+		pColorSetting->get(red, green, blue, alpha);
+		QColor initial(red, green, blue, alpha);
 
-		// Cast the setting pointer to a TPGColorSettingDefinition so that we can generate
-		// the verbose (string) represenation of the QColor for storage in the PropTPGSettings property
-		// within the TPGFeature.
+		QColor color = QColorDialog::getColor(initial, NULL);
+		if (color.isValid())
+		{
+			QPalette palette(color);
+			this->button->setPalette(palette);
+			this->button->setAutoFillBackground(true);
+			this->button->setFlat(true);
 
+			// Cast the setting pointer to a TPGColorSettingDefinition so that we can generate
+			// the verbose (string) represenation of the QColor for storage in the PropTPGSettings property
+			// within the TPGFeature.
+
+			
+			pColorSetting->set( color.red(), color.green(), color.blue(), color.alpha() );
+		}
 		
-		pColorSetting->set( color.red(), color.green(), color.blue(), color.alpha() );
+		// Signal the parent dialog that we may have changed something so that it can let all the other
+		// CamComponent objects know to re-check their visible flags for changes too.
+		signalUpdated();
 	}
-	
-	// Signal the parent dialog that we may have changed something so that it can let all the other
-	// CamComponent objects know to re-check their visible flags for changes too.
-	signalUpdated();
 }
 
 
