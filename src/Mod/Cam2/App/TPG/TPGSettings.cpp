@@ -2684,6 +2684,12 @@ Settings::Radio	*Settings::TPGSettings::asRadio(const QString action, const QStr
 	return(NULL);
 }
 
+void Settings::Radio::Add(const char *value)
+{
+	this->addOption(value, value);	// Same value for both positions.
+}
+
+
 #ifdef WIN32
 #pragma endregion "Settings::Radio"
 #endif

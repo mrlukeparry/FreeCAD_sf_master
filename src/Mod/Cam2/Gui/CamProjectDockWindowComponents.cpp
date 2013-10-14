@@ -106,7 +106,16 @@ void CamComponent::setVisibleFlag()
  */
 void CamComponent::signalUpdated()
 {
-	Q_EMIT UpdatedCamComponentSignal(this);
+	// We disable GUI signalling when the program changes settings as opposed to the operator changing
+	// them using the GUI.  When we change the values without the GUI, we don't want all the GUI
+	// signalling, and hence updating, that goes on when the operator uses the GUI to change values.
+
+	if (this->guiSignalling())
+	{
+		// The GUI was used to change something.  Let everyone know that this has occured just
+		// in case they want to update themselves as a result.
+		Q_EMIT UpdatedCamComponentSignal(this);
+	}
 }
 
 
@@ -256,59 +265,7 @@ void CamLineEdit::focusOutEvent ( QFocusEvent * e )
 		int response = message_box.exec();
 		if (response == QMessageBox::Discard)
 		{
-			switch(this->tpgSetting->type)
-			{
-			case Cam::Settings::Definition::SettingType_Length:
-				{
-					Cam::Settings::Length *length = dynamic_cast<Cam::Settings::Length *>(this->tpgSetting);
-					if (length != NULL)
-					{
-						std::ostringstream ossValue;
-						ossValue << length->get(length->getUnits());
-						this->setText(QString::fromStdString(ossValue.str()));
-					}
-				}
-				break;
-
-			case Cam::Settings::Definition::SettingType_Rate:
-				{
-					Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgSetting);
-					if (rate != NULL)
-					{
-						std::ostringstream ossValue;
-						ossValue << rate->get(rate->getUnits());
-						this->setText(QString::fromStdString(ossValue.str()));
-					}
-				}
-				break;
-
-			case Cam::Settings::Definition::SettingType_Double:
-				{
-					Cam::Settings::Double *double_setting = dynamic_cast<Cam::Settings::Double *>(this->tpgSetting);
-					if (double_setting != NULL)
-					{
-						std::ostringstream ossValue;
-						ossValue << double_setting->get();
-						this->setText(QString::fromStdString(ossValue.str()));
-					}
-				}
-				break;
-
-			case Cam::Settings::Definition::SettingType_Integer:
-				{
-					Cam::Settings::Integer *integer_setting = dynamic_cast<Cam::Settings::Integer *>(this->tpgSetting);
-					if (integer_setting != NULL)
-					{
-						std::ostringstream ossValue;
-						ossValue << integer_setting->get();
-						this->setText(QString::fromStdString(ossValue.str()));
-					}
-				}
-				break;
-
-			default:
-				this->setText(this->tpgSetting->getValue());
-			}
+			this->refresh();
 		}
 		else
 		{
@@ -320,6 +277,73 @@ void CamLineEdit::focusOutEvent ( QFocusEvent * e )
 		QLineEdit::focusOutEvent(e);
 	}
 }
+
+void CamLineEdit::refresh()
+{
+	switch(this->tpgSetting->type)
+	{
+	case Cam::Settings::Definition::SettingType_Length:
+		{
+			Cam::Settings::Length *length = dynamic_cast<Cam::Settings::Length *>(this->tpgSetting);
+			if (length != NULL)
+			{
+				std::ostringstream ossValue;
+				ossValue << length->get(length->getUnits());
+				this->setText(QString::fromStdString(ossValue.str()));
+				
+			}
+		}
+		break;
+
+	case Cam::Settings::Definition::SettingType_Rate:
+		{
+			Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgSetting);
+			if (rate != NULL)
+			{
+				std::ostringstream ossValue;
+				ossValue << rate->get(rate->getUnits());
+				this->setText(QString::fromStdString(ossValue.str()));
+			}
+		}
+		break;
+
+	case Cam::Settings::Definition::SettingType_Double:
+		{
+			Cam::Settings::Double *double_setting = dynamic_cast<Cam::Settings::Double *>(this->tpgSetting);
+			if (double_setting != NULL)
+			{
+				std::ostringstream ossValue;
+				ossValue << double_setting->get();
+				this->setText(QString::fromStdString(ossValue.str()));
+			}
+		}
+		break;
+
+	case Cam::Settings::Definition::SettingType_Integer:
+		{
+			Cam::Settings::Integer *integer_setting = dynamic_cast<Cam::Settings::Integer *>(this->tpgSetting);
+			if (integer_setting != NULL)
+			{
+				std::ostringstream ossValue;
+				ossValue << integer_setting->get();
+				this->setText(QString::fromStdString(ossValue.str()));
+			}
+		}
+		break;
+
+	default:
+		this->setText(this->tpgSetting->getValue());
+	}
+}
+
+void CamTextBoxComponent::refresh()
+{
+	if ((widget != NULL) && (tpgsetting != NULL))
+	{
+		widget->refresh();
+	}
+}
+
 
 /**
 	This is a button handler for the dialog that is created
@@ -519,6 +543,7 @@ bool CamTextBoxComponent::close() {
 CamLengthComponent::CamLengthComponent()
 : CamComponent() {
     this->camLineEdit = NULL;
+	this->combo_box = NULL;
 
 	QString metric, imperial;
 	metric << Cam::Settings::Definition::Metric;
@@ -531,7 +556,8 @@ CamLengthComponent::CamLengthComponent()
 /**
  * Slot to receive messages when the user changes the text value
  */
-void CamLengthComponent::editingFinished() {
+void CamLengthComponent::editingFinished() 
+{
 	if (camLineEdit != NULL && tpgsetting != NULL) {
 		QString qvalue = camLineEdit->text();
 		Cam::Settings::Length *length = dynamic_cast<Cam::Settings::Length *>(this->tpgsetting);
@@ -563,6 +589,54 @@ void CamLengthComponent::editingFinished() {
 					ossValue << length->get(length->getUnits());
 					camLineEdit->setText(QString::fromStdString(ossValue.str()));
 				}
+			}
+		}
+	}
+	else
+		Base::Console().Error("Saving a setting failed!\n");
+}
+
+void CamLengthComponent::refresh() 
+{
+	if (camLineEdit != NULL && tpgsetting != NULL) {
+		Cam::Settings::Length *length = dynamic_cast<Cam::Settings::Length *>(this->tpgsetting);
+		if (length != NULL)
+		{
+			if ((this->combo_box->currentIndex() >= 0) && (this->combo_box->currentIndex() < int(values.size())))
+			{
+				if (values[this->combo_box->currentIndex()].first != length->getUnits())
+				{
+					// We need the value in the setting (both 'value' and 'units') to be taken as correct.
+					// Save the existing 'value' before we change the units as the changing of the units
+					// may change the 'value' as well.  We then restore the original value with the new units
+					// in place.
+
+					double existingValue = length->get(length->getUnits());
+					length->setUnits(values[this->combo_box->currentIndex()].first);
+					length->set(existingValue);
+				}
+			}
+
+			if (length->getUnits() == Cam::Settings::Definition::Imperial)
+			{
+				// See if the value happens to also be a fractional value.  They just 'look' better for imperial measurements.
+				QString fraction = FractionalRepresentation( length->get(length->getUnits()) );
+				if (fraction.isNull() == false)
+				{
+					camLineEdit->setText(fraction);
+				}
+				else
+				{
+					std::ostringstream ossValue;
+					ossValue << length->get(length->getUnits());
+					camLineEdit->setText(QString::fromStdString(ossValue.str()));
+				}
+			}
+			else
+			{
+				std::ostringstream ossValue;
+				ossValue << length->get(length->getUnits());
+				camLineEdit->setText(QString::fromStdString(ossValue.str()));
 			}
 		}
 	}
@@ -681,37 +755,37 @@ bool CamLengthComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayo
         				SLOT(editingFinished()));
 				layout->addWidget(camLineEdit);
 
-				QComboBox *combo_box = new QComboBox(parent);
-				widgets_to_be_signalled.push_back(combo_box);
+				this->combo_box = new QComboBox(parent);
+				widgets_to_be_signalled.push_back(this->combo_box);
 				int index = 0;
 				for (std::vector< std::pair< Id_t, Label_t > >::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
 				{
-					combo_box->addItem(itValue->second);
+					this->combo_box->addItem(itValue->second);
 					if (length->getUnits() == itValue->first)
 					{
-						combo_box->setCurrentIndex(index);
+						this->combo_box->setCurrentIndex(index);
 					}
 					index++;
 				}
 
-				combo_box->setObjectName(qname);
-				combo_box->setToolTip(tpgsetting->helptext);
-				combo_box->setVisible(tpgsetting->visible);
+				this->combo_box->setObjectName(qname);
+				this->combo_box->setToolTip(tpgsetting->helptext);
+				this->combo_box->setVisible(tpgsetting->visible);
 
-				this->validator = new Validator(tpgsetting->grab(), combo_box);
-				combo_box->setValidator(validator);
+				this->validator = new Validator(tpgsetting->grab(), this->combo_box);
+				this->combo_box->setValidator(validator);
 
-				form->setWidget(row, QFormLayout::FieldRole, combo_box);
+				form->setWidget(row, QFormLayout::FieldRole, this->combo_box);
 
 				// connect events
         		QObject::connect(combo_box, SIGNAL(currentIndexChanged(int)), this,
         				SLOT(currentIndexChanged(int)));
-				layout->addWidget(combo_box);
+				layout->addWidget(this->combo_box);
 
 				// keep reference to widgets for later cleanup
 				rootComponents.push_back(labelWidget);
 				rootComponents.push_back(camLineEdit);
-				rootComponents.push_back(combo_box);
+				rootComponents.push_back(this->combo_box);
 
 				return true;
 			}
@@ -742,6 +816,7 @@ bool CamLengthComponent::close() {
 CamRateComponent::CamRateComponent()
 : CamComponent() {
     this->camLineEdit = NULL;
+	this->combo_box = NULL;
 
 	QString metric, imperial;
 	metric << Cam::Settings::Definition::Metric;
@@ -778,6 +853,36 @@ void CamRateComponent::editingFinished() {
 	// Signal the parent dialog that we may have changed something so that it can let all the other
 	// CamComponent objects know to re-check their visible flags for changes too.
 	signalUpdated();
+}
+
+void CamRateComponent::refresh() 
+{
+	if (camLineEdit != NULL && tpgsetting != NULL) {
+		Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgsetting);
+		if (rate != NULL)
+		{
+			if ((this->combo_box->currentIndex() >= 0) && (this->combo_box->currentIndex() < int(values.size())))
+			{
+				if (values[this->combo_box->currentIndex()].first != rate->getUnits())
+				{
+					// We need the value in the setting (both 'value' and 'units') to be taken as correct.
+					// Save the existing 'value' before we change the units as the changing of the units
+					// may change the 'value' as well.  We then restore the original value with the new units
+					// in place.
+
+					double existingValue = rate->get(rate->getUnits());
+					rate->setUnits(values[this->combo_box->currentIndex()].first);
+					rate->set(existingValue);
+				}
+			}
+
+			std::ostringstream ossValue;
+			ossValue << rate->get(rate->getUnits());
+			camLineEdit->setText(QString::fromStdString(ossValue.str()));
+		}
+	}
+	else
+		Base::Console().Error("Saving a setting failed!\n");
 }
 
 /**
@@ -858,37 +963,37 @@ bool CamRateComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout
         				SLOT(editingFinished()));
 				layout->addWidget(camLineEdit);
 
-				QComboBox *combo_box = new QComboBox(parent);
-				widgets_to_be_signalled.push_back(combo_box);
+				this->combo_box = new QComboBox(parent);
+				widgets_to_be_signalled.push_back(this->combo_box);
 				int index = 0;
 				for (std::vector< std::pair< Id_t, Label_t > >::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
 				{
-					combo_box->addItem(itValue->second);
+					this->combo_box->addItem(itValue->second);
 					if (rate->getUnits() == itValue->first)
 					{
-						combo_box->setCurrentIndex(index);
+						this->combo_box->setCurrentIndex(index);
 					}
 					index++;
 				}
 
-				combo_box->setObjectName(qname);
-				combo_box->setToolTip(tpgsetting->helptext);
-				combo_box->setVisible(tpgsetting->visible);
+				this->combo_box->setObjectName(qname);
+				this->combo_box->setToolTip(tpgsetting->helptext);
+				this->combo_box->setVisible(tpgsetting->visible);
 
 				this->validator = new Validator(tpgsetting->grab(), combo_box);
-				combo_box->setValidator(validator);
+				this->combo_box->setValidator(validator);
 
-				form->setWidget(row, QFormLayout::FieldRole, combo_box);
+				form->setWidget(row, QFormLayout::FieldRole, this->combo_box);
 
 				// connect events
         		QObject::connect(combo_box, SIGNAL(currentIndexChanged(int)), this,
         				SLOT(currentIndexChanged(int)));
-				layout->addWidget(combo_box);
+				layout->addWidget(this->combo_box);
 
 				// keep reference to widgets for later cleanup
 				rootComponents.push_back(labelWidget);
 				rootComponents.push_back(camLineEdit);
-				rootComponents.push_back(combo_box);
+				rootComponents.push_back(this->combo_box);
 
 				return true;
 			}
@@ -927,6 +1032,13 @@ CamRadioComponent::~CamRadioComponent()
 	}
 }
 
+void CamRadioComponent::refresh()
+{
+	for (QMap<QString, QRadioButton*>::iterator itRadio = radios.begin(); itRadio != radios.end(); itRadio++)
+	{
+		itRadio.value()->setChecked(bool(this->tpgsetting->getValue() == itRadio.key()));
+	}
+}
 
 void CamRadioComponent::clicked(bool checked)
 {
@@ -1034,6 +1146,7 @@ bool CamRadioComponent::close() {
 
 CamComboBoxComponent::CamComboBoxComponent()
 : CamComponent() {
+	this->combo_box = NULL;
 }
 
 /**
@@ -1064,8 +1177,8 @@ bool CamComboBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 			// associate the 'index' of the combo-box with the correct options in both
 			// this method (which defines them) and in the currentIndexChanged() (which
 			// looks for which one was chosen).
-			QComboBox *combo_box = new QComboBox(parent);
-			widgets_to_be_signalled.push_back(combo_box);
+			this->combo_box = new QComboBox(parent);
+			widgets_to_be_signalled.push_back(this->combo_box);
 			int index = 0;
 			if (this->tpgsetting->type == Cam::Settings::Definition::SettingType_SingleObjectNameForType)
 			{
@@ -1083,10 +1196,10 @@ bool CamComboBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 						for (std::vector<App::DocumentObject *>::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
 						{
 							QString name = QString::fromAscii((*itObject)->getNameInDocument());
-							combo_box->addItem( name );
+							this->combo_box->addItem( name );
 							if (pSetting->GetName() == name)
 							{
-								combo_box->setCurrentIndex(index);
+								this->combo_box->setCurrentIndex(index);
 							}
 
 							values.push_back( std::make_pair( name, name ));
@@ -1099,24 +1212,24 @@ bool CamComboBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 			{
 				for (QList<Cam::Settings::Option *>::const_iterator itOption = this->tpgsetting->options.begin(); itOption != this->tpgsetting->options.end(); itOption++)
 				{
-					combo_box->addItem((*itOption)->label);
+					this->combo_box->addItem((*itOption)->label);
 					if (this->tpgsetting->getValue() == (*itOption)->id)
 					{
-						combo_box->setCurrentIndex(index);
+						this->combo_box->setCurrentIndex(index);
 					}
 					values.push_back( std::make_pair( (*itOption)->id, (*itOption)->label ) );
 					index++;
 				}
 			}
 
-            combo_box->setObjectName(qname);
-            combo_box->setToolTip(tpgsetting->helptext);
-			combo_box->setVisible(tpgsetting->visible);
+            this->combo_box->setObjectName(qname);
+            this->combo_box->setToolTip(tpgsetting->helptext);
+			this->combo_box->setVisible(tpgsetting->visible);
 
-			this->validator = new Validator(tpgsetting->grab(), combo_box);
-			combo_box->setValidator(validator);
+			this->validator = new Validator(tpgsetting->grab(), this->combo_box);
+			this->combo_box->setValidator(validator);
 
-            form->setWidget(row, QFormLayout::FieldRole, combo_box);
+            form->setWidget(row, QFormLayout::FieldRole, this->combo_box);
 
             // connect events
         	QObject::connect(combo_box, SIGNAL(currentIndexChanged(int)), this,
@@ -1124,7 +1237,7 @@ bool CamComboBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 
             // keep reference to widgets for later cleanup
             rootComponents.push_back(labelWidget);
-            rootComponents.push_back(combo_box);
+            rootComponents.push_back(this->combo_box);
 
             return true;
         }
@@ -1133,6 +1246,45 @@ bool CamComboBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 
     Base::Console().Warning("Warning: Not given a TPGSettingDefinition");
     return false;
+}
+
+void CamComboBoxComponent::refresh()
+{
+	switch (this->tpgsetting->type)
+	{
+	case Cam::Settings::Definition::SettingType_SingleObjectNameForType:
+		{
+			Cam::Settings::SingleObjectNameForType *pSetting = (Cam::Settings::SingleObjectNameForType *) this->tpgsetting;
+			if (pSetting)
+			{
+				for (::SIZE_T i=0; i<values.size(); i++)
+				{
+					if (values[i].second == pSetting->GetName())
+					{
+						this->combo_box->setCurrentIndex(int(i));
+					}
+				}
+			}
+		}
+		break;
+
+	case Cam::Settings::Definition::SettingType_Enumeration:
+		{
+			Cam::Settings::Enumeration *pSetting = (Cam::Settings::Enumeration *) this->tpgsetting;
+			if (pSetting)
+			{
+				for (::SIZE_T i=0; i<values.size(); i++)
+				{
+					if (values[i].second == pSetting->get().second)
+					{
+						this->combo_box->setCurrentIndex(int(i));
+					}
+				}
+			}
+		}
+		break;
+	}
+
 }
 
 /**
@@ -1169,6 +1321,11 @@ CamFilenameComponent::CamFilenameComponent()
 : CamComponent() {
     this->camLineEdit = NULL;
 	this->button = NULL;
+}
+
+void CamFilenameComponent::refresh()
+{
+	this->camLineEdit->refresh();
 }
 
 /**
@@ -1309,6 +1466,12 @@ CamDirectoryComponent::CamDirectoryComponent()
 	this->button = NULL;
 }
 
+void CamDirectoryComponent::refresh()
+{
+	this->camLineEdit->refresh();
+}
+
+
 /**
  * Slot to receive messages when the user changes the text value
  */
@@ -1439,6 +1602,31 @@ CamColorComponent::CamColorComponent()
 : CamComponent() {
 	this->button = NULL;
 }
+
+void CamColorComponent::refresh()
+{
+	Cam::Settings::Color *pColorSetting = dynamic_cast<Cam::Settings::Color *>(this->tpgsetting);
+
+	if (pColorSetting)
+	{
+		int red, green, blue, alpha;
+		pColorSetting->get(red, green, blue, alpha);
+		QColor color(red, green, blue, alpha);
+
+		if (color.isValid())
+		{
+			QPalette palette(color);
+			this->button->setPalette(palette);
+			this->button->setAutoFillBackground(true);
+			this->button->setFlat(true);
+		}
+		
+		// Signal the parent dialog that we may have changed something so that it can let all the other
+		// CamComponent objects know to re-check their visible flags for changes too.
+		signalUpdated();
+	}
+}
+
 
 /**
  * Creates the UI for this component and loads the initial value

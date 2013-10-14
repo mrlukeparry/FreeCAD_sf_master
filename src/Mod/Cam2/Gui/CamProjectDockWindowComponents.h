@@ -33,6 +33,7 @@
 #include <QMap>
 #include <QPushButton>
 #include <QToolButton>
+#include <QComboBox>
 
 #include "../App/TPG/TPGSettings.h"
 
@@ -124,6 +125,15 @@ public:
 	/// Ensure the QWidgets that represent this setting have a visible flag that matches the setting's visible flag's value.
 	void setVisibleFlag();
 
+private:
+	bool gui_signalling_enabled;
+
+public:
+	bool guiSignalling() const { return(this->gui_signalling_enabled); }
+	void guiSignalling(const bool value) { this->gui_signalling_enabled = value; }
+
+	virtual void refresh() {}	// Refresh the values displayed in the widgets based on the current settings values.
+
 	/**
 		This method emits the UpdatedCamComponentSignal() signal to call the CamProjectDocWindow::UpdatedCamComponent() method.
 
@@ -163,6 +173,7 @@ public:
 	}
 
 	virtual void focusOutEvent ( QFocusEvent * e );
+	virtual void refresh();
 
 private:
 	Cam::Settings::Definition *tpgSetting;
@@ -195,6 +206,7 @@ public:
      * Saves the values on the UI to the TPGSetting instance
      */
     virtual bool close();
+	virtual void refresh();
 
 public Q_SLOTS:
 
@@ -220,6 +232,7 @@ class CamGuiExport CamLengthComponent: public CamComponent {
 
 protected:
     CamLineEdit *camLineEdit;
+	QComboBox	*combo_box;
 
 public:
 
@@ -234,6 +247,7 @@ public:
      * Saves the values on the UI to the TPGSetting instance
      */
     virtual bool close();
+	virtual void refresh();
 
 public Q_SLOTS:
 
@@ -262,6 +276,7 @@ class CamGuiExport CamRateComponent: public CamComponent {
 
 protected:
     CamLineEdit *camLineEdit;
+	QComboBox	*combo_box;
 
 public:
 
@@ -276,6 +291,7 @@ public:
      * Saves the values on the UI to the TPGSetting instance
      */
     virtual bool close();
+	virtual void refresh();
 
 public Q_SLOTS:
 
@@ -321,6 +337,7 @@ public:
      * Saves the values on the UI to the TPGSetting instance
      */
     virtual bool close();
+	virtual void refresh();
 
 public Q_SLOTS:
 		void clicked(bool checked);
@@ -339,6 +356,7 @@ class CamGuiExport CamComboBoxComponent: public CamComponent {
 public:
 
     CamComboBoxComponent();
+	QComboBox *combo_box;
 
     /**
      * Creates the UI for this component and loads the initial value
@@ -349,6 +367,7 @@ public:
      * Saves the values on the UI to the TPGSetting instance
      */
     virtual bool close();
+	virtual void refresh();
 
 public Q_SLOTS:
 
@@ -360,7 +379,8 @@ public Q_SLOTS:
 private:
 	typedef QString Id_t;
 	typedef QString Label_t;
-	std::vector< std::pair< Id_t, Label_t > > values;
+	typedef std::vector< std::pair< Id_t, Label_t > > Values_t;
+	Values_t values;
 };
 
 
@@ -389,6 +409,7 @@ public:
      * Saves the values on the UI to the TPGSetting instance
      */
     virtual bool close();
+	virtual void refresh();
 
 private Q_SLOTS:
 
@@ -427,6 +448,7 @@ public:
      * Saves the values on the UI to the TPGSetting instance
      */
     virtual bool close();
+	virtual void refresh();
 
 private Q_SLOTS:
 
@@ -465,6 +487,7 @@ public:
      * Saves the values on the UI to the TPGSetting instance
      */
     virtual bool close();
+	virtual void refresh();
 
 private Q_SLOTS:
 

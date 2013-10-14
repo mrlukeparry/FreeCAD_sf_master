@@ -176,7 +176,10 @@ void CamProjectDockWindow::UpdatedCamComponent(CamComponent *camComponent)
 
 	for (QList<CamComponent*>::iterator itCamComponent = components.begin(); itCamComponent != components.end(); itCamComponent++)
 	{
-		(*itCamComponent)->setVisibleFlag();
+		(*itCamComponent)->guiSignalling(false);	// Disable GUI signalling while we're refreshing values without the user interface.
+		(*itCamComponent)->setVisibleFlag();		// Display/Hide the widgets for this setting's GUI representation.
+		(*itCamComponent)->refresh();				// Force the widgets representing the setting to be refreshed based on the setting's current value (in case the onChanged() method changed one of them)
+		(*itCamComponent)->guiSignalling(true);		// Re-enable GUI signalling so that updates occur when the operator uses the GUI
 	}
 }
 

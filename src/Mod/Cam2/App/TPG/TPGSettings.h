@@ -697,6 +697,8 @@ public:
 			{
 			}
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
+
+	void Add(const char *value);
 };
 
 class CamExport Integer : public Definition

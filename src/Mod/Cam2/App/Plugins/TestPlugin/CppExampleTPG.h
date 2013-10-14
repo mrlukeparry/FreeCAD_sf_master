@@ -80,6 +80,7 @@ public:
 	Settings::Double	*spindle_speed;
 	Settings::Rate		*feed_rate;
 	Settings::Text		*sometimes_hidden;
+	Settings::Radio		*speed;
 
 	typedef enum
 	{

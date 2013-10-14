@@ -249,12 +249,12 @@ CppExampleTPG::~CppExampleTPG() {
 												Settings::Definition::Metric );
 		settings->addSettingDefinition(qaction, this->feed_rate);
 
-		Settings::Radio* speed = new Settings::Radio("speed", "Speed", "normal", "The speed of the algorithm.  Faster will use less accurate algorithm.");
-		settings->addSettingDefinition(qaction, speed);
+		this->speed = new Settings::Radio("speed", "Speed", "normal", "The speed of the algorithm.  Faster will use less accurate algorithm.");
+		settings->addSettingDefinition(qaction, this->speed);
 
-		speed->addOption("fast", "Fast");
-		speed->addOption("normal", "Normal");
-		speed->addOption("slow", "Slow");
+		this->speed->Add("Fast");
+		this->speed->Add("Normal");
+		this->speed->Add("Slow");
 
 		settings->addSettingDefinition(qaction, new Settings::Filename("Filename", 
 																		 "My Special Filename",
@@ -771,10 +771,14 @@ void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QSt
 		if (this->retract_mode->get().first == eRapidRetract) 
 		{
 			this->sometimes_hidden->visible = false;
+			this->peck_depth->set(7.4);
+			this->speed->setValue(QString::fromAscii("Fast"));
 		}
 		else
 		{
 			this->sometimes_hidden->visible = true;
+			this->peck_depth->set(3.3);
+			this->speed->setValue(QString::fromAscii("Slow"));
 		}
 	}
 	else if (tpgSettingDefinition == clearance_height)
