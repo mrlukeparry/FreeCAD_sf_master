@@ -204,7 +204,9 @@ public:
 	QString defaultvalue;
 	QString units;
 	QString helptext;
-	bool	visible;
+	bool	visible;		// The visible flag is used to display/hide the widgets that represent this setting in the settings editor dialog.
+							// If its value is changed as part of an onChanged() method call, the settings editor dialog is updated to
+							// reflect the new value.
 	
 	QList<Option*> options;
 

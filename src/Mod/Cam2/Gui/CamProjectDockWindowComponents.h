@@ -38,6 +38,24 @@
 
 namespace CamGui {
 
+
+/**
+	The CamComponent class is the base class used to represent a set of widgets that combine
+	to represent a single Cam::Settings::Definition object (in this->tpgsetting).  Each one
+	of these objects may hold pointers to a number of QWidget (based) objects.  eg: a single
+	setting may be represented by  QLabelText, QLineEdit and/or QPushButton widgets.
+
+	This class includes a Q_SIGNAL method (UpdatedCamComponentSignal()) that is tied to
+	the CamProjectDockWindow object that owns all of the CamComponent objects.  Each time
+	one of these CamComponent objects is updated, it emits a signal to the CamProjectDocWindow
+	object indicating such.  The CamProjectDocWindow lets all the corresponding CamComponent
+	objects know that one of the settings has changed.  This is the mechanism by which the
+	Cam::Settings::Definition::visible flag is reflected in the various QWidget::setVisible()
+	flag.  i.e. if a setting is changed then the onChanged() method may decide that another
+	one of the setting's visibility flags should be turned on or off.  Such changes need
+	to be reflected in the CamComponent objects (and hence its QWidgets) that represent
+	that setting.
+ */
 class CamGuiExport CamComponent : public QObject {
 
 Q_OBJECT;
@@ -46,7 +64,9 @@ protected:
     Cam::Settings::Definition *tpgsetting;
     QFormLayout* form;
     QList<QWidget*> rootComponents;
-	QList<QWidget*> widgets_to_be_signalled;
+	QList<QWidget*> widgets_to_be_signalled;	// This differs from the rootComponents list only by the fact that one of the QLineEdit objects
+												// needs to be signalled but, since it was added to a QLayout object, it must NOT be deleted
+												// by us directly.
 
 	/**
 		The Validator class allows the QValidator mechanisms supported by the Qt library to ask
@@ -104,13 +124,28 @@ public:
 	/// Ensure the QWidgets that represent this setting have a visible flag that matches the setting's visible flag's value.
 	void setVisibleFlag();
 
+	/**
+		This method emits the UpdatedCamComponentSignal() signal to call the CamProjectDocWindow::UpdatedCamComponent() method.
+
+		It should be called by all parent classes when any of their values changes.
+	 */
 	void signalUpdated();
 
 Q_SIGNALS:
+	// This signal is tied to the CamProjectDockWindow::UpdateCamComponent() method via the QObject::connect() method.
+	// It indicates that the setting represented by this CamComponent has changed in some way.  The
+	// CamProjectDocWindow::UpdateCamComponent() method signals all the other CamComponent objects (of the
+	// Settings editor dialog box) in case they need to change anything (such as their visibility flags).
 	void UpdatedCamComponentSignal(CamComponent *camComponent);
 
 };
 
+
+/**
+	The CamLineEdit class is only used so that we can register callback functions for the QLineEdit
+	objects to handle the validation as well as a mechanism to set the TPGFeature::PropTPGSettings map
+	based on the newly changed value.
+ */
 class CamLineEdit : public QLineEdit
 {
 public:
@@ -136,6 +171,9 @@ private:
 // ----- CamTextBoxComponent ---------------------------------------------------------
 /**
  * Object that manages a Cam::TextBox setting
+ *
+ * This is used to represent the ObjectNamesForType, Integer, Text and Double settings
+ * types.  This association is made in the CamProjectDockWindow::editSettings() method.               
  */
 class CamGuiExport CamTextBoxComponent: public CamComponent {
 

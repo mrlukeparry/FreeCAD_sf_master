@@ -98,12 +98,25 @@ void CamComponent::setVisibleFlag()
 	}
 }
 
+/**
+	This CamComponent's setting has changed.  Signal the CamProjectDocWindow object so that
+	it can let all the corresponding CamComponent objects know that one of their partners
+	has changed.  This ends up calling the CamProjectDocWindow::UpdatedCamComponent() method
+	via the QObject::connect() mechanism.
+ */
 void CamComponent::signalUpdated()
 {
 	Q_EMIT UpdatedCamComponentSignal(this);
 }
 
 
+
+/**
+	Call the registered validate() method for this setting and convert the results
+	into a QValidator::State value.  The Cam::Setting::Definition::validate() method
+	doesn't return a QValidator::State value directly because the Cam::Setting::Definition
+	objects can exist in a non-gui environment while the QValidator class cannot.
+ */
 QValidator::State CamComponent::Validator::validate(QString & input, int & position) const
 {
 	switch(this->setting_definition->validate(input, position))
@@ -143,6 +156,10 @@ bool CamComponent::close() {
 	eg: 0.125 -> "1/8"
 	    1.125 -> "1+(1/8)"
 	    0.109375 -> "7/64"
+
+	We NEED the QString value returned by this method to be something that can be interpreted
+	by the internal Python interpreter to produce a floating point number.  That's why we need
+	to include the plus (+) character when the value is greater than one.
  */
 /* static */ QString CamComponent::FractionalRepresentation( const double original_value, const int max_denominator /* = 64 */ )
 {
@@ -465,7 +482,6 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
             // keep reference to widgets for later cleanup
             rootComponents.push_back(labelWidget);
             rootComponents.push_back(container);
-			rootComponents.push_back(this->widget);
 			
             return true;
         }
