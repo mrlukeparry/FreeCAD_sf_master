@@ -53,6 +53,15 @@ CamProjectDockWindow::CamProjectDockWindow(Gui::Document* pcDocument,
 
 CamProjectDockWindow::~CamProjectDockWindow()
 {
+	// clear old form components
+    QList<CamComponent*>::iterator it = components.begin();
+    for (; it != components.end(); ++it)
+	{
+		QObject::disconnect(*it, SIGNAL(UpdatedCamComponentSignal(CamComponent *)),
+					this, SLOT(UpdatedCamComponent(CamComponent *)));
+        delete *it;
+	}
+    components.clear();
 }
 
 /**
@@ -73,6 +82,8 @@ bool CamProjectDockWindow::editSettings(Cam::Settings::TPGSettings* newSettings,
         QList<CamComponent*>::iterator it = components.begin();
         for (; it != components.end(); ++it)
 		{
+			QObject::disconnect(*it, SIGNAL(UpdatedCamComponentSignal(CamComponent *camComponent)),
+						this, SLOT(UpdatedCamComponent(CamComponent *camComponent)));
             delete *it;
 		}
         components.clear();
@@ -83,6 +94,8 @@ bool CamProjectDockWindow::editSettings(Cam::Settings::TPGSettings* newSettings,
     QList<CamComponent*>::iterator it = components.begin();
     for (; it != components.end(); ++it)
 	{
+		QObject::disconnect(*it, SIGNAL(UpdatedCamComponentSignal(CamComponent *)),
+						this, SLOT(UpdatedCamComponent(CamComponent *)));
         delete *it;
 	}
     components.clear();
@@ -98,7 +111,7 @@ bool CamProjectDockWindow::editSettings(Cam::Settings::TPGSettings* newSettings,
         for (; it != settings.end(); ++it)
         {
             Cam::Settings::Definition* setting = *it;
-            if ((setting != NULL) && (setting->visible))
+            if (setting != NULL)
             {
 				if (setting->type == Cam::Settings::Definition::SettingType_Text)
                     comp = new CamTextBoxComponent();
@@ -131,6 +144,13 @@ bool CamProjectDockWindow::editSettings(Cam::Settings::TPGSettings* newSettings,
                     Base::Console().Warning("CamProjectDockWindow::editSettings(): Failed to make UI Component '%s'!\n", setting->name.toStdString().c_str());
                     failure = true;
                 }
+				else
+				{
+					// Connect this new CamComponent object to this owning dialog class so that we
+					// can receive signals indicating that one of the components has changed.
+					QObject::connect(comp, SIGNAL(UpdatedCamComponentSignal(CamComponent *)),
+						this, SLOT(UpdatedCamComponent(CamComponent *)));
+				}
             }
             else
                 Base::Console().Log("Warning: NULL setting provided\n");
@@ -140,6 +160,26 @@ bool CamProjectDockWindow::editSettings(Cam::Settings::TPGSettings* newSettings,
 
     return true;
 }
+
+void CamProjectDockWindow::UpdatedCamComponent(CamComponent *camComponent)
+{
+	// One of the CamComponent objects (that represent a single setting) has changed.
+	// We need to go through all of the other CamComponent objects to see if the visible
+	// flag on the setting they represent has also changed.  If so then we need
+	// to ensure the QWidget::setVisible() method is called for them.  i.e. we want
+	// the Cam::Settings::Definition::visible flag to be reflected in the
+	// CamComponent::isVisible() flag as well.  The onChanged() functionality
+	// used in the settings classes may have changed the visible flag as part of its
+	// functionality.  We want the GUI's representation of those settings to reflect
+	// these changes.
+
+
+	for (QList<CamComponent*>::iterator itCamComponent = components.begin(); itCamComponent != components.end(); itCamComponent++)
+	{
+		(*itCamComponent)->setVisibleFlag();
+	}
+}
+
 
 /**
  * Saves the current values from the UI into the settings objects.

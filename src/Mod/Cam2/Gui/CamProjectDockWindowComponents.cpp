@@ -74,6 +74,36 @@ CamComponent::~CamComponent() {
 	// the QWidget implicitly deletes the Validator object for us.
 }
 
+void CamComponent::setVisibleFlag()
+{
+	if (this->tpgsetting)
+	{
+		// For all QWidget objects that represent this Settings::Definition object in the settings
+		// editor dialog...
+		for (QList<QWidget *>::iterator it = widgets_to_be_signalled.begin(); it != widgets_to_be_signalled.end(); it++)
+		{
+			// Only force the update if the value has changed.  I don't know if it would flicker if
+			// we re-set it to the original value but it's simply enough to avoid such a possibility
+			// by checking first.
+
+			if ((*it)->isVisible() != this->tpgsetting->visible)
+			{
+				// Signal the QWidget to either become visible or become invisible.  Something has
+				// changed the Settings::Definition::visible flag so we want the widgets representing
+				// that setting to reflect this change.
+
+				(*it)->setVisible(this->tpgsetting->visible);
+			}
+		}
+	}
+}
+
+void CamComponent::signalUpdated()
+{
+	Q_EMIT UpdatedCamComponentSignal(this);
+}
+
+
 QValidator::State CamComponent::Validator::validate(QString & input, int & position) const
 {
 	switch(this->setting_definition->validate(input, position))
@@ -168,9 +198,10 @@ bool CamComponent::close() {
 
 
 CamTextBoxComponent::CamTextBoxComponent()
-: QObject(), CamComponent() {
+: CamComponent() {
     this->widget = NULL;
 }
+
 
 /**
  * Slot to receive messages when the user changes the text value
@@ -186,6 +217,10 @@ void CamTextBoxComponent::editingFinished() {
 	}
 	else
 		Base::Console().Error("Saving a setting failed!\n");
+
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 void CamLineEdit::focusOutEvent ( QFocusEvent * e )
@@ -347,22 +382,28 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 
             // make the label
             QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			widgets_to_be_signalled.push_back(labelWidget);
 			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
             form->setWidget(row, QFormLayout::LabelRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
+			labelWidget->setVisible(tpgsetting->visible);
 
 			// make the container
             QWidget *container = new QWidget(parent);
+			widgets_to_be_signalled.push_back(container);
             QHBoxLayout *layout = new QHBoxLayout(container);
             layout->setContentsMargins(0,0,0,0);
             container->setLayout(layout);
             container->setObjectName(qname);
             container->setToolTip(tpgsetting->helptext);
+			container->setVisible(tpgsetting->visible);
 			form->setWidget(row, QFormLayout::FieldRole, container);
 
             // make the edit box
             this->widget = new CamLineEdit(parent, tpgsetting);
+			widgets_to_be_signalled.push_back(this->widget);
             this->widget->setObjectName(qname);
+			this->widget->setVisible(tpgsetting->visible);
 
 			switch(tpgsetting->type)
 			{
@@ -400,8 +441,10 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 				// make the push button
 				QString qvalue = tpgsetting->getValue();
 				QToolButton *button = new QToolButton(container);
+				widgets_to_be_signalled.push_back(button);
 				button->setObjectName(QString::fromAscii("SelectFile"));
 				button->setText(QString::fromAscii("..."));
+				button->setVisible(tpgsetting->visible);
 				// connect events
         		QObject::connect(button, SIGNAL(pressed()), this, SLOT(handleButton()));
 				layout->addWidget(button);
@@ -412,7 +455,9 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 				if (this->tpgsetting->units.length() > 0)
 				{
 					QLabel *units_widget = new QLabel(this->tpgsetting->units, parent);
+					widgets_to_be_signalled.push_back(units_widget);
 					layout->addWidget( units_widget );
+					units_widget->setVisible(tpgsetting->visible);
 					rootComponents.push_back( units_widget );
 				}
 			}
@@ -420,6 +465,7 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
             // keep reference to widgets for later cleanup
             rootComponents.push_back(labelWidget);
             rootComponents.push_back(container);
+			rootComponents.push_back(this->widget);
 			
             return true;
         }
@@ -443,7 +489,7 @@ bool CamTextBoxComponent::close() {
 
 
 CamLengthComponent::CamLengthComponent()
-: QObject(), CamComponent() {
+: CamComponent() {
     this->camLineEdit = NULL;
 
 	QString metric, imperial;
@@ -532,6 +578,10 @@ void CamLengthComponent::currentIndexChanged ( int current_index )
 			camLineEdit->setText(QString::fromStdString(ossValue.str()));
 		}
 	}
+
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 /**
@@ -551,21 +601,26 @@ bool CamLengthComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayo
 
             // make the label
             QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			widgets_to_be_signalled.push_back(labelWidget);
 			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
             form->setWidget(row, QFormLayout::LabelRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
+			labelWidget->setVisible(tpgsetting->visible);
 
             // make the container
             QWidget *widget = new QWidget(parent);
+			widgets_to_be_signalled.push_back(widget);
             QHBoxLayout *layout = new QHBoxLayout(widget);
             layout->setContentsMargins(0,0,0,0);
             widget->setLayout(layout);
             widget->setObjectName(qname);
             widget->setToolTip(tpgsetting->helptext);
+			widget->setVisible(tpgsetting->visible);
 			form->setWidget(row, QFormLayout::FieldRole, widget);
 
 			// make the edit box
             camLineEdit = new CamLineEdit(parent, tpgsetting);
+			widgets_to_be_signalled.push_back(camLineEdit);
             camLineEdit->setObjectName(qname);
 
 			Cam::Settings::Length *length = (Cam::Settings::Length *) this->tpgsetting;
@@ -593,6 +648,7 @@ bool CamLengthComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayo
 			layout->addWidget(camLineEdit);
 
             QComboBox *combo_box = new QComboBox(parent);
+			widgets_to_be_signalled.push_back(combo_box);
 			int index = 0;
 			for (std::vector< std::pair< Id_t, Label_t > >::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
 			{
@@ -606,6 +662,7 @@ bool CamLengthComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayo
 
             combo_box->setObjectName(qname);
             combo_box->setToolTip(tpgsetting->helptext);
+			combo_box->setVisible(tpgsetting->visible);
 
 			this->validator = new Validator(tpgsetting->grab(), combo_box);
 			combo_box->setValidator(validator);
@@ -648,7 +705,7 @@ bool CamLengthComponent::close() {
 //--- CamRateComponent ---
 
 CamRateComponent::CamRateComponent()
-: QObject(), CamComponent() {
+: CamComponent() {
     this->camLineEdit = NULL;
 
 	QString metric, imperial;
@@ -679,6 +736,10 @@ void CamRateComponent::editingFinished() {
 	}
 	else
 		Base::Console().Error("Saving a setting failed!\n");
+
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 /**
@@ -698,6 +759,10 @@ void CamRateComponent::currentIndexChanged ( int current_index )
 			camLineEdit->setText(QString::fromStdString(ossValue.str()));
 		}
 	}
+
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 
@@ -718,22 +783,28 @@ bool CamRateComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout
 
             // make the label
             QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			widgets_to_be_signalled.push_back(labelWidget);
 			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
             form->setWidget(row, QFormLayout::LabelRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
+			labelWidget->setVisible(tpgsetting->visible);
 
             // make the container
             QWidget *widget = new QWidget(parent);
+			widgets_to_be_signalled.push_back(widget);
             QHBoxLayout *layout = new QHBoxLayout(widget);
             layout->setContentsMargins(0,0,0,0);
             widget->setLayout(layout);
             widget->setObjectName(qname);
             widget->setToolTip(tpgsetting->helptext);
+			widget->setVisible(tpgsetting->visible);
 			form->setWidget(row, QFormLayout::FieldRole, widget);
 
 			// make the edit box
             camLineEdit = new CamLineEdit(parent, tpgsetting);
+			widgets_to_be_signalled.push_back(camLineEdit);
             camLineEdit->setObjectName(qname);
+			camLineEdit->setVisible(tpgsetting->visible);
 
 			Cam::Settings::Rate *rate = dynamic_cast<Cam::Settings::Rate *>(this->tpgsetting);
 			std::ostringstream ossValue;
@@ -749,6 +820,7 @@ bool CamRateComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout
 			layout->addWidget(camLineEdit);
 
             QComboBox *combo_box = new QComboBox(parent);
+			widgets_to_be_signalled.push_back(combo_box);
 			int index = 0;
 			for (std::vector< std::pair< Id_t, Label_t > >::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
 			{
@@ -762,6 +834,7 @@ bool CamRateComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout
 
             combo_box->setObjectName(qname);
             combo_box->setToolTip(tpgsetting->helptext);
+			combo_box->setVisible(tpgsetting->visible);
 
 			this->validator = new Validator(tpgsetting->grab(), combo_box);
 			combo_box->setValidator(validator);
@@ -823,17 +896,21 @@ bool CamRadioComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayou
 
             // make the label
             QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			widgets_to_be_signalled.push_back(labelWidget);
 			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
             form->setWidget(row, QFormLayout::SpanningRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
+			labelWidget->setVisible(tpgsetting->visible);
 
             // make the container
             QWidget *widget = new QWidget(parent);
+			widgets_to_be_signalled.push_back(widget);
             QHBoxLayout *layout = new QHBoxLayout(widget);
             layout->setContentsMargins(0,0,0,0);
             widget->setLayout(layout);
             widget->setObjectName(qname);
             widget->setToolTip(tpgsetting->helptext);
+			widget->setVisible(tpgsetting->visible);
             form->setWidget(row + 1, QFormLayout::SpanningRole, widget);
 
             // make the radio buttons
@@ -841,7 +918,9 @@ bool CamRadioComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayou
             QList<Cam::Settings::Option*>::iterator it = tpgsetting->options.begin();
             for (; it != tpgsetting->options.end(); ++it) {
                 QRadioButton *btn = new QRadioButton(widget);
+				widgets_to_be_signalled.push_back(btn);
                 btn->setObjectName(qname + (*it)->id);
+				btn->setVisible(tpgsetting->visible);
                 if (qvalue.compare((*it)->id) == 0)
                     btn->setChecked(true);
                 btn->setText((*it)->label);
@@ -905,9 +984,11 @@ bool CamComboBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 
             // make the label
             QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			widgets_to_be_signalled.push_back(labelWidget);
 			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
 			form->setWidget(row, QFormLayout::LabelRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
+			labelWidget->setVisible(tpgsetting->visible);
 
             // make the container
 			// Keep our own copy of the id/label pairs in a vector so that we're sure to
@@ -915,6 +996,7 @@ bool CamComboBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 			// this method (which defines them) and in the currentIndexChanged() (which
 			// looks for which one was chosen).
 			QComboBox *combo_box = new QComboBox(parent);
+			widgets_to_be_signalled.push_back(combo_box);
 			int index = 0;
 			if (this->tpgsetting->type == Cam::Settings::Definition::SettingType_SingleObjectNameForType)
 			{
@@ -960,6 +1042,7 @@ bool CamComboBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 
             combo_box->setObjectName(qname);
             combo_box->setToolTip(tpgsetting->helptext);
+			combo_box->setVisible(tpgsetting->visible);
 
 			this->validator = new Validator(tpgsetting->grab(), combo_box);
 			combo_box->setValidator(validator);
@@ -992,6 +1075,10 @@ void CamComboBoxComponent::currentIndexChanged ( int current_index )
 	{
 		this->tpgsetting->setValue(values[current_index].first);
 	}
+
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 /**
@@ -1010,7 +1097,7 @@ bool CamComboBoxComponent::close() {
 
 
 CamFilenameComponent::CamFilenameComponent()
-: QObject(), CamComponent() {
+: CamComponent() {
     this->camLineEdit = NULL;
 	this->button = NULL;
 }
@@ -1029,6 +1116,10 @@ void CamFilenameComponent::editingFinished() {
 	}
 	else
 		Base::Console().Error("Saving a setting failed!\n");
+
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 /**
@@ -1048,25 +1139,31 @@ bool CamFilenameComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 
             // make the label
             QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			widgets_to_be_signalled.push_back(labelWidget);
 			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
             form->setWidget(row, QFormLayout::LabelRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
+			labelWidget->setVisible(tpgsetting->visible);
 
             // make the container
             QWidget *widget = new QWidget(parent);
+			widgets_to_be_signalled.push_back(widget);
             QHBoxLayout *layout = new QHBoxLayout(widget);
             layout->setContentsMargins(0,0,0,0);
             widget->setLayout(layout);
             widget->setObjectName(qname);
             widget->setToolTip(tpgsetting->helptext);
+			widget->setVisible(tpgsetting->visible);
 			form->setWidget(row, QFormLayout::FieldRole, widget);
 
 			// make the edit box
             camLineEdit = new CamLineEdit(parent, tpgsetting);
+			widgets_to_be_signalled.push_back(camLineEdit);
             camLineEdit->setObjectName(qname);
             camLineEdit->setText(tpgsetting->getValue());
             camLineEdit->setToolTip(tpgsetting->helptext);
 			camLineEdit->setPlaceholderText(tpgsetting->helptext);
+			camLineEdit->setVisible(tpgsetting->visible);
 			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
 			camLineEdit->setValidator(validator);
             // connect events
@@ -1077,8 +1174,10 @@ bool CamFilenameComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
             // make the push button
             QString qvalue = tpgsetting->getValue();
             button = new QToolButton(widget);
+			widgets_to_be_signalled.push_back(button);
 			button->setObjectName(QString::fromAscii("SelectFile"));
             button->setText(QString::fromAscii("..."));
+			button->setVisible(tpgsetting->visible);
 			// connect events
         	QObject::connect(button, SIGNAL(pressed()), this,
         			SLOT(handleButton()));
@@ -1122,6 +1221,10 @@ void CamFilenameComponent::handleButton()
 		this->camLineEdit->setText(filename);
 		this->tpgsetting->setValue(filename);
 	}
+
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 
@@ -1132,7 +1235,7 @@ void CamFilenameComponent::handleButton()
 
 
 CamDirectoryComponent::CamDirectoryComponent()
-: QObject(), CamComponent() {
+: CamComponent() {
     this->camLineEdit = NULL;
 	this->button = NULL;
 }
@@ -1170,27 +1273,33 @@ bool CamDirectoryComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormL
 
             // make the label
             QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			widgets_to_be_signalled.push_back(labelWidget);
 			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
             form->setWidget(row, QFormLayout::LabelRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
+			labelWidget->setVisible(tpgsetting->visible);
 
             // make the container
             QWidget *widget = new QWidget(parent);
+			widgets_to_be_signalled.push_back(widget);
             QHBoxLayout *layout = new QHBoxLayout(widget);
             layout->setContentsMargins(0,0,0,0);
             widget->setLayout(layout);
             widget->setObjectName(qname);
             widget->setToolTip(tpgsetting->helptext);
+			widget->setVisible(tpgsetting->visible);
 			form->setWidget(row, QFormLayout::FieldRole, widget);
 
 			// make the edit box
             camLineEdit = new CamLineEdit(parent, tpgsetting);
+			widgets_to_be_signalled.push_back(camLineEdit);
             camLineEdit->setObjectName(qname);
             camLineEdit->setText(tpgsetting->getValue());
             camLineEdit->setToolTip(tpgsetting->helptext);
 			camLineEdit->setPlaceholderText(tpgsetting->helptext);
 			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
 			camLineEdit->setValidator(validator);
+			camLineEdit->setVisible(tpgsetting->visible);
             // connect events
         	QObject::connect(camLineEdit, SIGNAL(editingFinished()), this,
         			SLOT(editingFinished()));
@@ -1199,8 +1308,10 @@ bool CamDirectoryComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormL
             // make the push button
             QString qvalue = tpgsetting->getValue();
             button = new QToolButton(widget);
+			widgets_to_be_signalled.push_back(button);
 			button->setObjectName(QString::fromAscii("SelectFile"));
             button->setText(QString::fromAscii("..."));
+			button->setVisible(tpgsetting->visible);
 			// connect events
         	QObject::connect(button, SIGNAL(pressed()), this,
         			SLOT(handleButton()));
@@ -1244,6 +1355,10 @@ void CamDirectoryComponent::handleButton()
 		this->camLineEdit->setText(dir);
 		this->tpgsetting->setValue(dir);
 	}
+
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 
@@ -1252,7 +1367,7 @@ void CamDirectoryComponent::handleButton()
 
 
 CamColorComponent::CamColorComponent()
-: QObject(), CamComponent() {
+: CamComponent() {
 	this->button = NULL;
 }
 
@@ -1273,18 +1388,23 @@ bool CamColorComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayou
 
             // make the label
             QWidget *labelWidget = new QLabel(tpgsetting->label, parent);
+			widgets_to_be_signalled.push_back(labelWidget);
 			labelWidget->setObjectName(qname + QString::fromUtf8("Label"));
             form->setWidget(row, QFormLayout::LabelRole, labelWidget);
             labelWidget->setToolTip(tpgsetting->helptext);
+			labelWidget->setVisible(tpgsetting->visible);
 
             // make the container
             QWidget *widget = new QWidget(parent);
+			widgets_to_be_signalled.push_back(widget);
 
             // make the push button
             QString qvalue = tpgsetting->getValue();
             button = new QPushButton(widget);
+			widgets_to_be_signalled.push_back(button);
 			button->setObjectName(QString::fromAscii("SelectFile"));
             button->setText(QString::fromAscii("   "));
+			button->setVisible(tpgsetting->visible);
 
 			int red, green, blue, alpha;
 			Cam::Settings::Color *pColorSetting = (Cam::Settings::Color *) this->tpgsetting;
@@ -1348,6 +1468,9 @@ void CamColorComponent::handleButton()
 		pColorSetting->set( color.red(), color.green(), color.blue(), color.alpha() );
 	}
 	
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 

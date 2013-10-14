@@ -214,7 +214,7 @@ CppExampleTPG::~CppExampleTPG() {
 		settings->addSettingDefinition(qaction, this->retract_mode);
 
 
-		this->sometimes_hidden = new Settings::Integer("Gets Hidden","Gets Hidden", 7, "", "Gets hidden when retract mode is rapid");
+		this->sometimes_hidden = new Settings::Text("Gets Hidden","Gets Hidden", "Gets hidden when retract mode is rapid", "", "Gets hidden when retract mode is rapid");
 
 		settings->addSettingDefinition(qaction, this->sometimes_hidden);
 

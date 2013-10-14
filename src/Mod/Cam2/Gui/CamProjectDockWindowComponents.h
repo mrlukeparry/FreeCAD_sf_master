@@ -38,11 +38,15 @@
 
 namespace CamGui {
 
-class CamGuiExport CamComponent {
+class CamGuiExport CamComponent : public QObject {
+
+Q_OBJECT;
+
 protected:
     Cam::Settings::Definition *tpgsetting;
     QFormLayout* form;
     QList<QWidget*> rootComponents;
+	QList<QWidget*> widgets_to_be_signalled;
 
 	/**
 		The Validator class allows the QValidator mechanisms supported by the Qt library to ask
@@ -96,6 +100,15 @@ public:
     }
 
 	static QString FractionalRepresentation( const double original_value, const int max_denominator = 64 );
+
+	/// Ensure the QWidgets that represent this setting have a visible flag that matches the setting's visible flag's value.
+	void setVisibleFlag();
+
+	void signalUpdated();
+
+Q_SIGNALS:
+	void UpdatedCamComponentSignal(CamComponent *camComponent);
+
 };
 
 class CamLineEdit : public QLineEdit
@@ -124,7 +137,7 @@ private:
 /**
  * Object that manages a Cam::TextBox setting
  */
-class CamGuiExport CamTextBoxComponent: public QObject, public CamComponent {
+class CamGuiExport CamTextBoxComponent: public CamComponent {
 
 	Q_OBJECT
 
@@ -163,7 +176,7 @@ public Q_SLOTS:
 /**
  * Object that manages a Cam::Length setting
  */
-class CamGuiExport CamLengthComponent: public QObject, public CamComponent {
+class CamGuiExport CamLengthComponent: public CamComponent {
 
 	Q_OBJECT
 
@@ -205,7 +218,7 @@ private:
 /**
  * Object that manages a Cam::Rate setting
  */
-class CamGuiExport CamRateComponent: public QObject, public CamComponent {
+class CamGuiExport CamRateComponent: public CamComponent {
 
 	Q_OBJECT
 
@@ -273,7 +286,7 @@ public:
 /**
  * Object that manages a Cam::Settings::Definition::SettingType_Enumeration setting
  */
-class CamGuiExport CamComboBoxComponent: public QObject, public CamComponent {
+class CamGuiExport CamComboBoxComponent: public CamComponent {
 
 	Q_OBJECT
 
@@ -309,7 +322,7 @@ private:
 /**
  * Object that manages a Cam::Filename setting
  */
-class CamGuiExport CamFilenameComponent: public QObject, public CamComponent {
+class CamGuiExport CamFilenameComponent: public CamComponent {
 
 	Q_OBJECT
 
@@ -347,7 +360,7 @@ private Q_SLOTS:
 /**
  * Object that manages a Cam::Directory setting
  */
-class CamGuiExport CamDirectoryComponent: public QObject, public CamComponent {
+class CamGuiExport CamDirectoryComponent: public CamComponent {
 
 	Q_OBJECT
 
@@ -386,7 +399,7 @@ private Q_SLOTS:
 /**
  * Object that manages a Cam::Directory setting
  */
-class CamGuiExport CamColorComponent: public QObject, public CamComponent {
+class CamGuiExport CamColorComponent: public CamComponent {
 
 	Q_OBJECT
 

@@ -79,7 +79,7 @@ public:
 	Settings::Length	*clearance_height;
 	Settings::Double	*spindle_speed;
 	Settings::Rate		*feed_rate;
-	Settings::Integer	*sometimes_hidden;
+	Settings::Text		*sometimes_hidden;
 
 	typedef enum
 	{
