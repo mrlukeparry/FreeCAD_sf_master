@@ -75,6 +75,8 @@ typedef struct  {
 extern PyObject* PyTPGSettings_New(Cam::Settings::TPGSettings* settings);
 
 
+namespace Cam
+{
 
 class PySettingsOption: public Py::PythonClass< PySettingsOption >
 {
@@ -171,13 +173,11 @@ private:
 	std::auto_ptr<Cam::Settings::Option>	pOption;
 };
 
-
-class PySettingsDefinition: public Py::PythonClass< PySettingsDefinition >
+class PySettingsDefinition: public Py::PythonClass< PySettingsDefinition >, Cam::Settings::Definition
 {
 public:
     PySettingsDefinition( Py::PythonClassInstance *self, Py::Tuple &args, Py::Dict &kwds )
-    : Py::PythonClass< PySettingsDefinition >::PythonClass( self, args, kwds )
-    , id( "" ), label("")
+		: Py::PythonClass< PySettingsDefinition >::PythonClass( self, args, kwds ), Cam::Settings::Definition()
     {
         std::cout << "PySettingsDefinition c'tor Called with " << args.length() << " normal arguments." << std::endl;
         Py::List names( kwds.keys() );
@@ -186,6 +186,7 @@ public:
         {
             Py::String name( names[i] );
             std::cout << "    " << name << std::endl;
+			this->setattro( Py::String(names[i]), kwds[names[i]] );
         }
     }
 
@@ -205,18 +206,38 @@ public:
         behaviors().readyType();
     }
 
+
+
+	
+
+
+
+
+
     Py::Object getattro( const Py::String &name_ )
     {
         std::string name( name_.as_std_string( "utf-8" ) );
 
-        if( name == "id" )
-        {
-            return id;
-        }
-		else if (name == "label")
+        if( name == "name" )		return Py::String(Cam::Settings::Definition::name.toStdString());
+		else if (name == "label") 	return Py::String(Cam::Settings::Definition::label.toStdString());
+		else if (name == "type") 	return Py::Int(int(Cam::Settings::Definition::type));
+		else if (name == "defaultvalue") 	return Py::String(Cam::Settings::Definition::defaultvalue.toStdString());
+		else if (name == "units") 	return Py::String(Cam::Settings::Definition::units.toStdString());
+		else if (name == "helptext") 	return Py::String(Cam::Settings::Definition::helptext.toStdString());
+		else if (name == "visible") 	return Py::Boolean(Cam::Settings::Definition::visible);
+		/*
+		else if (name == "options")
 		{
-			return label;
+			Py::List pyOptions;
+			for (QList<Cam::Settings::Option *>::const_iterator itOption = options.begin(); itOption != options.end(); itOption++)
+			{
+				PySettingsOption pyOption;
+				pyOption->setattro( Py::String(std::string("id")), Py::String(itOption->id.toStdString()) );
+				pyOption->setattro( Py::String(std::string("label")), Py::String(itOption->label.toStdString()) );
+				pyOptions.append(pyOption);
+			}
 		}
+		*/
         else
         {
             return genericGetAttro( name_ );
@@ -227,16 +248,58 @@ public:
     {
         std::string name( name_.as_std_string( "utf-8" ) );
 
-        if( name == "id" )
-        {
-            id = value;
-            return 0;
-        }
-		else if( name == "label" )
-        {
-            label = value;
-            return 0;
-        }
+        if( name == "name" )
+		{
+			Cam::Settings::Definition::name = QString::fromStdString(Py::String(value).as_std_string());
+			return 0;
+		}
+		else if (name == "label")
+		{
+			Cam::Settings::Definition::label = QString::fromStdString(Py::String(value).as_std_string());
+			return 0;
+		}
+		else if (name == "type")
+		{
+			Cam::Settings::Definition::type = SettingType(int(Py::Int(value).asLongLong()));
+			return 0;
+		}
+		else if (name == "defaultvalue")
+		{
+			Cam::Settings::Definition::defaultvalue = QString::fromStdString(Py::String(value).as_std_string());
+			return 0;
+		}
+		else if (name == "units")
+		{
+			Cam::Settings::Definition::units = QString::fromStdString(Py::String(value).as_std_string());
+			return 0;
+		}
+		else if (name == "helptext")
+		{
+			Cam::Settings::Definition::helptext = QString::fromStdString(Py::String(value).as_std_string());
+			return 0;
+		}
+		else if (name == "visible")
+		{
+			this->visible = (bool) Py::Boolean(value);
+			return 0;
+		}
+		/*
+		else if (name == "options")
+		{
+			for (QList<Option *>::iterator itOption = options.begin(); itOption != options.end(); itOption++)
+			{
+				delete *itOption;
+			}
+			options.clear();
+
+			Py::List pyOptions(value);
+			for (int i=0; i<pyOptions.size(); i++)
+			{
+				tingsOption pyOption(pyOptions[i]);
+				
+			}
+		}
+		*/
         else
         {
             return genericSetAttro( name_, value );
@@ -248,6 +311,6 @@ public:
 };
 
 
-
+} // End namespace cam
 
 #endif /* PYTPGSETTINGS_H_ */

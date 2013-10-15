@@ -39,6 +39,8 @@
 #include "TPG/TPG.h"
 #include "TPG/PyTPGFactory.h"
 
+#include "TPG/PyTPGSettings.h"
+
 
 // C++ TPG Plugins
 // #include "Plugins/MyPlugin.h"
@@ -115,6 +117,9 @@ void CamExport initCam()
     Cam::TPGFeature             ::init();
     Cam::ToolPathFeature        ::init();
     Cam::MachineProgramFeature  ::init();
+
+	Base::Console().Log("David was here\n");
+	Cam::PySettingsOption		::init_type();
 
     // Perform initial scan to load all TPGDescriptors in the factory to ensure that documents can load these
     Cam::TPGFactory().scanPlugins();
