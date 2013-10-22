@@ -32,10 +32,10 @@
 // ----------------------------------------------------------------------------
 
 // ----- Forward declarations -----
-static void      PyTPGSettingDefinition_dealloc(cam_PyTPGSettingDefinition* self);
-static PyObject *PyTPGSettingDefinition_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
-static int       PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, PyObject *kwds);
-static PyObject *PyTPGSettingDefinition_addOption (cam_PyTPGSettingDefinition* self, PyObject* args);
+static void      PySettingsDefinition_dealloc(cam_PySettingsDefinition* self);
+static PyObject *PySettingsDefinition_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+static int       PySettingsDefinition_init(cam_PySettingsDefinition *self, PyObject *args, PyObject *kwds);
+static PyObject *PySettingsDefinition_addOption (cam_PySettingsDefinition* self, PyObject* args);
 
 
 // ----- Data structures instances -----
@@ -43,8 +43,8 @@ static PyObject *PyTPGSettingDefinition_addOption (cam_PyTPGSettingDefinition* s
 /**
  * Method table for PyToolPath python type
  */
-static PyMethodDef PyTPGSettingDefinition_methods[] = {
-    {"addOption", (PyCFunction)PyTPGSettingDefinition_addOption, METH_VARARGS, "Add an option to this setting"},
+static PyMethodDef PySettingsDefinition_methods[] = {
+    {"addOption", (PyCFunction)PySettingsDefinition_addOption, METH_VARARGS, "Add an option to this setting"},
 //    {"getAction", (PyCFunction)PyTPGSettings_getAction, METH_NOARGS, "Get the selected action"},
 //    {"setAction", (PyCFunction)PyTPGSettings_setAction, METH_VARARGS, "Set the selected action"},
 //    {"getValue", (PyCFunction)PyTPGSettings_getValue, METH_VARARGS, "Get the value of a setting"},
@@ -53,13 +53,13 @@ static PyMethodDef PyTPGSettingDefinition_methods[] = {
     {NULL}  /* Sentinel */
 };
 
-static PyTypeObject PyTPGSettingDefinitionType = {
+static PyTypeObject PySettingsDefinitionType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "Cam.TPGSettingDefinition",       /*tp_name*/
-    sizeof(cam_PyTPGSettingDefinition), /*tp_basicsize*/
+    "Cam.SettingsDefinition",       /*tp_name*/
+    sizeof(cam_PySettingsDefinition), /*tp_basicsize*/
     0,                         /*tp_itemsize*/
-    (destructor)PyTPGSettingDefinition_dealloc, /*tp_dealloc*/
+    (destructor)PySettingsDefinition_dealloc, /*tp_dealloc*/
     0,                         /*tp_print*/
     0,                         /*tp_getattr*/
     0,                         /*tp_setattr*/
@@ -82,7 +82,7 @@ static PyTypeObject PyTPGSettingDefinitionType = {
     0,                         /* tp_weaklistoffset */
     0,                         /* tp_iter */
     0,                         /* tp_iternext */
-    PyTPGSettingDefinition_methods,     /* tp_methods */
+    PySettingsDefinition_methods,     /* tp_methods */
     0,                         /* tp_members */
     0,                         /* tp_getset */
     0,                         /* tp_base */
@@ -90,14 +90,14 @@ static PyTypeObject PyTPGSettingDefinitionType = {
     0,                         /* tp_descr_get */
     0,                         /* tp_descr_set */
     0,                         /* tp_dictoffset */
-    (initproc)PyTPGSettingDefinition_init, /* tp_init */
+    (initproc)PySettingsDefinition_init, /* tp_init */
     0,                         /* tp_alloc */
-    PyTPGSettingDefinition_new,         /* tp_new */
+    PySettingsDefinition_new,         /* tp_new */
 };
 
 
-extern PyTypeObject *PyTPGSettingDefinition_Type() {
-	return &PyTPGSettingDefinitionType;
+extern PyTypeObject *PySettingsDefinition_Type() {
+	return &PySettingsDefinitionType;
 }
 
 
@@ -107,7 +107,7 @@ extern PyTypeObject *PyTPGSettingDefinition_Type() {
  * The python deallocator
  */
 static void
-PyTPGSettingDefinition_dealloc(cam_PyTPGSettingDefinition* self) {
+PySettingsDefinition_dealloc(cam_PySettingsDefinition* self) {
     if (self->setting != NULL) {
         self->setting->release();
         self->setting = NULL;
@@ -119,7 +119,7 @@ PyTPGSettingDefinition_dealloc(cam_PyTPGSettingDefinition* self) {
  * The python allocator
  */
 static PyObject *
-PyTPGSettingDefinition_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+PySettingsDefinition_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     cam_PyTPGSettings *self;
 
     self = (cam_PyTPGSettings *)type->tp_alloc(type, 0);
@@ -139,7 +139,7 @@ PyTPGSettingDefinition_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
  *       then the corresponding values MUST be added here as well.
  */
 static int
-PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, PyObject *kwds) {
+PySettingsDefinition_init(cam_PySettingsDefinition *self, PyObject *args, PyObject *kwds) {
 
 	const char *name;
 	const char *label;
@@ -190,7 +190,7 @@ PyTPGSettingDefinition_init(cam_PyTPGSettingDefinition *self, PyObject *args, Py
  * Add a command to the toolpath
  */
 static PyObject *
-PyTPGSettingDefinition_addOption (cam_PyTPGSettingDefinition* self, PyObject* args) {
+PySettingsDefinition_addOption (cam_PySettingsDefinition* self, PyObject* args) {
 
     //Expects (<name>, <label>)
 
@@ -395,17 +395,17 @@ PyTPGSettings_addSettingDefinition (cam_PyTPGSettings* self, PyObject* args) {
     }
 
     // check object type
-    if (!PyTPGSettingDefinition_Check(settingObj)) {
+    if (!PySettingsDefinition_Check(settingObj)) {
         PyErr_SetString(PyExc_TypeError, "<setting> parameter must be a Cam.TPGSettingDefinition instance");
         return NULL;
     }
 
     // add the setting to the underlying C++ settings structure
-    cam_PyTPGSettingDefinition *settingPy = (cam_PyTPGSettingDefinition*) settingObj;
+    cam_PySettingsDefinition *settingPy = (cam_PySettingsDefinition*) settingObj;
     QString qaction = QString::fromAscii(action);
     self->settings->addSettingDefinition(qaction, settingPy->setting);
 
-    //TODO: return the setting object here so user can add options.  Need to define a new PyTPGSettingDefinition type
+    //TODO: return the setting object here so user can add options.  Need to define a new PySettingsDefinition type
 //    Py_INCREF(settingPy);
 //    return settingPy;
     Py_RETURN_NONE;

@@ -110,9 +110,9 @@ void CamExport initCam()
     if (PyType_Ready(PyToolPath_Type()) < 0)
         return;
 
-    Py_INCREF(PyTPGSettingDefinition_Type());
-    PyModule_AddObject(camModule, "TPGSettingDefinition", (PyObject *)PyTPGSettingDefinition_Type());
-    if (PyType_Ready(PyTPGSettingDefinition_Type()) < 0)
+    Py_INCREF(PySettingsDefinition_Type());
+    PyModule_AddObject(camModule, "SettingsDefinition", (PyObject *)PySettingsDefinition_Type());
+    if (PyType_Ready(PySettingsDefinition_Type()) < 0)
         return;
 
     Py_INCREF(PyTPGSettings_Type());
@@ -137,9 +137,6 @@ void CamExport initCam()
     Cam::TPGFeature             ::init();
     Cam::ToolPathFeature        ::init();
     Cam::MachineProgramFeature  ::init();
-
-	printf("And David was here too\n");
-	Cam::PySettingsOption		::init_type();
 
     // Perform initial scan to load all TPGDescriptors in the factory to ensure that documents can load these
     Cam::TPGFactory().scanPlugins();
