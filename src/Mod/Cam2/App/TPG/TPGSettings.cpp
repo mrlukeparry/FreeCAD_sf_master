@@ -1316,8 +1316,8 @@ bool Settings::Double::Evaluate( const char *formula, double *pResult ) const
 	double value;
 	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		if ((minOption) && (value <= minOption->label.toDouble())) return(this->Invalid);
-		if ((maxOption) && (value >= maxOption->label.toDouble())) return(this->Invalid);
+		if ((minOption) && (value < minOption->label.toDouble())) return(this->Invalid);
+		if ((maxOption) && (value > maxOption->label.toDouble())) return(this->Invalid);
 		return(this->Acceptable);
 	}
 	else
@@ -1530,8 +1530,8 @@ bool Settings::Rate::Evaluate( const char *formula, double *pResult ) const
 	double value;
 	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		if ((minOption) && (value <= minOption->label.toDouble())) return(this->Invalid);
-		if ((maxOption) && (value >= maxOption->label.toDouble())) return(this->Invalid);
+		if ((minOption) && (value < minOption->label.toDouble())) return(this->Invalid);
+		if ((maxOption) && (value > maxOption->label.toDouble())) return(this->Invalid);
 		return(this->Acceptable);
 	}
 	else
@@ -1685,8 +1685,8 @@ Definition::ValidationState Integer::validate(QString & input,int & position) co
 	double value;
 	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		if ((minOption) && (value <= minOption->label.toInt())) return(this->Invalid);
-		if ((maxOption) && (value >= maxOption->label.toInt())) return(this->Invalid);
+		if ((minOption) && (value < minOption->label.toInt())) return(this->Invalid);
+		if ((maxOption) && (value > maxOption->label.toInt())) return(this->Invalid);
 		return(this->Acceptable);
 	}
 	else
@@ -2102,8 +2102,8 @@ QString SingleObjectNameForType::GetName() const
 	double value;
 	if (this->parent->EvaluateLength( this, input.toAscii().constData(), &value ))
 	{
-		if ((minOption) && (value <= minOption->label.toDouble())) return(this->Invalid);
-		if ((maxOption) && (value >= maxOption->label.toDouble())) return(this->Invalid);
+		if ((minOption) && (value < minOption->label.toDouble())) return(this->Invalid);
+		if ((maxOption) && (value > maxOption->label.toDouble())) return(this->Invalid);
 		return(this->Acceptable);
 	}
 	else
