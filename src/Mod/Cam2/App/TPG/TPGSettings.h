@@ -456,10 +456,10 @@ public:
 	typedef int Alpha_t;
 
 	// NOTE: These offset values MUST align with the Encode_t definition.
-	static const ::SIZE_T redOffset = 0;
-	static const ::SIZE_T greenOffset = 1;
-	static const ::SIZE_T blueOffset = 2;
-	static const ::SIZE_T alphaOffset = 3;
+	static const ::size_t redOffset = 0;
+	static const ::size_t greenOffset = 1;
+	static const ::size_t blueOffset = 2;
+	static const ::size_t alphaOffset = 3;
 
 	typedef boost::tuple<Red_t, Green_t, Blue_t, Alpha_t> Encode_t;
 
@@ -500,8 +500,8 @@ public:
 	// Definition::Units_t
 	
 	// NOTE: These offset values MUST align with the Encode_t definition.
-	static const ::SIZE_T valueOffset = 0;
-	static const ::SIZE_T unitsOffset = 1;
+	static const ::size_t valueOffset = 0;
+	static const ::size_t unitsOffset = 1;
 	
 	typedef boost::tuple<Value_t, Definition::Units_t> Encode_t;
 
@@ -560,8 +560,8 @@ public:
 	// Definition::Units_t
 
 	// NOTE: These offset values MUST align with the Encode_t definition.
-	static const ::SIZE_T valueOffset = 0;
-	static const ::SIZE_T unitsOffset = 1;
+	static const ::size_t valueOffset = 0;
+	static const ::size_t unitsOffset = 1;
 
 	typedef boost::tuple<Value_t, Definition::Units_t> Encode_t;
 

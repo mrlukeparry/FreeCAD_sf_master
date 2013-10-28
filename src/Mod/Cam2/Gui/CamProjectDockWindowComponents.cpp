@@ -1257,7 +1257,7 @@ void CamComboBoxComponent::refresh()
 			Cam::Settings::SingleObjectNameForType *pSetting = (Cam::Settings::SingleObjectNameForType *) this->tpgsetting;
 			if (pSetting)
 			{
-				for (::SIZE_T i=0; i<values.size(); i++)
+				for (::size_t i=0; i<values.size(); i++)
 				{
 					if (values[i].second == pSetting->GetName())
 					{
@@ -1273,7 +1273,7 @@ void CamComboBoxComponent::refresh()
 			Cam::Settings::Enumeration *pSetting = (Cam::Settings::Enumeration *) this->tpgsetting;
 			if (pSetting)
 			{
-				for (::SIZE_T i=0; i<values.size(); i++)
+				for (::size_t i=0; i<values.size(); i++)
 				{
 					if (values[i].second == pSetting->get().second)
 					{
