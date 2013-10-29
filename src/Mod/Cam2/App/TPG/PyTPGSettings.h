@@ -71,5 +71,33 @@ typedef struct  {
  */
 extern PyObject* PyTPGSettings_New(Cam::Settings::TPGSettings* settings);
 
+namespace Cam
+{
+	namespace Settings
+	{
+		/**
+			Python wrapper for the Cam::Settings::Option class.
+		 */
+		class PyOption : public Py::PythonExtension<PyOption>
+		{
+		public:
+			PyOption();
+			~PyOption();
+			PyOption(Option *pOption);
+
+		public:
+			// Py::PythonExtension framework methods.
+			static void init_type();
+
+			virtual Py::Object	repr();
+			virtual Py::Object	getattro( const Py::Object &pyObject );
+			virtual Py::Object	setattro( const Py::Object &pyObject );
+
+		private:
+			Option	*option;	// Pointer to a C++ object that contains the 'real' data.
+		}; // End PyOption class definition
+	} // End namespace Settings
+} // End namespace Cam
+
 
 #endif /* PYTPGSETTINGS_H_ */

@@ -56,20 +56,6 @@ PyDoc_STRVAR(module_Cam_doc,
 
 extern "C" void CamExport initCam();	// Forward declaration.
 
-namespace Cam
-{
-	class InitializePythonInterface
-	{
-	public:
-		InitializePythonInterface()
-		{
-			initCam();
-		}
-	};
-
-	static InitializePythonInterface initialize_python_interface;	// One static instance to sure it occurs once when the module is loaded.
-} // End namespace Cam
-
 /* Python entry */
 extern "C" {
 void CamExport initCam()

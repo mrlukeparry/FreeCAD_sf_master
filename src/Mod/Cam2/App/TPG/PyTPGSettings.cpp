@@ -589,3 +589,114 @@ extern PyObject* PyTPGSettings_New(Cam::Settings::TPGSettings* settings) {
 
 
 
+namespace Cam
+{
+	namespace Settings
+	{
+		PyOption::PyOption()
+		{
+			this->option = new Option(QString::null, QString::null);
+		}
+		
+		PyOption::~PyOption()
+		{
+			if (this->option != NULL)
+			{
+				delete (this->option);
+				this->option = NULL;
+			}
+		}
+			
+		PyOption::PyOption(Option *option)
+		{
+			this->option = option;
+		}
+
+		static void PyOption::init_type()
+		{
+			behaviors().name("CamSettingsOption");
+
+			behaviors().doc("Cam::Settings::Option class");
+			behaviors().supprtRepr();
+			behaviors().supportGetattro();
+			behaviors().supportSetattro();
+		}
+
+		virtual Py::Object PyOption::repr()
+		{
+			Py::String _string;
+			if (this->option != NULL)
+			{
+				_string.concat(Py::String(std::string("<OPTION>")));
+				_string.concat(Py::String(std::string("<ID>")));
+				_string.concat(Py::String(this->option->id.toStdString()) );
+				_string.concat(Py::String(std::string("</ID>")));
+
+				_string.concat(Py::String(std::string("<LABEL>")));
+				_string.concat(Py::String(this->option->label.toStdString()) );
+				_string.concat(Py::String(std::string("</LABEL>")));
+				_string.concat(Py::String(std::string("</OPTION>")));
+				return(_string);
+			}
+			else
+			{
+				return(Py::Null);
+			}
+		}
+
+		virtual Py::Object PyOption::getattro( const Py::Object &pyObject )
+		{
+			if (this->option == NULL)
+			{
+				return(Py::Null);
+			}
+
+			if (pyObject == Py::Null)
+			{
+				throw(Py::Exception(std::string("Must specify a variable name")));
+			}
+			else
+			{
+				Py::String name(pyObject);
+				if (name == Py::String("id"))
+				{
+					return(Py::String(option->id.toStdString()));
+				}
+				else if (name == Py::String("label"))
+				{
+					return(Py::String(option->id.toStdString()));
+				}
+				else
+				{
+					return(Py::Null);
+				}
+			}
+		}
+
+		virtual int	setattro( const Py::String &name, const Py::Object &pyValue )
+		{
+			if (this->option == NULL)
+			{
+				return(-1);
+			}
+		
+			if (name == Py::String("id"))
+			{
+				this->option->id = QString::fromStdString(Py::String(pyValue).as_std_string());
+				return(0);
+			}
+			else if (name == Py::String("label"))
+			{
+				this->option->label = QString::fromStdString(Py::String(pyValue).as_std_string());
+				return(0);
+			}
+			else
+			{
+				return(-1);
+			}
+		}
+
+		
+	}; // End namespace Settings
+}; // End namespace Cam
+
