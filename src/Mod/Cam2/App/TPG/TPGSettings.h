@@ -110,6 +110,17 @@ public:
 
 		return(*this);
 	}
+
+	friend QString & operator<< ( QString & qs, const Option & option )
+	{
+		std::ostringstream xml;
+		xml << "<OPTION>\n"
+			<< "\t<ID>" << option.id.toStdString() << "</ID>\n"
+			<< "\t<LABEL>" << option.label.toStdString() << "</LABEL>\n"
+			<< "</OPTION>\n";
+		qs += QString::fromStdString(xml.str());
+		return(qs);
+	}
 };
 
 /**
@@ -167,6 +178,53 @@ public:
 		SettingType_Double,
 		SettingType_Rate
 	} SettingType;
+
+	friend QString & operator<< ( QString & qs, const SettingType &type )
+	{
+		switch (type)
+		{
+		case SettingType_Text:	qs += QString::fromAscii("TEXT");
+			break;
+
+		case SettingType_Radio:	qs += QString::fromAscii("RADIO");
+			break;
+
+		case SettingType_ObjectNamesForType:	qs += QString::fromAscii("OBJECT_NAMES_FOR_TYPE");
+			break;
+
+		case SettingType_SingleObjectNameForType:	qs += QString::fromAscii("SINGLE_OBJECT_NAME_FOR_TYPE");
+			break;
+
+		case SettingType_Enumeration:	qs += QString::fromAscii("ENUMERATION");
+			break;
+
+		case SettingType_Length:	qs += QString::fromAscii("LENGTH");
+			break;
+
+		case SettingType_Filename:	qs += QString::fromAscii("FILENAME");
+			break;
+
+		case SettingType_Directory:	qs += QString::fromAscii("DIRECTORY");
+			break;
+
+		case SettingType_Color:	qs += QString::fromAscii("COLOR");
+			break;
+
+		case SettingType_Integer:	qs += QString::fromAscii("INTEGER");
+			break;
+
+		case SettingType_Double:	qs += QString::fromAscii("DOUBLE");
+			break;
+
+		case SettingType_Rate:	qs += QString::fromAscii("RATE");
+			break;
+
+		default:
+			break;
+		}
+
+		return(qs);
+	}
 
 	/**
 		These mimic the QValidator state enumeration values.  We don't use them directly in this class
@@ -274,6 +332,33 @@ public:
 		implementation produces a consistent variable name.
 	 */	
 	std::string PythonName(const QString prefix) const;
+
+	friend QString & operator<< ( QString & qs, const Definition & definition )
+	{
+		std::ostringstream xml;
+		xml << "<DEFINITION>\n"
+			<< "\t<refcnt>" << definition.refcnt << "</refcnt>\n"
+			<< "\t<action>" << definition.action.toStdString() << "</action>\n"
+			<< "\t<name>" << definition.name.toStdString() << "</name>\n"
+			<< "\t<label>" << definition.label.toStdString() << "</label>\n"
+			<< "\t<type>"; { QString val; val << definition.type; xml << val.toStdString() << "</type>\n"; }
+		xml << "\t<defaultvalue>" << definition.defaultvalue.toStdString() << "</defaultvalue>\n"
+			<< "\t<helptext>" << definition.helptext.toStdString() << "</helptext>\n"
+			<< "\t<visible>" << (char *) (definition.visible?"TRUE":"FALSE") << "</visible>\n"
+			<< "\t<options NUM=\"" << definition.options.size() << "\">\n";
+		
+			for (QList<Option *>::const_iterator itOption = definition.options.begin(); itOption != definition.options.end(); itOption++)
+			{
+				QString option_description;
+				option_description << **itOption;
+
+				xml << option_description.toAscii().constData();
+			}
+		xml << "\t</options>\n"
+			<< "</DEFINITION>\n";
+		qs += QString::fromStdString(xml.str());
+		return(qs);
+	}
 };
 
 /** 

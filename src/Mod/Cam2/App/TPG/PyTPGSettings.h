@@ -28,6 +28,9 @@
 
 #include "TPGSettings.h"
 
+#include "CXX/Objects.hxx"
+#include "CXX/Extensions.hxx"
+
 
 #define QString_toPyString(__str__) PyString_FromString(((const char*)(__str__)).toStdString().c_str());
 #define QStringPtr_toPyString(__str__) PyString_FromString(((const char*)(__str__))->toStdString().c_str());
@@ -78,24 +81,99 @@ namespace Cam
 		/**
 			Python wrapper for the Cam::Settings::Option class.
 		 */
-		class PyOption : public Py::PythonExtension<PyOption>
+		class CamExport PyOption : public Py::PythonExtension<PyOption>
 		{
 		public:
 			PyOption();
 			~PyOption();
 			PyOption(Option *pOption);
+			PyOption(Py::Object &object);
 
 		public:
 			// Py::PythonExtension framework methods.
 			static void init_type();
 
-			virtual Py::Object	repr();
-			virtual Py::Object	getattro( const Py::Object &pyObject );
-			virtual Py::Object	setattro( const Py::Object &pyObject );
+			virtual Py::Object	str();
+			virtual Py::Object	getattro( const Py::String &name );
+			virtual int			setattro( const Py::String &name, const Py::Object &value );
 
 		private:
 			Option	*option;	// Pointer to a C++ object that contains the 'real' data.
 		}; // End PyOption class definition
+
+
+		class CamExport PyDefinition : public Py::PythonExtension<PyDefinition>
+		{
+		public:
+			PyDefinition();
+			~PyDefinition();
+			PyDefinition(Definition *pDefinition);
+
+		public:
+			// Py::PythonExtension framework methods.
+			static void init_type();
+
+			virtual Py::Object	str();
+			virtual Py::Object	getattro( const Py::String &name );
+			virtual int			setattro( const Py::String &name, const Py::Object &value );
+			virtual Py::Object	getattr( const char *name );
+
+		public:
+			Py::Object addOption( const Py::Tuple &args, const Py::Dict &kwds );
+
+		private:
+			Definition	*definition;	// Pointer to a C++ object that contains the 'real' data.
+		}; // End PyDefinition class definition
+
+
+		
+
+		/**
+			The PySettingsModule class exists as the 'Settings' module within the 'Cam' module.
+			i.e. when in a Python script, one must "import Cam" and then one is able to
+			"import Settings".  That "import Settings" command instantiates a copy of this
+			PySettingsModule class.
+
+			When the Python script then does a "myObject = Settings.Option()", it's calling
+			the PySettingsModule::factory_PyOption() method in this class due to the
+			add_varargs_method() call with the 'name' of 'Option'.  The returned object
+			(myObject) is an instance of a Cam::Settings::PyOption class.  i.e. the
+			Python script can then make calls such as 'myObject.id = "my id"' and
+			'myObject.label = "my label"'.
+
+			This PySettingsModule class will wrap up ALL classes within the Cam::Settings namespace
+			of the C++ version.
+		 */
+		class PySettingsModule : public Py::ExtensionModule<PySettingsModule>
+		{
+		public:
+			PySettingsModule() : Py::ExtensionModule<PySettingsModule>("Settings")
+			{
+				PyOption::init_type();
+				PyDefinition::init_type();
+
+				add_varargs_method("Option", &PySettingsModule::factory_PyOption, "Wrapper for Cam::Settings::Option");
+				add_varargs_method("Definition", &PySettingsModule::factory_PyDefinition, "Wrapper for Cam::Settings::Definition");
+
+				initialize("The Settings module includes classes for Definition and Option.");
+			}
+
+			virtual ~PySettingsModule() {}
+
+			Py::Object factory_PyOption( const Py::Tuple &rargs )
+			{
+				Py::Object obj = Py::asObject( new PyOption );
+				return(obj);
+			}
+
+			Py::Object factory_PyDefinition( const Py::Tuple &rargs )
+			{
+				Py::Object obj = Py::asObject( new PyDefinition );
+				return(obj);
+			}
+		}; // End PySettingsModule class definition
+
+		extern "C" CamExport void init();
 	} // End namespace Settings
 } // End namespace Cam
 

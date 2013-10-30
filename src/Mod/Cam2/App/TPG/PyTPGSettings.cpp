@@ -612,68 +612,54 @@ namespace Cam
 			this->option = option;
 		}
 
-		static void PyOption::init_type()
+		/* static */ void PyOption::init_type()
 		{
-			behaviors().name("CamSettingsOption");
+			behaviors().name("Option");
 
 			behaviors().doc("Cam::Settings::Option class");
-			behaviors().supprtRepr();
+			behaviors().supportStr();
 			behaviors().supportGetattro();
 			behaviors().supportSetattro();
+
+			behaviors().readyType();
 		}
 
-		virtual Py::Object PyOption::repr()
+		/* virtual */ Py::Object PyOption::str()
 		{
-			Py::String _string;
 			if (this->option != NULL)
 			{
-				_string.concat(Py::String(std::string("<OPTION>")));
-				_string.concat(Py::String(std::string("<ID>")));
-				_string.concat(Py::String(this->option->id.toStdString()) );
-				_string.concat(Py::String(std::string("</ID>")));
-
-				_string.concat(Py::String(std::string("<LABEL>")));
-				_string.concat(Py::String(this->option->label.toStdString()) );
-				_string.concat(Py::String(std::string("</LABEL>")));
-				_string.concat(Py::String(std::string("</OPTION>")));
-				return(_string);
+				QString xml;
+				xml << *(this->option);
+				return(Py::String(xml.toStdString()));
 			}
 			else
 			{
-				return(Py::Null);
+				return PythonExtension::str();
 			}
 		}
 
-		virtual Py::Object PyOption::getattro( const Py::Object &pyObject )
+		/* virtual */ Py::Object PyOption::getattro( const Py::String &name )
 		{
 			if (this->option == NULL)
 			{
-				return(Py::Null);
+				return Py::None();
 			}
 
-			if (pyObject == Py::Null)
+			if (name == Py::String("id"))
 			{
-				throw(Py::Exception(std::string("Must specify a variable name")));
+				return(Py::String(option->id.toStdString()));
+			}
+			else if (name == Py::String("label"))
+			{
+				return(Py::String(option->id.toStdString()));
 			}
 			else
 			{
-				Py::String name(pyObject);
-				if (name == Py::String("id"))
-				{
-					return(Py::String(option->id.toStdString()));
-				}
-				else if (name == Py::String("label"))
-				{
-					return(Py::String(option->id.toStdString()));
-				}
-				else
-				{
-					return(Py::Null);
-				}
+				return genericGetAttro(name);
 			}
 		}
 
-		virtual int	setattro( const Py::String &name, const Py::Object &pyValue )
+		/* virtual */ int	PyOption::setattro( const Py::String &name, const Py::Object &value )
 		{
 			if (this->option == NULL)
 			{
@@ -682,19 +668,255 @@ namespace Cam
 		
 			if (name == Py::String("id"))
 			{
-				this->option->id = QString::fromStdString(Py::String(pyValue).as_std_string());
+				this->option->id = QString::fromStdString(Py::String(value).as_std_string("utf-8"));
 				return(0);
 			}
 			else if (name == Py::String("label"))
 			{
-				this->option->label = QString::fromStdString(Py::String(pyValue).as_std_string());
+				this->option->label = QString::fromStdString(Py::String(value).as_std_string("utf-8"));
 				return(0);
 			}
 			else
 			{
-				return(-1);
+				return genericSetAttro(name, value);
 			}
 		}
+
+
+
+
+
+
+
+
+
+		PyDefinition::PyDefinition()
+		{
+			this->definition = new Definition();
+		}
+		
+		PyDefinition::~PyDefinition()
+		{
+			if (this->definition != NULL)
+			{
+				this->definition->release();
+				this->definition = NULL;
+			}
+		}
+			
+		PyDefinition::PyDefinition(Definition *definition)
+		{
+			this->definition = definition->grab();
+		}
+
+		/* static */ void PyDefinition::init_type()
+		{
+			behaviors().name("Definition");
+
+			behaviors().doc("Cam::Settings::Definition class");
+			behaviors().supportStr();
+			behaviors().supportGetattro();
+			behaviors().supportSetattro();
+			behaviors().supportGetattr();
+
+			add_keyword_method( "addOption", &PyDefinition::addOption, "addOption(id, label) id and label are both strings");
+	
+			behaviors().readyType();
+		}
+
+		/* virtual */ Py::Object PyDefinition::str()
+		{
+			if (this->definition != NULL)
+			{
+				QString xml;
+				xml << *definition;
+
+				return(Py::String(xml.toStdString()));
+			}
+			else
+			{
+				return PythonExtension::str();
+			}
+		}
+
+		/* virtual */ Py::Object	PyDefinition::getattr( const char *name )
+		{
+			printf("PyDefinition::getattr(%s) called\n", name);
+			return getattr_methods(name);
+		}
+
+		/* virtual */ Py::Object PyDefinition::getattro( const Py::String &name )
+		{
+			if (this->definition == NULL)
+			{
+				return Py::None();
+			}
+
+			if (name == Py::String("name"))
+			{
+				return(Py::String(definition->name.toStdString()));
+			}
+			else if (name == Py::String("label"))
+			{
+				return(Py::String(definition->label.toStdString()));
+			}
+			else if (name == Py::String("defaultvalue"))
+			{
+				return(Py::String(definition->defaultvalue.toStdString()));
+			}
+			else if (name == Py::String("units"))
+			{
+				return(Py::String(definition->units.toStdString()));
+			}
+			else if (name == Py::String("helptext"))
+			{
+				return(Py::String(definition->helptext.toStdString()));
+			}
+			else if (name == Py::String("visible"))
+			{
+				return(Py::Boolean(definition->visible));
+			}
+			else if (name == Py::String("type"))
+			{
+				QString verbose;
+				verbose << definition->type;
+				return(Py::String(verbose.toStdString()));
+			}
+			else if (name == Py::String("options"))
+			{
+				Py::List options;
+				for (QList<Option*>::const_iterator itOption = definition->options.begin(); itOption != definition->options.end(); itOption++)
+				{
+					options.append(Py::Object(new PyOption(*itOption)));
+				}
+
+				return(options);
+			}
+			else
+			{
+				return genericGetAttro(name);
+			}
+		}
+
+		/* virtual */ int	PyDefinition::setattro( const Py::String &name, const Py::Object &value )
+		{
+			if (this->definition == NULL)
+			{
+				return(-1);
+			}
+		
+			if (name == Py::String("name"))
+			{
+				definition->name = QString::fromStdString(Py::String(value).as_std_string("utf-8"));
+				return(0);
+			}
+			else if (name == Py::String("label"))
+			{
+				definition->label = QString::fromStdString(Py::String(value).as_std_string("utf-8"));
+				return(0);
+			}
+			else if (name == Py::String("defaultvalue"))
+			{
+				definition->defaultvalue = QString::fromStdString(Py::String(value).as_std_string("utf-8"));
+				return(0);
+			}
+			else if (name == Py::String("units"))
+			{
+				definition->units = QString::fromStdString(Py::String(value).as_std_string("utf-8"));
+				return(0);
+			}
+			else if (name == Py::String("helptext"))
+			{
+				definition->helptext = QString::fromStdString(Py::String(value).as_std_string("utf-8"));
+				return(0);
+			}
+			else if (name == Py::String("visible"))
+			{
+				definition->visible = Py::Boolean(value);
+				return(0);
+			}
+			else if (name == Py::String("type"))
+			{
+				std::ostringstream error;
+				error << "Unexpected type '" << value.as_string() << "'.  Value must be one of ";
+
+				for (Definition::SettingType setting_type = Definition::SettingType_Text; setting_type <= Definition::SettingType_Rate; setting_type = Definition::SettingType(int(setting_type)+1))
+				{
+					QString verbose;
+					verbose << setting_type;	// Convert between the enum and the string version.
+					if (setting_type != Definition::SettingType_Text)
+					{
+						error << ", ";
+					}
+					error << verbose.toStdString();
+
+					if (value == Py::String(verbose.toStdString()))
+					{
+						definition->type = setting_type;
+						return(0);
+					}
+				}
+
+				throw(Py::Exception(error.str()));
+			}
+			/*
+			// TODO : Figure out how to do this!!!
+			else if (name == Py::String("options"))
+			{
+				for (QList<Option*>::const_iterator itOption = definition->options.begin(); itOption != definition->options.end(); itOption++)
+				{
+					delete *itOption;
+				}
+
+				definition->options.clear();
+				const Py::List new_options = Py::List(value);
+				for (Py::List::const_iterator itValue = new_options.begin(); itValue != new_options.end(); itValue++)
+				{
+					PyOption pyOption(*itValue);
+					definition->options.push_back(pyOption);
+				}
+
+				return(0);
+			}
+			*/
+			else
+			{
+				return genericSetAttro(name, value);
+			}
+		}
+
+
+		Py::Object PyDefinition::addOption( const Py::Tuple &args, const Py::Dict &kwds )
+		{
+			if (kwds.hasKey("id") && kwds.hasKey("label"))
+			{
+				QString id = QString::fromStdString(kwds.getAttr("id").as_string());
+				QString label = QString::fromStdString(kwds.getAttr("label").as_string());
+				this->definition->addOption( id, label );
+				return(Py::None());
+			}
+			else
+			{
+				throw(Py::Exception("addOption() method MUST be provided with both 'id' and 'label' named arguments"));
+			}
+		}		
+
+static PySettingsModule *pySettings_static_reference;
+
+extern "C" CamExport void init()
+{
+#if defined(PY_WIN32_DELAYLOAD_PYTHON_DLL)
+    Py::InitialisePythonIndirectPy::Interface();
+#endif
+
+    pySettings_static_reference = new PySettingsModule;
+}
+
+// symbol required for the debug version
+extern "C" CamExport void init_d()
+{ 
+    init();
+}
 
 		
 	}; // End namespace Settings
