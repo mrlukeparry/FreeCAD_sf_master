@@ -87,7 +87,7 @@ namespace Cam
 			PyOption();
 			~PyOption();
 			PyOption(Option *pOption);
-			PyOption(Py::Object &object);
+			PyOption(const Py::Object &object);
 
 		public:
 			// Py::PythonExtension framework methods.
@@ -96,6 +96,10 @@ namespace Cam
 			virtual Py::Object	str();
 			virtual Py::Object	getattro( const Py::String &name );
 			virtual int			setattro( const Py::String &name, const Py::Object &value );
+
+		public:
+			Py::String id() const;
+			Py::String label() const;
 
 		private:
 			Option	*option;	// Pointer to a C++ object that contains the 'real' data.
@@ -116,7 +120,6 @@ namespace Cam
 			virtual Py::Object	str();
 			virtual Py::Object	getattro( const Py::String &name );
 			virtual int			setattro( const Py::String &name, const Py::Object &value );
-			virtual Py::Object	getattr( const char *name );
 
 		public:
 			Py::Object addOption( const Py::Tuple &args, const Py::Dict &kwds );
@@ -125,6 +128,25 @@ namespace Cam
 			Definition	*definition;	// Pointer to a C++ object that contains the 'real' data.
 		}; // End PyDefinition class definition
 
+
+		class CamExport PyTPGSettings : public Py::PythonExtension<PyTPGSettings>
+		{
+		public:
+			PyTPGSettings();
+			~PyTPGSettings();
+			PyTPGSettings(TPGSettings *pSettings);
+
+		public:
+			// Py::PythonExtension framework methods.
+			static void init_type();
+
+			virtual Py::Object	str();
+			virtual Py::Object	getattro( const Py::String &name );
+			virtual int			setattro( const Py::String &name, const Py::Object &value );
+
+		private:
+			TPGSettings	*settings;	// Pointer to a C++ object that contains the 'real' data.
+		}; // End PyTPGSettings class definition
 
 		
 
@@ -151,11 +173,12 @@ namespace Cam
 			{
 				PyOption::init_type();
 				PyDefinition::init_type();
+		
+				add_varargs_method("Option", &PySettingsModule::factory_PyOption, "Method to instantiate a new Cam::Settings::Option");
+				add_varargs_method("Definition", &PySettingsModule::factory_PyDefinition, "Method to instantiate a new Cam::Settings::Definition");
+				add_varargs_method("TPGSettings", &PySettingsModule::factory_PyTPGSettings, "Method to instantiate a new Cam::Settings::TPGSettings");
 
-				add_varargs_method("Option", &PySettingsModule::factory_PyOption, "Wrapper for Cam::Settings::Option");
-				add_varargs_method("Definition", &PySettingsModule::factory_PyDefinition, "Wrapper for Cam::Settings::Definition");
-
-				initialize("The Settings module includes classes for Definition and Option.");
+				initialize("The Settings module includes classes for Option, Definition and TPGSettings.");
 			}
 
 			virtual ~PySettingsModule() {}
@@ -169,6 +192,12 @@ namespace Cam
 			Py::Object factory_PyDefinition( const Py::Tuple &rargs )
 			{
 				Py::Object obj = Py::asObject( new PyDefinition );
+				return(obj);
+			}
+
+			Py::Object factory_PyTPGSettings( const Py::Tuple &rargs )
+			{
+				Py::Object obj = Py::asObject( new PyTPGSettings );
 				return(obj);
 			}
 		}; // End PySettingsModule class definition

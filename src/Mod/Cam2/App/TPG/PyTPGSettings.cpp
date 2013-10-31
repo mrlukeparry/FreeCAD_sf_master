@@ -612,6 +612,24 @@ namespace Cam
 			this->option = option;
 		}
 
+		PyOption::PyOption(const Py::Object &object)
+		{
+			printf("PyOption::PyOption(Py::Object) - start\n");
+			// if (object.type() == Py::Type(this))
+			{
+				printf("PyOption::PyOption(Py::Object) - then option\n");
+				this->option = ((PyOption &) object).option;
+				printf("got option pointer\n");
+			}
+			/*
+			else
+			{
+				printf("PyOption::PyOption(Py::Object) - else option\n");
+				throw(Py::Exception("Object is not of type PyOption"));
+			}
+			*/
+		}
+
 		/* static */ void PyOption::init_type()
 		{
 			behaviors().name("Option");
@@ -655,7 +673,8 @@ namespace Cam
 			}
 			else
 			{
-				return genericGetAttro(name);
+				// It might be a method name.  If so return a pointer to that method.
+				return getattr_methods(name.as_std_string().c_str());
 			}
 		}
 
@@ -683,6 +702,29 @@ namespace Cam
 		}
 
 
+		Py::String PyOption::id() const
+		{
+			if (this->option == NULL)
+			{
+				throw(Py::Exception("No option pointer found"));
+			}
+			else
+			{
+				return(Py::String(this->option->id.toStdString()));
+			}
+		}
+
+		Py::String PyOption::label() const
+		{
+			if (this->option == NULL)
+			{
+				throw(Py::Exception("No option pointer found"));
+			}
+			else
+			{
+				return(Py::String(this->option->label.toStdString()));
+			}
+		}
 
 
 
@@ -715,10 +757,12 @@ namespace Cam
 
 			behaviors().doc("Cam::Settings::Definition class");
 			behaviors().supportStr();
-			behaviors().supportGetattro();
-			behaviors().supportSetattro();
-			behaviors().supportGetattr();
+			behaviors().supportGetattro();	// If we support the getattro() and setattro() methods then they are used INSTEAD of the getattr()/setattr() methods (i.e. the ones without the 'o' on the end of the name)
+			behaviors().supportSetattro();			
 
+			// NOTE: We MUST add the getattr_methods() call within either the getattr() or getattro() methods
+			// in order to be able to call these exported methods.  It's not enough to just add the following
+			// lines to this init_type() method.
 			add_keyword_method( "addOption", &PyDefinition::addOption, "addOption(id, label) id and label are both strings");
 	
 			behaviors().readyType();
@@ -739,12 +783,24 @@ namespace Cam
 			}
 		}
 
-		/* virtual */ Py::Object	PyDefinition::getattr( const char *name )
-		{
-			printf("PyDefinition::getattr(%s) called\n", name);
-			return getattr_methods(name);
-		}
+		/**
+			We MUST implement the getattro() or getattr() methods if we want to
+			expose a method within the class.  It's the getattr_methods() call
+			at the bottom of this method that does the work necessary to return
+			a pointer to the exported method. (and call it).
 
+			This method is called whenever we use the ".something" sequence following
+			an object name in Python.  eg:
+			import Settings
+			myobject = Settings.Definition()
+			myobject.name = 'my name'
+			myobject.addOption(id='my id', label='my label')
+
+			In the above example, this getattro() method is called TWICE.  Once with
+			a name of 'name' (from the myobject.name reference) and the other time
+			with a name of 'addOption'.  The 'addOption' name is handled by the
+			getattr_methods() call at the bottom of this method.
+		 */
 		/* virtual */ Py::Object PyDefinition::getattro( const Py::String &name )
 		{
 			if (this->definition == NULL)
@@ -794,7 +850,8 @@ namespace Cam
 			}
 			else
 			{
-				return genericGetAttro(name);
+				// It might be a method name.  If so return a pointer to that method.
+				return getattr_methods(name.as_std_string().c_str());
 			}
 		}
 
@@ -859,8 +916,6 @@ namespace Cam
 
 				throw(Py::Exception(error.str()));
 			}
-			/*
-			// TODO : Figure out how to do this!!!
 			else if (name == Py::String("options"))
 			{
 				for (QList<Option*>::const_iterator itOption = definition->options.begin(); itOption != definition->options.end(); itOption++)
@@ -869,16 +924,21 @@ namespace Cam
 				}
 
 				definition->options.clear();
-				const Py::List new_options = Py::List(value);
-				for (Py::List::const_iterator itValue = new_options.begin(); itValue != new_options.end(); itValue++)
+			
+				Py::List new_options(value);
+				for (Py::List::size_type i=0; i<new_options.size(); i++)
 				{
-					PyOption pyOption(*itValue);
-					definition->options.push_back(pyOption);
+					printf("Point one\n");
+					Py::Object obj(new_options[i]);
+					printf("Point two\n");
+
+					printf("id is %s\n", opt.id().as_std_string().c_str());
+					definition->addOption(QString::fromStdString(opt.id().as_std_string()), QString::fromStdString(opt.label().as_std_string()));
+					printf("Point four\n");
 				}
 
 				return(0);
 			}
-			*/
 			else
 			{
 				return genericSetAttro(name, value);
@@ -890,16 +950,110 @@ namespace Cam
 		{
 			if (kwds.hasKey("id") && kwds.hasKey("label"))
 			{
-				QString id = QString::fromStdString(kwds.getAttr("id").as_string());
-				QString label = QString::fromStdString(kwds.getAttr("label").as_string());
-				this->definition->addOption( id, label );
-				return(Py::None());
+				Py::List keys = kwds.keys();
+				Py::List values = kwds.values();
+
+				QString initial_value = QString::fromAscii("Unassigned");
+				QString id = initial_value;
+				QString label = initial_value;
+
+				for (Py::List::size_type i=0; i<keys.size(); i++)
+				{
+					if (keys[i] == Py::String("id")) id = QString::fromStdString( values[i].str().as_string().c_str() );
+					if (keys[i] == Py::String("label")) label = QString::fromStdString( values[i].str().as_string().c_str() );
+				}
+
+				if ((id == initial_value) || (label == initial_value))
+				{
+					throw(Py::Exception("addOption() method MUST be provided with both 'id' and 'label' named arguments"));
+				}
+				else
+				{
+					this->definition->addOption( id, label );
+					return(Py::None());
+				}
 			}
 			else
 			{
 				throw(Py::Exception("addOption() method MUST be provided with both 'id' and 'label' named arguments"));
 			}
 		}		
+
+
+
+
+
+		PyTPGSettings::PyTPGSettings()
+		{
+			this->settings = new TPGSettings();
+		}
+		
+		PyTPGSettings::~PyTPGSettings()
+		{
+			if (this->settings != NULL)
+			{
+				this->settings->release();
+				this->settings = NULL;
+			}
+		}
+			
+		PyTPGSettings::PyTPGSettings(TPGSettings *settings)
+		{
+			this->settings = settings->grab();
+		}
+
+		/* static */ void PyTPGSettings::init_type()
+		{
+			behaviors().name("TPGSettings");
+
+			behaviors().doc("Cam::Settings::TPGSettings class");
+			behaviors().supportStr();
+			behaviors().supportGetattro();	// If we support the getattro() and setattro() methods then they are used INSTEAD of the getattr()/setattr() methods (i.e. the ones without the 'o' on the end of the name)
+			behaviors().supportSetattro();
+	
+			behaviors().readyType();
+		}
+
+		/* virtual */ Py::Object PyTPGSettings::str()
+		{
+			if (this->settings != NULL)
+			{
+				QString xml;
+				xml << *settings;
+
+				return(Py::String(xml.toStdString()));
+			}
+			else
+			{
+				return PythonExtension::str();
+			}
+		}
+
+		/* virtual */ Py::Object PyTPGSettings::getattro( const Py::String &name )
+		{
+			if (this->settings == NULL)
+			{
+				return Py::None();
+			}
+
+			// It might be a method name.  If so return a pointer to that method.
+			return getattr_methods(name.as_std_string().c_str());
+		}
+
+		/* virtual */ int	PyTPGSettings::setattro( const Py::String &name, const Py::Object &value )
+		{
+			if (this->settings == NULL)
+			{
+				return(-1);
+			}
+		
+			return genericSetAttro(name, value);
+		}
+
+
+
+
+
 
 static PySettingsModule *pySettings_static_reference;
 

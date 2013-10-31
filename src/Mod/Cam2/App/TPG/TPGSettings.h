@@ -511,6 +511,26 @@ private:
 	// between the onBeforePropTPGSettingsChange() and onPropTPGSettingsChanged() method
 	// calls.
 	std::map<std::string,std::string>	previous_tpg_properties_version;
+
+public:
+	friend QString & operator<< ( QString & qs, const TPGSettings & settings )
+	{
+		std::ostringstream xml;
+		xml << "<SETTINGS>\n"
+			<< "\t<DEFINITIONS>\n";
+
+	    std::vector<Definition*> definitions = settings.getSettings();
+		for (std::vector<Definition *>::const_iterator itDefinition = definitions.begin(); itDefinition != definitions.end(); itDefinition++)
+		{
+			QString def;
+			def << **itDefinition;
+			xml << def.toStdString();
+		}
+		xml << "\t</DEFINITIONS>\n"
+			<< "</SETTINGS>\n";
+		qs += QString::fromStdString(xml.str());
+		return(qs);
+	}
 };
 
 
