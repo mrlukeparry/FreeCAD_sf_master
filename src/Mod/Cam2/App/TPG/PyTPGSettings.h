@@ -87,7 +87,7 @@ namespace Cam
 			PyOption();
 			~PyOption();
 			PyOption(Option *pOption);
-			PyOption(const Py::Object &object);
+			PyOption(Py::Object & object);
 
 		public:
 			// Py::PythonExtension framework methods.

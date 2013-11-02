@@ -779,15 +779,15 @@ bool TPGSettings::EvaluateWithPython( const Definition *definition, QString valu
 
 			typedef std::list< std::pair<std::string, std::string> >  Patterns_t;
 			Patterns_t patterns;
-			QString metric;
-			metric << Settings::Definition::Metric;
+			Definition::Units_t units = Settings::Definition::Metric;
+			
+			const Settings::Length *length = dynamic_cast<const Settings::Length *>(definition);
+			if (length) units = length->getUnits();
 
-			if (definition->type == Settings::Definition::SettingType_Rate)
-			{
-				metric += QString::fromAscii("/min");
-			}
+			const Settings::Rate *rate = dynamic_cast<const Settings::Rate *>(definition);
+			if (rate) units = rate->getUnits();
 
-			if (definition->units == metric)
+			if (units == Settings::Definition::Metric)
 			{
 				// We're using mm.
 				patterns.push_back( std::make_pair(std::string("Inches"), std::string(" * 25.4")));
@@ -1481,6 +1481,7 @@ void Settings::Rate::set(const double value, const Settings::Definition::Units_t
 
 	Encode_t data = this->decode();
 	boost::tuples::get<unitsOffset>(data) = units;
+	boost::tuples::get<valueOffset>(data) = value;
 	this->setValue(this->encode(data));
 }
 

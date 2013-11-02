@@ -612,22 +612,16 @@ namespace Cam
 			this->option = option;
 		}
 
-		PyOption::PyOption(const Py::Object &object)
+		PyOption::PyOption(Py::Object & object)
 		{
-			printf("PyOption::PyOption(Py::Object) - start\n");
-			// if (object.type() == Py::Type(this))
+			if (object.ptr()->ob_type == this->type_object()->ob_type)
 			{
-				printf("PyOption::PyOption(Py::Object) - then option\n");
-				this->option = ((PyOption &) object).option;
-				printf("got option pointer\n");
+				printf("The types match\n");
 			}
-			/*
 			else
 			{
-				printf("PyOption::PyOption(Py::Object) - else option\n");
-				throw(Py::Exception("Object is not of type PyOption"));
+				printf("The types do NOT match\n");
 			}
-			*/
 		}
 
 		/* static */ void PyOption::init_type()
@@ -843,7 +837,7 @@ namespace Cam
 				Py::List options;
 				for (QList<Option*>::const_iterator itOption = definition->options.begin(); itOption != definition->options.end(); itOption++)
 				{
-					options.append(Py::Object(new PyOption(*itOption)));
+					options.append(Py::asObject(new PyOption(*itOption)));
 				}
 
 				return(options);
@@ -928,13 +922,36 @@ namespace Cam
 				Py::List new_options(value);
 				for (Py::List::size_type i=0; i<new_options.size(); i++)
 				{
-					printf("Point one\n");
-					Py::Object obj(new_options[i]);
+					printf("Point 1.1\n");
+					PyOption option;
+					// Py::Type type1(option.self());
+					/*
+					if (new_options[i].isType(Py::Type(option.selfPtr())))
+					{
+						printf("yes\n");
+					}
+					else
+					{
+						printf("no\n");
+					}
+					*/
+
+					PyOption *pPyOption = static_cast<PyOption *>(new_options[i].ptr());
 					printf("Point two\n");
 
-					printf("id is %s\n", opt.id().as_std_string().c_str());
-					definition->addOption(QString::fromStdString(opt.id().as_std_string()), QString::fromStdString(opt.label().as_std_string()));
-					printf("Point four\n");
+					if (pPyOption)
+					{
+						printf("obj is just fine\n");
+
+						printf("id is %s\n", pPyOption->id().as_std_string().c_str());
+						definition->addOption(QString::fromStdString(pPyOption->id().as_std_string()), QString::fromStdString(pPyOption->label().as_std_string()));
+						printf("Point four\n");
+					}
+					else
+					{
+						printf("obj is empty\n");
+					}
+					
 				}
 
 				return(0);
