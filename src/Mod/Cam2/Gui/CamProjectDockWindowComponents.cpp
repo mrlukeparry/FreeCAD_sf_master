@@ -235,10 +235,32 @@ CamTextBoxComponent::CamTextBoxComponent()
 void CamTextBoxComponent::editingFinished() {
 	if (widget != NULL && tpgsetting != NULL) {
 		QString qvalue = widget->text();
-		if (!tpgsetting->setValue(qvalue))
+		Cam::Settings::Integer *pIntSetting = dynamic_cast<Cam::Settings::Integer *>(tpgsetting);
+		if (pIntSetting)
 		{
-			Base::Console().Error("Saving failed: '%s'\n", tpgsetting->name.toStdString().c_str());
-			widget->setText(tpgsetting->getValue());
+			// Interpret the value using the Python interpreter.
+
+			int value;
+			if (pIntSetting->Evaluate(qvalue.toAscii().constData(), &value))
+			{
+				pIntSetting->set( value );
+				std::ostringstream ossValue;
+				ossValue << value;
+				widget->setText( QString::fromStdString(ossValue.str()) );
+			}
+			else
+			{
+				Base::Console().Error("Could not evaluate '%s'\n", qvalue.toStdString().c_str());
+				widget->setText(tpgsetting->getValue());
+			}
+		}
+		else
+		{
+			if (!tpgsetting->setValue(qvalue))
+			{
+				Base::Console().Error("Saving failed: '%s'\n", tpgsetting->name.toStdString().c_str());
+				widget->setText(tpgsetting->getValue());
+			}
 		}
 	}
 	else

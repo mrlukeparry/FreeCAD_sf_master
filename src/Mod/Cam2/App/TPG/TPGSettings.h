@@ -817,6 +817,7 @@ public:
 				this->defaultvalue = QString::fromStdString(def.str());
 			}
 
+	bool Evaluate( const char *entered_value, int *pResult ) const;
 	virtual ValidationState validate(QString & input,int & position) const;
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 

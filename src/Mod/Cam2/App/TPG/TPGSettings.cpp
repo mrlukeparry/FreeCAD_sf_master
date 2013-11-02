@@ -1711,6 +1711,25 @@ void Settings::Integer::set(const int value)
 	this->setValue(QString::fromStdString(encoded_value.str()));
 }
 
+bool Settings::Integer::Evaluate( const char *formula, int *pResult ) const
+{
+	if (! this->parent)
+	{
+		return(false);
+	}
+
+	double value;
+	if (this->parent->EvaluateLength( this, formula, &value ))
+	{
+		*pResult = int(value);
+		return(true);
+	}
+	else
+	{
+		return(false);
+	}
+}
+
 bool Integer::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
 {
 	// Replace any spaces within the variable name with underbars so that the
