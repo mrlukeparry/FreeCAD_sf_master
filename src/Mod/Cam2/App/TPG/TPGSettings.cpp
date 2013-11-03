@@ -1151,25 +1151,20 @@ bool Double::AddToPythonDictionary(PyObject *pDictionary, const QString requeste
 
 	// Name=Value
 	bool status = false;
+	double value = this->get();
 	
-	QString string_value = this->getValue();
-	double value;
-	bool ok;
-	value = string_value.toDouble(&ok);
-	if (ok)
+	PyObject *pName = PyString_FromString(processed_name.c_str());
+	PyObject *pValue = PyFloat_FromDouble(value);
+
+	if ((pName != NULL) && (pValue != NULL))
 	{
-		PyObject *pName = PyString_FromString(processed_name.c_str());
-		PyObject *pValue = PyFloat_FromDouble(value);
-
-		if ((pName != NULL) && (pValue != NULL))
-		{
-			PyDict_SetItem(pDictionary, pName, pValue);
-			status = true;
-		}
-
-		Py_XDECREF(pName); pName=NULL;
-		Py_XDECREF(pValue); pValue=NULL;
+		PyDict_SetItem(pDictionary, pName, pValue);
+		status = true;
 	}
+
+	Py_XDECREF(pName); pName=NULL;
+	Py_XDECREF(pValue); pValue=NULL;
+
 	return(status);
 }
 
@@ -1617,41 +1612,37 @@ bool Rate::AddToPythonDictionary(PyObject *pDictionary, const QString requested_
 	// Name=Value
 	bool status = false;
 	
-	QString string_value = this->getValue();
-	double value;
-	bool ok;
-	value = string_value.toDouble(&ok);
-	if (ok)
+	double value = this->get( this->getUnits() );
+
+	QString metric, imperial;
+	metric << Definition::Metric;
+	metric += QString::fromAscii("/min");
+	imperial << Definition::Imperial;
+	imperial += QString::fromAscii("/min");
+
+	if ((this->getUnits() == Definition::Metric) && (requested_units == imperial))
 	{
-		QString metric, imperial;
-		metric << Definition::Metric;
-		metric += QString::fromAscii("/min");
-		imperial << Definition::Imperial;
-		imperial += QString::fromAscii("/min");
-
-		if ((this->units == metric) && (requested_units == imperial))
-		{
-			// We have mm but the setting being changed uses inches.  Convert now.
-			value /= 25.4;
-		}
-		else if ((this->units == imperial) && (requested_units == metric))
-		{
-			// We're using inches but the setting being changed uses mm. Convert now.
-			value *= 25.4;
-		}	
-
-		PyObject *pName = PyString_FromString(processed_name.c_str());
-		PyObject *pValue = PyFloat_FromDouble(value);
-
-		if ((pName != NULL) && (pValue != NULL))
-		{
-			PyDict_SetItem(pDictionary, pName, pValue);
-			status = true;
-		}
-
-		Py_XDECREF(pName); pName=NULL;
-		Py_XDECREF(pValue); pValue=NULL;
+		// We have mm but the setting being changed uses inches.  Convert now.
+		value /= 25.4;
 	}
+	else if ((this->getUnits() == Definition::Imperial) && (requested_units == metric))	
+	{
+		// We're using inches but the setting being changed uses mm. Convert now.
+		value *= 25.4;
+	}	
+
+	PyObject *pName = PyString_FromString(processed_name.c_str());
+	PyObject *pValue = PyFloat_FromDouble(value);
+
+	if ((pName != NULL) && (pValue != NULL))
+	{
+		PyDict_SetItem(pDictionary, pName, pValue);
+		status = true;
+	}
+
+	Py_XDECREF(pName); pName=NULL;
+	Py_XDECREF(pValue); pValue=NULL;
+
 	return(status);
 }
 
@@ -1738,25 +1729,20 @@ bool Integer::AddToPythonDictionary(PyObject *pDictionary, const QString request
 
 	// Name=Value
 	bool status = false;
-	
-	QString string_value = this->getValue();
-	long value;
-	bool ok;
-	value = string_value.toLong(&ok);
-	if (ok)
+	long value = this->get();
+
+	PyObject *pName = PyString_FromString(processed_name.c_str());
+	PyObject *pValue = PyInt_FromLong(value);
+
+	if ((pName != NULL) && (pValue != NULL))
 	{
-		PyObject *pName = PyString_FromString(processed_name.c_str());
-		PyObject *pValue = PyInt_FromLong(value);
-
-		if ((pName != NULL) && (pValue != NULL))
-		{
-			PyDict_SetItem(pDictionary, pName, pValue);
-			status = true;
-		}
-
-		Py_XDECREF(pName); pName=NULL;
-		Py_XDECREF(pValue); pValue=NULL;
+		PyDict_SetItem(pDictionary, pName, pValue);
+		status = true;
 	}
+
+	Py_XDECREF(pName); pName=NULL;
+	Py_XDECREF(pValue); pValue=NULL;
+
 	return(status);
 }
 
@@ -2392,39 +2378,34 @@ bool Length::AddToPythonDictionary(PyObject *pDictionary, const QString requeste
 	// Name=Value
 	bool status = false;
 	
-	QString string_value = this->getValue();
-	double value;
-	bool ok;
-	value = string_value.toDouble(&ok);
-	if (ok)
+	double value = this->get( this->getUnits() );
+	QString metric, imperial;
+	metric << Definition::Metric;
+	imperial << Definition::Imperial;
+
+	if ((this->getUnits() == Definition::Metric) && (requested_units == imperial))
 	{
-		QString metric, imperial;
-		metric << Definition::Metric;
-		imperial << Definition::Imperial;
-
-		if ((this->units == metric) && (requested_units == imperial))
-		{
-			// We have mm but the setting being changed uses inches.  Convert now.
-			value /= 25.4;
-		}
-		else if ((this->units == imperial) && (requested_units == metric))
-		{
-			// We're using inches but the setting being changed uses mm. Convert now.
-			value *= 25.4;
-		}
-
-		PyObject *pName = PyString_FromString(processed_name.c_str());
-		PyObject *pValue = PyFloat_FromDouble(value);
-
-		if ((pName != NULL) && (pValue != NULL))
-		{
-			PyDict_SetItem(pDictionary, pName, pValue);
-			status = true;
-		}
-
-		Py_XDECREF(pName); pName=NULL;
-		Py_XDECREF(pValue); pValue=NULL;
+		// We have mm but the setting being changed uses inches.  Convert now.
+		value /= 25.4;
 	}
+	else if ((this->getUnits() == Definition::Imperial) && (requested_units == metric))
+	{
+		// We're using inches but the setting being changed uses mm. Convert now.
+		value *= 25.4;
+	}
+
+	PyObject *pName = PyString_FromString(processed_name.c_str());
+	PyObject *pValue = PyFloat_FromDouble(value);
+
+	if ((pName != NULL) && (pValue != NULL))
+	{
+		PyDict_SetItem(pDictionary, pName, pValue);
+		status = true;
+	}
+
+	Py_XDECREF(pName); pName=NULL;
+	Py_XDECREF(pValue); pValue=NULL;
+
 	return(status);
 }
 
