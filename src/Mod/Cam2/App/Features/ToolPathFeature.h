@@ -23,7 +23,6 @@
 #ifndef CAM_TOOLPATHFEATURE_H
 #define CAM_TOOLPATHFEATURE_H
 
-#define CamExport
 #include <PreCompiled.h>
 
 namespace Cam {

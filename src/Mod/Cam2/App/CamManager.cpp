@@ -37,8 +37,12 @@
 #include "PostProcessor.h"
 #include "Graphics/Paths.h"
 #include "Support.h"
+#include <Mod/Part/App/Geometry.h>
 
 #include "LinuxCNC.h"	// For DEBUG only.  We need to move the GCode parsing out to somewhere else.
+
+#include <BRepAdaptor_Curve.hxx>
+#include <Handle_Geom_Circle.hxx>
 
 namespace Cam {
 CamManagerInst* CamManagerInst::_pcSingleton = NULL;
@@ -236,7 +240,7 @@ bool CamManagerInst::runPostProcessByName(const char *FeatName, App::Document* d
 /**
  * Add a TPG to the TPG Runner Queue.  First call will start the tpgRunnerThread.
  */
-bool CamManagerInst::queueTPGRun(TPG* tpg, TPGSettings* settings, Cam::TPGFeature *tpgFeature) {
+bool CamManagerInst::queueTPGRun(TPG* tpg, Settings::TPGSettings* settings, Cam::TPGFeature *tpgFeature) {
 
 	tpgRunnerQueueMutex.lock(); // exploit this lock to make starting runner thread 'thread-safe'.
 	// start the thread if needed
@@ -326,7 +330,7 @@ void CamManagerInst::addToolPath(TPGFeature* tpgFeature, ToolPath *toolPath) {
     std::string tpFeatName = activeDoc->getUniqueObjectName(toolpathName.c_str());
 
     // create the feature (for Document Tree)
-    App::DocumentObject *toolPathFeat =  activeDoc->addObject("Cam::ToolPathFeature", tpFeatName.c_str());
+	App::DocumentObject *toolPathFeat =  activeDoc->addObject(Cam::ToolPathFeature::getClassTypeId().getName(), tpFeatName.c_str());
     if(toolPathFeat && toolPathFeat->isDerivedFrom(Cam::ToolPathFeature::getClassTypeId())) {
         Cam::ToolPathFeature *toolPathFeature = dynamic_cast<Cam::ToolPathFeature *>(toolPathFeat);
 

@@ -54,14 +54,14 @@ public:
     /**
      * Get the settings for the TPG
      */
-    virtual TPGSettings *getSettingDefinitions();
+	virtual Settings::TPGSettings *getSettingDefinitions();
 
     /**
      * Run the TPG to generate the ToolPath code.
      *
      * Note: the return will change once the TP Language has been set in store
      */
-    virtual void run(TPGSettings *settings, ToolPath *toolpath, QString action);
+    virtual void run(Settings::TPGSettings *settings, ToolPath *toolpath, QString action);
 
 //    /**
 //     * Returns the toolpath from the last

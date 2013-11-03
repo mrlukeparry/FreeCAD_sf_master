@@ -57,15 +57,10 @@ LinuxCNC::~LinuxCNC()
 
 namespace qi = boost::spirit::qi;
 namespace ascii = boost::spirit::ascii;
+namespace phx = boost::phoenix;
 
 typedef std::string::iterator Iterator;
-typedef std::pair<char, double> ArgumentData_t;
-typedef double Double_t;
 
-
-namespace qi = boost::spirit::qi;
-namespace phx = boost::phoenix;
-namespace ascii = boost::spirit::ascii;
 
 template <typename Iter, typename Skipper = qi::blank_type> 
 	struct linuxcnc_grammar : qi::grammar<Iter, Skipper> 
@@ -950,49 +945,49 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		
 
 
-		void LHSequivalenttoRHS(bool & returned_boolean, const int lhs, const int rhs)
+		void LHSequivalenttoRHS(bool & returned_boolean, const LinuxCNC::Variables::SymbolId_t lhs, const LinuxCNC::Variables::SymbolId_t rhs)
 		{
 			returned_boolean = ( variables[lhs] == variables[rhs] );
 		}
 
-		void LHSnotequaltoRHS(bool & returned_boolean, const int lhs, const int rhs)
+		void LHSnotequaltoRHS(bool & returned_boolean, const LinuxCNC::Variables::SymbolId_t lhs, const LinuxCNC::Variables::SymbolId_t rhs)
 		{
 			returned_boolean = ( variables[lhs] != variables[rhs] );
 		}
 
-		void LHSgreaterthanRHS(bool & returned_boolean, const int lhs, const int rhs)
+		void LHSgreaterthanRHS(bool & returned_boolean, const LinuxCNC::Variables::SymbolId_t lhs, const LinuxCNC::Variables::SymbolId_t rhs)
 		{
 			returned_boolean = ( variables[lhs] > variables[rhs] );
 		}
 
-		void LHSlessthanRHS(bool & returned_boolean, const int lhs, const int rhs)
+		void LHSlessthanRHS(bool & returned_boolean, const LinuxCNC::Variables::SymbolId_t lhs, const LinuxCNC::Variables::SymbolId_t rhs)
 		{
 			returned_boolean = ( variables[lhs] < variables[rhs] );
 		}
 
 
-		void LHSplusRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+		void LHSplusRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t lhs, const LinuxCNC::Variables::SymbolId_t rhs)
 		{
 			int id = variables.new_id();
 			variables[id] = variables[lhs] + variables[rhs];
 			returned_symbol_id = id;
 		}
 
-		void LHSminusRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+		void LHSminusRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t lhs, const LinuxCNC::Variables::SymbolId_t rhs)
 		{
 			int id = variables.new_id();
 			variables[id] = variables[lhs] - variables[rhs];
 			returned_symbol_id = id;
 		}
 
-		void LHStimesRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+		void LHStimesRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t lhs, const LinuxCNC::Variables::SymbolId_t rhs)
 		{
 			int id = variables.new_id();
 			variables[id] = variables[lhs] * variables[rhs];
 			returned_symbol_id = id;
 		}
 
-		void LHSdividedbyRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+		void LHSdividedbyRHS(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t lhs, const LinuxCNC::Variables::SymbolId_t rhs)
 		{
 			int id = variables.new_id();
 			if (variables[rhs] == 0.0)
@@ -1009,14 +1004,14 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		}
 
 
-		void LHSassignmentfromRHS( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs )
+		void LHSassignmentfromRHS( LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t lhs, const LinuxCNC::Variables::SymbolId_t rhs )
 		{
 			variables[lhs] = variables[rhs];
 			returned_symbol_id = lhs;
 		}
 
 
-		double Value(const int name)
+		double Value(const LinuxCNC::Variables::SymbolId_t name)
 		{
 			return( variables[name] );
 		}
@@ -1035,21 +1030,21 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		}
 
 
-		void ASin(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		void ASin(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			int id=variables.new_id();
 			variables[id] = radians_to_degrees( asin(degrees_to_radians(variables[symbol_id] )) );
 			returned_symbol_id = id;
 		}
 
-		void ACos(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		void ACos(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			int id=variables.new_id();
 			variables[id] = radians_to_degrees( acos(degrees_to_radians(variables[symbol_id] )) );
 			returned_symbol_id = id;
 		}
 
-		void ATan(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int lhs, const int rhs)
+		void ATan(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t lhs, const LinuxCNC::Variables::SymbolId_t rhs)
 		{
 			int id=variables.new_id();
 			double radians = atan2(variables[lhs], variables[rhs]);
@@ -1057,77 +1052,77 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			returned_symbol_id = id;
 		}
 
-		void Sin(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		void Sin(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			int id=variables.new_id();
 			variables[id] = radians_to_degrees( sin(degrees_to_radians(variables[symbol_id] )) );
 			returned_symbol_id = id;
 		}
 
-		void Cos(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		void Cos(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			int id=variables.new_id();
 			variables[id] = radians_to_degrees( cos(degrees_to_radians(variables[symbol_id] )) );
 			returned_symbol_id = id;
 		}
 
-		void Tan(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		void Tan(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			int id=variables.new_id();
 			variables[id] = radians_to_degrees( tan(degrees_to_radians(variables[symbol_id] )) );
 			returned_symbol_id = id;
 		}
 
-		void AbsoluteValue(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		void AbsoluteValue(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			int id=variables.new_id();
 			variables[id] = abs(variables[symbol_id]);
 			returned_symbol_id = id;
 		}
 
-		void	Sqrt(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		void	Sqrt(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			int id=variables.new_id();
 			variables[id] = sqrt(variables[symbol_id]);
 			returned_symbol_id = id;
 		}
 
-		void	Exp(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		void	Exp(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			int id=variables.new_id();
 			variables[id] = exp((variables[symbol_id]));
 			returned_symbol_id = id;
 		}
 
-		void	Fix(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		void	Fix(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			int id=variables.new_id();
 			variables[id] = int(floor(((variables[symbol_id]))));
 			returned_symbol_id = id;
 		}
 
-		void	Fup(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		void	Fup(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			int id=variables.new_id();
 			variables[id] = int(ceil(((variables[symbol_id]))));
 			returned_symbol_id = id;
 		}
 
-		void	Round(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		void	Round(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			int id=variables.new_id();
 			variables[id] = int(((variables[symbol_id])));
 			returned_symbol_id = id;
 		}
 
-		void	Ln(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const int symbol_id)
+		void	Ln(LinuxCNC::Variables::SymbolId_t & returned_symbol_id, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			int id=variables.new_id();
 			variables[id] = log(variables[symbol_id]);
 			returned_symbol_id = id;
 		}
 
-		void Exists(bool return_value, const int symbol_id)
+		void Exists(bool return_value, const LinuxCNC::Variables::SymbolId_t symbol_id)
 		{
 			return_value = variables.exists(symbol_id);
 		}
@@ -1149,7 +1144,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			to indicate which variable within that coordinate system we're referring to.  eg: 0 = x,
 			1 = y etc.
 		 */
-		double adjust( const int parameter_offset, const double value_in_parse_units )
+		double adjust( const LinuxCNC::Variables::SymbolId_t parameter_offset, const double value_in_parse_units )
 		{
 			double value_in_emc2_units = Emc2Units(value_in_parse_units);
 			double tool_length_offset = 0.0;
@@ -1190,8 +1185,15 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 		double PX()
 		{
-			double x = adjust(0, this->previous[0]);
-			return(x);
+			if (pLinuxCNC->machine_location.get())
+			{
+				return( adjust(0, pLinuxCNC->machine_location->X()) );
+			}
+			else
+			{
+				double x = adjust(0, this->previous[0]);
+				return(x);
+			}
 		}
 
 		double X()
@@ -1203,8 +1205,15 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 		double PY()
 		{
-			double y = adjust(1, this->previous[1]);
-			return(y);
+			if (pLinuxCNC->machine_location.get())
+			{
+				return( adjust(1, pLinuxCNC->machine_location->Y()) );
+			}
+			else
+			{
+				double y = adjust(1, this->previous[1]);
+				return(y);
+			}
 		}
 
 		double Y()
@@ -1216,8 +1225,15 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 		double PZ()
 		{
-			double z = adjust(2, this->previous[2]);
-			return(z);
+			if (pLinuxCNC->machine_location.get())
+			{
+				return( adjust(2, pLinuxCNC->machine_location->Z()) );
+			}
+			else
+			{
+				double z = adjust(2, this->previous[2]);
+				return(z);
+			}
 		}
 
 		double Z()
@@ -1250,6 +1266,20 @@ template <typename Iter, typename Skipper = qi::blank_type>
 			return(Cam::Point( X(), Y(), Z() ));
 		}
 
+		void UpdateMachineLocation()
+		{
+			if (this->x_specified) pLinuxCNC->machine_location->X(this->x);
+			if (this->y_specified) pLinuxCNC->machine_location->Y(this->y);
+			if (this->z_specified) pLinuxCNC->machine_location->Z(this->z);
+
+			if (this->a_specified) pLinuxCNC->machine_location->A(this->a);
+			if (this->b_specified) pLinuxCNC->machine_location->B(this->b);
+			if (this->c_specified) pLinuxCNC->machine_location->C(this->c);
+
+			if (this->u_specified) pLinuxCNC->machine_location->U(this->u);
+			if (this->v_specified) pLinuxCNC->machine_location->V(this->v);
+			if (this->w_specified) pLinuxCNC->machine_location->W(this->w);
+		}
 
 		/**
 			We've accumulated all the command line arguments as well as the statement
@@ -1364,6 +1394,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					break;
 
 				case LinuxCNC::stRapid:
+					if (pLinuxCNC->machine_location.get() == NULL)
+					{
+						pLinuxCNC->machine_location = std::auto_ptr<GCode::MachineLocation>(new GCode::MachineLocation());
+						UpdateMachineLocation();
+					}
+					else
 					{
 						// Create a line that represents this rapid movement.
 						GCode::SingleCommandGeometry_t movement;
@@ -1372,6 +1408,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						step.Type( GCode::ToolMovement::eRapid );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+						UpdateMachineLocation();
 
 						/*
 						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
@@ -1386,6 +1423,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					break;
 
 				case LinuxCNC::stFeed:
+					if (pLinuxCNC->machine_location.get() == NULL)
+					{
+						pLinuxCNC->machine_location = std::auto_ptr<GCode::MachineLocation>(new GCode::MachineLocation());
+						UpdateMachineLocation();
+					}
+					else
 					{
 						GCode::SingleCommandGeometry_t movement;
 						GCode::ToolMovement step(graphics);
@@ -1393,6 +1436,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						step.Type( GCode::ToolMovement::eFeed );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+						UpdateMachineLocation();
 						
 						/*
 						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
@@ -1413,6 +1457,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					break;
 
 				case LinuxCNC::stProbe:
+					if (pLinuxCNC->machine_location.get() == NULL)
+					{
+						pLinuxCNC->machine_location = std::auto_ptr<GCode::MachineLocation>(new GCode::MachineLocation());
+						UpdateMachineLocation();
+					}
+					else
 					{
 						GCode::SingleCommandGeometry_t movement;
 						GCode::ToolMovement step(graphics);
@@ -1420,6 +1470,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						step.Type( GCode::ToolMovement::eFeed );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+						UpdateMachineLocation();
 					}
 					/*
 					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
@@ -1454,6 +1505,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					break;
 
 				case LinuxCNC::stArcClockwise:
+					if (pLinuxCNC->machine_location.get() == NULL)
+					{
+						pLinuxCNC->machine_location = std::auto_ptr<GCode::MachineLocation>(new GCode::MachineLocation());
+						UpdateMachineLocation();
+					}
+					else
 					{
 						GCode::SingleCommandGeometry_t movement;
 						GCode::ToolMovement step(graphics);
@@ -1495,6 +1552,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						step.Type( GCode::ToolMovement::eFeed );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+						UpdateMachineLocation();
 					}
 
 					/*
@@ -1554,6 +1612,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					break;
 
 				case LinuxCNC::stArcCounterClockwise:
+					if (pLinuxCNC->machine_location.get() == NULL)
+					{
+						pLinuxCNC->machine_location = std::auto_ptr<GCode::MachineLocation>(new GCode::MachineLocation());
+						UpdateMachineLocation();
+					}
+					else
 					{
 						GCode::SingleCommandGeometry_t movement;
 						GCode::ToolMovement step(graphics);
@@ -1595,6 +1659,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						step.Type( GCode::ToolMovement::eFeed );
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+						UpdateMachineLocation();
 					}
 					/*
 					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
@@ -1656,6 +1721,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					{
 						GCode::SingleCommandGeometry_t movement;
 
+						if (pLinuxCNC->machine_location.get() == NULL)
+						{
+							pLinuxCNC->machine_location = std::auto_ptr<GCode::MachineLocation>(new GCode::MachineLocation());
+							UpdateMachineLocation();
+						}
+						else
 						{
 							Cam::Point from( PreviousLocation() );
 							Cam::Point to( X(), Y(), PZ() );
@@ -1692,6 +1763,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							movement.push_back(step);
 						}
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+						UpdateMachineLocation();
 
 						/*
 						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
@@ -1721,6 +1793,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					{
 						GCode::SingleCommandGeometry_t movement;
 
+						if (pLinuxCNC->machine_location.get() == NULL)
+						{
+							pLinuxCNC->machine_location = std::auto_ptr<GCode::MachineLocation>(new GCode::MachineLocation());
+							UpdateMachineLocation();
+						}
+						else
 						{
 							Cam::Point from( PreviousLocation() );
 							Cam::Point to  ( X(), Y(), PZ() );
@@ -1757,6 +1835,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 							movement.push_back(step);
 						}
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+						UpdateMachineLocation();
 					}
 
 					/*
@@ -1795,6 +1874,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					this->v = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 7 ] - variables[ LinuxCNC::eG54VariableBase + 7 ]);
 					this->w = ParseUnits(variables[ LinuxCNC::eG28VariableBase + 8 ] - variables[ LinuxCNC::eG54VariableBase + 8 ]);
 
+					if (pLinuxCNC->machine_location.get() == NULL)
+					{
+						pLinuxCNC->machine_location = std::auto_ptr<GCode::MachineLocation>(new GCode::MachineLocation());
+						UpdateMachineLocation();
+					}
+					else
 					{
 						GCode::SingleCommandGeometry_t movement;
 
@@ -1808,6 +1893,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						}
 
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+						UpdateMachineLocation();
 					}
 					/*
 					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
@@ -1831,6 +1917,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					this->v = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 7 ] - variables[ LinuxCNC::eG54VariableBase + 7 ]);
 					this->w = ParseUnits(variables[ LinuxCNC::eG30VariableBase + 8 ] - variables[ LinuxCNC::eG54VariableBase + 8 ]);
 
+					if (pLinuxCNC->machine_location.get() == NULL)
+					{
+						pLinuxCNC->machine_location = std::auto_ptr<GCode::MachineLocation>(new GCode::MachineLocation());
+						UpdateMachineLocation();
+					}
+					else
 					{
 						GCode::SingleCommandGeometry_t movement;
 
@@ -1844,6 +1936,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						}
 
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
+						UpdateMachineLocation();
 					}
 
 					/*
@@ -1979,9 +2072,9 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		/**
 			Initialize all nine variables from this base number to the value given.
 		 */
-		void InitOneCoordinateSystem( const int base, const double value )
+		void InitOneCoordinateSystem( const LinuxCNC::Variables::SymbolId_t base, const double value )
 		{
-			for (int var=base; var<=base + 8; var++)
+			for (LinuxCNC::Variables::SymbolId_t var=base; var<=base + 8; var++)
 			{
 				variables[var] = value;
 			}
@@ -2059,13 +2152,13 @@ bool LinuxCNC::Parse()
 	const std::string gcode(str.toAscii().constData());
 
 	linuxcnc_grammar<std::string::const_iterator> parser(this);
-	std::string::const_iterator begin = gcode.begin();
+	std::string::const_iterator gcode_program_location = gcode.begin();
 	
 	// Parse the GCode using the linuxcnc grammar.  The qi::blank skipper will skip all whitespace
 	// except newline characters.  i.e. it allows newline characters to be included in the grammar
 	// (which they need to be as they represent an 'end of block' marker)
 
-	if ((qi::phrase_parse(begin, gcode.end(), parser, qi::blank)) && (begin == gcode.end()))
+	if ((qi::phrase_parse(gcode_program_location, gcode.end(), parser, qi::blank)) && (gcode_program_location == gcode.end()))
 	{
 		qDebug("last line number %d\n", parser.line_number );
 		qDebug("%s\n", this->machine_program->TraceProgramLinkages().toAscii().constData());
@@ -2074,11 +2167,11 @@ bool LinuxCNC::Parse()
 	{
 		// qDebug("Parsing failed at %c%d\n", linuxcnc.line_number[0].first, linuxcnc.line_number[0].second);
 		qDebug("%s\n", GCode_GrammarDebugOutputBuffer.str().c_str());
-		if (begin != gcode.end())
+		if (gcode_program_location != gcode.end())
 		{
-			qDebug("%s\n", std::string(begin, gcode.end()).c_str());
+			qDebug("%s\n", std::string(gcode_program_location, gcode.end()).c_str());
 		}
 	}
 
-	return(begin == gcode.end());
+	return(gcode_program_location == gcode.end());
 }

@@ -29,7 +29,7 @@
 namespace Cam {
 
 
-CppTPG::CppTPG() : TPG() {
+CppTPG::CppTPG() {
     plugin = NULL;
 }
 CppTPG::~CppTPG() {
@@ -50,11 +50,24 @@ void CppTPG::setPlugin(CppTPGPlugin* plugin) {
     this->plugin = plugin->grab();
 }
 
-/* virtual */ void CppTPG::initialiseSettings()
+/* virtual */ void CppTPG::initialise(TPGFeature *tpgFeature)
 {
-	TPG::initialiseSettings();
+	TPG::initialise(tpgFeature);
+
+	// Now that the TPG::initialise() method has been called, it's safe to add any settings
+	// that are specific to this class.
+
 }
 
+/* virtual */ void CppTPG::onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value )
+{
+	qDebug("CppTPG::onChanged(%s changed from %s to %s)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				previous_value.toAscii().constData(), 
+				new_value.toAscii().constData());
+
+	TPG::onChanged( tpgSettingDefinition, previous_value, new_value );
+}
 
 } // End Cam namespace
 

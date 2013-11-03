@@ -23,7 +23,6 @@
 #ifndef CAM_MACHINEPROGRAMFEATURE_H
 #define CAM_MACHINEPROGRAMFEATURE_H
 
-#define CamExport
 #include <PreCompiled.h>
 
 namespace Cam {

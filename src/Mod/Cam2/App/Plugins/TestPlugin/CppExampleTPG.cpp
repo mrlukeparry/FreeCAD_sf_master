@@ -49,6 +49,7 @@
 
 using namespace BOOST_SPIRIT_CLASSIC_NS;
 
+
 /**
  * Implement the Cpp shared library interface functions
  * Note: this must be outside the namespace declaration
@@ -71,17 +72,6 @@ extern "C" Q_DECL_EXPORT Cam::CppTPG* getTPG(QString id) {
 
 /// TPG Implementation ///
 namespace Cam {
-
-// Define the names used for this TPG's settings once here to avoid inconsistencies.
-/* static */ QString CppExampleTPG::SettingName_Depth = QString::fromAscii("Relative Depth");
-/* static */ QString CppExampleTPG::SettingName_Standoff = QString::fromAscii("Standoff");
-/* static */ QString CppExampleTPG::SettingName_Dwell = QString::fromAscii("Dwell");
-/* static */ QString CppExampleTPG::SettingName_PeckDepth = QString::fromAscii("Peck Depth");
-/* static */ QString CppExampleTPG::SettingName_RetractMode = QString::fromAscii("Retract Mode");
-/* static */ QString CppExampleTPG::SettingName_Clearance = QString::fromAscii("Clearance Relative Height");
-/* static */ QString CppExampleTPG::SettingName_SpindleSpeed = QString::fromAscii("Spindle Speed");
-/* static */ QString CppExampleTPG::SettingName_FeedRate = QString::fromAscii("Feed Rate");
-
 
 /* friend */ QString & operator<< ( QString & buf, const CppExampleTPG::RetractMode_t & retract_mode )
 {
@@ -129,99 +119,188 @@ CppExampleTPG::CppExampleTPG()
     QString qaction = QS("default");
     actions.push_back(qaction);
 
-	this->initialiseSettings();
-
-	// Just as a hack for now, find all input object names and pass them in as input geometry.
-	App::Document *document = App::GetApplication().getActiveDocument();
-	if (document)
-	{
-		std::vector<App::DocumentObject*> input_geometry = document->getObjectsOfType(Part::Feature::getClassTypeId());
-		for (std::vector<App::DocumentObject *>::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
-		{
-			QString value = settings->getValue(qaction, settingName_Geometry());
-			value.append(QString::fromAscii(" "));
-			value.append(QString::fromAscii((*itGeometry)->getNameInDocument()));
-			settings->setValue(qaction, settingName_Geometry(), value);
-		}
-	}
+	depth = NULL;
+	standoff = NULL;
+	dwell = NULL;
+	peck_depth = NULL;
+	retract_mode = NULL;
+	clearance_height = NULL;
+	spindle_speed = NULL;
+	feed_rate = NULL;
+	sometimes_hidden = NULL;
 }
 
 CppExampleTPG::~CppExampleTPG() {
-    
+	if (depth) depth->release();
+	if (standoff) standoff->release();
+	if (dwell) dwell->release();
+	if (peck_depth) peck_depth->release();
+	if (retract_mode) retract_mode->release();
+	if (clearance_height) clearance_height->release();
+	if (spindle_speed) spindle_speed->release();
+	if (feed_rate) feed_rate->release();    
 }
 
 
-/* virtual */ void CppExampleTPG::initialiseSettings()
+/* virtual */ void CppExampleTPG::initialise(TPGFeature *tpgFeature)
 {
+	CppTPG::initialise(tpgFeature);	// We must do this first so that we have somewhere to store our properties.
+
 	QString qaction = QS("default");
 
-	CppTPG::initialiseSettings();	// Allow the ancestors to add their own settings first.
+	if (settings != NULL)
+	{
+		// Define the names used for this TPG's settings once here to avoid inconsistencies.
 
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Depth.toAscii().constData(), 
-																	 SettingName_Depth.toAscii().constData(),
-																	 "Cam::TextBox", 
-																	 "10.0",
-																	 "mm",
-																	 "Distance from the current Z location to the bottom of the hole.  Must be positive"));
 
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Standoff.toAscii().constData(), 
-																	 SettingName_Standoff.toAscii().constData(),
-																	 "Cam::TextBox", 
-																	 "5.0",
-																	 "mm",
-																	 "Distance above the drilling point location to retract to following the drilling cycle."));
 
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Dwell.toAscii().constData(), 
-																	 SettingName_Dwell.toAscii().constData(),
-																	 "Cam::TextBox", 
-																	 "0.0",
-																	 "seconds",
-																	 "Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'"));
+		// We should have a settings pointer by now due to the CppTPG::initialise() call
+		this->depth = new Settings::Length(	"Relative Depth", 
+											 "Relative Depth",
+											 "Distance from the current Z location to the bottom of the hole.  Must be positive",
+											 5.0,
+											 Settings::Definition::Metric );
+		depth->Minimum(0.0);	// must be positive.  No maximum.
+		settings->addSettingDefinition(qaction, depth);
 
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_PeckDepth.toAscii().constData(), 
-																	 SettingName_PeckDepth.toAscii().constData(),
-																	 "Cam::TextBox", 
-																	 "5.0",
-																	 "mm",
-																	 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled."));
+		this->standoff = new Settings::Length(	"Standoff", 
+												"Standoff",
+												"Distance above the drilling point location to retract to following the drilling cycle.",
+												5.0,
+												Settings::Definition::Metric );
 
-	// TODO - Figure out how to express enumerated types as a property.  i.e. convert the
-	// enumeration to a series of strings and present them as a 'combo-box' of drop-down options.
-	QString retract_mode;
-	retract_mode << eRapidRetract;	// Use the conversion method to retrieve the string used for retraction.
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_RetractMode.toAscii().constData(), 
-																	 SettingName_RetractMode.toAscii().constData(),
-																	 "Cam::TextBox", 
-																	 retract_mode.toAscii().constData(),
-																	 "mode",
-																	 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate."));
+		settings->addSettingDefinition(qaction, standoff);
 
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_Clearance.toAscii().constData(), 
-																	 SettingName_Clearance.toAscii().constData(),
-																	 "Cam::TextBox", 
-																	 "30.0",
-																	 "mm",
-																	 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece."));
+		this->dwell = new Settings::Double(	"Dwell", 
+											"Dwell",
+											"Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'",
+											0.0,
+											"seconds" );
+		this->dwell->Minimum(0.0);
+		
+		settings->addSettingDefinition(qaction, this->dwell);
 
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_SpindleSpeed.toAscii().constData(), 
-																	 SettingName_SpindleSpeed.toAscii().constData(),
-																	 "Cam::TextBox", 
-																	 "700",
-																	 "RPM",
-																	 "Spindle Speed."));
 
-	settings->addSettingDefinition(qaction, new TPGSettingDefinition(SettingName_FeedRate.toAscii().constData(), 
-																	 SettingName_FeedRate.toAscii().constData(),
-																	 "Cam::TextBox", 
-																	 "55",
-																	 "mm/min",
-																	 "Feed Rate."));
 
-    TPGSettingDefinition* speed = settings->addSettingDefinition(qaction, new TPGSettingDefinition("speed", "Speed", "Cam::Radio", "normal", "", "The speed of the algorithm.  Faster will use less accurate algorithm."));
-    speed->addOption("fast", "Fast");
-    speed->addOption("normal", "Normal");
-    speed->addOption("slow", "Slow");
 
+	
+		this->peck_depth = new Settings::Length( "Peck Depth", 
+												 "Peck Depth",
+												 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled.",
+												 5.0,
+												 Settings::Definition::Metric);
+		settings->addSettingDefinition(qaction, this->peck_depth);
+
+		this->retract_mode = new Settings::Enumeration(	 "Retract Mode", 
+														 "Retract Mode",
+														 int(eRapidRetract),
+														 "mode",
+														 "0 represents a rapid ratract movement.  1 represents a retraction at the current feed rate.");
+
+		// Enumerated types MUST have one option for each different value.  For each option, the Id must be the integer form and the Label must
+		// be the string (verbose) form.  Only the verbose forms are used on the user interface but the values used in the TPGSettingDefinition.value will
+		// always be the integer form.
+		// The integer forms need not start from zero or be sequential.  The values will appear in the combo-box in the order that
+		// they're defined in the options list.  Their position in the list will be used by the combo-box.
+
+		for (RetractMode_t mode = eRapidRetract; mode <= eFeedRetract; mode = RetractMode_t(int(mode)+1))
+		{
+			QString label;
+			label << mode;		// use the operator<< override to convert from the enum to the string form.
+
+			this->retract_mode->Add(int(mode), label);
+		}
+
+		settings->addSettingDefinition(qaction, this->retract_mode);
+
+
+		this->sometimes_hidden = new Settings::Text("Gets Hidden","Gets Hidden", "Gets hidden when retract mode is rapid", "", "Gets hidden when retract mode is rapid");
+
+		settings->addSettingDefinition(qaction, this->sometimes_hidden);
+
+		if (this->retract_mode->get().first == eRapidRetract) 
+		{
+			this->sometimes_hidden->visible = false;
+		}
+		else
+		{
+			this->sometimes_hidden->visible = true;
+		}
+
+
+		this->clearance_height = new Settings::Length(	 "Clearance Relative Height", 
+														 "Clearance Relative Height",
+														 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece.",
+														 30.0,
+														 Settings::Definition::Metric );
+		settings->addSettingDefinition(qaction, this->clearance_height);
+
+		this->spindle_speed = new Settings::Double(	"Spindle Speed", 
+													"Spindle Speed",
+													"Spindle Speed.", 
+													700.0,
+													"RPM" );
+		settings->addSettingDefinition(qaction, this->spindle_speed);
+
+		this->feed_rate = new Settings::Rate(	"Feed Rate", 
+												"Feed Rate",
+												"Feed Rate.", 
+												55.0,
+												Settings::Definition::Metric );
+		settings->addSettingDefinition(qaction, this->feed_rate);
+
+		this->speed = new Settings::Radio("speed", "Speed", "normal", "The speed of the algorithm.  Faster will use less accurate algorithm.");
+		settings->addSettingDefinition(qaction, this->speed);
+
+		this->speed->Add("Fast");
+		this->speed->Add("Normal");
+		this->speed->Add("Slow");
+
+		settings->addSettingDefinition(qaction, new Settings::Filename("Filename", 
+																		 "My Special Filename",
+																		 "c:\\temp\\david.txt",
+																		 "Filename",
+																		 "Dummy setting to test the new SettingType_Filename enumeration."));
+
+		settings->addSettingDefinition(qaction, new Settings::Directory("Directory", 
+																		 "My Special Directory",
+																		 "c:\\temp",
+																		 "Directory",
+																		 "Dummy setting to test the new SettingType_Directory enumeration."));
+
+		settings->addSettingDefinition(qaction, new Settings::Color("Colour", 
+																		 "My Special Colour",
+																		 "Dummy setting to test the new SettingType_Color enumeration."));
+
+		Settings::Integer *test_integer_setting = new Settings::Integer("Integer", 
+																		 "My Special Integer",
+																		 3,
+																		 "",
+																		 "Dummy setting to test the new SettingType_Integer. Must be between 0 and 10");
+		test_integer_setting->Minimum(1);
+		test_integer_setting->Maximum(10);
+
+		settings->addSettingDefinition(qaction, test_integer_setting);
+
+
+		
+		// Just as a hack for now, find all input object names and pass them in as input geometry.
+		App::Document *document = App::GetApplication().getActiveDocument();
+		if (document)
+		{
+			std::vector<App::DocumentObject*> input_geometry = document->getObjectsOfType(Part::Feature::getClassTypeId());
+			for (std::vector<App::DocumentObject *>::const_iterator itGeometry = input_geometry.begin(); itGeometry != input_geometry.end(); itGeometry++)
+			{
+				QString value = settings->getValue(qaction, settingName_Geometry());
+				if (value.contains(QString::fromAscii((*itGeometry)->getNameInDocument())) == false)
+				{
+					value.append(QString::fromAscii(" "));
+					value.append(QString::fromAscii((*itGeometry)->getNameInDocument()));
+					this->geometry->setValue(value);
+				}
+			}
+		}
+	}
 }
 
 /**
@@ -229,7 +308,7 @@ CppExampleTPG::~CppExampleTPG() {
  *
  * Note: the return will change once the TP Language has been set in stone
  */
-void CppExampleTPG::run(TPGSettings *settings, ToolPath *toolpath, QString action= QString::fromAscii(""))
+void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QString action= QString::fromAscii(""))
 {
     qDebug("This is where the TPG would generate the tool-path! \n");
 //	if (this->toolpath != NULL)
@@ -239,33 +318,20 @@ void CppExampleTPG::run(TPGSettings *settings, ToolPath *toolpath, QString actio
 //	}
 
 	// Look at the list of object names and see if we can use any of them as input geometry.
-	// If so, arrange them into the Cam::Paths object for use later.
-	QString geometry = settings->getValue(action, QString::fromAscii("geometry"));
-	
+	// If so, arrange them into the Cam::Paths object for use later.	
 	Cam::Paths paths;
-	paths.Add( geometry.split(QRegExp(QString::fromAscii("[ ,]")), QString::SkipEmptyParts) );
+	paths.Add( this->geometry->GetNames() );
 
-	// Now generate a new toolpath.
-//	this->toolpath = new ToolPath(this);
 	ToolPath &python = *(toolpath);	// for readability only.
 
 	// TODO We really need to define which machine post processor is used at the CamFeature
 	// level (or above would be better)  We DO NOT want this import to remain in the TPG itself.
+	python << "import sys\n";
+	python << "sys.path.insert(0,'C:\\David\\src\\FreeCAD_sf_master\\src\\Mod\\Cam2\\App\\PyPostProcessor\\PostProcessor')\n";
+	python << "import math\n";
 	python << "from nc import *" << "\n";
 	python << "import hm50" << "\n";
 	
-	// TODO: Understand how 'units' are handled in FreeCAD.
-	// In HeeksCNC, we always store values in millimeters (mm) and convert to whatever external
-	// units are configured at the last moment.  We store a 'units' value as 1.0 for mm and
-	// 25.4 for inches.  This way, we always divide the internal representation by the
-	// units value to produce a number suitable for the 'external' world.
-	// When I say 'external world' I mean either presentation as a 'setting' so the operator
-	// can change it or as a value being written to the Python program for GCode generation
-	// (i.e. a ToolPath in the Cam workbench)
-	// When the operator changes the units from one value to another, we need to change
-	// the ToolPath::RequiredDecimalPlaces() value to either 3 (for metric) or 4 (for
-	// imperial) so that the Python/GCode is generated using the correct resolution.
-
 	python.RequiredDecimalPlaces(3);	// assume metric.
 
 	/*
@@ -319,31 +385,16 @@ void CppExampleTPG::run(TPGSettings *settings, ToolPath *toolpath, QString actio
 	paths.Add( Cam::Edge( Cam::Point(50.0, 0.0, 0.0), Cam::Point(50.0, 100.0, 0.0) ) );
 	*/
 
-	double units = 1.0;	// TODO Get some setting that indicates metric or imperial units for GCode.
+	Settings::Definition::Units_t units = Settings::Definition::Metric;	// TODO Get some setting that indicates metric or imperial units for GCode.
 	// For now, figure out the units by looking at the resolution of the Python code.
 	if (python.RequiredDecimalPlaces() == 3)
 	{
-		units = 1.0;	// metric.
+		units = Settings::Definition::Metric;	// metric.
 	}
 	else
 	{
-		units = 25.4;	// imperial
+		units = Settings::Definition::Imperial;	// imperial
 	}
-
-	// TODO - this arrangement with settings isn't going to work as it is.  We need to be able
-	// to include enumerated types, register callback routines and also know what units
-	// the values are in.  I've divided by a units value here on the assumption that the value
-	// returned by the getValue() method is always going to be in mm.
-
-	// Retrieve the various settings and convert them to the appropriate units for inclusion in the ToolPath.
-	double depth = settings->getValue( action, SettingName_Depth ).toDouble() / units;
-	double standoff = settings->getValue( action, SettingName_Standoff ).toDouble() / units;
-	double dwell = settings->getValue( action, SettingName_Dwell ).toDouble();
-	double peck_depth = settings->getValue( action, SettingName_PeckDepth ).toDouble() / units;
-	RetractMode_t retract_mode = toRetractMode(settings->getValue( action, SettingName_RetractMode ));
-	double clearance_height = settings->getValue( action, SettingName_Clearance ).toDouble() / units;
-	double spindle_speed = settings->getValue( action, SettingName_SpindleSpeed ).toDouble() / units;
-	double feed_rate = settings->getValue( action, SettingName_FeedRate ).toDouble() / units;
 
 	// Mark the beginning and end of the GCode generated by this TPG just in case we want to find
 	// it again from the whole GCode program (for highlighting etc.)
@@ -356,8 +407,8 @@ void CppExampleTPG::run(TPGSettings *settings, ToolPath *toolpath, QString actio
 	// TODO - select the appropriate fixture
 	// TODO - select the appropriate tool
 
-	python << "spindle(s=" << spindle_speed << ", clockwise=True)\n";
-	python << "feedrate(" << feed_rate << ")\n";	
+	python << "spindle(s=" << this->spindle_speed->get() << ", clockwise=True)\n";
+	// python << "feedrate(" << this->feed_rate.get(units) << ")\n";	
 
 	// Generate the drilling locations from the Paths objects.  i.e. points as well as intersecting sketches etc.
 	Cam::Paths::Locations_t locations = paths.PointLocationData();
@@ -370,16 +421,19 @@ void CppExampleTPG::run(TPGSettings *settings, ToolPath *toolpath, QString actio
 
 		gp_Pnt point = itLocation->Location();	// Just for now...
 
+		// TODO: Figure out where our GCode units settings are defined and convert the coordinates
+		// from the graphics into those units required for GCode.
+
 		python	<< "drill("
-				<< "x=" << point.X()/units << ", "
-				<< "y=" << point.Y()/units << ", "
-				<< "z=" << point.Z()/units << ", "
-				<< "depth=" << depth << ", "
-				<< "standoff=" << standoff << ", "
-				<< "dwell=" << dwell << ", "
-				<< "peck_depth=" << peck_depth << ", "
-				<< "retract_mode=" << int(retract_mode) << ", "
-				<< "clearance_height=" << clearance_height
+				<< "x=" << point.X() << ", "
+				<< "y=" << point.Y() << ", "
+				<< "z=" << point.Z() << ", "
+				<< "depth=" << this->depth->get(units) << ", "
+				<< "standoff=" << this->standoff->get(units) << ", "
+				<< "dwell=" << this->dwell->get() << ", "
+				<< "peck_depth=" << this->peck_depth->get(units) << ", "
+				<< "retract_mode=" << this->retract_mode->get().first << ", "
+				<< "clearance_height=" << this->clearance_height->get(units)
 				<< ")\n";
         // pMachineState->Location(point); // Remember where we are.
 	} // End for
@@ -676,6 +730,87 @@ void CppExampleTPG::run(TPGSettings *settings, ToolPath *toolpath, QString actio
 	// it again from the whole GCode program (for highlighting etc.)
 	tpg_reference.replace(QString::fromAscii("TpgBegin"), QString::fromAscii("TpgEnd"));
 	python << "comment(" << python.PythonString(tpg_reference) << ")\n";
+}
+
+
+/* virtual */ void CppExampleTPG::onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value )
+{
+	if (tpgSettingDefinition == depth)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				depth->get(depth->getUnits()));
+	}
+	else if (tpgSettingDefinition == standoff)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				standoff->get(standoff->getUnits()));
+	}
+	else if (tpgSettingDefinition == dwell)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				dwell->get());
+	}
+	else if (tpgSettingDefinition == peck_depth)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				peck_depth->get(peck_depth->getUnits()));
+	}
+	else if (tpgSettingDefinition == retract_mode)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %s)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				retract_mode->get().second.toAscii().constData());
+
+		// If we set the visible flag here, the settings editor dialog box will be updated
+		// to reflect the change.  We can use this to hide or display settings when other
+		// settings change value.  eg: If one setting describes the 'number of tabs' in a
+		// Contour operation then the setting for 'tab height' and/or 'tab width' need only
+		// be displayed if the 'number of tabs' value is greater than zero.
+
+		if (this->retract_mode->get().first == eRapidRetract) 
+		{
+			this->sometimes_hidden->visible = false;
+			this->peck_depth->set(7.4);
+			this->speed->setValue(QString::fromAscii("Fast"));
+		}
+		else
+		{
+			this->sometimes_hidden->visible = true;
+			this->peck_depth->set(3.3);
+			this->speed->setValue(QString::fromAscii("Slow"));
+		}
+	}
+	else if (tpgSettingDefinition == clearance_height)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				clearance_height->get(clearance_height->getUnits()));
+	}
+	else if (tpgSettingDefinition == spindle_speed)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				spindle_speed->get());
+	}
+	else if (tpgSettingDefinition == feed_rate)
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed to %lf)\n", 
+				tpgSettingDefinition->getFullname().toAscii().constData(),
+				feed_rate->get(feed_rate->getUnits()));
+	}
+	else
+	{
+		qDebug("CppExampleTPG::onChanged(%s changed from %s to %s)\n", 
+					tpgSettingDefinition->getFullname().toAscii().constData(),
+					previous_value.toAscii().constData(), 
+					new_value.toAscii().constData());
+	}
+
+	CppTPG::onChanged( tpgSettingDefinition, previous_value, new_value );
 }
 
 
