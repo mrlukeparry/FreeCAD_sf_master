@@ -326,6 +326,9 @@ void CppExampleTPG::run(Settings::TPGSettings *settings, ToolPath *toolpath, QSt
 
 	// TODO We really need to define which machine post processor is used at the CamFeature
 	// level (or above would be better)  We DO NOT want this import to remain in the TPG itself.
+	python << "import sys\n";
+	python << "sys.path.insert(0,'C:\\David\\src\\FreeCAD_sf_master\\src\\Mod\\Cam2\\App\\PyPostProcessor\\PostProcessor')\n";
+	python << "import math\n";
 	python << "from nc import *" << "\n";
 	python << "import hm50" << "\n";
 	

@@ -37,8 +37,12 @@
 #include "PostProcessor.h"
 #include "Graphics/Paths.h"
 #include "Support.h"
+#include <Mod/Part/App/Geometry.h>
 
 #include "LinuxCNC.h"	// For DEBUG only.  We need to move the GCode parsing out to somewhere else.
+
+#include <BRepAdaptor_Curve.hxx>
+#include <Handle_Geom_Circle.hxx>
 
 namespace Cam {
 CamManagerInst* CamManagerInst::_pcSingleton = NULL;

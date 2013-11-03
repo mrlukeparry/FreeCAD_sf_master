@@ -936,6 +936,7 @@ namespace Cam
 					}
 					*/
 
+					/*
 					PyOption *pPyOption = static_cast<PyOption *>(new_options[i].ptr());
 					printf("Point two\n");
 
@@ -951,7 +952,7 @@ namespace Cam
 					{
 						printf("obj is empty\n");
 					}
-					
+					*/
 				}
 
 				return(0);
