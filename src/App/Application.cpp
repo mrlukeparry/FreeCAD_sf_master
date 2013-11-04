@@ -1175,9 +1175,9 @@ void Application::initApplication(void)
     Application::_pcSingleton = new Application(0,0,mConfig);
 
     // set up Unit system default
-    //ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath
-    //   ("User parameter:BaseApp/Preferences/Units");
-    //UnitsApi::setSchema((UnitSystem)hGrp->GetInt("UserSchema",0));
+    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath
+       ("User parameter:BaseApp/Preferences/Units");
+    UnitsApi::setSchema((UnitSystem)hGrp->GetInt("UserSchema",0));
 
     // starting the init script
     Interpreter().runString(Base::ScriptFactory().ProduceScript("FreeCADInit"));
@@ -1385,6 +1385,10 @@ namespace boost { namespace filesystem {
 
 pair<string, string> customSyntax(const string& s)
 {
+#if defined(FC_OS_MACOSX)
+    if (s.find("-psn_") == 0)
+        return make_pair(string("psn"), s.substr(5));
+#endif
     if (s.find("-display") == 0)
         return make_pair(string("display"), string("null"));
     else if (s.find("-style") == 0)
@@ -1493,6 +1497,9 @@ void Application::ParseOptions(int ac, char ** av)
     ("visual",     boost::program_options::value< string >(), "set the X-Window to color scema")
     ("ncols",      boost::program_options::value< int    >(), "set the X-Window to color scema")
     ("cmap",                                                  "set the X-Window to color scema")
+#if defined(FC_OS_MACOSX)
+    ("psn",        boost::program_options::value< string >(), "process serial number")
+#endif
     ;
 
     // Ignored options, will be savely ignored. Mostly uses by underlaying libs.
@@ -1561,7 +1568,7 @@ void Application::ParseOptions(int ac, char ** av)
     if (vm.count("help")) {
         std::stringstream str;
         str << mConfig["ExeName"] << endl << endl;
-        str << "For detailed descripton see http://free-cad.sf.net" << endl<<endl;
+        str << "For detailed descripton see http://www.freecadweb.org" << endl<<endl;
         str << "Usage: " << mConfig["ExeName"] << " [options] File1 File2 ..." << endl << endl;
         str << visible << endl;
         throw Base::ProgramInformation(str.str());
