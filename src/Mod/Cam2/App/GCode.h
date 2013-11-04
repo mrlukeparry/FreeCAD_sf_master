@@ -81,6 +81,59 @@ public:
     ~GCode();
 
 public:
+	/**
+		Define a class that contains the full set of values for the
+		machine's current location.
+	 */
+	class MachineLocation
+	{
+	public:
+		MachineLocation()
+		{
+			memset( this, 0, sizeof(*this) );
+		}
+
+	public:
+		void X(const double value) { x=value; }
+		double X() const { return(x); }
+
+		void Y(const double value) { y=value; }
+		double Y() const { return(y); }
+
+		void Z(const double value) { z=value; }
+		double Z() const { return(z); }
+
+		void A(const double value) { a=value; }
+		double A() const { return(a); }
+
+		void B(const double value) { b=value; }
+		double B() const { return(b); }
+
+		void C(const double value) { c=value; }
+		double C() const { return(c); }
+
+		void U(const double value) { u=value; }
+		double U() const { return(u); }
+
+		void V(const double value) { v=value; }
+		double V() const { return(v); }
+
+		void W(const double value) { w=value; }
+		double W() const { return(w); }
+
+	private:
+		double x,y,z, a,b,c, u,v,w;
+	}; // End MachineLocation class
+
+public:
+	/**
+		This is the main 'engine' for the GCode class.  This method parses the MachineProgram
+		and produces the 'geometry' as output.  If the machine_location is NULL then we must
+		not know where the machine is currently located.  At the end, however, the machine_location
+		should indicate the last known machine location.  If this is the second parsing call then
+		the location of the machine from the previous execution should be planted into this object's
+		machine_location pointer.
+	 */
 	virtual bool Parse() = 0;
 
 	// These hold warnings found during parsing.  eg: Do we have a G01 feed movement without ever having seen a feedrate defined.
@@ -96,6 +149,7 @@ public:
 	double tolerance;
 	int required_decimal_places;
 	TPGFeature* tpgFeature;	// The owning object into which we place our results.
+	std::auto_ptr<MachineLocation> machine_location;	// Current machine location.  NULL indicates that we don't know (i.e. an initial movement)
 
 	// Define a type representing the index into the QStringList contained within the MachineProgram object.
 	// We will assign specific graphics to these for later reference.

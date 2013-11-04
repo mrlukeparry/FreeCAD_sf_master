@@ -48,26 +48,39 @@ public:
      *
      * Note: the return will change once the TP Language has been set in stone
      */
-    virtual void run(TPGSettings *settings, ToolPath *toolpath, QString action);
+    virtual void run(Settings::TPGSettings *settings, ToolPath *toolpath, QString action);
 
 //    /**
 //     * Returns the toolpath from the last
 //     */
 //    virtual ToolPath *getToolPath();
 
-	virtual void initialiseSettings();
+	/**
+	 * Add the settings required by this ToolPath Generator.  This method
+	 * also calls the CppTPG::initialiseSettings() method so that those
+	 * associated with all TPGs (such as Geometry and Tool) are included
+	 */
+	virtual void initialise(TPGFeature *tpgFeature);
 
-private:
-	// Declare some static settings names once here so that they're consistent
-	// throughout the various TPG references to them.
-	static QString SettingName_Depth;
-	static QString SettingName_Standoff;
-	static QString SettingName_Dwell;
-	static QString SettingName_PeckDepth;
-	static QString SettingName_RetractMode;
-	static QString SettingName_Clearance;
-	static QString SettingName_SpindleSpeed;
-	static QString SettingName_FeedRate;
+	/**
+	 * Allow this object to know when one of its settings has changed.  NOTE: It's important
+	 * that, if implemented, this object also calls the CppTPG::onChanged() method so that
+	 * it, in turn, can call the TPG::onChanged() method.  These other layers of classes
+	 * might also be interested.
+	 */
+	virtual void onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value );
+
+public:
+	Settings::Length	*depth;
+	Settings::Length	*standoff;
+	Settings::Double	*dwell;
+	Settings::Length	*peck_depth;
+	Settings::Enumeration *retract_mode;
+	Settings::Length	*clearance_height;
+	Settings::Double	*spindle_speed;
+	Settings::Rate		*feed_rate;
+	Settings::Text		*sometimes_hidden;
+	Settings::Radio		*speed;
 
 	typedef enum
 	{

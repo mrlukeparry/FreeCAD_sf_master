@@ -97,6 +97,8 @@ bool ViewProviderToolPathFeature::setEdit(int ModNum)
 //        Gui::Control().showDialog(new TaskDlgEditTPGFeature(this));
 //
 //    return true;
+
+	return true;	// Just to avoid the compiler warning about not returning a value.
 }
 
 void ViewProviderToolPathFeature::setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum)

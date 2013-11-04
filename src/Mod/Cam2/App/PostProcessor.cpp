@@ -81,6 +81,10 @@ MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postpro
 	// Lock the 'Global Interpreter Lock' so that we're not interrupted during our execution.
 	Base::PyGILStateLocker locker;	
 
+	// Remember where stdout and stderr were pointing before we start so that we can reinstate them later.
+	PyObject *original_stdout = PySys_GetObject("stdout");
+	PyObject *original_stderr = PySys_GetObject("stderr");
+
 	// Redirect stdout and stderr from the Python interpreter so that it ends up
 	// within the MachineProgram object.
 	PythonStdout* out = new PythonStdout(machine_program);
@@ -102,7 +106,7 @@ MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postpro
 		for (i=0; i<lines->size(); i++)
 		{
 			// Seed the PythonStdout object with the line offset from the toolpath QStringList
-			// so that we can tie the generated GCode with the lines in the toolpath (Python) scrip.
+			// so that we can tie the generated GCode with the lines in the toolpath (Python) script.
 			out->ToolPathIndex( QStringList::size_type(i) );
 			err->ToolPathIndex( QStringList::size_type(i) );
 			
@@ -115,6 +119,9 @@ MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postpro
 		machine_program->addErrorString(QString::fromAscii(error.what()));	// as well as to the machine program to indicate a failure has occured.
 	}
 
+	if (original_stdout != NULL) PySys_SetObject("stdout", original_stdout);
+	if (original_stderr != NULL) PySys_SetObject("stderr", original_stderr);
+
 	// Always return the machine_program which includes both gcode and any errors that were seen.  It's up
 	// to the calling routine to look to see if any errors occured by looking at this machine_program object.
 	return(machine_program);
@@ -123,7 +130,7 @@ MachineProgram *PostProcessorInst::postProcess(ToolPath *toolpath, Item *postpro
 /**
 	This method gets called when a line of Python code attempts to write to stdout.
 	We capture the string they were going to write and re-direct it to the
-	machine_program->error_string QStringList.
+	machine_program->machineProgram QStringList.
  */
 Py::Object PythonStdout::write(const Py::Tuple& args)
 {
@@ -208,7 +215,7 @@ Py::Object PythonStderr::write(const Py::Tuple& args)
                 const char* string = PyString_AsString(unicode);
 				if (buffer.endsWith(QString::fromAscii("\n")))
 				{
-					this->machine_program->addMachineCommand(buffer, this->toolpath_index);
+					this->machine_program->addErrorString(buffer);
 					buffer.clear();
 				}
                 Py_DECREF(unicode);
@@ -220,7 +227,7 @@ Py::Object PythonStderr::write(const Py::Tuple& args)
 			buffer += QString::fromStdString(string);
             if (buffer.endsWith(QString::fromAscii("\n")))
 			{
-				this->machine_program->addMachineCommand(buffer, this->toolpath_index);
+				this->machine_program->addErrorString(buffer);
 				buffer.clear();
 			}
         }

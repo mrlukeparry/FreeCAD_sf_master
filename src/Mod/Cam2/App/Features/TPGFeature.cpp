@@ -43,8 +43,8 @@ using namespace Cam;
 
 PROPERTY_SOURCE(Cam::TPGFeature, App::DocumentObject)
 
-TPGFeature::TPGFeature() {
-
+TPGFeature::TPGFeature()
+{
 	//ADD_PROPERTY_TYPE(_prop_, _defaultval_, _group_,_type_,_Docu_)
     ADD_PROPERTY_TYPE(PluginId,        (""),  "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
     ADD_PROPERTY_TYPE(PropTPGSettings, (),    "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
@@ -52,8 +52,10 @@ TPGFeature::TPGFeature() {
     ADD_PROPERTY_TYPE(MachineProgram,  (0),   "TPG Feature", (App::Prop_None),"MachineProgram");
 
     tpg = NULL;
-    tpgSettings = NULL; //new TPGSettings();
+    tpgSettings = new Settings::TPGSettings;
+	tpgSettings->setTPGFeature(this);
 }
+
 
 //// TODO not sure if this is actually needed anymore.
 //TPGFeature::TPGFeature(TPGDescriptor *tpgDescriptor)
@@ -126,8 +128,21 @@ TPGFeature::~TPGFeature()
 //    //TODO should we wait till the tpg has finished
 //    tpg->release(); // Will internally call destructor and safely stop this
 
+	delObjConnection.disconnect();
 
-    delObjConnection.disconnect();
+	if (tpg != NULL)
+	{
+		tpg->release();
+		tpg = NULL;
+	}
+
+	if (tpgSettings != NULL)
+	{
+		tpgSettings->release();
+		tpgSettings = NULL;
+	}
+
+
 }
 void TPGFeature::onSettingDocument()
 {
@@ -146,6 +161,58 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
     return App::DocumentObject::StdReturn;
 }
 
+/**
+	Called by the App::Property framework just before a property is changed.
+	We want this because our PropTPGSettings member is a map of string properties.
+	We can only figure out which of the properties embedded within the
+	PropTPGSettings map changed by comparing the old and new maps.
+ */
+void TPGFeature::onBeforeChange(const App::Property* prop)
+{
+	if (prop == &PropTPGSettings)
+	{
+		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
+		if (property_map)
+		{
+			// Let the tpgSettings object know that something is about to change.
+			if (tpgSettings != NULL)
+			{
+				tpgSettings->onBeforePropTPGSettingsChange(property_map);
+			}
+		}
+	}
+}
+
+
+/**
+	Figure out which of our property types changed and signal the underlying
+	TPGSettings object accordingly.
+
+	This method is called by the App::Property framework automatically just
+	after a property has changed.
+
+	It's possible that we store some settings in a member variable OTHER than
+	the PropTPGSettings member.  If that's the case then this method is the
+	place where the association is made.  i.e. we need to figure out which
+	member variable holds the modified setting and signal the underlying
+	TPGSettings object accordingly.
+ */
+void TPGFeature::onChanged(const App::Property* prop)
+{
+	if (prop == &PropTPGSettings)
+	{
+		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
+		if (property_map)
+		{
+			// Let the tpgSettings object know that something changed.
+			if (tpgSettings != NULL)
+			{
+				tpgSettings->onPropTPGSettingsChanged(property_map);
+			}
+		}
+	}
+}
+
 
 
 /**
@@ -154,40 +221,34 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
  */
 TPG* TPGFeature::getTPG() {
 	if (tpg == NULL)
+	{
 		tpg = TPGFactory().getPlugin(QString::fromStdString(PluginId.getStrValue()));
+		if (tpg != NULL)
+		{
+			tpg->initialise(this);
+		}
+	}
+
 	return tpg;
 }
 
-/*
-void TPGFeature::setInputGeometry(const std::vector<Part::Feature *> & vals)
+/**
+ * NOTE: It's important that we do NOT initialise the TPG within this initialise() method.
+ * This is due to the delayed loading of TPG objects.  It's possible that the TPGFeature
+ * object will be instantiated and initialised by virtue of having been found in the
+ * document file.  We may not yet have the TPG object loaded into memory.  Leave the
+ * initialisation to the getTPG() method instead.
+ */
+void TPGFeature::initialise()
 {
-	inputGeometry.clear();
-	std::copy( vals.begin(), vals.end(), std::inserter( inputGeometry, inputGeometry.begin() ) );
+	return;
 }
-*/
-
 
 /**
  * Get the current TPG settings object
  */
-TPGSettings* TPGFeature::getTPGSettings() {
-
-	if (tpgSettings == NULL) {
-		getTPG(); // make sure TPG has been loaded already.
-
-		// get a description of settings that TPG expects
-		tpgSettings = tpg->getSettingDefinitions();
-		if (tpgSettings == NULL) {
-			Base::Console().Warning("Unable to get settings\n");
-			return NULL;
-		}
-		else
-			Base::Console().Log("Got settings\n");
-
-		// tell the settings object about myself so it can save values here.
-		tpgSettings->setTPGFeature(this);
-	}
-
+Settings::TPGSettings* TPGFeature::getTPGSettings() {
+	getTPG();	// Try to load and initialise the TPG so that our settings array is fully populated.
 	return tpgSettings;
 }
 
@@ -302,4 +363,6 @@ void TPGFeature::onDocumentRestored()
 //    } catch (...) {
 //
 //    }
+
+	this->tpgSettings->addDefaults();
 }

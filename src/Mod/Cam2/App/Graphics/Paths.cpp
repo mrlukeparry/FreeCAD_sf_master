@@ -1263,6 +1263,8 @@ bool Cam::ContiguousPath::Add(Cam::Path path)
 
 void Cam::Paths::Add(const QStringList input_geometry_names)
 {
+	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
+
 	App::Document *document = App::GetApplication().getActiveDocument();
 	if (document)
 	{
@@ -1288,6 +1290,8 @@ void Cam::Paths::Add(const QStringList input_geometry_names)
  */
 void Cam::Paths::Add( const Part::Feature *link )
 {
+	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
+
 	if (!link) return;
     if (link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
 	{
@@ -1317,7 +1321,6 @@ void Cam::Paths::Add( const Part::Feature *link )
 void Cam::Paths::Add(const TopoDS_Vertex vertex)
 {
 	m_pPointLocationData.reset(NULL);	// reset the cache to indicate it's out of date.
-
 	m_vertices.push_back(vertex);
 }
 
@@ -3637,12 +3640,8 @@ Cam::Faces_t Cam::Paths::Faces(const bool subtract_nested_faces /* = true */ ) c
 	This method is used to find individual locations for Drilling, Positioning,
 	Tapping or Counterbore operations. (and any other machining operations that
 	act around a single location)
-
-	The idea is that drilling locations (etc.) can be defined by placing lines, circles
-	and other graphical elements such that the locations for drilling are defined by
-	the intersections of these graphical elements.
  */
-Paths::Locations_t Paths::PointLocationData(const Point reference_location_for_sorting /* = Point(0.0, 0.0, 0.0) */ ) const
+Paths::Locations_t Paths::PointLocationData(const Point reference_location_for_sorting /* = Point(0.0, 0.0, 0.0) */) const
 {
 	// Check to see if we've already calculated this information.
 

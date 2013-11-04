@@ -108,11 +108,17 @@ void TPGFactoryInst::scanPlugins(short tpgtype /*= ALL_TPG*/) {
 
     // update cache
     Cam::TPGDescriptorCollection *descs = Cam::PyTPGFactory().getDescriptors();
-    d->descriptors->absorb(descs);
-    descs->release();
+	if (descs)
+	{
+		d->descriptors->absorb(descs);
+		descs->release();
+	}
     descs = Cam::CppTPGFactory().getDescriptors();
-    d->descriptors->absorb(descs);
-    descs->release();
+	if (descs)
+	{
+		d->descriptors->absorb(descs);
+		descs->release();
+	}
 }
 
 /**

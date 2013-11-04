@@ -2,6 +2,10 @@
 // Copyright 2011, Dan Heeks
 // This program is released under the New BSD license. See the file COPYING for details.
 
+#ifdef WIN32
+	#pragma warning(disable:4996)
+#endif // WIN32
+
 #include "dxf.h"
 
 using namespace std;

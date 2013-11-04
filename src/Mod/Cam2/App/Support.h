@@ -25,6 +25,10 @@
 #include <QString>
 #include <Python.h>
 
+#ifdef WIN32
+	#include <windows.h>	// For the Sleep() prototype
+#endif // WIN32
+
 /**
  * Convert a QString to a Python Object
  */

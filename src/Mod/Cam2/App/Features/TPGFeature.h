@@ -69,10 +69,6 @@ public:
     App::PropertyLink          ToolPath;
     App::PropertyLink          MachineProgram;
 
-    /// Methods for creating external interface to attach input to each TPG
-    // [TODO] eventually this could be an APP::Property link list but doesn't make sens
-    void addInputGeometry(const QString & object_name);
-	QStringList getInputGeometry();
 //    void setBoundingBox(const Base::BoundBox3d & bbox) { inputBBox = bbox; }
 
     /// Methods for obtaining output the output
@@ -84,7 +80,10 @@ public:
         return "CamGui::ViewProviderTPGFeature";
     }
 
-    void initialise() {};
+	void onBeforeChange(const App::Property* prop);
+	void onChanged(const App::Property* prop);
+
+	void initialise();
 
     /// Methods for controlling the TPG
 //    void run();
@@ -94,8 +93,9 @@ public:
 //    bool loadTPG(TPGDescriptor *tpgDescriptor);
     /// gets the TPG Instance.  Loads it from Factory if needed.
     TPG* getTPG();
-    /// Get the current TPG settings
-    TPGSettings* getTPGSettings();
+
+    /// Get a cloned copy of the current TPG settings
+	Settings::TPGSettings* getTPGSettings();
 
     void onDelete(const App::DocumentObject &docObj);
 
@@ -119,9 +119,8 @@ public:
 
 protected:
     TPG *tpg;
-    TPGSettings *tpgSettings;
+    Settings::TPGSettings *tpgSettings;
 //    Base::BoundBox3d inputBBox;
-    QStringList inputGeometry;
     
     ///Connections
     Connection delObjConnection;
