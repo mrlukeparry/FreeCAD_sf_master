@@ -42,12 +42,14 @@ set(CamGui_MOC_HDRS
     # TaskDialog/TaskDlgEditCamPartsList.h
     # TaskDialog/TaskDlgEditStockGeometry.h
     TaskDialog/TaskDlgEditTPGFeature.h
+    
     CamProjectDockWindow.h
     CamProjectDockWindowComponents.h
-    CamInspectorDockWindow.h
+    MachineProgramDockWindow.h
     TPGLibraryDockWindow.h
-    UIManager.h
     TPGListModel.h
+    ToolpathDockWindow.h
+    UIManager.h
 )
 
 set (CamGui_MOC_SRCS
@@ -57,8 +59,10 @@ set (CamGui_MOC_SRCS
 fc_wrap_cpp(CamGui_MOC_SRCS ${CamGui_MOC_HDRS})
 
 set(CamGui_UIC_SRCS
-    TPGLibraryDockWindow.ui
     CamProjectDockWindow.ui
+    MachineProgramDockWindow.ui
+    TPGLibraryDockWindow.ui
+    ToolpathDockWindow.ui
 )
 qt4_wrap_ui(CamGui_UIC_HDRS ${CamGui_UIC_SRCS})
 
@@ -88,11 +92,12 @@ SET(CamGui_SRCS
     CamProjectDockWindow.h
     CamProjectDockWindowComponents.cpp
     CamProjectDockWindowComponents.h
-
-    CamInspectorDockWindow.cpp
-    CamInspectorDockWindow.h
+	MachineProgramDockWindow.cpp
+	MachineProgramDockWindow.h
     TPGLibraryDockWindow.cpp
     TPGLibraryDockWindow.h
+    ToolpathDockWindow.cpp
+    ToolpathDockWindow.h
     UIManager.cpp
     UIManager.h
     TPGListModel.cpp

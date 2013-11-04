@@ -27,18 +27,20 @@
 #include <Gui/DockWindow.h>
 #include <qtextedit.h>
 
+#include "ui_ToolpathDockWindow.h"
+
 #include "../App/Features/ToolPathFeature.h"
 #include "../App/Features/MachineProgramFeature.h"
 
 namespace CamGui {
 
-class CamInspectorDockWindow : public Gui::DockWindow {
+class ToolpathDockWindow : public Gui::DockWindow {
 
   Q_OBJECT
 
 public:
-  CamInspectorDockWindow(Gui::Document*  pcDocument, QWidget *parent=0);
-  virtual ~CamInspectorDockWindow();
+  ToolpathDockWindow(Gui::Document*  pcDocument, QWidget *parent=0);
+  virtual ~ToolpathDockWindow();
 
   /**
    * Set the Toolpath to be displayed.  It expects the toolpath to be in HTML
@@ -63,7 +65,10 @@ public Q_SLOTS:
     void updatedMachineProgramSelection(Cam::MachineProgramFeature* machineProgram);
 
 protected:
-  QTextEdit *textedit;
+//  QTextEdit *textedit;
+
+private:
+    Ui_ToolpathDockWindow* ui;
 };
 
 } /* namespace Cam */
