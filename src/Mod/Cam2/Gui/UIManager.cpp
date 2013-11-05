@@ -163,6 +163,26 @@ bool UIManagerInst::TPGFeature() {
 	return true;
 }
 
+/**
+ * Used by the CamToolFeature GUI Command to do the work required to add a ToolFeature
+ */
+bool UIManagerInst::ToolFeature() {
+
+    //TODO: add a ToolFeature to the active document (under the selected group if available)
+
+    return true;
+}
+
+/**
+ * Used by the CamMachineFeature GUI Command to do the work required to add a MachineFeature
+ */
+bool UIManagerInst::MachineFeature() {
+
+    //TODO: add a MachineFeature to the active document (under the selected group if available)
+
+    return true;
+}
+
 
 /**
  * Executes the selected TPG(s) to (re)produce its Tool Path.

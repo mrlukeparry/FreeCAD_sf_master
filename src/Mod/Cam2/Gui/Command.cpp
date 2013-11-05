@@ -102,6 +102,70 @@ bool CmdCamTPGFeature::isActive(void)
 }
 
 //===========================================================================
+// CmdCamToolFeature
+//===========================================================================
+DEF_STD_CMD_A(CmdCamToolFeature);
+
+CmdCamToolFeature::CmdCamToolFeature()
+  :Command("Cam_ToolFeature")
+{
+    sAppModule    = "Cam";
+    sGroup        = QT_TR_NOOP("Cam");
+    sMenuText     = QT_TR_NOOP("New Tool");
+    sToolTipText  = QT_TR_NOOP("Create a new tool definition");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Cam_ToolFeature";
+}
+
+void CmdCamToolFeature::activated(int iMsg)
+{
+    openCommand("New Tool Feature");
+    if (CamGui::UIManager().ToolFeature()) {
+        commitCommand();
+    }
+    else
+        abortCommand();
+}
+
+bool CmdCamToolFeature::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+//===========================================================================
+// CmdCamMachineFeature
+//===========================================================================
+DEF_STD_CMD_A(CmdCamMachineFeature);
+
+CmdCamMachineFeature::CmdCamMachineFeature()
+  :Command("Cam_MachineFeature")
+{
+    sAppModule    = "Cam";
+    sGroup        = QT_TR_NOOP("Cam");
+    sMenuText     = QT_TR_NOOP("New Machine");
+    sToolTipText  = QT_TR_NOOP("Create a new machine definition");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Cam_MachineFeature";
+}
+
+void CmdCamMachineFeature::activated(int iMsg)
+{
+    openCommand("New Machine Feature");
+    if (CamGui::UIManager().MachineFeature()) {
+        commitCommand();
+    }
+    else
+        abortCommand();
+}
+
+bool CmdCamMachineFeature::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+//===========================================================================
 // CmdCamTPGFeature
 //===========================================================================
 DEF_STD_CMD_A(CmdCamRunTPG);
@@ -194,7 +258,9 @@ void CreateCamCommands()
 {
     Gui::CommandManager &rcCmdMgr = Gui::Application::Instance->commandManager();
     rcCmdMgr.addCommand(new CmdCamFeature());
+    rcCmdMgr.addCommand(new CmdCamToolFeature());
     rcCmdMgr.addCommand(new CmdCamTPGFeature());
+    rcCmdMgr.addCommand(new CmdCamMachineFeature());
     rcCmdMgr.addCommand(new CmdCamRunTPG());
 	rcCmdMgr.addCommand(new CmdCamPostProcess());
     rcCmdMgr.addCommand(new CmdCamWatchHighlight());

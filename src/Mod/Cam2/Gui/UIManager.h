@@ -93,6 +93,14 @@ public:
    */
   bool TPGFeature();
   /**
+   * Used by the CamToolFeature GUI Command to do the work required to add a ToolFeature
+   */
+  bool ToolFeature();
+  /**
+   * Used by the CamMachineFeature GUI Command to do the work required to add a MachineFeature
+   */
+  bool MachineFeature();
+  /**
    * Executes the selected TPG(s) to (re)produce its Tool Path.
    */
   bool RunTPG();

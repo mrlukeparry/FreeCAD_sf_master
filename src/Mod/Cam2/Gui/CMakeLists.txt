@@ -84,8 +84,12 @@ SET(CamGui_SRCS
     ViewProviderCamFeature.h
     ViewProviderTPGFeature.cpp
     ViewProviderTPGFeature.h
+    ViewProviderToolFeature.cpp
+    ViewProviderToolFeature.h
     ViewProviderToolPathFeature.cpp
     ViewProviderToolPathFeature.h
+    ViewProviderMachineFeature.cpp
+    ViewProviderMachineFeature.h
     ViewProviderMachineProgramFeature.cpp
     ViewProviderMachineProgramFeature.h
     CamProjectDockWindow.cpp

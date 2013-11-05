@@ -92,6 +92,9 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     cam->setCommand("Cam");
     *cam << "Cam_CamFeature";
 	*cam << "Cam_TPGFeature";
+    *cam << "Separator";
+    *cam << "Cam_ToolFeature";
+    *cam << "Cam_MachineFeature";
 	*cam << "Separator";
 	*cam << "Cam_RunTPG";
 	*cam << "Cam_PostProcess";
@@ -107,6 +110,9 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     cam->setCommand("Cam");
     *cam << "Cam_CamFeature";
 	*cam << "Cam_TPGFeature";
+    *cam << "Separator";
+    *cam << "Cam_ToolFeature";
+    *cam << "Cam_MachineFeature";
 	*cam << "Separator";
 	*cam << "Cam_RunTPG";
 	*cam << "Cam_PostProcess";
