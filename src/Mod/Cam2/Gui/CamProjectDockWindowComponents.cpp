@@ -393,10 +393,14 @@ void CamTextBoxComponent::refresh()
 	within the CamTextBoxComponent::handleButton() method.  This
 	handler is called when the add_button is pressed.
  */
-void CamTextBoxComponent::handleAddObjectNameButton()
+void CamListViewsDialog::handleAddObjectNameButton()
 {
 	QMessageBox message(QMessageBox::Information, QString::fromAscii("ADD Button Handler"), QString::fromAscii("Add button pressed"), QMessageBox::Ok );
 	message.exec();
+	if (this->possible_object_labels->currentIndex().row() >= 0)
+	{
+		
+	}
 }
 
 /**
@@ -404,10 +408,63 @@ void CamTextBoxComponent::handleAddObjectNameButton()
 	within the CamTextBoxComponent::handleButton() method.  This
 	handler is called when the ok_button is pressed.
  */
-void CamTextBoxComponent::handleOKButton()
+void CamListViewsDialog::handleOKButton()
 {
-	QMessageBox message(QMessageBox::Information, QString::fromAscii("OK Button Handler"), QString::fromAscii("OK button pressed"), QMessageBox::Ok );
-	message.exec();
+	// QMessageBox message(QMessageBox::Information, QString::fromAscii("OK Button Handler"), QString::fromAscii("OK button pressed"), QMessageBox::Ok );
+	// message.exec();
+	this->ok_pressed = true;
+	this->dialog->close();
+}
+
+CamListViewsDialog::CamListViewsDialog( const CamListViewsDialog::Data_t & possible_objects )
+{
+	this->ok_pressed = false;
+
+	this->dialog.reset(new QDialog);
+	this->layout.reset(new QVBoxLayout);
+	this->add_button.reset(new QPushButton);
+	this->ok_button.reset(new QPushButton);
+	this->dummy_edit.reset(new QLineEdit);
+	this->possible_object_labels.reset(new QListView);
+	this->selected_object_labels.reset(new QListView);
+	this->possibleLabelsList.reset(new QStringList());
+
+	for (CamListViewsDialog::Data_t::const_iterator itPossibleObject = possible_objects.begin(); itPossibleObject != possible_objects.end(); itPossibleObject++)
+	{
+		possibleLabelsList->append( itPossibleObject->first );
+	}
+
+	this->possibleLabelsListModel.reset( new QStringListModel(*possibleLabelsList, NULL) );
+	possible_object_labels->setModel( this->possibleLabelsListModel.get() );
+
+	this->add_button->setText(QString::fromAscii("Add"));
+	this->ok_button->setText(QString::fromAscii("OK"));
+	this->dummy_edit->setText(QString::fromAscii("One day this dialog will present a list of all objects whose types match this setting and allow the object names to be selected"));
+
+	this->ok_button->connect( this->ok_button.get(), SIGNAL(clicked()), this, SLOT(handleOKButton()));
+	layout->addWidget(this->ok_button.get());
+
+	this->layout->addWidget(dummy_edit.get());
+
+	this->layout->addWidget(possible_object_labels.get());
+
+	this->add_button->connect( this->add_button.get(), SIGNAL(clicked()), this, SLOT(handleAddObjectNameButton()));
+	this->layout->addWidget(this->add_button.get());
+
+	this->layout->addWidget(this->selected_object_labels.get());
+
+	this->dialog->setGeometry(0,0,200,100);
+	QString title = QString::fromAscii("Edit object names list");
+	this->dialog->setWindowTitle(title);
+	this->dialog->setLayout(layout.get());
+	this->dialog->setWindowFlags(Qt::Dialog);
+}
+
+bool CamListViewsDialog::Show()
+{
+	this->dialog->show();
+	this->dialog->exec();
+	return(this->ok_pressed);
 }
 
 /**
@@ -450,8 +507,8 @@ void CamTextBoxComponent::handleButton()
 							std::vector<App::DocumentObject *> objects = doc->getObjectsOfType( type );
 							for (std::vector<App::DocumentObject *>::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
 							{
-								Name_t name = (*itObject)->getNameInDocument();
-								Label_t label = (*itObject)->Label.getValue();
+								CamListViewsDialog::Name_t name = QString::fromAscii((*itObject)->getNameInDocument());
+								CamListViewsDialog::Label_t label = QString::fromAscii((*itObject)->Label.getValue());
 								
 								possible_objects.insert( std::make_pair( label, name ) );
 							}
@@ -459,49 +516,16 @@ void CamTextBoxComponent::handleButton()
 					}
 				}
 			}
+
+			CamListViewsDialog dialog(possible_objects);
+			if (dialog.Show())
+			{
+				// The user must have pressed the OK button.  Retrieve the final list and remember the object names.
+
+			}
 		}
 
-		boost::scoped_ptr<QDialog> dialog(new QDialog);
-		boost::scoped_ptr<QVBoxLayout> layout(new QVBoxLayout);
-		boost::scoped_ptr<QPushButton> add_button(new QPushButton);
-		boost::scoped_ptr<QPushButton> ok_button(new QPushButton);
-		boost::scoped_ptr<QLineEdit> dummy_edit(new QLineEdit);
-		boost::scoped_ptr<QListView> possible_object_labels(new QListView);
-		boost::scoped_ptr<QListView> selected_object_labels(new QListView);
-
-		boost::scoped_ptr<QStringList> stringList(new QStringList());
-		for (PossibleObjects_t::const_iterator itPossibleObject = possible_objects.begin(); itPossibleObject != possible_objects.end(); itPossibleObject++)
-		{
-			stringList->append( QString::fromAscii(itPossibleObject->first.c_str()) );
-		}
-
-		boost::scoped_ptr<QStringListModel> stringListModel( new QStringListModel(*stringList, NULL) );
-		possible_object_labels->setModel( stringListModel.get() );
-
-		add_button->setText(QString::fromAscii("Add"));
-		ok_button->setText(QString::fromAscii("OK"));
-		dummy_edit->setText(QString::fromAscii("One day this dialog will present a list of all objects whose types match this setting and allow the object names to be selected"));
-
-		ok_button->connect( ok_button.get(), SIGNAL(clicked()), this, SLOT(handleOKButton()));
-		layout->addWidget(ok_button.get());
-
-		layout->addWidget(dummy_edit.get());
-
-		layout->addWidget(possible_object_labels.get());
-
-		add_button->connect( add_button.get(), SIGNAL(clicked()), this, SLOT(handleAddObjectNameButton()));
-		layout->addWidget(add_button.get());
-
-		layout->addWidget(selected_object_labels.get());
-
-		dialog->setGeometry(0,0,200,100);
-		QString title = QString::fromAscii("Edit object names list");
-		dialog->setWindowTitle(title);
-		dialog->setLayout(layout.get());
-		dialog->setWindowFlags(Qt::Dialog);		
-
-		dialog->show();
-		dialog->exec();
+		
 	}
 }
 

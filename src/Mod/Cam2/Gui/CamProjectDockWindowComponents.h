@@ -25,6 +25,7 @@
 
 #include <PreCompiled.h>
 
+#include <QDialog>
 #include <QLineEdit>
 #include <QFormLayout>
 #include <QList>
@@ -34,6 +35,9 @@
 #include <QPushButton>
 #include <QToolButton>
 #include <QComboBox>
+#include <QListView>
+#include <QStringList>
+#include <QStringListModel>
 
 #include "../App/TPG/TPGSettings.h"
 
@@ -179,6 +183,42 @@ private:
 	Cam::Settings::Definition *tpgSetting;
 };
 
+
+class CamGuiExport CamListViewsDialog : public QObject
+{
+	Q_OBJECT
+
+public:
+	typedef QString Label_t;
+	typedef QString Name_t;
+	typedef std::multimap< Label_t, Name_t > Data_t;
+
+	bool ok_pressed;
+
+public:
+	CamListViewsDialog(const Data_t &data);
+	bool Show();	// Show the dialog and return TRUE if the user pressed the OK button.
+	
+private:
+	boost::scoped_ptr<QDialog> dialog;
+	boost::scoped_ptr<QVBoxLayout> layout;
+	boost::scoped_ptr<QPushButton> add_button;
+	boost::scoped_ptr<QPushButton> ok_button;
+	boost::scoped_ptr<QLineEdit> dummy_edit;
+	boost::scoped_ptr<QListView> possible_object_labels;
+	boost::scoped_ptr<QListView> selected_object_labels;
+	boost::scoped_ptr<QStringList> possibleLabelsList;
+	boost::scoped_ptr<QStringListModel> possibleLabelsListModel;
+
+public Q_SLOTS:
+
+    /**
+     * Slot to receive messages when the user changes the text value
+     */
+	void handleAddObjectNameButton();
+	void handleOKButton();
+};
+
 // ----- CamTextBoxComponent ---------------------------------------------------------
 /**
  * Object that manages a Cam::TextBox setting
@@ -195,11 +235,7 @@ protected:
 
 public:
     CamTextBoxComponent();
-
-	typedef std::string Label_t;	// App::DocumentObject::Label
-	typedef std::string Name_t;		// App::DocumentObject::Name
-	typedef std::multimap< Label_t, Name_t > PossibleObjects_t;
-	PossibleObjects_t	possible_objects;
+	CamListViewsDialog::Data_t	possible_objects;
 
     /**
      * Creates the UI for this component and loads the initial value
@@ -219,9 +255,6 @@ public Q_SLOTS:
      */
     void editingFinished();
 	void handleButton();
-	void handleAddObjectNameButton();
-	void handleOKButton();
-
 };
 
 
