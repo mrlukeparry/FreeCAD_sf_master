@@ -28,6 +28,7 @@
 #include <queue>
 #include <QObject>
 #include <App/Document.h>
+#include <App/DocumentObjectGroup.h>
 
 #include "TPG/TPG.h"
 
@@ -99,6 +100,18 @@ public:
 	 * Adds a toolpath to the document under the given tpg.
 	 */
 	void addToolPath(TPGFeature* tpgFeature, ToolPath *toolPath);
+
+	/**
+	 * Create a new ToolFeature in the active document under the group (if provided
+	 * otherwise root).
+	 */
+	bool ToolFeature(App::DocumentObjectGroup *docObjGroup = NULL);
+
+    /**
+     * Create a new MachineFeature in the active document under the group (if provided
+     * otherwise root).
+     */
+    bool MachineFeature(App::DocumentObjectGroup *docObjGroup = NULL);
 
 public Q_SLOTS:
 //  void addTPG(Cam::TPGDescriptor *tpg);

@@ -44,7 +44,8 @@ PROPERTY_SOURCE(Cam::ToolFeature, Cam::CamSettingsableFeature)
 ToolFeature::ToolFeature()
 {
 	//ADD_PROPERTY_TYPE(_prop_, _defaultval_, _group_,_type_,_Docu_)
-    ADD_PROPERTY_TYPE(ToolId,        (""),  "Tool Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Tool ID");
+    ADD_PROPERTY_TYPE(ToolId, (""), "Tool Feature", (App::PropertyType)(App::Prop_ReadOnly),
+            "Unique Tool Identifier");
 }
 
 ToolFeature::~ToolFeature()

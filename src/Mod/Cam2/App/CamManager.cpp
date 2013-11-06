@@ -33,6 +33,8 @@
 #include "CamManager.h"
 
 #include "Features/CamFeature.h"
+#include "Features/MachineFeature.h"
+#include "Features/ToolFeature.h"
 #include "Graphics/Paths.h"
 #include "PostProcessor.h"
 #include "Graphics/Paths.h"
@@ -348,6 +350,80 @@ void CamManagerInst::addToolPath(TPGFeature* tpgFeature, ToolPath *toolPath) {
     }
     else
         qDebug("Unable to create ToolPathFeature: %p", toolPathFeat);
+}
+
+/**
+ * Create a new ToolFeature in the active document under the group (if provided
+ * otherwise root).
+ */
+bool CamManagerInst::ToolFeature(App::DocumentObjectGroup *docObjGroup /* = NULL*/) {
+
+    // get the Active document
+    App::Document* activeDoc = App::GetApplication().getActiveDocument();
+    if (!activeDoc) {
+        Base::Console().Error("No active document! Please create or open a FreeCad document\n");
+        return false;
+    }
+
+    // construct a name for toolpath
+    std::string tpFeatName = activeDoc->getUniqueObjectName("Tool");
+
+    // create the feature (for Document Tree)
+    App::DocumentObject *toolFeat =  activeDoc->addObject(Cam::ToolFeature::getClassTypeId().getName(), tpFeatName.c_str()); //
+    if(toolFeat && toolFeat->isDerivedFrom(Cam::ToolFeature::getClassTypeId())) {
+        Cam::ToolFeature *toolFeature = dynamic_cast<Cam::ToolFeature *>(toolFeat);
+
+        // We Must Initialise the Tool Feature before usage
+        toolFeature->initialise();
+
+        if (docObjGroup != NULL)
+            docObjGroup->addObject(toolFeature);
+
+        activeDoc->recompute();
+        qDebug("Added Tool");
+        return true;
+    }
+    else
+        qDebug("Unable to create ToolFeature: %p", toolFeat);
+
+    return false;
+}
+
+/**
+ * Create a new MachineFeature in the active document under the group (if provided
+ * otherwise root).
+ */
+bool CamManagerInst::MachineFeature(App::DocumentObjectGroup *docObjGroup /* = NULL*/) {
+
+    // get the Active document
+    App::Document* activeDoc = App::GetApplication().getActiveDocument();
+    if (!activeDoc) {
+        Base::Console().Error("No active document! Please create or open a FreeCad document\n");
+        return false;
+    }
+
+    // construct a name for toolpath
+    std::string tpFeatName = activeDoc->getUniqueObjectName("Machine");
+
+    // create the feature (for Document Tree)
+    App::DocumentObject *machineFeat =  activeDoc->addObject(Cam::MachineFeature::getClassTypeId().getName(), tpFeatName.c_str()); //
+    if(machineFeat && machineFeat->isDerivedFrom(Cam::MachineFeature::getClassTypeId())) {
+        Cam::MachineFeature *machineFeature = dynamic_cast<Cam::MachineFeature *>(machineFeat);
+
+        // We Must Initialise the Tool Feature before usage
+        machineFeature->initialise();
+
+        if (docObjGroup != NULL)
+            docObjGroup->addObject(machineFeature);
+
+        activeDoc->recompute();
+        qDebug("Added Machine");
+        return true;
+    }
+    else
+        qDebug("Unable to create MachineFeature: %p", machineFeat);
+
+    return false;
 }
 
 /**

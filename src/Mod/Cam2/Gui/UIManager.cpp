@@ -164,13 +164,21 @@ bool UIManagerInst::TPGFeature() {
 }
 
 /**
+ * Adds a new ToolFeature to the active document.  If a group is selected then it will be
+ * the parent of the ToolFeature otherwise it will be created at the top level.
  * Used by the CamToolFeature GUI Command to do the work required to add a ToolFeature
  */
 bool UIManagerInst::ToolFeature() {
 
-    //TODO: add a ToolFeature to the active document (under the selected group if available)
+    App::DocumentObjectGroup *docObjGroup = NULL;
 
-    return true;
+    // check if the selection is a group (so object is created in the group)
+    std::vector<Gui::SelectionSingleton::SelObj> objs = Gui::Selection().getSelection(App::GetApplication().getActiveDocument()->getName());
+    if (objs.size() == 1 && objs[0].pObject->isDerivedFrom(App::DocumentObjectGroup::getClassTypeId()))
+        docObjGroup = dynamic_cast<App::DocumentObjectGroup*>(objs[0].pObject);
+
+    // make the ToolFeature
+    return Cam::CamManager().ToolFeature(docObjGroup);
 }
 
 /**
@@ -178,9 +186,15 @@ bool UIManagerInst::ToolFeature() {
  */
 bool UIManagerInst::MachineFeature() {
 
-    //TODO: add a MachineFeature to the active document (under the selected group if available)
+    App::DocumentObjectGroup *docObjGroup = NULL;
 
-    return true;
+    // check if the selection is a group (so object is created in the group)
+    std::vector<Gui::SelectionSingleton::SelObj> objs = Gui::Selection().getSelection(App::GetApplication().getActiveDocument()->getName());
+    if (objs.size() == 1 && objs[0].pObject->isDerivedFrom(App::DocumentObjectGroup::getClassTypeId()))
+        docObjGroup = dynamic_cast<App::DocumentObjectGroup*>(objs[0].pObject);
+
+    // make the ToolFeature
+    return Cam::CamManager().MachineFeature(docObjGroup);
 }
 
 
