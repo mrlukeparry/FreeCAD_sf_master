@@ -33,6 +33,9 @@
 #include <QColor>
 #include <QColorDialog>
 #include <QPalette>
+#include <QListView>
+#include <QStringList>
+#include <QStringListModel>
 
 #include <Base/Console.h>
 
@@ -392,6 +395,8 @@ void CamTextBoxComponent::refresh()
  */
 void CamTextBoxComponent::handleAddObjectNameButton()
 {
+	QMessageBox message(QMessageBox::Information, QString::fromAscii("ADD Button Handler"), QString::fromAscii("Add button pressed"), QMessageBox::Ok );
+	message.exec();
 }
 
 /**
@@ -401,6 +406,8 @@ void CamTextBoxComponent::handleAddObjectNameButton()
  */
 void CamTextBoxComponent::handleOKButton()
 {
+	QMessageBox message(QMessageBox::Information, QString::fromAscii("OK Button Handler"), QString::fromAscii("OK button pressed"), QMessageBox::Ok );
+	message.exec();
 }
 
 /**
@@ -425,23 +432,67 @@ void CamTextBoxComponent::handleButton()
 {
 	if (this->tpgsetting->type == Cam::Settings::Definition::SettingType_ObjectNamesForType)
 	{
+		Cam::Settings::ObjectNamesForType *pObjNamesForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(this->tpgsetting);
+		if (pObjNamesForType)
+		{
+			// We need to accumulate a list of object names whose types fall within the allowed list.
+			if (this->possible_objects.size() == 0)
+			{
+				App::Document *doc = App::GetApplication().getActiveDocument();
+				if (doc != NULL)
+				{
+					QStringList types = pObjNamesForType->GetTypes();
+					for (QStringList::const_iterator itType = types.begin(); itType != types.end(); itType++)
+					{
+						Base::Type type = Base::Type::fromName( itType->toAscii().constData() );
+						if (type.isBad() == false)
+						{
+							std::vector<App::DocumentObject *> objects = doc->getObjectsOfType( type );
+							for (std::vector<App::DocumentObject *>::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
+							{
+								Name_t name = (*itObject)->getNameInDocument();
+								Label_t label = (*itObject)->Label.getValue();
+								
+								possible_objects.insert( std::make_pair( label, name ) );
+							}
+						}
+					}
+				}
+			}
+		}
+
 		boost::scoped_ptr<QDialog> dialog(new QDialog);
 		boost::scoped_ptr<QVBoxLayout> layout(new QVBoxLayout);
 		boost::scoped_ptr<QPushButton> add_button(new QPushButton);
 		boost::scoped_ptr<QPushButton> ok_button(new QPushButton);
 		boost::scoped_ptr<QLineEdit> dummy_edit(new QLineEdit);
+		boost::scoped_ptr<QListView> possible_object_labels(new QListView);
+		boost::scoped_ptr<QListView> selected_object_labels(new QListView);
+
+		boost::scoped_ptr<QStringList> stringList(new QStringList());
+		for (PossibleObjects_t::const_iterator itPossibleObject = possible_objects.begin(); itPossibleObject != possible_objects.end(); itPossibleObject++)
+		{
+			stringList->append( QString::fromAscii(itPossibleObject->first.c_str()) );
+		}
+
+		boost::scoped_ptr<QStringListModel> stringListModel( new QStringListModel(*stringList, NULL) );
+		possible_object_labels->setModel( stringListModel.get() );
 
 		add_button->setText(QString::fromAscii("Add"));
 		ok_button->setText(QString::fromAscii("OK"));
 		dummy_edit->setText(QString::fromAscii("One day this dialog will present a list of all objects whose types match this setting and allow the object names to be selected"));
 
-		add_button->connect( add_button.get(), SIGNAL(clicked()), this, SLOT(handleAddObjectNameButton()));
-		layout->addWidget(add_button.get());
-
 		ok_button->connect( ok_button.get(), SIGNAL(clicked()), this, SLOT(handleOKButton()));
 		layout->addWidget(ok_button.get());
 
 		layout->addWidget(dummy_edit.get());
+
+		layout->addWidget(possible_object_labels.get());
+
+		add_button->connect( add_button.get(), SIGNAL(clicked()), this, SLOT(handleAddObjectNameButton()));
+		layout->addWidget(add_button.get());
+
+		layout->addWidget(selected_object_labels.get());
 
 		dialog->setGeometry(0,0,200,100);
 		QString title = QString::fromAscii("Edit object names list");

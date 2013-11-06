@@ -194,8 +194,12 @@ protected:
     CamLineEdit *widget;
 
 public:
-
     CamTextBoxComponent();
+
+	typedef std::string Label_t;	// App::DocumentObject::Label
+	typedef std::string Name_t;		// App::DocumentObject::Name
+	typedef std::multimap< Label_t, Name_t > PossibleObjects_t;
+	PossibleObjects_t	possible_objects;
 
     /**
      * Creates the UI for this component and loads the initial value
