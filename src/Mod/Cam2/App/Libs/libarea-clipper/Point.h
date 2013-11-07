@@ -5,12 +5,14 @@
 
 #pragma once
 
+#include <PreCompiled.h>
+
 #include <cmath>
 
 namespace area
 {
 
-class Point{
+class LibAreaExport Point {
 public:
 	// can be a position, or a vector
 	double x, y;

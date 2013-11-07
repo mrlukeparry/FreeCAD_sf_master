@@ -3,6 +3,8 @@
 // This program is released under the New BSD license. See the file COPYING for details.
 #pragma once
 
+#include <PreCompiled.h>
+
 #include <algorithm>
 #include <list>
 #include <vector>
@@ -48,7 +50,7 @@ typedef enum
 } eDxfUnits_t;
 
 
-struct SplineData
+struct LibAreaExport SplineData
 {
 	double norm[3];
 	int degree;
@@ -72,7 +74,7 @@ struct SplineData
 	std::list<double> fitz;
 };
 
-class CDxfWrite{
+class LibAreaExport CDxfWrite{
 private:
 	std::ofstream* m_ofs;
 	bool m_fail;
@@ -91,7 +93,7 @@ public:
 };
 
 // derive a class from this and implement it's virtual functions
-class CDxfRead{
+class LibAreaExport CDxfRead{
 private:
 	std::ifstream* m_ifs;
 

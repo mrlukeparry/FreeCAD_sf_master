@@ -7,7 +7,7 @@
 using namespace clipper;
 using namespace area;
 
-#define TPolygon Polygon
+#define TPolygon clipper::Polygon
 #define TPolyPolygon Polygons
 
 bool CArea::HolesLinked(){ return false; }
