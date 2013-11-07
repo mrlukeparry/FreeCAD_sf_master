@@ -35,7 +35,9 @@
 #include <Gui/MainWindow.h>
 
 #include "ViewProviderCamFeature.h"
+#include "ViewProviderMachineFeature.h"
 #include "ViewProviderMachineProgramFeature.h"
+#include "ViewProviderToolFeature.h"
 #include "ViewProviderToolPathFeature.h"
 #include "ViewProviderTPGFeature.h"
 
@@ -119,8 +121,10 @@ extern "C"
         Base::Console().Log("Loading GUI of Cam module... done\n");
 
         CamGui::ViewProviderCamFeature              ::init();
+        CamGui::ViewProviderMachineFeature          ::init();
         CamGui::ViewProviderMachineProgramFeature   ::init();
         CamGui::ViewProviderTPGFeature              ::init();
+        CamGui::ViewProviderToolFeature             ::init();
         CamGui::ViewProviderToolPathFeature         ::init();
         CamGui::Workbench                           ::init();
 

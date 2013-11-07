@@ -2,10 +2,12 @@
     <qresource prefix="/">
         <file>icons/Cam_CamFeature.svg</file>
         <file>icons/Cam_ExportMachineProgram.svg</file>
+        <file>icons/Cam_MachineFeature.svg</file>
         <file>icons/Cam_MachineProgram.svg</file>
         <file>icons/Cam_NewCamFeature.svg</file>
         <file>icons/Cam_PostProcess.svg</file>
         <file>icons/Cam_RunTPG.svg</file>
+        <file>icons/Cam_ToolFeature.svg</file>
         <file>icons/Cam_ToolPathFeature.svg</file>
         <file>icons/Cam_TPGFeature.svg</file>
         <file>icons/cross.png</file>

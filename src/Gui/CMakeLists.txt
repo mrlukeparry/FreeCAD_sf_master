@@ -173,6 +173,7 @@ set(Gui_MOC_HDRS
     NetworkRetriever.h
     OnlineDocumentation.h
     Placement.h
+    InputField.h
     PrefWidgets.h
     ProgressBar.h
     PropertyPage.h
@@ -607,7 +608,7 @@ SOURCE_GROUP("Widget\\iisTaskPanel\\Mocs" FILES ${iis_MOC_SRCS})
 #SET(Resource_RCS
 #   Icons/resource.qrc
 #   Language/translation.qrc)
-#fc_add_resources(Resource_SRCS ${Resource_RCS})
+#qt4_add_resources(Resource_SRCS ${Resource_RCS})
 #SET(Resource_SRCS
 #   ${Resource_SRCS}
 #   Icons/resource.qrc
@@ -738,6 +739,7 @@ SET(Widget_CPP_SRCS
     MainWindow.cpp
     MDIView.cpp
     PrefWidgets.cpp
+    InputField.cpp
     ProgressBar.cpp
     SpinBox.cpp
     Splashscreen.cpp
@@ -750,6 +752,7 @@ SET(Widget_HPP_SRCS
     MainWindow.h
     MDIView.h
     PrefWidgets.h
+    InputField.h
     ProgressBar.h
     SpinBox.h
     Splashscreen.h

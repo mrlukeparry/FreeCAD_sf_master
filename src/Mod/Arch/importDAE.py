@@ -26,7 +26,7 @@ from DraftTools import translate
 
 __title__="FreeCAD Collada importer"
 __author__ = "Yorik van Havre"
-__url__ = "http://free-cad.sourceforge.net"
+__url__ = "http://www.freecadweb.org"
 
 DEBUG = True
 
@@ -37,14 +37,15 @@ def checkCollada():
     try:
         import collada
     except:
-        FreeCAD.Console.PrintError(str(translate("Arch","pycollada not found, no collada support.\n")))
+        FreeCAD.Console.PrintError(str(translate("Arch","pycollada not found, collada support is disabled.\n")))
         return False
     else:
         return True
     
 def open(filename):
     "called when freecad wants to open a file"
-    if not checkCollada(): return
+    if not checkCollada(): 
+        return
     docname = os.path.splitext(os.path.basename(filename))[0]
     doc = FreeCAD.newDocument(docname)
     doc.Label = decode(docname)
@@ -54,7 +55,8 @@ def open(filename):
 
 def insert(filename,docname):
     "called when freecad wants to import a file"
-    if not checkCollada(): return
+    if not checkCollada(): 
+        return
     try:
         doc = FreeCAD.getDocument(docname)
     except:
