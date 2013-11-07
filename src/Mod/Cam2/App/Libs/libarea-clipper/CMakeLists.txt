@@ -18,7 +18,11 @@ if(MSVC)
 	# it has the correct filename used.
 	set(AreaClipper_LIBS
 	    ${PYTHON_LIBRARIES}
-	    ${Boost_LIBRARIES})
+	    ${Boost_LIBRARIES}
+	    debug MSVCRTD.LIB
+            debug MSVCPRTD.LIB
+            optimized MSVCRT.LIB
+            optimized MSVCPRT.LIB)
 else(MSVC)
 	set(AreaClipper_LIBS
 	    boost_python
