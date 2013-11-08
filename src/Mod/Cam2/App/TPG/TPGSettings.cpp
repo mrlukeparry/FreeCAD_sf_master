@@ -1882,31 +1882,16 @@ bool Directory::AddToPythonDictionary(PyObject *pDictionary, const QString reque
  */
 Definition::ValidationState ObjectNamesForType::validate(QString & input,int & position) const
 {
-	// Cast this object to a TPGObjectNamesForTypeSettingDefinition object so we can use the helper functions
-	// to review the object's contents.
-	ObjectNamesForType *pSetting = (ObjectNamesForType *) this;
-
-	Option *delimiters_option = this->getOption(QString::fromAscii("Delimiters"));
-	if (delimiters_option == NULL)
-	{
-		return(this->Invalid);
-	}
-
-	// Use a regular expression so that we use any one of the characters in the delimiters string
-	// as a delimiting character.
-	QString expression = QString::fromAscii("[") + delimiters_option->label + QString::fromAscii("]");
-	QRegExp regular_expression(expression);
-	QStringList object_names = input.split(regular_expression, QString::SkipEmptyParts);
-
-	QStringList valid_type_names = pSetting->GetTypes();
+	Encode_t data = this->decode();
+	QStringList valid_type_names = this->GetTypes();
 	
 	App::Document *document = App::GetApplication().getActiveDocument();
 	if (document)
 	{
-		for (QStringList::size_type i=0; i<object_names.size(); i++)
+		for (QStringList::size_type i=0; i<data.size(); i++)
 		{
-			QString name = object_names[i];
-			App::DocumentObject *object = document->getObject(object_names[i].toAscii().constData());
+			QString object_name = data[i];
+			App::DocumentObject *object = document->getObject(object_name.toAscii().constData());
 			if(object)
 			{
 				bool is_valid = false;
@@ -1932,6 +1917,11 @@ Definition::ValidationState ObjectNamesForType::validate(QString & input,int & p
 	return(this->Acceptable);
 }
 
+void ObjectNamesForType::SetNames(const QStringList names)
+{
+	this->setValue(this->encode(names));
+}
+
 
 bool ObjectNamesForType::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
 {
@@ -1941,11 +1931,9 @@ bool ObjectNamesForType::AddToPythonDictionary(PyObject *pDictionary, const QStr
 ObjectNamesForType::ObjectNamesForType(	const char *name, 
 								const char *label, 
 								const char *helptext,
-								const char *delimiters,
 								const char *object_type )
 								 : Definition(name, label, SettingType_ObjectNamesForType, "", "", helptext)
 {
-	this->addOption( QString::fromAscii("Delimiters"), QString::fromAscii(delimiters) );
 	this->addOption( QString::fromAscii("TypeId"), QString::fromAscii(object_type) );
 }
 
@@ -1954,20 +1942,67 @@ void ObjectNamesForType::Add(const char * object_type)
 	this->addOption( QString::fromAscii("TypeId"), QString::fromAscii(object_type) );
 }
 
-void ObjectNamesForType::SetDelimiters(const char * delimiters)
+QString ObjectNamesForType::encode(const ObjectNamesForType::Encode_t data) const
 {
+	using boost::property_tree::ptree;
+	ptree pt;
 
-	Option *delimiters_option = this->getOption(QString::fromAscii("Delimiters"));
-	if (delimiters_option != NULL)
+	pt.put("object_names_for_type.num_names", data.size());
+	for (Encode_t::size_type i=0; i<data.size(); i++)
 	{
-		delimiters_option->label = QString::fromAscii(delimiters);
-		return;
+		std::ostringstream ossName;
+		ossName << "object_names_for_type.name_" << i;
+		pt.put(ossName.str().c_str(), data[i].toStdString());
 	}
+	
+	std::ostringstream encoded_value;
 
-	// We couldn't find an existing option so add one now.
-	this->addOption( QString::fromAscii("Delimiters"), QString::fromAscii(delimiters) );	
+	write_json(encoded_value, pt);
+	return(QString::fromStdString(encoded_value.str()));
 }
 
+ObjectNamesForType::Encode_t ObjectNamesForType::decode() const
+{
+	std::list<QString> values;
+	values.push_back( this->getValue() );
+	values.push_back( this->defaultvalue );
+	for (std::list<QString>::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	{
+		if (itValue->isNull() == false)
+		{
+			try
+			{
+				using boost::property_tree::ptree;
+				ptree pt;
+
+				std::stringstream encoded_value;
+				encoded_value << itValue->toAscii().constData();
+				
+				read_json(encoded_value, pt);
+
+				Encode_t data;
+				Encode_t::size_type num_names = pt.get<Encode_t::size_type>("object_names_for_type.num_names");
+				for (Encode_t::size_type i=0; i<num_names; i++)
+				{
+					std::string value;
+					std::ostringstream ossName;
+					ossName << "object_names_for_type.name_" << i;
+					value = pt.get<std::string>(ossName.str().c_str());
+					data.push_back(QString::fromStdString(value));
+				}
+
+				return(data);
+			}
+			catch(boost::property_tree::ptree_error const & error)
+			{
+				qWarning("%s\n", error.what());
+			}
+		}
+	}
+
+	Encode_t data;
+	return(data);
+}
 
 QStringList ObjectNamesForType::GetTypes() const
 {
@@ -1986,19 +2021,7 @@ QStringList ObjectNamesForType::GetTypes() const
 
 QStringList ObjectNamesForType::GetNames() const
 {
-	QStringList names;
-	Option *delimiters_option = this->getOption(QString::fromAscii("Delimiters"));
-	if (delimiters_option != NULL)
-	{
-		// Use a regular expression so that we use any one of the characters in the delimiters string
-		// as a delimiting character.
-		QString value = this->getValue();
-		QString expression = QString::fromAscii("[") + delimiters_option->label + QString::fromAscii("]");
-		QRegExp regular_expression(expression);
-		names = value.split(regular_expression, QString::SkipEmptyParts);
-	}
-
-	return(names);
+	return( this->decode() );
 }
 
 #ifdef WIN32

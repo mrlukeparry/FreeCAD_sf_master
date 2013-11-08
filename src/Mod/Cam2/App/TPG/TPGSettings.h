@@ -753,18 +753,24 @@ public:
 class CamExport ObjectNamesForType : public Definition
 {
 public:
+	typedef QStringList Encode_t;
+
+	QString encode(const Encode_t data) const;
+	Encode_t decode() const;
+
+public:
 	ObjectNamesForType(	const char *name, 
 								const char *label, 
 								const char *helptext,
-								const char *delimiters,
 								const char *object_type );
 
 	void Add(const char * object_type);
-	void SetDelimiters(const char * object_type);
 	virtual ValidationState validate(QString & input,int & position) const;
 
 	QStringList GetTypes() const;
 	QStringList GetNames() const;
+	void SetNames(const QStringList names);
+
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 

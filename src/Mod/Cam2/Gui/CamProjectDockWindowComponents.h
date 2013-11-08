@@ -189,14 +189,13 @@ class CamGuiExport CamListViewsDialog : public QObject
 	Q_OBJECT
 
 public:
-	typedef QString Label_t;
-	typedef QString Name_t;
-	typedef std::multimap< Label_t, Name_t > Data_t;
+	typedef std::list< App::DocumentObject * > Objects_t;
 
 	bool ok_pressed;
 
 public:
-	CamListViewsDialog(const Data_t &data);
+	CamListViewsDialog(const Objects_t &objects, Cam::Settings::Definition *tpgSetting );
+	~CamListViewsDialog();
 	bool Show();	// Show the dialog and return TRUE if the user pressed the OK button.
 	
 private:
@@ -209,6 +208,10 @@ private:
 	boost::scoped_ptr<QListView> selected_object_labels;
 	boost::scoped_ptr<QStringList> possibleLabelsList;
 	boost::scoped_ptr<QStringListModel> possibleLabelsListModel;
+
+private:
+	Cam::Settings::Definition *tpgSetting;
+	Objects_t	objects;
 
 public Q_SLOTS:
 
@@ -235,7 +238,10 @@ protected:
 
 public:
     CamTextBoxComponent();
-	CamListViewsDialog::Data_t	possible_objects;
+	typedef std::list<App::DocumentObject *> Objects_t;
+	Objects_t objects;
+
+	QString GetLabels( Cam::Settings::ObjectNamesForType *pObjNamesForType );
 
     /**
      * Creates the UI for this component and loads the initial value

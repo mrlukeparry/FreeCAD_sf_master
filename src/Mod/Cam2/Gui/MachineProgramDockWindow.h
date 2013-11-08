@@ -25,7 +25,7 @@
 
 
 #include <Gui/DockWindow.h>
-#include <qtextedit.h>
+#include <QTextEdit>
 
 #include "ui_MachineProgramDockWindow.h"
 

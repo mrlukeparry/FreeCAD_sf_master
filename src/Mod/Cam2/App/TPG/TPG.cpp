@@ -94,7 +94,6 @@ TPG::~TPG()
 			this->geometry = new Settings::ObjectNamesForType(	settingName_Geometry().toAscii().constData(),
 																"Geometry",
 																"Reference object names whose types are appropriate for this TPG.  Names must be separated by spaces and/or commas only.",
-																" \t,",
 																Part::Feature::getClassTypeId().getName() );
 
 			settings->addSettingDefinition(action, this->geometry);
