@@ -489,7 +489,7 @@ CamListViewsDialog::CamListViewsDialog( const CamListViewsDialog::Objects_t & ob
 				}
 			}
 		}
-		this->selectedLabelsListModel.reset( new QStringListModel(names) );
+		this->selectedLabelsListModel.reset( new QStringListModel(labels) );
 		selected_object_labels->setModel( this->selectedLabelsListModel.get() );
 	}
 
