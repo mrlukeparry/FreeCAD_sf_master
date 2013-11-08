@@ -402,19 +402,37 @@ void CamTextBoxComponent::refresh()
 	within the CamTextBoxComponent::handleButton() method.  This
 	handler is called when the add_button is pressed.
  */
-void CamListViewsDialog::handleAddObjectNameButton()
+void CamListViewsDialog::handleAddObjectLabelButton()
 {
 	if (this->possible_object_labels->currentIndex().row() >= 0)
 	{
 		QModelIndex from = this->possible_object_labels->currentIndex();
 		QStringList possibleLabels = possibleLabelsListModel->stringList();
 		QString label = possibleLabels.at(from.row());
+		possibleLabels.removeAt(from.row());
 
 		QStringList selectedLabels = selectedLabelsListModel->stringList();
 		selectedLabels.append(label);
-		selectedLabels.append(QString::fromAscii("David"));
+
 		this->selectedLabelsListModel.reset( new QStringListModel(selectedLabels) );
 		this->selected_object_labels->setModel(this->selectedLabelsListModel.get());
+	}
+}
+
+void CamListViewsDialog::handleRemoveObjectLabelButton()
+{
+	if (this->possible_object_labels->currentIndex().row() >= 0)
+	{
+		QModelIndex from = this->selected_object_labels->currentIndex();
+		QStringList selectedLabels = selectedLabelsListModel->stringList();
+		QString label = selectedLabels.at(from.row());
+		selectedLabels.removeAt(from.row());
+
+		QStringList possibleLabels = possibleLabelsListModel->stringList();
+		possibleLabels.append(label);
+
+		this->possibleLabelsListModel.reset( new QStringListModel(possibleLabels) );
+		this->possible_object_labels->setModel(this->possibleLabelsListModel.get());
 	}
 }
 
@@ -460,40 +478,45 @@ CamListViewsDialog::CamListViewsDialog( const CamListViewsDialog::Objects_t & ob
 	this->dialog.reset(new QDialog);
 	this->layout.reset(new QVBoxLayout);
 	this->add_button.reset(new QPushButton);
+	this->remove_button.reset(new QPushButton);
 	this->ok_button.reset(new QPushButton);
 	this->dummy_edit.reset(new QLineEdit);
 	this->possible_object_labels.reset(new QListView);
 	this->selected_object_labels.reset(new QListView);
 	this->possibleLabelsList.reset(new QStringList());
 
-	for (CamListViewsDialog::Objects_t::const_iterator itPossibleObject = objects.begin(); itPossibleObject != objects.end(); itPossibleObject++)
-	{
-		possibleLabelsList->append( QString::fromAscii((*itPossibleObject)->Label.getValue()) );
-	}
-
-	this->possibleLabelsListModel.reset( new QStringListModel(*possibleLabelsList, NULL) );
-	possible_object_labels->setModel( this->possibleLabelsListModel.get() );
+	
 
 	QStringList labels;
 	Cam::Settings::ObjectNamesForType *pObjNamesForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(this->tpgSetting);
 	if (pObjNamesForType)
 	{
 		QStringList names = pObjNamesForType->GetNames();
-		for (QStringList::iterator itName = names.begin(); itName != names.end(); itName++)
+		for (Objects_t::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
 		{
-			for (Objects_t::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
-			{
+			bool found = false;
+			for (QStringList::iterator itName = names.begin(); itName != names.end(); itName++)
+			{	
 				if (QString::fromAscii((*itObject)->getNameInDocument()) == *itName)
 				{
 					labels.push_back(QString::fromAscii((*itObject)->Label.getValue()));
+					found = true;
 				}
+			}
+			if (! found)
+			{
+				possibleLabelsList->append( QString::fromAscii((*itObject)->Label.getValue()) );
 			}
 		}
 		this->selectedLabelsListModel.reset( new QStringListModel(labels) );
 		selected_object_labels->setModel( this->selectedLabelsListModel.get() );
+
+		this->possibleLabelsListModel.reset( new QStringListModel(*possibleLabelsList, NULL) );
+		possible_object_labels->setModel( this->possibleLabelsListModel.get() );
 	}
 
 	this->add_button->setText(QString::fromAscii("Add"));
+	this->remove_button->setText(QString::fromAscii("Remove"));
 	this->ok_button->setText(QString::fromAscii("OK"));
 	this->dummy_edit->setText(QString::fromAscii("One day this dialog will present a list of all objects whose types match this setting and allow the object names to be selected"));
 
@@ -504,8 +527,11 @@ CamListViewsDialog::CamListViewsDialog( const CamListViewsDialog::Objects_t & ob
 
 	this->layout->addWidget(possible_object_labels.get());
 
-	this->add_button->connect( this->add_button.get(), SIGNAL(clicked()), this, SLOT(handleAddObjectNameButton()));
+	this->add_button->connect( this->add_button.get(), SIGNAL(clicked()), this, SLOT(handleAddObjectLabelButton()));
 	this->layout->addWidget(this->add_button.get());
+
+	this->remove_button->connect( this->remove_button.get(), SIGNAL(clicked()), this, SLOT(handleRemoveObjectLabelButton()));
+	this->layout->addWidget(this->remove_button.get());
 
 	this->layout->addWidget(this->selected_object_labels.get());
 

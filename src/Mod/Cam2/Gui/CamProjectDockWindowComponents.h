@@ -202,6 +202,7 @@ private:
 	boost::scoped_ptr<QDialog> dialog;
 	boost::scoped_ptr<QVBoxLayout> layout;
 	boost::scoped_ptr<QPushButton> add_button;
+	boost::scoped_ptr<QPushButton> remove_button;
 	boost::scoped_ptr<QPushButton> ok_button;
 	boost::scoped_ptr<QLineEdit> dummy_edit;
 	boost::scoped_ptr<QListView> possible_object_labels;
@@ -219,7 +220,8 @@ public Q_SLOTS:
     /**
      * Slot to receive messages when the user changes the text value
      */
-	void handleAddObjectNameButton();
+	void handleAddObjectLabelButton();
+	void handleRemoveObjectLabelButton();
 	void handleOKButton();
 };
 
