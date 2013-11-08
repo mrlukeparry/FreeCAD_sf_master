@@ -208,6 +208,7 @@ private:
 	boost::scoped_ptr<QListView> selected_object_labels;
 	boost::scoped_ptr<QStringList> possibleLabelsList;
 	boost::scoped_ptr<QStringListModel> possibleLabelsListModel;
+	boost::scoped_ptr<QStringListModel> selectedLabelsListModel;
 
 private:
 	Cam::Settings::Definition *tpgSetting;

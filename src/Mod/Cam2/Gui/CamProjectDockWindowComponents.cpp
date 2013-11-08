@@ -404,11 +404,17 @@ void CamTextBoxComponent::refresh()
  */
 void CamListViewsDialog::handleAddObjectNameButton()
 {
-	QMessageBox message(QMessageBox::Information, QString::fromAscii("ADD Button Handler"), QString::fromAscii("Add button pressed"), QMessageBox::Ok );
-	message.exec();
 	if (this->possible_object_labels->currentIndex().row() >= 0)
 	{
-		
+		QModelIndex from = this->possible_object_labels->currentIndex();
+		QStringList possibleLabels = possibleLabelsListModel->stringList();
+		QString label = possibleLabels.at(from.row());
+
+		QStringList selectedLabels = selectedLabelsListModel->stringList();
+		selectedLabels.append(label);
+		selectedLabels.append(QString::fromAscii("David"));
+		this->selectedLabelsListModel.reset( new QStringListModel(selectedLabels) );
+		this->selected_object_labels->setModel(this->selectedLabelsListModel.get());
 	}
 }
 
@@ -419,18 +425,22 @@ void CamListViewsDialog::handleAddObjectNameButton()
  */
 void CamListViewsDialog::handleOKButton()
 {
-	// QMessageBox message(QMessageBox::Information, QString::fromAscii("OK Button Handler"), QString::fromAscii("OK button pressed"), QMessageBox::Ok );
-	// message.exec();
-
 	if (this->tpgSetting)
 	{
 		Cam::Settings::ObjectNamesForType *pObjNamesForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(tpgSetting);
 		if (pObjNamesForType)
 		{
+			QStringList labels = selectedLabelsListModel->stringList();
 			QStringList names;
-			for (CamListViewsDialog::Objects_t::const_iterator itPossibleObject = objects.begin(); itPossibleObject != objects.end(); itPossibleObject++)
+			for (CamListViewsDialog::Objects_t::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
 			{
-				names.push_back(QString::fromAscii((*itPossibleObject)->getNameInDocument()));
+				for (QStringList::iterator itLabel = labels.begin(); itLabel != labels.end(); itLabel++)
+				{
+					if (QString::fromAscii((*itObject)->Label.getValue()) == *itLabel)
+					{
+						names.push_back(QString::fromAscii((*itObject)->getNameInDocument()));
+					}
+				}
 			}
 			pObjNamesForType->SetNames(names);
 		}
@@ -464,7 +474,24 @@ CamListViewsDialog::CamListViewsDialog( const CamListViewsDialog::Objects_t & ob
 	this->possibleLabelsListModel.reset( new QStringListModel(*possibleLabelsList, NULL) );
 	possible_object_labels->setModel( this->possibleLabelsListModel.get() );
 
-	selected_object_labels->setModel( this->possibleLabelsListModel.get() );
+	QStringList labels;
+	Cam::Settings::ObjectNamesForType *pObjNamesForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(this->tpgSetting);
+	if (pObjNamesForType)
+	{
+		QStringList names = pObjNamesForType->GetNames();
+		for (QStringList::iterator itName = names.begin(); itName != names.end(); itName++)
+		{
+			for (Objects_t::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
+			{
+				if (QString::fromAscii((*itObject)->getNameInDocument()) == *itName)
+				{
+					labels.push_back(QString::fromAscii((*itObject)->Label.getValue()));
+				}
+			}
+		}
+		this->selectedLabelsListModel.reset( new QStringListModel(names) );
+		selected_object_labels->setModel( this->selectedLabelsListModel.get() );
+	}
 
 	this->add_button->setText(QString::fromAscii("Add"));
 	this->ok_button->setText(QString::fromAscii("OK"));
@@ -556,7 +583,7 @@ void CamTextBoxComponent::handleButton()
 			if (dialog.Show())
 			{
 				// The user must have pressed the OK button.  Retrieve the final list and remember the object names.
-
+				this->refresh();
 			}
 		}
 
@@ -574,25 +601,37 @@ QString CamTextBoxComponent::GetLabels( Cam::Settings::ObjectNamesForType *pObjN
 	QString labels;
 	if (objects.size() == 0)
 	{
-		App::Document *document = App::GetApplication().getActiveDocument();
-		if (document)
+		// We need to accumulate a list of object names whose types fall within the allowed list.
+		App::Document *doc = App::GetApplication().getActiveDocument();
+		if (doc != NULL)
 		{
-			Cam::Settings::ObjectNamesForType::Encode_t names = pObjNamesForType->GetNames();
-			for (Cam::Settings::ObjectNamesForType::Encode_t::iterator itName = names.begin(); itName != names.end(); itName++)
+			QStringList types = pObjNamesForType->GetTypes();
+			for (QStringList::const_iterator itType = types.begin(); itType != types.end(); itType++)
 			{
-				App::DocumentObject *object = document->getObject(itName->toAscii().constData());
-				if(object)
+				Base::Type type = Base::Type::fromName( itType->toAscii().constData() );
+				if (type.isBad() == false)
 				{
-					objects.push_back(object);
+					std::vector<App::DocumentObject *> objects_of_type = doc->getObjectsOfType( type );
+					for (std::vector<App::DocumentObject *>::const_iterator itObject = objects_of_type.begin(); itObject != objects_of_type.end(); itObject++)
+					{
+						this->objects.push_back( *itObject );
+					}
 				}
 			}
 		}
 	}
 	
+	QStringList names = pObjNamesForType->GetNames();
 	for (Objects_t::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
 	{
-		if (labels.size() > 0) labels += QString::fromAscii(", ");
-		labels += QString::fromAscii((*itObject)->Label.getValue());
+		for (QStringList::const_iterator itName = names.begin(); itName != names.end(); itName++)
+		{
+			if (*itName == QString::fromAscii((*itObject)->getNameInDocument()))
+			{
+				if (labels.size() > 0) labels += QString::fromAscii(", ");
+				labels += QString::fromAscii((*itObject)->Label.getValue());
+			}
+		}
 	}
 
 	return(labels);
