@@ -3120,56 +3120,27 @@ std::list<area::CVertex> Path::Vertices() const
 
 	BRepAdaptor_Curve oc_curve(Edge());
 	GeomAbs_CurveType curve_type = oc_curve.GetType();
-	bool sense = (Edge().Orientation() == TopAbs_FORWARD);
 
-	// if(! m_is_forwards) sense = !sense;
+	gp_Pnt PS(StartPoint().X(), StartPoint().Y(), StartPoint().Z());
+	gp_Pnt PE(EndPoint().X(), EndPoint().Y(), EndPoint().Z());
 
 	switch(curve_type)
 	{
 		case GeomAbs_Line:
 			// make a line
 		{
-			double uStart = oc_curve.FirstParameter();
-			double uEnd = oc_curve.LastParameter();
-			gp_Pnt PS;
-			gp_Vec VS;
-			oc_curve.D1(uStart, PS, VS);
-			gp_Pnt PE;
-			gp_Vec VE;
-			oc_curve.D1(uEnd, PE, VE);
-			if (sense)
-			{
-				AddVertex( 0, PS, oc_curve.Tolerance(), &vertices );
-				AddVertex( 0, PE, oc_curve.Tolerance(), &vertices );				
-			}
-			else
-			{
-				AddVertex( 0, PE, oc_curve.Tolerance(), &vertices );
-				AddVertex( 0, PS, oc_curve.Tolerance(), &vertices );
-			}
+			AddVertex( 0, PS, oc_curve.Tolerance(), &vertices );
+			AddVertex( 0, PE, oc_curve.Tolerance(), &vertices );
 		}
 		break;
 
 		case GeomAbs_Circle:
 			// make an arc
 		{
-			double uStart = oc_curve.FirstParameter();
-			double uEnd = oc_curve.LastParameter();
-			gp_Pnt PS;
-			gp_Vec VS;
-			oc_curve.D1(uStart, PS, VS);
-			gp_Pnt PE;
-			gp_Vec VE;
-			oc_curve.D1(uEnd, PE, VE);
-			gp_Circ circle = oc_curve.Circle();
+			gp_Circ circle = Curve().Circle();
 			gp_Ax1 axis = circle.Axis();
-			if(!sense)
-			{
-				axis.SetDirection(-axis.Direction());
-				circle.SetAxis(axis);
-			}
 
-			if(oc_curve.IsPeriodic())
+			if(Curve().IsPeriodic())
 			{
 				for (int i=0; i<4; i++)
 				{
@@ -3190,16 +3161,8 @@ std::list<area::CVertex> Path::Vertices() const
 			}
 			else
 			{
-				if (sense)
-				{
-					AddVertex( 0, PS, circle.Location(), oc_curve.Tolerance(), &vertices );
-					AddVertex( ((axis.Direction().XYZ().Z() > 0.0)?1:-1), PE, circle.Location(), oc_curve.Tolerance(), &vertices );
-				}
-				else
-				{
-					AddVertex( 0, PE, circle.Location(), oc_curve.Tolerance(), &vertices );
-					AddVertex( ((axis.Direction().XYZ().Z() > 0.0)?1:-1), PS, circle.Location(), oc_curve.Tolerance(), &vertices );
-				}
+				AddVertex( 0, PS, circle.Location(), oc_curve.Tolerance(), &vertices );
+				AddVertex( ((axis.Direction().XYZ().Z() > 0.0)?1:-1), PE, circle.Location(), oc_curve.Tolerance(), &vertices );
 			}
 		}
 		break;
@@ -3209,7 +3172,6 @@ std::list<area::CVertex> Path::Vertices() const
 			// make lots of small lines
 			std::list<Cam::Point> points = InterpolateCurve( Curve(), StartParameter(), EndParameter(), 0.0254 );
 			std::list<Cam::Point>::iterator itPrevious;
-			if (! sense) points.reverse();
 			for (std::list<Cam::Point>::iterator itPoint = points.begin(); itPoint != points.end(); itPoint++)
 			{
 				if (itPoint != points.begin())
