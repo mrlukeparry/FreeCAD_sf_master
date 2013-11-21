@@ -410,6 +410,8 @@ void CamListViewsDialog::handleAddObjectLabelButton()
 		QStringList possibleLabels = possibleLabelsListModel->stringList();
 		QString label = possibleLabels.at(from.row());
 		possibleLabels.removeAt(from.row());
+		this->possibleLabelsListModel.reset( new QStringListModel(possibleLabels) );
+		this->possible_object_labels->setModel(this->possibleLabelsListModel.get());
 
 		QStringList selectedLabels = selectedLabelsListModel->stringList();
 		selectedLabels.append(label);
@@ -421,12 +423,14 @@ void CamListViewsDialog::handleAddObjectLabelButton()
 
 void CamListViewsDialog::handleRemoveObjectLabelButton()
 {
-	if (this->possible_object_labels->currentIndex().row() >= 0)
+	if (this->selected_object_labels->currentIndex().row() >= 0)
 	{
 		QModelIndex from = this->selected_object_labels->currentIndex();
 		QStringList selectedLabels = selectedLabelsListModel->stringList();
 		QString label = selectedLabels.at(from.row());
 		selectedLabels.removeAt(from.row());
+		this->selectedLabelsListModel.reset( new QStringListModel(selectedLabels) );
+		this->selected_object_labels->setModel(this->selectedLabelsListModel.get());
 
 		QStringList possibleLabels = possibleLabelsListModel->stringList();
 		possibleLabels.append(label);
@@ -484,8 +488,6 @@ CamListViewsDialog::CamListViewsDialog( const CamListViewsDialog::Objects_t & ob
 	this->possible_object_labels.reset(new QListView);
 	this->selected_object_labels.reset(new QListView);
 	this->possibleLabelsList.reset(new QStringList());
-
-	
 
 	QStringList labels;
 	Cam::Settings::ObjectNamesForType *pObjNamesForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(this->tpgSetting);
