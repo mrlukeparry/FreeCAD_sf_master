@@ -2225,21 +2225,8 @@ bool Cam::ContiguousPath::IsClockwise()
 		// Create a vector going from the lhs element pointing towards the endpoint as well
 		// as another vector going from the start of the rhs element going away from the starting point.
 
-		/*
-		// Force the Z values to all zero so that the checks are all made on the same plane.
-
-		gp_Pnt a(lhs->PointAt( lhs->Proportion(0.99) ).Location()); a.SetZ(0.0);
-		gp_Pnt b(lhs->PointAt( lhs->Proportion(1.0 ) ).Location());  b.SetZ(0.0);
-		gp_Vec from( a, b );
-
-		gp_Pnt c(rhs->PointAt( rhs->Proportion(0.0) ).Location()); c.SetZ(0.0);
-		gp_Pnt d(rhs->PointAt( rhs->Proportion(0.01) ).Location());  d.SetZ(0.0);
-		gp_Vec to( c, d );
-		*/
-
 		gp_Vec from( lhs->PointAt( lhs->Proportion(0.99) ).Location(), lhs->PointAt( lhs->Proportion(1.0) ).Location() );
 		gp_Vec to( rhs->PointAt( rhs->Proportion(0.0) ).Location(), rhs->PointAt( rhs->Proportion(0.01) ).Location() );
-
 
 		// Cross these vectors and look at the sign of the Z value to decide if these are clockwise
 		// or counter-clockwise
@@ -3162,7 +3149,9 @@ std::list<area::CVertex> Path::Vertices() const
 			else
 			{
 				AddVertex( 0, PS, circle.Location(), oc_curve.Tolerance(), &vertices );
-				AddVertex( ((axis.Direction().XYZ().Z() > 0.0)?1:-1), PE, circle.Location(), oc_curve.Tolerance(), &vertices );
+				bool clockwise = (axis.Direction().XYZ().Z() > 0.0);
+				if (this->IsForwards() == false) clockwise = (! clockwise);
+				AddVertex( (clockwise?1:-1), PE, circle.Location(), oc_curve.Tolerance(), &vertices );
 			}
 		}
 		break;
