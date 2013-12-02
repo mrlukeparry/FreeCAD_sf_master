@@ -3603,22 +3603,29 @@ Paths::Locations_t Paths::PointLocationData(const Point reference_location_for_s
 
 	std::set< Cam::Point > distinct_locations;
 	std::set< ::size_t > intersecting_paths;
+	std::set< std::pair< ::size_t, ::size_t > > intersecting_pairs;
 
 	for (::size_t lhs=0; lhs<size(); lhs++)
 	{
 		for (::size_t rhs=lhs; rhs<size(); rhs++)
 		{
 			if (lhs == rhs) continue;
-			if (intersecting_paths.find(lhs) != intersecting_paths.end()) continue;
-			if (intersecting_paths.find(rhs) != intersecting_paths.end()) continue;
+
+			// Confirm that we haven't already tried to intersect these pairs.
+			std::pair< ::size_t, ::size_t > lhs_rhs(lhs, rhs);
+			std::pair< ::size_t, ::size_t > rhs_lhs(rhs, lhs);
+			if (intersecting_pairs.find( lhs_rhs ) != intersecting_pairs.end()) continue;
+			if (intersecting_pairs.find( rhs_lhs ) != intersecting_pairs.end()) continue;
+
+			intersecting_pairs.insert(lhs_rhs);	// Remember that we've already attempted an intersection between these two.
 
 			// See if these two contiguous path objects intersect each other.
 			std::set<Cam::Point> intersections = m_contiguous_paths[lhs].Intersect(m_contiguous_paths[rhs]);
 			if (intersections.size() > 0)
 			{
-				intersecting_paths.insert(lhs);
-				intersecting_paths.insert(rhs);
 				std::copy( intersections.begin(), intersections.end(), std::inserter(distinct_locations, distinct_locations.end()));
+				intersecting_paths.insert( lhs );
+				intersecting_paths.insert( rhs );
 			}
 		} // End for
 	} // End for
