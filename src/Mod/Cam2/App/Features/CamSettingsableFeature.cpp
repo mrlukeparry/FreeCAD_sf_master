@@ -39,49 +39,66 @@
 
 using namespace Cam;
 
-PROPERTY_SOURCE(Cam::CamSettingsableFeature, App::DocumentObject)
+PROPERTY_SOURCE(Cam::Settings::Feature, App::DocumentObject)
 
-CamSettingsableFeature::CamSettingsableFeature()
+Settings::Feature::Feature()
 {
 	//ADD_PROPERTY_TYPE(_prop_, _defaultval_, _group_,_type_,_Docu_)
 //    ADD_PROPERTY_TYPE(ToolId,        (""),  "Tool Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Tool ID");
+	ADD_PROPERTY_TYPE(Values, (),    "Settingsable Feature", (App::PropertyType)(App::Prop_None) , "Settings storage");
 }
 
-CamSettingsableFeature::~CamSettingsableFeature()
+Settings::Feature::~Feature()
 {
 	delObjConnection.disconnect();
 }
 
-App::DocumentObjectExecReturn *CamSettingsableFeature::execute(void)
+App::DocumentObjectExecReturn *Settings::Feature::execute(void)
 {
     return App::DocumentObject::StdReturn;
 }
 
-//void CamSettingsableFeature::onSettingDocument()
+void Settings::Feature::setValue(const std::string & key, const std::string & value )
+{
+	Values.setValue(key, value);
+}
+
+const std::map<std::string,std::string> &Settings::Feature::getValues(void) const
+{
+	return Values.getValues();
+}
+
+
+//void Settings::Feature::onSettingDocument()
 //{
 //    //Create a signal to observe slot if this item is deleted
 //    delObjConnection = getDocument()->signalDeletedObject.connect(boost::bind(&Cam::CamSettingsableFeature::onDelete, this, _1));
 //}
 
+bool Settings::Feature::IsCamSettingsProperty(const App::Property* prop) const
+{
+	return(prop == &Values);
+}
+
 /**
 	Called by the App::Property framework just before a property is changed.
  */
-//void CamSettingsableFeature::onBeforeChange(const App::Property* prop)
-//{
-//}
+/* virtual */ void Settings::Feature::onBeforeChange(const App::Property* prop)
+{
+}
 
 
-//void CamSettingsableFeature::onChanged(const App::Property* prop)
-//{
-//}
+/* virtual */ void Settings::Feature::onChanged(const App::Property* prop)
+{
+}
 
 
-void CamSettingsableFeature::initialise()
+void Settings::Feature::initialise()
 {
 	return;
 }
 
-//void CamSettingsableFeature::onDelete(const App::DocumentObject &docObj) {
+//void Settings::Feature::onDelete(const App::DocumentObject &docObj) {
 //
 //    // If deleted object me, proceed to delete my children
 //    const char *myName = getNameInDocument();
@@ -95,19 +112,19 @@ void CamSettingsableFeature::initialise()
 //    }
 //}
 
-//void CamSettingsableFeature::Save(Base::Writer &writer) const
+//void Settings::Feature::Save(Base::Writer &writer) const
 //{
 //    //save the father classes
 //    App::DocumentObject::Save(writer);
 //}
 
-//void CamSettingsableFeature::Restore(Base::XMLReader &reader)
+//void Settings::Feature::Restore(Base::XMLReader &reader)
 //{
 //    //read the father classes
 //    App::DocumentObject::Restore(reader);
 //}
 
 
-//void CamSettingsableFeature::onDocumentRestored()
+//void Settings::Feature::onDocumentRestored()
 //{
 //}

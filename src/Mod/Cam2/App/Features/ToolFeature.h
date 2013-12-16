@@ -48,7 +48,7 @@ typedef boost::signals::connection Connection;
   */
 namespace Cam
 {
-class CamExport ToolFeature : public Cam::CamSettingsableFeature
+class CamExport ToolFeature : public Cam::Settings::Feature
 {
     PROPERTY_HEADER(Cam::ToolFeature);
 

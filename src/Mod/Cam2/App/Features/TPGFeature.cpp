@@ -47,7 +47,6 @@ TPGFeature::TPGFeature()
 {
 	//ADD_PROPERTY_TYPE(_prop_, _defaultval_, _group_,_type_,_Docu_)
     ADD_PROPERTY_TYPE(PluginId,        (""),  "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
-    ADD_PROPERTY_TYPE(PropTPGSettings, (),    "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
     ADD_PROPERTY_TYPE(ToolPath,        (0),   "TPG Feature", (App::PropertyType)(App::Prop_None),"ToolPath");
     ADD_PROPERTY_TYPE(MachineProgram,  (0),   "TPG Feature", (App::Prop_None),"MachineProgram");
 
@@ -167,9 +166,9 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
 	We can only figure out which of the properties embedded within the
 	PropTPGSettings map changed by comparing the old and new maps.
  */
-void TPGFeature::onBeforeChange(const App::Property* prop)
+/* virtual */ void TPGFeature::onBeforeChange(const App::Property* prop)
 {
-	if (prop == &PropTPGSettings)
+	if (IsCamSettingsProperty(prop))
 	{
 		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
 		if (property_map)
@@ -197,9 +196,9 @@ void TPGFeature::onBeforeChange(const App::Property* prop)
 	member variable holds the modified setting and signal the underlying
 	TPGSettings object accordingly.
  */
-void TPGFeature::onChanged(const App::Property* prop)
+/* virtual */ void TPGFeature::onChanged(const App::Property* prop)
 {
-	if (prop == &PropTPGSettings)
+	if (IsCamSettingsProperty(prop))
 	{
 		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
 		if (property_map)

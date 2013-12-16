@@ -122,7 +122,7 @@ void CamExport initCam()
     // This function is responsible for adding inherited slots from a type's base class.
 
     Cam::CamFeature             ::init();
-    Cam::CamSettingsableFeature ::init();
+    Cam::Settings::Feature ::init();
     Cam::MachineFeature         ::init();
     Cam::MachineProgramFeature  ::init();
     Cam::Settings               ::init();

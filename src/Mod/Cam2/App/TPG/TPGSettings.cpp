@@ -469,7 +469,7 @@ bool TPGSettings::setAction(QString action) {
 	this->action = action;
 	if (tpgFeature != NULL)
 	{
-		tpgFeature->PropTPGSettings.setValue("action", action.toAscii().constData());
+		tpgFeature->setValue("action", action.toAscii().constData());
 		return(true);
 	}
 	return(false);
@@ -502,7 +502,7 @@ const QString TPGSettings::getValue(QString action, QString name) const
     // get setting value
 	if (tpgFeature != NULL) {
 		if (settingDefsMap.find(qname) != settingDefsMap.end()) {
-			const std::map<std::string,std::string> vals = tpgFeature->PropTPGSettings.getValues();
+			const std::map<std::string,std::string> vals = tpgFeature->getValues();
 			std::map<std::string,std::string>::const_iterator val = vals.find(qname.toStdString());
 			if (val != vals.end()) {
 				return QString::fromStdString(val->second);
@@ -528,7 +528,7 @@ bool TPGSettings::setValue(QString action, QString name, QString value) {
 		if (settingDefsMap.find(qname) != settingDefsMap.end()) {
 			std::string strname = qname.toStdString();
 			std::string strvalue = value.toStdString();
-			tpgFeature->PropTPGSettings.setValue(strname, strvalue);
+			tpgFeature->setValue(strname, strvalue);
 			return true;
 		}
 	}
@@ -565,11 +565,11 @@ std::vector<Definition*> TPGSettings::getSettings() const
 void TPGSettings::addDefaults() {
 
 	if (tpgFeature != NULL) {
-		const std::map<std::string,std::string> currentValues = tpgFeature->PropTPGSettings.getValues();
+		const std::map<std::string,std::string> currentValues = tpgFeature->getValues();
 
 		// add action
 		if (currentValues.find("action") == currentValues.end())
-			tpgFeature->PropTPGSettings.setValue("action", "default");
+			tpgFeature->setValue("action", "default");
 
 		// add all settings for each available action
 		std::vector<Definition*>::iterator it = this->settingDefs.begin();
@@ -577,7 +577,7 @@ void TPGSettings::addDefaults() {
 			QString nsName = makeName((*it)->action, (*it)->name);
 			if (currentValues.find(nsName.toStdString()) == currentValues.end())
 			{
-				tpgFeature->PropTPGSettings.setValue(nsName.toStdString(),(*it)->defaultvalue.toStdString());
+				tpgFeature->setValue(nsName.toStdString(),(*it)->defaultvalue.toStdString());
 			}
 
 			++it;
@@ -609,7 +609,7 @@ void TPGSettings::setTPGFeature(Cam::TPGFeature *tpgFeature) {
 	this->tpgFeature = tpgFeature;
 
 	// load the TPG's action
-	tpgFeature->PropTPGSettings.getValues();
+	tpgFeature->getValues();
 
 	addDefaults();
 }

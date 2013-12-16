@@ -28,7 +28,9 @@
 #include <PreCompiled.h>
 
 namespace Cam {
-class CamExport CamSettingsableFeature;
+	namespace Settings {
+		class CamExport Feature;
+	}
 }
 
 #include <boost/signals.hpp>
@@ -47,14 +49,23 @@ typedef boost::signals::connection Connection;
   */
 namespace Cam
 {
-class CamExport CamSettingsableFeature : public App::DocumentObject
+	namespace Settings
+	{
+class CamExport Feature : public App::DocumentObject
 {
-    PROPERTY_HEADER(Cam::CamSettingsableFeature);
+	PROPERTY_HEADER(Cam::Settings::Feature);
 
 public:
-    CamSettingsableFeature();
-    ~CamSettingsableFeature();
+    Feature();
+    ~Feature();
 
+	App::PropertyMap           Values;
+
+	bool IsCamSettingsProperty(const App::Property* prop) const;
+
+	void setValue(const std::string & key, const std::string & value);
+
+	const std::map<std::string,std::string> &getValues(void) const;
 
     /// recalculate the Feature
     App::DocumentObjectExecReturn *execute(void);
@@ -70,6 +81,9 @@ public:
 //    virtual void Save(Base::Writer &/*writer*/) const;
 //    virtual void Restore(Base::XMLReader &/*reader*/);
 
+	virtual void onBeforeChange(const App::Property* prop);
+	virtual void onChanged(const App::Property* prop);
+
 protected:
     
     ///Connections
@@ -82,6 +96,7 @@ protected:
 //    virtual void onDocumentRestored();
 };
 
+} //namespace Settings
 } //namespace Cam
 
 

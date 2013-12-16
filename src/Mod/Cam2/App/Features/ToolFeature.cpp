@@ -39,7 +39,7 @@
 
 using namespace Cam;
 
-PROPERTY_SOURCE(Cam::ToolFeature, Cam::CamSettingsableFeature)
+PROPERTY_SOURCE(Cam::ToolFeature, Cam::Settings::Feature)
 
 ToolFeature::ToolFeature()
 {

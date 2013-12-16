@@ -39,6 +39,7 @@ class CamExport TPGFeature;
 
 #include "../Features/MachineProgramFeature.h"
 #include "../Features/ToolPathFeature.h"
+#include "../Features/CamSettingsableFeature.h"
 #include "../MachineProgram.h"
 #include "../TPG/TPG.h"
 #include "../TPG/TPGSettings.h"
@@ -53,7 +54,7 @@ typedef boost::signals::connection Connection;
   */
 namespace Cam
 {
-class CamExport TPGFeature : public App::DocumentObject
+class CamExport TPGFeature : public Settings::Feature
 {
     PROPERTY_HEADER(Cam::TPGFeature);
 
@@ -65,7 +66,6 @@ public:
     ///App properties stores (saves and restores references used by the TPG)
 //    App::PropertyLinkSubList   ExternalGeometry;
     App::PropertyString        PluginId;
-    App::PropertyMap           PropTPGSettings;
     App::PropertyLink          ToolPath;
     App::PropertyLink          MachineProgram;
 
@@ -80,8 +80,8 @@ public:
         return "CamGui::ViewProviderTPGFeature";
     }
 
-	void onBeforeChange(const App::Property* prop);
-	void onChanged(const App::Property* prop);
+	virtual void onBeforeChange(const App::Property* prop);
+	virtual void onChanged(const App::Property* prop);
 
 	void initialise();
 
