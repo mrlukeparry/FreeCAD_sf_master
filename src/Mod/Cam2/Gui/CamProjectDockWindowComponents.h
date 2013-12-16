@@ -157,7 +157,7 @@ Q_SIGNALS:
 
 /**
 	The CamLineEdit class is only used so that we can register callback functions for the QLineEdit
-	objects to handle the validation as well as a mechanism to set the TPGFeature::PropTPGSettings map
+	objects to handle the validation as well as a mechanism to set the Cam::Settings::Feature::Values map
 	based on the newly changed value.
  */
 class CamLineEdit : public QLineEdit

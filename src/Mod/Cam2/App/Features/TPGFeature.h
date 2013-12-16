@@ -80,6 +80,7 @@ public:
         return "CamGui::ViewProviderTPGFeature";
     }
 
+	// From Cam::Settings::Feature
 	virtual void onBeforeChange(const App::Property* prop);
 	virtual void onChanged(const App::Property* prop);
 

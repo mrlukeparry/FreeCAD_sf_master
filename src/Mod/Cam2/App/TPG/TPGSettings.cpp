@@ -648,7 +648,7 @@ QString TPGSettings::makeName(QString action, QString name) const {
 	compare it with the map of modified settings.  Only by comparing these two
 	can we figure out which one of the settings changed.
  */
-void TPGSettings::onBeforePropTPGSettingsChange(const App::PropertyMap* property_map)
+void TPGSettings::onBeforeSettingsChange(const App::PropertyMap* property_map)
 {
 	if (property_map != NULL)
 	{
@@ -657,14 +657,14 @@ void TPGSettings::onBeforePropTPGSettingsChange(const App::PropertyMap* property
 		std::copy( property_map->getValues().begin(), property_map->getValues().end(),
 			std::inserter( this->previous_tpg_properties_version, this->previous_tpg_properties_version.begin() ) );
 
-		// qDebug("TPGSettings::onBeforePropTPGSettingsChange(%s) called\n", property_map->getName());
+		// qDebug("TPGSettings::onBeforeSettingsChange(%s) called\n", property_map->getName());
 	}
 }
 
 /**
 	Called when one of the TPGFeature::PropTPGSettings values changes.
  */
-void TPGSettings::onPropTPGSettingsChanged(const App::PropertyMap* property_map)
+void TPGSettings::onSettingsChanged(const App::PropertyMap* property_map)
 {
 	// One of the settings has changed.  Figure out which one and let any interested parties know.
 	if (tpgFeature != NULL)
@@ -674,7 +674,7 @@ void TPGSettings::onPropTPGSettingsChanged(const App::PropertyMap* property_map)
 		{
 			tpg->grab();
 
-			// qDebug("TPGSettings::onPropTPGSettingsChanged() called\n");
+			// qDebug("TPGSettings::onSettingsChanged() called\n");
 			for (std::map<QString, Definition*>::iterator itSettingsDef = settingDefsMap.begin(); itSettingsDef != settingDefsMap.end(); itSettingsDef++)
 			{
 				std::string name = itSettingsDef->first.toStdString();
@@ -1384,7 +1384,7 @@ Settings::Rate::Rate(
 
 /**
 	The Length setting can change both its 'value' and its 'units' so it
-	is necessary to store both of these values in the TPGFeature::PropTPGSettings
+	is necessary to store both of these values in the Cam::Settings::Feature::Values
 	map.  This way, they are both saved/restored to/from the data file.
 	Now that we're trying to get the value alone, we need to retrieve
 	the encoded version (i.e. the string that includes both the value
@@ -2235,7 +2235,7 @@ Settings::Length::Encode_t Settings::Length::decode() const
 
 /**
 	The Length setting can change both its 'value' and its 'units' so it
-	is necessary to store both of these values in the TPGFeature::PropTPGSettings
+	is necessary to store both of these values in the Cam::Settings::Feature::Values
 	map.  This way, they are both saved/restored to/from the data file.
 	Now that we're trying to get the value alone, we need to retrieve
 	the encoded version (i.e. the string that includes both the value
@@ -2496,7 +2496,7 @@ void Settings::Enumeration::Add(const int id, const QString label)
 
 Settings::Enumeration::Pair_t Settings::Enumeration::get() const
 {
-	// The 'value' stored in the TPGFeature::PropTPGSettings map is the integer portion of the
+	// The 'value' stored in the Cam::Settings::Feature::Values map is the integer portion of the
 	// enumerated type.
 	int id = this->getValue().toInt();
 	Map_t data = this->Values();

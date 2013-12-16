@@ -162,21 +162,22 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
 
 /**
 	Called by the App::Property framework just before a property is changed.
-	We want this because our PropTPGSettings member is a map of string properties.
+	We want this because our Cam::Settings::Feature::Values member is a map of string properties.
 	We can only figure out which of the properties embedded within the
-	PropTPGSettings map changed by comparing the old and new maps.
+	Cam::Settings::Feature::Values map changed by comparing the old and new maps.
  */
 /* virtual */ void TPGFeature::onBeforeChange(const App::Property* prop)
 {
 	if (IsCamSettingsProperty(prop))
 	{
+		// It's one contained within the Cam::Settings::Feature::Values properties map...
 		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
 		if (property_map)
 		{
 			// Let the tpgSettings object know that something is about to change.
 			if (tpgSettings != NULL)
 			{
-				tpgSettings->onBeforePropTPGSettingsChange(property_map);
+				tpgSettings->onBeforeSettingsChange(property_map);
 			}
 		}
 	}
@@ -191,7 +192,7 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
 	after a property has changed.
 
 	It's possible that we store some settings in a member variable OTHER than
-	the PropTPGSettings member.  If that's the case then this method is the
+	the Cam::Settings::Feature::Values member.  If that's the case then this method is the
 	place where the association is made.  i.e. we need to figure out which
 	member variable holds the modified setting and signal the underlying
 	TPGSettings object accordingly.
@@ -200,13 +201,14 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
 {
 	if (IsCamSettingsProperty(prop))
 	{
+		// It is one of the properties contained within the Cam::Settings::Feature::Values map...
 		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
 		if (property_map)
 		{
 			// Let the tpgSettings object know that something changed.
 			if (tpgSettings != NULL)
 			{
-				tpgSettings->onPropTPGSettingsChanged(property_map);
+				tpgSettings->onSettingsChanged(property_map);
 			}
 		}
 	}

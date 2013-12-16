@@ -128,16 +128,16 @@ public:
 	that remains the same throughout all instances of FreeCAD).  This reference information is not
 	stored away with the data file.  There are a couple of pieces of information that are stored
 	away with the data file.  Such pieces of information MUST be encoded into the 'value' which is
-	stored in the TPGFeature::PropTPGSettings map.  This Definition class and its owning TPGSettings
+	stored in the Cam::Settings::Feature::Values map.  This Definition class and its owning TPGSettings
 	class have references back to the TPGFeature to which they belong.  The TPGFeature class
 	inherits from the DocumentObject class which means its direct contents are written to the data
 	file and restored when the file is subsequently reopenned.
 
-	Many of the setting types have a single value which can easily be stored in the PropTPGSettings
+	Many of the setting types have a single value which can easily be stored in the Cam::Settings::Feature::Values
 	map.  Other setting types require more than one 'value' to be saved/restored in order to function
 	correctly.  eg: A Length setting only makes sense when we know both the 'value' and the 'units'.
 	Such values must encode all such information into a single string representation for storage
-	in the PropTPGSettings map (and thus into the data file).  We define a series of 'wrapper classes'
+	in the Cam::Settings::Feature::Values map (and thus into the data file).  We define a series of 'wrapper classes'
 	that perform such acts in a manner specific to their setting type.  By using these wrapper classes
 	we can get/set all the various values required for their setting type and such values are
 	written to the data file and re-instated when that data file is re-openned.  To that end, adding
@@ -165,8 +165,8 @@ public:
 	 */
 	typedef enum
 	{
-		SettingType_Text = 0,	// Values of this type are stored in TPGFeature::PropTPGSettings
-		SettingType_Radio,		// Values of this type are stored in TPGFeature::PropTPGSettings
+		SettingType_Text = 0,	// Values of this type are stored in Cam::Settings::Feature::Values
+		SettingType_Radio,		// Values of this type are stored in Cam::Settings::Feature::Values
 		SettingType_ObjectNamesForType,	// Object names whose types are included in the list of options.
 		SettingType_SingleObjectNameForType,	// Object name whose type is defined within the list of options.
 		SettingType_Enumeration,	// Produces a combo-box whose values include the verbose forms of the enumerated type.
@@ -367,7 +367,7 @@ public:
 	This class mostly just holds a map of Definition objects.
 	The Definition objects hold data 'about' the setting but
 	the value itself is stored in one of the member variables contained
-	within the owning TPGFeature object.
+	within the owning Cam::Settings::Feature object.
  */
 class CamExport TPGSettings
 {
@@ -379,12 +379,12 @@ public:
     void loadSettings() {};
 
 	/**
-		called when any one of the settings contained within the TPGFeature::PropTPGSettings 
+		called when any one of the settings contained within the Cam::Settings::Feature::Values 
 		member variable changes.  These are called from the TPGFeature::onBeforeChange() and
 		TPGFeature::onChanged() methods respectively.
 	 */
-	void onBeforePropTPGSettingsChange(const App::PropertyMap* prop);
-	void onPropTPGSettingsChanged(const App::PropertyMap* prop);
+	void onBeforeSettingsChange(const App::PropertyMap* prop);
+	void onSettingsChanged(const App::PropertyMap* prop);
 
 	/**
 	 * Perform a deep copy of this class
@@ -508,7 +508,7 @@ protected:
 private:
 	// NOTE: ONLY used to determine which properties changed in a single update.  i.e. this
 	// value is quite transient.  It only makes sense when comparing the values written
-	// between the onBeforePropTPGSettingsChange() and onPropTPGSettingsChanged() method
+	// between the onBeforeSettingsChange() and onSettingsChanged() method
 	// calls.
 	std::map<std::string,std::string>	previous_tpg_properties_version;
 
@@ -544,12 +544,12 @@ public:
 	The Color setting requires four integers to be retained within the data
 	file.  To this end it uses the boost::property_tree class to encode
 	all such values into a single string which is stored in the
-	PropTPGSettings map of the owning TPGFeature object.  This wrapper class
+	Cam::Settings::Feature::Values map of the owning TPGFeature object.  This wrapper class
 	supports the encoding/decoding mechanisms required for this to occur.
 
 	No validation method is provided as the QColorPicker class ensures
 	the values are always valid.  i.e. the user doesn't get a chance to
-	change the values to somethat that can't be used.  This means we end up
+	change the values to something that can't be used.  This means we end up
 	using the Definition::validate() method which always returns Acceptable.
  */
 class CamExport Color : public Definition
@@ -588,7 +588,7 @@ public:
 	to be retained within the datafile.  To this end it uses the
 	boost::property_tree class to encode
 	all such values into a single string which is stored in the
-	PropTPGSettings map of the owning TPGFeature object.  This wrapper class
+	Cam::Settings::Feature::Values map of the owning TPGFeature object.  This wrapper class
 	supports the encoding/decoding mechanisms required for this to occur.
 
 	This class allows the value to be interpreted as a Python script so that
@@ -652,7 +652,7 @@ public:
 	to be retained within the datafile.  To this end it uses the
 	boost::property_tree class to encode
 	all such values into a single string which is stored in the
-	PropTPGSettings map of the owning TPGFeature object.  This wrapper class
+	Cam::Settings::Feature::Values map of the owning TPGFeature object.  This wrapper class
 	supports the encoding/decoding mechanisms required for this to occur.
 
 	This class allows the value to be interpreted as a Python script so that

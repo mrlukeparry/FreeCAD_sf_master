@@ -1982,9 +1982,8 @@ void CamColorComponent::handleButton()
 			this->button->setFlat(true);
 
 			// Cast the setting pointer to a TPGColorSettingDefinition so that we can generate
-			// the verbose (string) represenation of the QColor for storage in the PropTPGSettings property
+			// the verbose (string) represenation of the QColor for storage in the Cam::Settings::Feature::Values property
 			// within the TPGFeature.
-
 			
 			pColorSetting->set( color.red(), color.green(), color.blue(), color.alpha() );
 		}
