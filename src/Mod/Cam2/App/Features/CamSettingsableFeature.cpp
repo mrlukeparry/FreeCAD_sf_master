@@ -43,9 +43,7 @@ PROPERTY_SOURCE(Cam::Settings::Feature, App::DocumentObject)
 
 Settings::Feature::Feature()
 {
-	//ADD_PROPERTY_TYPE(_prop_, _defaultval_, _group_,_type_,_Docu_)
-//    ADD_PROPERTY_TYPE(ToolId,        (""),  "Tool Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Tool ID");
-	ADD_PROPERTY_TYPE(Values, (),    "Settingsable Feature", (App::PropertyType)(App::Prop_None) , "Settings storage");
+	ADD_PROPERTY_TYPE(Values, (),    "Cam::Settings::Feature", (App::PropertyType)(App::Prop_None) , "Settings storage");
 }
 
 Settings::Feature::~Feature()
@@ -77,21 +75,68 @@ const std::map<std::string,std::string> &Settings::Feature::getValues(void) cons
 
 bool Settings::Feature::IsCamSettingsProperty(const App::Property* prop) const
 {
+	if (prop == NULL) return(false);
 	return(prop == &Values);
 }
 
 /**
 	Called by the App::Property framework just before a property is changed.
+
+	Keep a copy of the properties map before any changes occur so that we can
+	compare it with the map of modified settings.  Only by comparing these two
+	can we figure out which one of the settings changed.
  */
-/* virtual */ void Settings::Feature::onBeforeChange(const App::Property* prop)
+void Settings::Feature::onBeforeChange(const App::Property* prop)
 {
+	if (IsCamSettingsProperty(prop))
+	{
+		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
+
+		if (property_map != NULL)
+		{
+			this->previous_values.clear();
+			std::copy( property_map->getValues().begin(), property_map->getValues().end(),
+				std::inserter( this->previous_values, this->previous_values.begin() ) );
+
+			qDebug("Settings::Feature::onBeforeChange(%s) called\n", prop->getName());
+		}
+	}
 }
 
+/**
+	Figure out which of our property types changed and signal the underlying
+	TPGSettings object accordingly.
 
-/* virtual */ void Settings::Feature::onChanged(const App::Property* prop)
+	This method is called by the App::Property framework automatically just
+	after a property has changed.
+
+	It's possible that we store some settings in a member variable OTHER than
+	the Cam::Settings::Feature::Values member.  If that's the case then this method is the
+	place where the association is made.  i.e. we need to figure out which
+	member variable holds the modified setting and signal the underlying
+	TPGSettings object accordingly.
+ */
+void Settings::Feature::onChanged(const App::Property* prop)
 {
+	if (IsCamSettingsProperty(prop))
+	{
+		// It is one of the properties contained within the Cam::Settings::Feature::Values map...
+		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
+		if (property_map != NULL)
+		{
+			// Figure out which value changed and signal the owning object.
+			for (std::map<std::string, std::string>::const_iterator itValue = property_map->getValues().begin(); itValue != property_map->getValues().end(); itValue++)
+			{
+				if ((previous_values.find(itValue->first) != previous_values.end()) &&
+					(previous_values[itValue->first] != itValue->second))
+				{
+					// This value has changed.  Signal the owning object.
+					onSettingChanged( itValue->first, previous_values[itValue->first], itValue->second );
+				}
+			}
+		}
+	}
 }
-
 
 void Settings::Feature::initialise()
 {

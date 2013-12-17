@@ -52,7 +52,7 @@ TPGFeature::TPGFeature()
 
     tpg = NULL;
     tpgSettings = new Settings::TPGSettings;
-	tpgSettings->setTPGFeature(this);
+	tpgSettings->setFeature(this);
 }
 
 
@@ -161,56 +161,20 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
 }
 
 /**
-	Called by the App::Property framework just before a property is changed.
-	We want this because our Cam::Settings::Feature::Values member is a map of string properties.
-	We can only figure out which of the properties embedded within the
-	Cam::Settings::Feature::Values map changed by comparing the old and new maps.
+	From Cam::Settings::Feature class.
  */
-/* virtual */ void TPGFeature::onBeforeChange(const App::Property* prop)
+/* virtual */ void TPGFeature::onSettingChanged(const std::string key, const std::string previous_value, const std::string new_value)
 {
-	if (IsCamSettingsProperty(prop))
+	TPG *tpg = getTPG();
+	if ((tpg != NULL) && (this->tpgSettings != NULL))
 	{
-		// It's one contained within the Cam::Settings::Feature::Values properties map...
-		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
-		if (property_map)
+		tpg->grab();
+		Cam::Settings::Definition *definition = this->tpgSettings->getDefinition(QString::fromStdString(key));
+		if (definition != NULL)
 		{
-			// Let the tpgSettings object know that something is about to change.
-			if (tpgSettings != NULL)
-			{
-				tpgSettings->onBeforeSettingsChange(property_map);
-			}
+			tpg->onChanged( definition, QString::fromStdString(previous_value), QString::fromStdString(new_value));
 		}
-	}
-}
-
-
-/**
-	Figure out which of our property types changed and signal the underlying
-	TPGSettings object accordingly.
-
-	This method is called by the App::Property framework automatically just
-	after a property has changed.
-
-	It's possible that we store some settings in a member variable OTHER than
-	the Cam::Settings::Feature::Values member.  If that's the case then this method is the
-	place where the association is made.  i.e. we need to figure out which
-	member variable holds the modified setting and signal the underlying
-	TPGSettings object accordingly.
- */
-/* virtual */ void TPGFeature::onChanged(const App::Property* prop)
-{
-	if (IsCamSettingsProperty(prop))
-	{
-		// It is one of the properties contained within the Cam::Settings::Feature::Values map...
-		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
-		if (property_map)
-		{
-			// Let the tpgSettings object know that something changed.
-			if (tpgSettings != NULL)
-			{
-				tpgSettings->onSettingsChanged(property_map);
-			}
-		}
+		tpg->release();
 	}
 }
 

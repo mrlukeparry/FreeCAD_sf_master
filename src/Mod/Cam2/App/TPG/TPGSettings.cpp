@@ -374,7 +374,7 @@ bool Definition::AddToPythonDictionary(PyObject *pDictionary, const QString requ
 TPGSettings::TPGSettings()
 {
 	this->refcnt = 1;
-	this->tpgFeature = NULL;
+	this->feature = NULL;
 }
 
 TPGSettings::~TPGSettings()
@@ -403,7 +403,7 @@ TPGSettings* TPGSettings::clone()
 		++it;
 	}
 
-	settings->tpgFeature = this->tpgFeature;
+	settings->feature = this->feature;
 
 	return settings;
 }
@@ -414,7 +414,7 @@ TPGSettings* TPGSettings::clone()
 Definition* TPGSettings::addSettingDefinition(QString action, Definition* setting) {
 
 	if (setting != NULL) {
-		QString qname = makeName(action, setting->name);
+		QString qname = makeKey(action, setting->name);
 
 		// store reference to setting
 		settingDefs.push_back(setting->grab());
@@ -467,9 +467,9 @@ const QString TPGSettings::getAction() const {
  */
 bool TPGSettings::setAction(QString action) {
 	this->action = action;
-	if (tpgFeature != NULL)
+	if (feature != NULL)
 	{
-		tpgFeature->setValue("action", action.toAscii().constData());
+		feature->setValue("action", action.toAscii().constData());
 		return(true);
 	}
 	return(false);
@@ -497,12 +497,12 @@ const QString TPGSettings::getValue(QString action, QString name) const
 	}
 
 	// compute full setting name (<action>::<name>)
-	QString qname = makeName(action, name);
+	QString qname = makeKey(action, name);
 
     // get setting value
-	if (tpgFeature != NULL) {
+	if (feature != NULL) {
 		if (settingDefsMap.find(qname) != settingDefsMap.end()) {
-			const std::map<std::string,std::string> vals = tpgFeature->getValues();
+			const std::map<std::string,std::string> vals = feature->getValues();
 			std::map<std::string,std::string>::const_iterator val = vals.find(qname.toStdString());
 			if (val != vals.end()) {
 				return QString::fromStdString(val->second);
@@ -522,13 +522,13 @@ bool TPGSettings::setValue(QString action, QString name, QString value) {
 		return false;
 
 	// compute full setting name (<action>::<name>)
-	QString qname = makeName(action, name);
+	QString qname = makeKey(action, name);
 
-	if (tpgFeature != NULL) {
+	if (feature != NULL) {
 		if (settingDefsMap.find(qname) != settingDefsMap.end()) {
 			std::string strname = qname.toStdString();
 			std::string strvalue = value.toStdString();
-			tpgFeature->setValue(strname, strvalue);
+			feature->setValue(strname, strvalue);
 			return true;
 		}
 	}
@@ -560,24 +560,24 @@ std::vector<Definition*> TPGSettings::getSettings() const
 }
 
 /**
- * Sets the default value for any settings that are missing from the TPGFeature
+ * Sets the default value for any settings that are missing from the Feature
  */
 void TPGSettings::addDefaults() {
 
-	if (tpgFeature != NULL) {
-		const std::map<std::string,std::string> currentValues = tpgFeature->getValues();
+	if (feature != NULL) {
+		const std::map<std::string,std::string> currentValues = feature->getValues();
 
 		// add action
 		if (currentValues.find("action") == currentValues.end())
-			tpgFeature->setValue("action", "default");
+			feature->setValue("action", "default");
 
 		// add all settings for each available action
 		std::vector<Definition*>::iterator it = this->settingDefs.begin();
 		while (it != this->settingDefs.end()) {
-			QString nsName = makeName((*it)->action, (*it)->name);
+			QString nsName = makeKey((*it)->action, (*it)->name);
 			if (currentValues.find(nsName.toStdString()) == currentValues.end())
 			{
-				tpgFeature->setValue(nsName.toStdString(),(*it)->defaultvalue.toStdString());
+				feature->setValue(nsName.toStdString(),(*it)->defaultvalue.toStdString());
 			}
 
 			++it;
@@ -601,15 +601,15 @@ QStringList TPGSettings::getActions() const
 }
 
 /**
- * Sets the TPGFeature that the value will be saved-to/read-from.
+ * Sets the Feature that the value will be saved-to/read-from.
  *
  * This will set the default values for any missing settings
  */
-void TPGSettings::setTPGFeature(Cam::TPGFeature *tpgFeature) {
-	this->tpgFeature = tpgFeature;
+void TPGSettings::setFeature(Cam::Settings::Feature *feature) {
+	this->feature = feature;
 
 	// load the TPG's action
-	tpgFeature->getValues();
+	feature->getValues();
 
 	addDefaults();
 }
@@ -633,63 +633,15 @@ void TPGSettings::release() {
 }
 
 /**
- * Make a namespaced name (from <action>::<name>)
+ * Make a key (from <action>::<name>)
  */
-QString TPGSettings::makeName(QString action, QString name) const {
+QString TPGSettings::makeKey(QString action, QString name) const {
 	QString result = action;
 	result.append(QString::fromAscii("::"));
 	result.append(name);
 	return result;
 }
 
-
-/**
-	Keep a copy of the properties map before any changes occur so that we can
-	compare it with the map of modified settings.  Only by comparing these two
-	can we figure out which one of the settings changed.
- */
-void TPGSettings::onBeforeSettingsChange(const App::PropertyMap* property_map)
-{
-	if (property_map != NULL)
-	{
-		this->previous_tpg_properties_version.clear();
-
-		std::copy( property_map->getValues().begin(), property_map->getValues().end(),
-			std::inserter( this->previous_tpg_properties_version, this->previous_tpg_properties_version.begin() ) );
-
-		// qDebug("TPGSettings::onBeforeSettingsChange(%s) called\n", property_map->getName());
-	}
-}
-
-/**
-	Called when one of the TPGFeature::PropTPGSettings values changes.
- */
-void TPGSettings::onSettingsChanged(const App::PropertyMap* property_map)
-{
-	// One of the settings has changed.  Figure out which one and let any interested parties know.
-	if (tpgFeature != NULL)
-	{
-		TPG *tpg = tpgFeature->getTPG();
-		if (tpg)
-		{
-			tpg->grab();
-
-			// qDebug("TPGSettings::onSettingsChanged() called\n");
-			for (std::map<QString, Definition*>::iterator itSettingsDef = settingDefsMap.begin(); itSettingsDef != settingDefsMap.end(); itSettingsDef++)
-			{
-				std::string name = itSettingsDef->first.toStdString();
-				std::string previous_value = this->previous_tpg_properties_version[name];
-				std::string new_value = itSettingsDef->second->getValue().toStdString();
-
-				if (new_value != previous_value)
-				{
-					tpg->onChanged( itSettingsDef->second, QString::fromStdString(previous_value), QString::fromStdString(new_value));
-				}
-			}
-			tpg->release();
-		}
-	}
-}
 
 
 static std::pair<std::string::size_type, std::string::size_type> next_possible_number(const std::string & value, std::string::size_type offset )
@@ -988,20 +940,21 @@ bool TPGSettings::AddToPythonDictionary(PyObject *pDictionary, const QString req
 	return(status);
 }
 
-
 Settings::Definition *Settings::TPGSettings::getDefinition(const QString action, const QString name) const
 {
-	if (action.isNull() || action.isEmpty()) {
-		Base::Console().Message("action not set\n");
+	return(getDefinition(makeKey(action, name)));
+}
+
+Settings::Definition *Settings::TPGSettings::getDefinition(const QString key) const
+{
+	if (key.isNull() || key.isEmpty()) {
+		Base::Console().Message("key not set\n");
 		return(NULL);
 	}
 
-	// compute full setting name (<action>::<name>)
-	QString qname = makeName(action, name);
-
     // get setting value
-	if (tpgFeature != NULL) {
-		std::map<QString, Settings::Definition *>::const_iterator itDef = settingDefsMap.find(qname);
+	if (feature != NULL) {
+		std::map<QString, Settings::Definition *>::const_iterator itDef = settingDefsMap.find(key);
 		if (itDef != settingDefsMap.end()) {
 			return(itDef->second);
 		}

@@ -66,7 +66,8 @@ namespace Cam
 {
 	namespace Settings 
 	{
-class CamExport TPGFeature; // Forward declaration so that the TPGFeature and the TPGSettings classes can both refer to each other.
+
+class CamExport Feature; // Forward declaration so that the Cam::Settings::Feature and the TPGSettings classes can both refer to each other.
 
 
 /**
@@ -379,14 +380,6 @@ public:
     void loadSettings() {};
 
 	/**
-		called when any one of the settings contained within the Cam::Settings::Feature::Values 
-		member variable changes.  These are called from the TPGFeature::onBeforeChange() and
-		TPGFeature::onChanged() methods respectively.
-	 */
-	void onBeforeSettingsChange(const App::PropertyMap* prop);
-	void onSettingsChanged(const App::PropertyMap* prop);
-
-	/**
 	 * Perform a deep copy of this class
 	 */
     TPGSettings* clone();
@@ -446,7 +439,7 @@ public:
     /**
      * Sets the TPGFeature that the value will be saved-to/read-from.
      */
-    void setTPGFeature(Cam::TPGFeature *tpgFeature);
+	void setFeature(Cam::Settings::Feature *feature);
 
     /**
      * Increases reference count
@@ -470,6 +463,7 @@ public:
 	bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 
 	Settings::Definition *getDefinition(const QString action, const QString name) const;
+	Settings::Definition *getDefinition(const QString key) const;
 
 	// These methods find a setting by name and return a pointer to that object's wrapper
 	// class based on the setting's type.  If the name doesn't match the type requested then
@@ -500,17 +494,10 @@ protected:
     /// reference counter
     int refcnt;
     /// the tpgFeature to which these settings belong
-	Cam::TPGFeature *tpgFeature;
+	Cam::Settings::Feature *feature;
 
     /// make a namespaced name (from <action>::<name>)
-    QString makeName(QString action, QString name) const;
-
-private:
-	// NOTE: ONLY used to determine which properties changed in a single update.  i.e. this
-	// value is quite transient.  It only makes sense when comparing the values written
-	// between the onBeforeSettingsChange() and onSettingsChanged() method
-	// calls.
-	std::map<std::string,std::string>	previous_tpg_properties_version;
+    QString makeKey(QString action, QString name) const;
 
 public:
 	friend QString & operator<< ( QString & qs, const TPGSettings & settings )

@@ -81,8 +81,10 @@ public:
 //    virtual void Save(Base::Writer &/*writer*/) const;
 //    virtual void Restore(Base::XMLReader &/*reader*/);
 
-	virtual void onBeforeChange(const App::Property* prop);
-	virtual void onChanged(const App::Property* prop);
+	void onBeforeChange(const App::Property* prop);
+	void onChanged(const App::Property* prop);
+
+	virtual void onSettingChanged(const std::string key, const std::string previous_value, const std::string new_value) { }
 
 protected:
     
@@ -94,6 +96,13 @@ protected:
 //    virtual void onSettingDocument();
 
 //    virtual void onDocumentRestored();
+
+private:
+	// NOTE: ONLY used to determine which properties changed in a single update.  i.e. this
+	// value is quite transient.  It only makes sense when comparing the values written
+	// between the onBeforeSettingsChange() and onSettingsChanged() method
+	// calls.
+	std::map<std::string,std::string>	previous_values;
 };
 
 } //namespace Settings

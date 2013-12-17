@@ -81,8 +81,7 @@ public:
     }
 
 	// From Cam::Settings::Feature
-	virtual void onBeforeChange(const App::Property* prop);
-	virtual void onChanged(const App::Property* prop);
+	virtual void onSettingChanged(const std::string key, const std::string previous_value, const std::string new_value);
 
 	void initialise();
 
