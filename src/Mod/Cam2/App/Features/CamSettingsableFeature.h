@@ -30,6 +30,7 @@
 namespace Cam {
 	namespace Settings {
 		class CamExport Feature;
+		class CamExport TPGSettings;
 	}
 }
 
@@ -84,6 +85,7 @@ public:
 	void onBeforeChange(const App::Property* prop);
 	void onChanged(const App::Property* prop);
 
+	virtual Cam::Settings::TPGSettings *getTPGSettings() { return(NULL); } // Should be overloaded so this should never be executed.
 	virtual void onSettingChanged(const std::string key, const std::string previous_value, const std::string new_value) { }
 
 protected:

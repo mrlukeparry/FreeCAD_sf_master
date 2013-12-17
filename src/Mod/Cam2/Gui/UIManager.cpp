@@ -322,12 +322,21 @@ void UIManagerInst::updateCamProjectSelection(const char* pDocName) {
     if (selDocObjs.size() == 1)
     {
     	App::DocumentObject *docObj = *selDocObjs.begin();
-    	if (docObj->isDerivedFrom(Cam::TPGFeature::getClassTypeId()))
+		if (docObj->isDerivedFrom(Cam::Settings::Feature::getClassTypeId()))
     	{
-			Cam::TPGFeature *tpgFeature = dynamic_cast<Cam::TPGFeature *>(docObj);
-			if (tpgFeature) {
-//				Cam::TPG *tpg = tpgFeature->getTPG();
-				Q_EMIT updatedTPGSelection(tpgFeature);
+			Cam::Settings::Feature *feature = dynamic_cast<Cam::Settings::Feature *>(docObj);
+			if (feature) {
+				Q_EMIT updatedTPGSelection(feature);
+			}
+            else
+            	Q_EMIT updatedTPGSelection(NULL);
+            Q_EMIT updatedToolPathSelection(NULL);
+    	}
+		if (docObj->isDerivedFrom(Cam::TPGFeature::getClassTypeId()))
+    	{
+			Cam::TPGFeature *feature = dynamic_cast<Cam::TPGFeature *>(docObj);
+			if (feature) {
+				Q_EMIT updatedTPGSelection(feature);
 			}
             else
             	Q_EMIT updatedTPGSelection(NULL);

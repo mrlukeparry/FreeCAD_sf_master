@@ -66,7 +66,6 @@ const std::map<std::string,std::string> &Settings::Feature::getValues(void) cons
 	return Values.getValues();
 }
 
-
 //void Settings::Feature::onSettingDocument()
 //{
 //    //Create a signal to observe slot if this item is deleted

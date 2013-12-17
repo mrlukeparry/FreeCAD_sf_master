@@ -80,9 +80,13 @@ public:
         return "CamGui::ViewProviderTPGFeature";
     }
 
-	// From Cam::Settings::Feature
+public:
+	// Overloaded methods from Cam::Settings::Feature
 	virtual void onSettingChanged(const std::string key, const std::string previous_value, const std::string new_value);
+	/// Get a cloned copy of the current TPG settings
+	virtual Settings::TPGSettings* getTPGSettings();
 
+public:
 	void initialise();
 
     /// Methods for controlling the TPG
@@ -93,9 +97,6 @@ public:
 //    bool loadTPG(TPGDescriptor *tpgDescriptor);
     /// gets the TPG Instance.  Loads it from Factory if needed.
     TPG* getTPG();
-
-    /// Get a cloned copy of the current TPG settings
-	Settings::TPGSettings* getTPGSettings();
 
     void onDelete(const App::DocumentObject &docObj);
 

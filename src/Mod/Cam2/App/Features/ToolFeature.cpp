@@ -46,11 +46,24 @@ ToolFeature::ToolFeature()
 	//ADD_PROPERTY_TYPE(_prop_, _defaultval_, _group_,_type_,_Docu_)
     ADD_PROPERTY_TYPE(ToolId, (""), "Tool Feature", (App::PropertyType)(App::Prop_ReadOnly),
             "Unique Tool Identifier");
+
+	this->settings = new Settings::TPGSettings;
+	this->settings->setFeature(this);
+
+	diameter = NULL;
+	tool_length_offset = NULL;
+	material = NULL;
+	type = NULL;
 }
 
 ToolFeature::~ToolFeature()
 {
 	delObjConnection.disconnect();
+
+	if (diameter) diameter->release();
+	if (tool_length_offset) tool_length_offset->release();
+	if (material) material->release();
+	if (type) type->release();
 }
 
 App::DocumentObjectExecReturn *ToolFeature::execute(void)
@@ -64,22 +77,103 @@ void ToolFeature::onSettingDocument()
     delObjConnection = getDocument()->signalDeletedObject.connect(boost::bind(&Cam::ToolFeature::onDelete, this, _1));
 }
 
-/**
-	Called by the App::Property framework just before a property is changed.
- */
-//void ToolFeature::onBeforeChange(const App::Property* prop)
-//{
-//}
+// From Cam::Settings::Feature
+/* virtual */ Cam::Settings::TPGSettings *ToolFeature::getTPGSettings()
+{
+	this->initialise();
+
+	if (this->settings != NULL)
+	{
+		return(this->settings->grab());
+	}
+	else
+	{
+		return(NULL);
+	}
+}
 
 
-//void ToolFeature::onChanged(const App::Property* prop)
-//{
-//}
+// From Cam::Settings::Feature
+/* virtual */ void ToolFeature::onSettingChanged(const std::string key, const std::string previous_value, const std::string new_value)
+{
+	if (this->settings != NULL)
+	{
+		Cam::Settings::Definition *definition = this->settings->getDefinition( QString::fromStdString(key) );
+		if (definition != NULL)
+		{
+
+		}
+	}
+}
 
 
 void ToolFeature::initialise()
 {
-	return;
+	QString qaction = QString::fromAscii("default");
+
+	if ((settings != NULL) && (this->diameter == NULL))
+	{
+		this->diameter = new Settings::Length(	"Diameter", 
+											 "Cutting diameter",
+											 "Cutting diameter",
+											 5.0,
+											 Settings::Definition::Metric );
+		this->diameter->Minimum(0.0);	// must be positive.  No maximum.
+		settings->addSettingDefinition(qaction, this->diameter);
+
+		this->tool_length_offset = new Settings::Length( "Tool Length Offset", 
+											 "Tool Length Offset",
+											 "Full length of the tool.  Includes both cutting and non-cutting areas of the tool.  Used for rendering of the tool solid.",
+											 5.0,
+											 Settings::Definition::Metric );
+		this->tool_length_offset->Minimum(0.0);	// must be positive.  No maximum.
+		settings->addSettingDefinition(qaction, this->tool_length_offset);
+
+		this->material = new Settings::Enumeration(	 "Material", 
+													 "Material",
+													 int(eHighSpeedSteel),
+													 "HSS or Carbide",
+													 "Material with which the tool is made.  eg: High Speed Steel or Carbide.  Used for spindle speed estimation.");
+
+		// Enumerated types MUST have one option for each different value.  For each option, the Id must be the integer form and the Label must
+		// be the string (verbose) form.  Only the verbose forms are used on the user interface but the values used in the TPGSettingDefinition.value will
+		// always be the integer form.
+		// The integer forms need not start from zero or be sequential.  The values will appear in the combo-box in the order that
+		// they're defined in the options list.  Their position in the list will be used by the combo-box.
+
+		for (eMaterial_t mat = eHighSpeedSteel; mat < eUndefinedMaterialType; mat = eMaterial_t(int(mat)+1))
+		{
+			QString label;
+			label << mat;		// use the operator<< override to convert from the enum to the string form.
+
+			this->material->Add(int(mat), label);
+		}
+
+		settings->addSettingDefinition(qaction, this->material);
+
+
+		this->type = new Settings::Enumeration(	 "Type", 
+												 "Type",
+												 int(eDrill),
+												 "Type of tool",
+												 "Type of tool");
+
+		// Enumerated types MUST have one option for each different value.  For each option, the Id must be the integer form and the Label must
+		// be the string (verbose) form.  Only the verbose forms are used on the user interface but the values used in the TPGSettingDefinition.value will
+		// always be the integer form.
+		// The integer forms need not start from zero or be sequential.  The values will appear in the combo-box in the order that
+		// they're defined in the options list.  Their position in the list will be used by the combo-box.
+
+		for (eToolType tool_type = eDrill; tool_type < eUndefinedToolType; tool_type = eToolType(int(tool_type)+1))
+		{
+			QString label;
+			label << tool_type;		// use the operator<< override to convert from the enum to the string form.
+
+			this->type->Add(int(tool_type), label);
+		}
+
+		settings->addSettingDefinition(qaction, this->type);
+	}
 }
 
 void ToolFeature::onDelete(const App::DocumentObject &docObj) {

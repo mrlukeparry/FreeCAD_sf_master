@@ -210,9 +210,10 @@ void TPGFeature::initialise()
 }
 
 /**
- * Get the current TPG settings object
+ * Get the current TPG settings object.  This is the implementation of the
+ * Cam::Settings::Feature::getTPGSettings() base method.
  */
-Settings::TPGSettings* TPGFeature::getTPGSettings() {
+/* virtual */ Settings::TPGSettings* TPGFeature::getTPGSettings() {
 	getTPG();	// Try to load and initialise the TPG so that our settings array is fully populated.
 	return tpgSettings;
 }

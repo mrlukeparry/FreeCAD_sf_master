@@ -135,7 +135,7 @@ public Q_SLOTS:
 Q_SIGNALS:
   void updatedTPGList(TPGListModel *model);
 
-  void updatedTPGSelection(Cam::TPGFeature* tpg);
+  void updatedTPGSelection(Cam::Settings::Feature* feature);
   void updatedToolPathSelection(Cam::ToolPathFeature* toolpath);
   void updatedMachineProgramSelection(Cam::MachineProgramFeature* machineProgram);
 

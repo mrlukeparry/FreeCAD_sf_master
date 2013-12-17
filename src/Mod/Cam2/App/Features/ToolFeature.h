@@ -40,6 +40,7 @@ class CamExport ToolFeature;
 #include <Mod/Part/App/PartFeature.h>
 
 #include "../Features/CamSettingsableFeature.h"
+#include "../TPG/TPGSettings.h"
 
 typedef boost::signals::connection Connection;
 
@@ -65,8 +66,9 @@ public:
         return "CamGui::ViewProviderToolFeature";
     }
 
-//	void onBeforeChange(const App::Property* prop);
-//	void onChanged(const App::Property* prop);
+	// From Cam::Settings::Feature
+	virtual Cam::Settings::TPGSettings *getTPGSettings();
+	virtual void onSettingChanged(const std::string key, const std::string previous_value, const std::string new_value);
 
 	void initialise();
 
@@ -85,6 +87,115 @@ protected:
     virtual void onSettingDocument();
 
 //    virtual void onDocumentRestored();
+
+public:
+	typedef enum {
+		eHighSpeedSteel = 0,
+		eCarbide,
+		eUndefinedMaterialType
+	} eMaterial_t;
+
+	friend QString & operator << ( QString & qs, const eMaterial_t & material_type )
+	{
+		std::ostringstream ss;
+		switch (material_type)
+		{
+		case eHighSpeedSteel:		ss << "HSS";
+			break;
+
+		case eCarbide:	ss << "Carbide";
+			break;
+
+		case eUndefinedMaterialType:	ss << "Undefined";
+			break;
+		} // End switch()
+
+		qs.append( QString::fromStdString(ss.str()));
+		return(qs);
+	}
+
+	typedef enum {
+		eDrill = 0,
+		eCentreDrill,
+		eEndmill,
+		eSlotCutter,
+		eBallEndMill,
+		eChamfer,
+		eTurningTool,
+		eTouchProbe,
+		eToolLengthSwitch,
+		eExtrusion,
+		eTapTool,
+		eEngravingTool,
+		eBoringHead,
+		eDragKnife,
+		eUndefinedToolType
+	} eToolType;
+
+	friend QString & operator<< ( QString & qs, const eToolType & tool_type )
+	{
+		std::ostringstream ss;
+		switch (tool_type)
+		{
+		case eDrill:		ss << "Drill";
+			break;
+
+		case eCentreDrill:	ss << "Centre Drill";
+			break;
+
+		case eEndmill:	ss << "Endmill";
+			break;
+
+		case eSlotCutter:	ss << "Slot Cutter";
+			break;
+
+		case eBallEndMill:	ss << "Ball Endmill";
+			break;
+
+		case eChamfer:	ss << "Chamfer";
+			break;
+
+		case eTurningTool:	ss << "Turning Tool";
+			break;
+
+		case eTouchProbe:	ss << "Touch Probe";
+			break;
+
+		case eToolLengthSwitch:	ss << "Tool Length Switch";
+			break;
+
+		case eExtrusion:	ss << "Extruder";
+			break;
+
+		case eTapTool:	ss << "Tap";
+			break;
+
+		case eEngravingTool:	ss << "Engraving Tool";
+			break;
+
+		case eBoringHead:	ss << "Boring Head";
+			break;
+
+		case eDragKnife:	ss << "Drag Knife";
+			break;
+
+		case eUndefinedToolType: ss << "Undefined tool type";
+			break;
+		} // End switch()
+
+		qs.append( QString::fromStdString(ss.str()) );
+		return(qs);
+	}
+
+	
+public:
+	Settings::Length	*diameter;
+	Settings::Length	*tool_length_offset;
+	Settings::Enumeration *material;
+	Settings::Enumeration *type;
+
+private:
+	Settings::TPGSettings *settings;
 };
 
 } //namespace Cam
