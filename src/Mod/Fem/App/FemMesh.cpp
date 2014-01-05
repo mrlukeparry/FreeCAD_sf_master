@@ -125,6 +125,8 @@ void FemMesh::copyMeshData(const FemMesh& mesh)
     //int numPris = info.NbPrisms();
     //int numHedr = info.NbPolyhedrons();
 
+    _Mtrx = mesh._Mtrx;
+
     SMESHDS_Mesh* meshds = this->myMesh->GetMeshDS();
     meshds->ClearMesh();
 
@@ -415,6 +417,8 @@ void FemMesh::readNastran(const std::string &Filename)
     Base::TimeInfo Start;
     Base::Console().Log("Start: FemMesh::readNastran() =================================\n");
 
+    _Mtrx = Base::Matrix4D();
+
 	std::ifstream inputfile;
 	inputfile.open(Filename.c_str());
 	inputfile.seekg(std::ifstream::beg);
@@ -575,6 +579,7 @@ void FemMesh::readNastran(const std::string &Filename)
 void FemMesh::read(const char *FileName)
 {
     Base::FileInfo File(FileName);
+    _Mtrx = Base::Matrix4D();
   
     // checking on the file
     if (!File.isReadable())
@@ -604,7 +609,7 @@ void FemMesh::read(const char *FileName)
     }
 }
 
-void FemMesh::writeABAQUS(const std::string &Filename, Base::Placement* placement) const
+void FemMesh::writeABAQUS(const std::string &Filename) const
 {
     std::ofstream anABAQUS_Output;
     anABAQUS_Output.open(Filename.c_str());
@@ -612,29 +617,16 @@ void FemMesh::writeABAQUS(const std::string &Filename, Base::Placement* placemen
 
     //Extract Nodes and Elements of the current SMESH datastructure
     SMDS_NodeIteratorPtr aNodeIter = myMesh->GetMeshDS()->nodesIterator();
-    if (placement)
-    {
-        Base::Vector3d current_node;
-        Base::Matrix4D matrix = placement->toMatrix();
-        for (;aNodeIter->more();) {
-            const SMDS_MeshNode* aNode = aNodeIter->next();
-            current_node.Set(aNode->X(),aNode->Y(),aNode->Z());
-            current_node = matrix * current_node;
-            anABAQUS_Output << aNode->GetID() << ","
-                << current_node.x << "," 
-                << current_node.y << ","
-                << current_node.z << std::endl;
-        }
-    }
-    else
-    {
-        for (;aNodeIter->more();) {
-            const SMDS_MeshNode* aNode = aNodeIter->next();
-            anABAQUS_Output << aNode->GetID() << ","
-                << aNode->X() << "," 
-                << aNode->Y() << ","
-                << aNode->Z() << std::endl;
-        }
+
+    Base::Vector3d current_node;
+    for (;aNodeIter->more();) {
+        const SMDS_MeshNode* aNode = aNodeIter->next();
+        current_node.Set(aNode->X(),aNode->Y(),aNode->Z());
+        current_node = _Mtrx * current_node;
+        anABAQUS_Output << aNode->GetID() << ","
+            << current_node.x << "," 
+            << current_node.y << ","
+            << current_node.z << std::endl;
     }
 
 	anABAQUS_Output << "*Element, TYPE=C3D10, ELSET=Eall" << std::endl;
@@ -650,19 +642,10 @@ void FemMesh::writeABAQUS(const std::string &Filename, Base::Placement* placemen
 		//I absolute dont understand the scheme behind it but somehow its working like this
 		apair.first = aVol->GetID();
 		apair.second.clear();
-		//apair.second.push_back(aVol->GetNode(0)->GetID());
-		//apair.second.push_back(aVol->GetNode(2)->GetID());
-		//apair.second.push_back(aVol->GetNode(1)->GetID());
-		//apair.second.push_back(aVol->GetNode(3)->GetID());
-		//apair.second.push_back(aVol->GetNode(6)->GetID());
-		//apair.second.push_back(aVol->GetNode(5)->GetID());
-		//apair.second.push_back(aVol->GetNode(4)->GetID());
-		//apair.second.push_back(aVol->GetNode(8)->GetID());
-		//apair.second.push_back(aVol->GetNode(9)->GetID());
-		//apair.second.push_back(aVol->GetNode(7)->GetID());
 
+		//Neuer Versuch
 		apair.second.push_back(aVol->GetNode(1)->GetID());
-		apair.second.push_back(aVol->GetNode(2)->GetID());
+		apair.second.push_back(aVol->GetNode(0)->GetID());
 		apair.second.push_back(aVol->GetNode(2)->GetID());
 		apair.second.push_back(aVol->GetNode(3)->GetID());
 		apair.second.push_back(aVol->GetNode(4)->GetID());
@@ -671,7 +654,8 @@ void FemMesh::writeABAQUS(const std::string &Filename, Base::Placement* placemen
 		apair.second.push_back(aVol->GetNode(8)->GetID());
 		apair.second.push_back(aVol->GetNode(7)->GetID());
 		apair.second.push_back(aVol->GetNode(9)->GetID());
-		temp_map.insert(apair);
+	
+        temp_map.insert(apair);
 	}
 
 	std::map<int,std::vector<int> >::iterator it_map;
@@ -725,10 +709,49 @@ unsigned int FemMesh::getMemSize (void) const
 
 void FemMesh::Save (Base::Writer &writer) const
 {
+    //See SaveDocFile(), RestoreDocFile()
+    writer.Stream() << writer.ind() << "<FemMesh file=\"" ;
+    writer.Stream() << writer.addFile("FemMesh.unv", this) << "\"";
+    writer.Stream() << " a11=\"" <<  _Mtrx[0][0] << "\" a12=\"" <<  _Mtrx[0][1] << "\" a13=\"" <<  _Mtrx[0][2] << "\" a14=\"" <<  _Mtrx[0][3] << "\"";
+    writer.Stream() << " a21=\"" <<  _Mtrx[1][0] << "\" a22=\"" <<  _Mtrx[1][1] << "\" a23=\"" <<  _Mtrx[1][2] << "\" a24=\"" <<  _Mtrx[1][3] << "\"";
+    writer.Stream() << " a31=\"" <<  _Mtrx[2][0] << "\" a32=\"" <<  _Mtrx[2][1] << "\" a33=\"" <<  _Mtrx[2][2] << "\" a34=\"" <<  _Mtrx[2][3] << "\"";
+    writer.Stream() << " a41=\"" <<  _Mtrx[3][0] << "\" a42=\"" <<  _Mtrx[3][1] << "\" a43=\"" <<  _Mtrx[3][2] << "\" a44=\"" <<  _Mtrx[3][3] << "\"";
+    writer.Stream() << "/>" << std::endl;
+
+
 }
 
 void FemMesh::Restore(Base::XMLReader &reader)
 {
+
+    reader.readElement("FemMesh");
+    std::string file (reader.getAttribute("file") );
+
+    if (!file.empty()) {
+        // initate a file read
+        reader.addFile(file.c_str(),this);
+    }
+    if( reader.hasAttribute("a11")){
+        _Mtrx[0][0] = (float)reader.getAttributeAsFloat("a11");
+        _Mtrx[0][1] = (float)reader.getAttributeAsFloat("a12");
+        _Mtrx[0][2] = (float)reader.getAttributeAsFloat("a13");
+        _Mtrx[0][3] = (float)reader.getAttributeAsFloat("a14");
+
+        _Mtrx[1][0] = (float)reader.getAttributeAsFloat("a21");
+        _Mtrx[1][1] = (float)reader.getAttributeAsFloat("a22");
+        _Mtrx[1][2] = (float)reader.getAttributeAsFloat("a23");
+        _Mtrx[1][3] = (float)reader.getAttributeAsFloat("a24");
+
+        _Mtrx[2][0] = (float)reader.getAttributeAsFloat("a31");
+        _Mtrx[2][1] = (float)reader.getAttributeAsFloat("a32");
+        _Mtrx[2][2] = (float)reader.getAttributeAsFloat("a33");
+        _Mtrx[2][3] = (float)reader.getAttributeAsFloat("a34");
+
+        _Mtrx[3][0] = (float)reader.getAttributeAsFloat("a41");
+        _Mtrx[3][1] = (float)reader.getAttributeAsFloat("a42");
+        _Mtrx[3][2] = (float)reader.getAttributeAsFloat("a43");
+        _Mtrx[3][3] = (float)reader.getAttributeAsFloat("a44");
+    }
 }
 
 void FemMesh::SaveDocFile (Base::Writer &writer) const
@@ -795,34 +818,28 @@ void FemMesh::transformGeometry(const Base::Matrix4D& rclTrf)
 void FemMesh::setTransform(const Base::Matrix4D& rclTrf)
 {
     // Placement handling, no geometric transformation
+    _Mtrx = rclTrf;
 }
 
 Base::Matrix4D FemMesh::getTransform(void) const
 {
-    Base::Matrix4D mtrx;
-    return mtrx;
+    return _Mtrx;
 }
 
 Base::BoundBox3d FemMesh::getBoundBox(void) const
 {
     Base::BoundBox3d box;
-    try {
-        // If the shape is empty an exception may be thrown
-        Bnd_Box bounds;
-        BRepBndLib::Add(myMesh->GetShapeToMesh(), bounds);
-        bounds.SetGap(0.0);
-        Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
-        bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
 
-        box.MinX = xMin;
-        box.MaxX = xMax;
-        box.MinY = yMin;
-        box.MaxY = yMax;
-        box.MinZ = zMin;
-        box.MaxZ = zMax;
-    }
-    catch (Standard_Failure) {
-    }
+    SMESHDS_Mesh* data = const_cast<SMESH_Mesh*>(getSMesh())->GetMeshDS();
+
+	SMDS_NodeIteratorPtr aNodeIter = data->nodesIterator();
+	for (;aNodeIter->more();) {
+		const SMDS_MeshNode* aNode = aNodeIter->next();
+        Base::Vector3d vec(aNode->X(),aNode->Y(),aNode->Z());
+        // Apply the matrix to hold the BoundBox in absolute space. 
+        vec = _Mtrx * vec;
+        box.Add(vec);
+	}
 
     return box;
 }
@@ -851,4 +868,128 @@ Data::Segment* FemMesh::getSubElement(const char* Type, unsigned long n) const
     //std::string temp = str.str();
     //return new ShapeSegment(getSubShape(temp.c_str()));
     return 0;
+}
+
+struct Fem::FemMesh::FemMeshInfo FemMesh::getInfo(void) const{
+
+    struct FemMeshInfo rtrn;
+
+    SMESHDS_Mesh* data =  const_cast<SMESH_Mesh*>(getSMesh())->GetMeshDS();
+	const SMDS_MeshInfo& info = data->GetMeshInfo();
+	rtrn.numFaces = data->NbFaces();
+    rtrn.numNode = info.NbNodes();
+    rtrn.numTria = info.NbTriangles();
+    rtrn.numQuad = info.NbQuadrangles();
+    rtrn.numPoly = info.NbPolygons();
+    rtrn.numVolu = info.NbVolumes();
+    rtrn.numTetr = info.NbTetras();
+    rtrn.numHexa = info.NbHexas();
+    rtrn.numPyrd = info.NbPyramids();
+    rtrn.numPris = info.NbPrisms();
+    rtrn.numHedr = info.NbPolyhedrons();
+
+    return rtrn;
+
+}
+//		for(unsigned int i=0;i<all_elements.size();i++)
+//		{
+//			//Die Reihenfolge wie hier die Elemente hinzugefügt werden ist sehr wichtig. 
+//			//Ansonsten ist eine konsistente Datenstruktur nicht möglich
+//			meshds->AddVolumeWithID(
+//				meshds->FindNode(all_elements[i][0]),
+//				meshds->FindNode(all_elements[i][2]),
+//				meshds->FindNode(all_elements[i][1]),
+//				meshds->FindNode(all_elements[i][3]),
+//				meshds->FindNode(all_elements[i][6]),
+//				meshds->FindNode(all_elements[i][5]),
+//				meshds->FindNode(all_elements[i][4]),
+//				meshds->FindNode(all_elements[i][9]),
+//				meshds->FindNode(all_elements[i][7]),
+//				meshds->FindNode(all_elements[i][8]),
+//				element_id[i]
+//			);
+//		}
+
+Base::Quantity FemMesh::getVolume(void)const
+{
+	SMDS_VolumeIteratorPtr aVolIter = myMesh->GetMeshDS()->volumesIterator();
+
+	//Calculate Mesh Volume
+	//For an accurate Volume Calculation of a quadratic Tetrahedron
+	//we have to calculate the Volume of 8 Sub-Tetrahedrons
+	Base::Vector3d a,b,c,a_b_product;
+	double volume = 0.0;
+
+	for (;aVolIter->more();) 
+	{
+        const SMDS_MeshVolume* aVol = aVolIter->next();
+        
+        if ( aVol->NbNodes() != 10 ) continue;
+
+        Base::Vector3d v1(aVol->GetNode(1)->X(),aVol->GetNode(1)->Y(),aVol->GetNode(1)->Z());
+        Base::Vector3d v0(aVol->GetNode(0)->X(),aVol->GetNode(0)->Y(),aVol->GetNode(0)->Z());
+        Base::Vector3d v2(aVol->GetNode(2)->X(),aVol->GetNode(2)->Y(),aVol->GetNode(2)->Z());
+        Base::Vector3d v3(aVol->GetNode(3)->X(),aVol->GetNode(3)->Y(),aVol->GetNode(3)->Z());
+        Base::Vector3d v4(aVol->GetNode(4)->X(),aVol->GetNode(4)->Y(),aVol->GetNode(4)->Z());
+        Base::Vector3d v6(aVol->GetNode(6)->X(),aVol->GetNode(6)->Y(),aVol->GetNode(6)->Z());
+        Base::Vector3d v5(aVol->GetNode(5)->X(),aVol->GetNode(5)->Y(),aVol->GetNode(5)->Z());
+        Base::Vector3d v8(aVol->GetNode(8)->X(),aVol->GetNode(8)->Y(),aVol->GetNode(8)->Z());
+        Base::Vector3d v7(aVol->GetNode(7)->X(),aVol->GetNode(7)->Y(),aVol->GetNode(7)->Z());
+        Base::Vector3d v9(aVol->GetNode(9)->X(),aVol->GetNode(9)->Y(),aVol->GetNode(9)->Z());
+
+
+		//1,5,8,7
+		a = v4 -v0 ;
+		b = v7 -v0 ;
+		c = v6 -v0 ;
+		a_b_product.x = a.y*b.z-b.y*a.z;a_b_product.y = a.z*b.x-b.z*a.x;a_b_product.z = a.x*b.y-b.x*a.y;
+		volume += 1.0/6.0 * fabs((a_b_product.x * c.x)+ (a_b_product.y * c.y)+(a_b_product.z * c.z));
+		//5,9,8,7
+		a = v8 -v4 ;
+		b = v7 -v4 ;
+		c = v6 -v4 ;
+		a_b_product.x = a.y*b.z-b.y*a.z;a_b_product.y = a.z*b.x-b.z*a.x;a_b_product.z = a.x*b.y-b.x*a.y;
+		volume += 1.0/6.0 * fabs((a_b_product.x * c.x)+ (a_b_product.y * c.y)+(a_b_product.z * c.z));
+		//5,2,9,7
+		a = v1 -v4 ;
+		b = v8 -v4 ;
+		c = v6 -v4 ;
+		a_b_product.x = a.y*b.z-b.y*a.z;a_b_product.y = a.z*b.x-b.z*a.x;a_b_product.z = a.x*b.y-b.x*a.y;
+		volume += 1.0/6.0 * fabs((a_b_product.x * c.x)+ (a_b_product.y * c.y)+(a_b_product.z * c.z));
+		//2,6,9,7
+		a = v5 -v1 ;
+		b = v8 -v1 ;
+		c = v6 -v1 ;
+		a_b_product.x = a.y*b.z-b.y*a.z;a_b_product.y = a.z*b.x-b.z*a.x;a_b_product.z = a.x*b.y-b.x*a.y;
+		volume += 1.0/6.0 * fabs((a_b_product.x * c.x)+ (a_b_product.y * c.y)+(a_b_product.z * c.z));
+		//9,6,10,7
+		a = v5 -v8 ;
+		b = v9 -v8 ;
+		c = v6 -v8 ;
+		a_b_product.x = a.y*b.z-b.y*a.z;a_b_product.y = a.z*b.x-b.z*a.x;a_b_product.z = a.x*b.y-b.x*a.y;
+		volume += 1.0/6.0 * fabs((a_b_product.x * c.x)+ (a_b_product.y * c.y)+(a_b_product.z * c.z));
+		//6,3,10,7
+		a = v2 -v5 ;
+		b = v9 -v5 ;
+		c = v6 -v5 ;
+		a_b_product.x = a.y*b.z-b.y*a.z;a_b_product.y = a.z*b.x-b.z*a.x;a_b_product.z = a.x*b.y-b.x*a.y;
+		volume += 1.0/6.0 * fabs((a_b_product.x * c.x)+ (a_b_product.y * c.y)+(a_b_product.z * c.z));
+		//8,9,10,7
+		a = v8 -v7 ;
+		b = v9 -v7 ;
+		c = v6 -v7 ;
+		a_b_product.x = a.y*b.z-b.y*a.z;a_b_product.y = a.z*b.x-b.z*a.x;a_b_product.z = a.x*b.y-b.x*a.y;
+		volume += 1.0/6.0 * fabs((a_b_product.x * c.x)+ (a_b_product.y * c.y)+(a_b_product.z * c.z));
+		//8,9,10,4
+		a = v8 -v7 ;
+		b = v9 -v7 ;
+		c = v3 -v7 ;
+		a_b_product.x = a.y*b.z-b.y*a.z;a_b_product.y = a.z*b.x-b.z*a.x;a_b_product.z = a.x*b.y-b.x*a.y;
+		volume += 1.0/6.0 * fabs((a_b_product.x * c.x)+ (a_b_product.y * c.y)+(a_b_product.z * c.z));
+	
+	}
+
+    return Base::Quantity(volume,Unit::Volume);
+
+
 }

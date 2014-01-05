@@ -29,6 +29,8 @@
 #include <Gui/Selection.h>
 #include <memory>
 
+class QButtonGroup;
+
 namespace MeshPartGui {
 
 class Ui_Tessellation;
@@ -47,8 +49,15 @@ protected:
 private:
     void findShapes();
 
+private Q_SLOTS:
+    void meshingMethod(int id);
+    void on_comboFineness_currentIndexChanged(int);
+    void on_checkSecondOrder_toggled(bool);
+    void on_checkQuadDominated_toggled(bool);
+
 private:
     QString document;
+    QButtonGroup* buttonGroup;
     std::auto_ptr<Ui_Tessellation> ui;
 };
 

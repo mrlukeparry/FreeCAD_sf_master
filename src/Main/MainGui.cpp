@@ -61,7 +61,6 @@
 #include <Base/Factory.h>
 #include <App/Application.h>
 #include <Gui/BitmapFactory.h>
-#include <Gui/Icons/background.xpm>
 #include <Gui/Application.h>
 
 void PrintInitHelp(void);
@@ -185,7 +184,7 @@ int main( int argc, char ** argv )
     // Make sure to setup the Qt locale system before setting LANG and LC_ALL to C.
     // which is needed to use the system locale settings.
     (void)QLocale::system();
-    // https://sourceforge.net/apps/mantisbt/free-cad/view.php?id=399
+    // http://www.freecadweb.org/tracker/view.php?id=399
     // Because of setting LANG=C the Qt automagic to use the correct encoding
     // for file names is broken. This is a workaround to force the use of UTF-8 encoding
     QFile::setEncodingFunction(myEncoderFunc);
@@ -209,7 +208,7 @@ int main( int argc, char ** argv )
     App::Application::Config()["ExeName"] = "FreeCAD";
     App::Application::Config()["ExeVendor"] = "FreeCAD";
     App::Application::Config()["AppDataSkipVendor"] = "true";
-    App::Application::Config()["MaintainerUrl"] = "http://apps.sourceforge.net/mediawiki/free-cad/index.php?title=Main_Page";
+    App::Application::Config()["MaintainerUrl"] = "http://www.freecadweb.org/wiki/index.php?title=Main_Page";
 
     // set the banner (for logging and console)
     App::Application::Config()["CopyrightInfo"] = sBanner;

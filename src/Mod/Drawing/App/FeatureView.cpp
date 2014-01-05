@@ -1,4 +1,4 @@
-/***************************************************************************
+/**************************************************************************
  *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
@@ -23,12 +23,7 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
-# include <sstream>
 #endif
-
-#include <App/Document.h>
-#include <Base/Console.h>
-#include <Base/Exception.h>
 
 #include "FeatureView.h"
 

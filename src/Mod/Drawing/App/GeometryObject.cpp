@@ -263,7 +263,7 @@ void GeometryObject::drawEdge(HLRBRep_EdgeData& ed, TopoDS_Shape& Result, const 
     }
 }
 
-DrawingGeometry::Vertex * GeometryObject::projectVertex(const TopoDS_Shape &vert, const TopoDS_Shape &support, const Base::Vector3f &direction) const
+DrawingGeometry::Vertex * GeometryObject::projectVertex(const TopoDS_Shape &vert, const TopoDS_Shape &support, const Base::Vector3d &direction) const
 {
     if(vert.IsNull())
         throw Base::Exception("Projected vertex is null");
@@ -305,8 +305,8 @@ DrawingGeometry::Vertex * GeometryObject::projectVertex(const TopoDS_Shape &vert
 
 void GeometryObject::projectSurfaces(const TopoDS_Shape &face,
                                      const TopoDS_Shape &support,
-                                     const Base::Vector3f &direction,
-                                     const Base::Vector3f &xaxis,
+                                     const Base::Vector3d &direction,
+                                     const Base::Vector3d &xaxis,
                                      std::vector<DrawingGeometry::Face *> &projFaces) const
 {
     if(face.IsNull())
@@ -355,7 +355,7 @@ void GeometryObject::projectSurfaces(const TopoDS_Shape &face,
 
 DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge,
                                                         const TopoDS_Shape &support,
-                                                        const Base::Vector3f &direction) const
+                                                        const Base::Vector3d &direction) const
 {
     if(edge.IsNull())
         throw Base::Exception("Projected edge is null");
@@ -916,7 +916,7 @@ void GeometryObject::createWire(const TopoDS_Shape &input, std::vector<DrawingGe
     }
 }
 
-void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vector3f &direction, bool extractHidden, const Base::Vector3f &xAxis)
+void GeometryObject::extractGeometry(const TopoDS_Shape &input, const Base::Vector3d &direction, bool extractHidden, const Base::Vector3d &xAxis)
 {
     // Clear previous Geometry and References that may have been stored
     this->clear();

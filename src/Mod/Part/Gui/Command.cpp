@@ -63,6 +63,7 @@
 #include "TaskShapeBuilder.h"
 #include "TaskLoft.h"
 #include "TaskSweep.h"
+#include "TaskDimension.h"
 #include "TaskCheckGeometry.h"
 
 
@@ -222,6 +223,31 @@ bool CmdPartPrimitives::isActive(void)
     return (hasActiveDocument() && !Gui::Control().activeDialog());
 }
 
+namespace PartGui {
+bool checkForSolids(const TopoDS_Shape& shape)
+{
+    TopExp_Explorer xp;
+    xp.Init(shape, TopAbs_FACE, TopAbs_SHELL);
+    if (xp.More()) {
+        return false;
+    }
+    xp.Init(shape, TopAbs_WIRE, TopAbs_FACE);
+    if (xp.More()) {
+        return false;
+    }
+    xp.Init(shape, TopAbs_EDGE, TopAbs_WIRE);
+    if (xp.More()) {
+        return false;
+    }
+    xp.Init(shape, TopAbs_VERTEX, TopAbs_EDGE);
+    if (xp.More()) {
+        return false;
+    }
+
+    return true;
+}
+}
+
 //===========================================================================
 // Part_Cut
 //===========================================================================
@@ -241,18 +267,28 @@ CmdPartCut::CmdPartCut()
 
 void CmdPartCut::activated(int iMsg)
 {
-    unsigned int n = getSelection().countObjectsOfType(Part::Feature::getClassTypeId());
-    if (n != 2) {
+    std::vector<Gui::SelectionObject> Sel = getSelection().getSelectionEx(0, Part::Feature::getClassTypeId());
+    if (Sel.size() != 2) {
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
             QObject::tr("Select two shapes please."));
         return;
     }
 
-    std::vector<Gui::SelectionSingleton::SelObj> Sel = getSelection().getSelection();
+    for (std::vector<Gui::SelectionObject>::iterator it = Sel.begin(); it != Sel.end(); ++it) {
+        App::DocumentObject* obj = it->getObject();
+        if (obj->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) {
+            const TopoDS_Shape& shape = static_cast<Part::Feature*>(obj)->Shape.getValue();
+            if (!PartGui::checkForSolids(shape)) {
+                QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
+                    QObject::tr("Non-solids cannot be used for boolean operations."));
+                return;
+            }
+        }
+    }
 
     std::string FeatName = getUniqueObjectName("Cut");
-    std::string BaseName  = Sel[0].FeatName;
-    std::string ToolName  = Sel[1].FeatName;
+    std::string BaseName  = Sel[0].getFeatName();
+    std::string ToolName  = Sel[1].getFeatName();
 
     openCommand("Part Cut");
     doCommand(Doc,"App.activeDocument().addObject(\"Part::Cut\",\"%s\")",FeatName.c_str());
@@ -290,22 +326,29 @@ CmdPartCommon::CmdPartCommon()
 
 void CmdPartCommon::activated(int iMsg)
 {
-    unsigned int n = getSelection().countObjectsOfType(Part::Feature::getClassTypeId());
-    if (n < 2) {
+    std::vector<Gui::SelectionObject> Sel = getSelection().getSelectionEx(0, Part::Feature::getClassTypeId());
+    if (Sel.size() < 2) {
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
             QObject::tr("Select two shapes or more, please."));
         return;
     }
 
     std::string FeatName = getUniqueObjectName("Common");
-
-    std::vector<Gui::SelectionSingleton::SelObj> Sel = getSelection().getSelection();
     std::stringstream str;
     std::vector<std::string> tempSelNames;
     str << "App.activeDocument()." << FeatName << ".Shapes = [";
-    for (std::vector<Gui::SelectionSingleton::SelObj>::iterator it = Sel.begin(); it != Sel.end(); ++it){
-        str << "App.activeDocument()." << it->FeatName << ",";
-        tempSelNames.push_back(it->FeatName);
+    for (std::vector<Gui::SelectionObject>::iterator it = Sel.begin(); it != Sel.end(); ++it) {
+        App::DocumentObject* obj = it->getObject();
+        if (obj->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) {
+            const TopoDS_Shape& shape = static_cast<Part::Feature*>(obj)->Shape.getValue();
+            if (!PartGui::checkForSolids(shape)) {
+                QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
+                    QObject::tr("Non-solids cannot be used for boolean operations."));
+                return;
+            }
+            str << "App.activeDocument()." << it->getFeatName() << ",";
+            tempSelNames.push_back(it->getFeatName());
+        }
     }
     str << "]";
 
@@ -344,22 +387,29 @@ CmdPartFuse::CmdPartFuse()
 
 void CmdPartFuse::activated(int iMsg)
 {
-    unsigned int n = getSelection().countObjectsOfType(Part::Feature::getClassTypeId());
-    if (n < 2) {
+    std::vector<Gui::SelectionObject> Sel = getSelection().getSelectionEx(0, Part::Feature::getClassTypeId());
+    if (Sel.size() < 2) {
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
             QObject::tr("Select two shapes or more, please."));
         return;
     }
 
     std::string FeatName = getUniqueObjectName("Fusion");
-
-    std::vector<Gui::SelectionSingleton::SelObj> Sel = getSelection().getSelection();
     std::stringstream str;
     std::vector<std::string> tempSelNames;
     str << "App.activeDocument()." << FeatName << ".Shapes = [";
-    for (std::vector<Gui::SelectionSingleton::SelObj>::iterator it = Sel.begin(); it != Sel.end(); ++it){
-        str << "App.activeDocument()." << it->FeatName << ",";
-        tempSelNames.push_back(it->FeatName);
+    for (std::vector<Gui::SelectionObject>::iterator it = Sel.begin(); it != Sel.end(); ++it) {
+        App::DocumentObject* obj = it->getObject();
+        if (obj->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) {
+            const TopoDS_Shape& shape = static_cast<Part::Feature*>(obj)->Shape.getValue();
+            if (!PartGui::checkForSolids(shape)) {
+                QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
+                    QObject::tr("Non-solids cannot be used for boolean operations."));
+                return;
+            }
+            str << "App.activeDocument()." << it->getFeatName() << ",";
+            tempSelNames.push_back(it->getFeatName());
+        }
     }
     str << "]";
 
@@ -445,20 +495,18 @@ CmdPartSection::CmdPartSection()
     sPixmap       = "Part_Section";
 }
 
-
 void CmdPartSection::activated(int iMsg)
 {
-    unsigned int n = getSelection().countObjectsOfType(Part::Feature::getClassTypeId());
-    if (n != 2) {
+    std::vector<Gui::SelectionObject> Sel = getSelection().getSelectionEx(0, Part::Feature::getClassTypeId());
+    if (Sel.size() != 2) {
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
             QObject::tr("Select two shapes please."));
         return;
     }
 
-    std::vector<Gui::SelectionSingleton::SelObj> Sel = getSelection().getSelection();
     std::string FeatName = getUniqueObjectName("Section");
-    std::string BaseName  = Sel[0].FeatName;
-    std::string ToolName  = Sel[1].FeatName;
+    std::string BaseName  = Sel[0].getFeatName();
+    std::string ToolName  = Sel[1].getFeatName();
 
     openCommand("Section");
     doCommand(Doc,"App.activeDocument().addObject(\"Part::Section\",\"%s\")",FeatName.c_str());
@@ -1448,6 +1496,179 @@ bool CmdColorPerFace::isActive(void)
     return (hasActiveDocument() && !Gui::Control().activeDialog() && objectSelected);
 }
 
+//===========================================================================
+// Part_Measure_Linear
+//===========================================================================
+
+DEF_STD_CMD_A(CmdMeasureLinear);
+
+CmdMeasureLinear::CmdMeasureLinear()
+  : Command("Part_Measure_Linear")
+{
+    sAppModule    = "Part";
+    sGroup        = QT_TR_NOOP("Part");
+    sMenuText     = QT_TR_NOOP("Measure Linear");
+    sToolTipText  = QT_TR_NOOP("Measure Linear");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Part_Measure_Linear";
+}
+
+void CmdMeasureLinear::activated(int iMsg)
+{
+  PartGui::goDimensionLinearRoot();
+}
+
+bool CmdMeasureLinear::isActive(void)
+{
+  return hasActiveDocument();
+}
+
+//===========================================================================
+// Part_Measure_Angular
+//===========================================================================
+
+DEF_STD_CMD_A(CmdMeasureAngular);
+
+CmdMeasureAngular::CmdMeasureAngular()
+  : Command("Part_Measure_Angular")
+{
+    sAppModule    = "Part";
+    sGroup        = QT_TR_NOOP("Part");
+    sMenuText     = QT_TR_NOOP("Measure Angular");
+    sToolTipText  = QT_TR_NOOP("Measure Angular");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Part_Measure_Angular";
+}
+
+void CmdMeasureAngular::activated(int iMsg)
+{
+  PartGui::goDimensionAngularRoot();
+}
+
+bool CmdMeasureAngular::isActive(void)
+{
+  return hasActiveDocument();
+}
+
+//===========================================================================
+// Part_Measure_Clear_All
+//===========================================================================
+
+DEF_STD_CMD_A(CmdMeasureClearAll);
+
+CmdMeasureClearAll::CmdMeasureClearAll()
+  : Command("Part_Measure_Clear_All")
+{
+    sAppModule    = "Part";
+    sGroup        = QT_TR_NOOP("Part");
+    sMenuText     = QT_TR_NOOP("Clear All");
+    sToolTipText  = QT_TR_NOOP("Clear All");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Part_Measure_Clear_All";
+}
+
+void CmdMeasureClearAll::activated(int iMsg)
+{
+  PartGui::eraseAllDimensions();
+}
+
+bool CmdMeasureClearAll::isActive(void)
+{
+  return hasActiveDocument();
+}
+
+//===========================================================================
+// Part_Measure_Toggle_All
+//===========================================================================
+
+DEF_STD_CMD_A(CmdMeasureToggleAll);
+
+CmdMeasureToggleAll::CmdMeasureToggleAll()
+  : Command("Part_Measure_Toggle_All")
+{
+    sAppModule    = "Part";
+    sGroup        = QT_TR_NOOP("Part");
+    sMenuText     = QT_TR_NOOP("Toggle All");
+    sToolTipText  = QT_TR_NOOP("Toggle All");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Part_Measure_Toggle_All";
+}
+
+void CmdMeasureToggleAll::activated(int iMsg)
+{
+  ParameterGrp::handle group = App::GetApplication().GetUserParameter().
+    GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("View");
+  bool visibility = group->GetBool("DimensionsVisible", true);
+  if (visibility)
+    group->SetBool("DimensionsVisible", false);
+  else
+    group->SetBool("DimensionsVisible", true);
+}
+
+bool CmdMeasureToggleAll::isActive(void)
+{
+  return hasActiveDocument();
+}
+
+//===========================================================================
+// Part_Measure_Toggle_3d
+//===========================================================================
+
+DEF_STD_CMD_A(CmdMeasureToggle3d);
+
+CmdMeasureToggle3d::CmdMeasureToggle3d()
+  : Command("Part_Measure_Toggle_3d")
+{
+    sAppModule    = "Part";
+    sGroup        = QT_TR_NOOP("Part");
+    sMenuText     = QT_TR_NOOP("Toggle 3d");
+    sToolTipText  = QT_TR_NOOP("Toggle 3d");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Part_Measure_Toggle_3d";
+}
+
+void CmdMeasureToggle3d::activated(int iMsg)
+{
+  PartGui::toggle3d();
+}
+
+bool CmdMeasureToggle3d::isActive(void)
+{
+  return hasActiveDocument();
+}
+
+//===========================================================================
+// Part_Measure_Toggle_Delta
+//===========================================================================
+
+DEF_STD_CMD_A(CmdMeasureToggleDelta);
+
+CmdMeasureToggleDelta::CmdMeasureToggleDelta()
+  : Command("Part_Measure_Toggle_Delta")
+{
+    sAppModule    = "Part";
+    sGroup        = QT_TR_NOOP("Part");
+    sMenuText     = QT_TR_NOOP("Toggle Delta");
+    sToolTipText  = QT_TR_NOOP("Toggle Delta");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Part_Measure_Toggle_Delta";
+}
+
+void CmdMeasureToggleDelta::activated(int iMsg)
+{
+  PartGui::toggleDelta();
+}
+
+bool CmdMeasureToggleDelta::isActive(void)
+{
+  return hasActiveDocument();
+}
 
 void CreatePartCommands(void)
 {
@@ -1484,4 +1705,10 @@ void CreatePartCommands(void)
     rcCmdMgr.addCommand(new CmdPartThickness());
     rcCmdMgr.addCommand(new CmdCheckGeometry());
     rcCmdMgr.addCommand(new CmdColorPerFace());
+    rcCmdMgr.addCommand(new CmdMeasureLinear());
+    rcCmdMgr.addCommand(new CmdMeasureAngular());
+    rcCmdMgr.addCommand(new CmdMeasureClearAll());
+    rcCmdMgr.addCommand(new CmdMeasureToggleAll());
+    rcCmdMgr.addCommand(new CmdMeasureToggle3d());
+    rcCmdMgr.addCommand(new CmdMeasureToggleDelta());
 } 

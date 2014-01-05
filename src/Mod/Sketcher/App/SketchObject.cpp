@@ -34,6 +34,8 @@
 # include <BRepAdaptor_Curve.hxx>
 # include <BRep_Tool.hxx>
 # include <Geom_Plane.hxx>
+# include <Geom_Circle.hxx>
+# include <Geom_TrimmedCurve.hxx>
 # include <GeomAPI_ProjectPointOnSurf.hxx>
 # include <BRepOffsetAPI_NormalProjection.hxx>
 # include <BRepBuilderAPI_MakeFace.hxx>
@@ -375,9 +377,31 @@ int SketchObject::toggleConstruction(int GeoId)
     return 0;
 }
 
+int SketchObject::setConstruction(int GeoId, bool on)
+{
+    const std::vector< Part::Geometry * > &vals = getInternalGeometry();
+    if (GeoId < 0 || GeoId >= int(vals.size()))
+        return -1;
+
+    std::vector< Part::Geometry * > newVals(vals);
+
+    Part::Geometry *geoNew = newVals[GeoId]->clone();
+    geoNew->Construction = on;
+    newVals[GeoId]=geoNew;
+
+    this->Geometry.setValues(newVals);
+    this->Constraints.acceptGeometry(getCompleteGeometry());
+    return 0;
+}
+
 int SketchObject::addConstraints(const std::vector<Constraint *> &ConstraintList)
 {
-    return -1;
+    const std::vector< Constraint * > &vals = this->Constraints.getValues();
+
+    std::vector< Constraint * > newVals(vals);
+    newVals.insert(newVals.end(), ConstraintList.begin(), ConstraintList.end());
+    this->Constraints.setValues(newVals);
+    return this->Constraints.getSize()-1;
 }
 
 int SketchObject::addConstraint(const Constraint *constraint)
@@ -1314,14 +1338,10 @@ void SketchObject::rebuildExternalGeometry(void)
                                     }
                                     else {
                                         Part::GeomArcOfCircle* arc = new Part::GeomArcOfCircle();
-                                        arc->setRadius(c.Radius());
-                                        arc->setCenter(Base::Vector3d(p.X(),p.Y(),p.Z()));
-                                        if (c.Axis().Direction().Z() < 0) // clockwise
-                                            arc->setRange(2*M_PI - projCurve.LastParameter(),
-                                                          2*M_PI - projCurve.FirstParameter());
-                                        else // counter-clockwise
-                                            arc->setRange(projCurve.FirstParameter(), projCurve.LastParameter());
-
+                                        Handle_Geom_Curve curve = new Geom_Circle(c);
+                                        Handle_Geom_TrimmedCurve tCurve = new Geom_TrimmedCurve(curve, projCurve.FirstParameter(),
+                                                                                                projCurve.LastParameter());
+                                        arc->setHandle(tCurve);
                                         arc->Construction = true;
                                         ExternalGeo.push_back(arc);
                                     }
@@ -1394,11 +1414,11 @@ void SketchObject::rebuildVertexIndex(void)
             VertexId2PosId.push_back(mid);
         } else if ((*it)->getTypeId() == Part::GeomArcOfCircle::getClassTypeId()) {
             VertexId2GeoId.push_back(i);
-            VertexId2PosId.push_back(mid);
-            VertexId2GeoId.push_back(i);
             VertexId2PosId.push_back(start);
             VertexId2GeoId.push_back(i);
             VertexId2PosId.push_back(end);
+            VertexId2GeoId.push_back(i);
+            VertexId2PosId.push_back(mid);
         }
     }
 }

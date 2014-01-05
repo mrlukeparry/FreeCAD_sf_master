@@ -25,8 +25,6 @@ set(Drawing_LIBS
 SET(Features_SRCS
     FeaturePage.cpp
     FeaturePage.h
-    FeatureProjection.cpp
-    FeatureProjection.h
     FeatureClip.cpp
     FeatureClip.h
     FeatureOrthoView.cpp
@@ -43,6 +41,8 @@ SET(Features_SRCS
     FeatureViewOrthographic.h
     FeatureViewPart.cpp
     FeatureViewPart.h
+    FeatureProjection.cpp
+    FeatureProjection.h
     FeatureViewSection.cpp
     FeatureViewSection.h
     PageGroup.cpp

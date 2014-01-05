@@ -129,6 +129,7 @@ set(Gui_MOC_HDRS
     DownloadManager.h
     DlgActionsImp.h
     DlgActivateWindowImp.h
+    DlgUnitsCalculatorImp.h
     DlgCommandsImp.h
     DlgCustomizeImp.h
     DlgCustomizeSpaceball.h
@@ -173,6 +174,7 @@ set(Gui_MOC_HDRS
     NetworkRetriever.h
     OnlineDocumentation.h
     Placement.h
+    InputField.h
     PrefWidgets.h
     ProgressBar.h
     PropertyPage.h
@@ -218,6 +220,7 @@ SET(Gui_UIC_SRCS
     DemoMode.ui
     DlgActions.ui
     DlgActivateWindow.ui
+    DlgUnitsCalculator.ui
     DlgAuthorization.ui
     DlgChooseIcon.ui
     DlgCommands.ui
@@ -294,6 +297,7 @@ SET(Dialog_CPP_SRCS
     Clipping.cpp
     DemoMode.cpp
     DlgActivateWindowImp.cpp
+    DlgUnitsCalculatorImp.cpp
     DlgDisplayPropertiesImp.cpp
     DlgInputDialogImp.cpp
     DlgMacroExecuteImp.cpp
@@ -322,6 +326,7 @@ SET(Dialog_HPP_SRCS
     Clipping.h
     DemoMode.h
     DlgActivateWindowImp.h
+    DlgUnitsCalculatorImp.h
     DlgDisplayPropertiesImp.h
     DlgInputDialogImp.h
     DlgMacroExecuteImp.h
@@ -353,6 +358,7 @@ SET(Dialog_SRCS
     Clipping.ui
     DemoMode.ui
     DlgActivateWindow.ui
+    DlgUnitsCalculator.ui
     DlgAuthorization.ui
     DlgDisplayProperties.ui
     DlgInputDialog.ui
@@ -607,7 +613,7 @@ SOURCE_GROUP("Widget\\iisTaskPanel\\Mocs" FILES ${iis_MOC_SRCS})
 #SET(Resource_RCS
 #   Icons/resource.qrc
 #   Language/translation.qrc)
-#fc_add_resources(Resource_SRCS ${Resource_RCS})
+#qt4_add_resources(Resource_SRCS ${Resource_RCS})
 #SET(Resource_SRCS
 #   ${Resource_SRCS}
 #   Icons/resource.qrc
@@ -738,6 +744,7 @@ SET(Widget_CPP_SRCS
     MainWindow.cpp
     MDIView.cpp
     PrefWidgets.cpp
+    InputField.cpp
     ProgressBar.cpp
     SpinBox.cpp
     Splashscreen.cpp
@@ -750,6 +757,7 @@ SET(Widget_HPP_SRCS
     MainWindow.h
     MDIView.h
     PrefWidgets.h
+    InputField.h
     ProgressBar.h
     SpinBox.h
     Splashscreen.h

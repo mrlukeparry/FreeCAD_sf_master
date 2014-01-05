@@ -50,7 +50,7 @@ project(PyObject *self, PyObject *args)
         if (pcObjDir)
             Vector = *static_cast<Base::VectorPy*>(pcObjDir)->getVectorPtr();
 
-        ProjectionAlgos Alg(pShape->getTopoShapePtr()->_Shape,Base::Vector3f((float)Vector.x,(float)Vector.y,(float)Vector.z));
+        ProjectionAlgos Alg(pShape->getTopoShapePtr()->_Shape,Base::Vector3d((float)Vector.x,(float)Vector.y,(float)Vector.z));
 
         Py::List list;
         list.append(Py::Object(new TopoShapePy(new TopoShape(Alg.V)) , true));
@@ -79,7 +79,7 @@ projectEx(PyObject *self, PyObject *args)
         if (pcObjDir)
             Vector = *static_cast<Base::VectorPy*>(pcObjDir)->getVectorPtr();
 
-        ProjectionAlgos Alg(pShape->getTopoShapePtr()->_Shape,Base::Vector3f((float)Vector.x,(float)Vector.y,(float)Vector.z));
+        ProjectionAlgos Alg(pShape->getTopoShapePtr()->_Shape,Base::Vector3d((float)Vector.x,(float)Vector.y,(float)Vector.z));
 
         Py::List list;
         list.append(Py::Object(new TopoShapePy(new TopoShape(Alg.V)) , true));

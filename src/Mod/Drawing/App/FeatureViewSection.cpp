@@ -135,8 +135,8 @@ App::DocumentObjectExecReturn *FeatureViewSection::execute(void)
 
     Base::BoundBox3d bb = partTopo.getBoundBox();
 
-    Base::Vector3f tmp1 = SectionOrigin.getValue();
-    Base::Vector3f tmp2 = SectionNormal.getValue();
+    Base::Vector3d tmp1 = SectionOrigin.getValue();
+    Base::Vector3d tmp2 = SectionNormal.getValue();
 
     Base::Vector3d plnPnt(tmp1.x, tmp1.y, tmp1.z);
     Base::Vector3d plnNorm(tmp2.x, tmp2.y, tmp2.z);
@@ -219,8 +219,8 @@ App::DocumentObjectExecReturn *FeatureViewSection::execute(void)
 
 gp_Pln FeatureViewSection::getSectionPlane() const
 {
-    Base::Vector3f plnPnt = SectionOrigin.getValue();
-    Base::Vector3f plnNorm = SectionNormal.getValue();
+    Base::Vector3d plnPnt = SectionOrigin.getValue();
+    Base::Vector3d plnNorm = SectionNormal.getValue();
 
     return gp_Pln(gp_Pnt(plnPnt.x, plnPnt.y, plnPnt.z), gp_Dir(plnNorm.x, plnNorm.y, plnNorm.z));
 }

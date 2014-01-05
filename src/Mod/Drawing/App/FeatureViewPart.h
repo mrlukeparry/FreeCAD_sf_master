@@ -50,6 +50,7 @@ public:
     App::PropertyVector XAxisDirection;
     App::PropertyBool   ShowHiddenLines;
     App::PropertyFloat  LineWidth;
+    App::PropertyFloat  HiddenWidth;
     App::PropertyFloatConstraint  Tolerance;
 
     const std::vector<DrawingGeometry::Vertex *> & getVertexGeometry() const;

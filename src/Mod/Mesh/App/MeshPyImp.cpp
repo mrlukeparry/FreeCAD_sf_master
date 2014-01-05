@@ -149,7 +149,8 @@ PyObject*  MeshPy::write(PyObject *args)
 {
     const char* Name;
     char* Ext=0;
-    if (!PyArg_ParseTuple(args, "s|s",&Name,&Ext))
+    char* ObjName;
+    if (!PyArg_ParseTuple(args, "s|ss",&Name,&Ext,&ObjName))
         return NULL;
 
     MeshCore::MeshIO::Format format = MeshCore::MeshIO::Undefined;
@@ -161,6 +162,7 @@ PyObject*  MeshPy::write(PyObject *args)
         ext["OBJ" ] = MeshCore::MeshIO::OBJ;
         ext["OFF" ] = MeshCore::MeshIO::OFF;
         ext["IV"  ] = MeshCore::MeshIO::IV;
+        ext["X3D" ] = MeshCore::MeshIO::X3D;
         ext["VRML"] = MeshCore::MeshIO::VRML;
         ext["WRL" ] = MeshCore::MeshIO::VRML;
         ext["WRZ" ] = MeshCore::MeshIO::WRZ;
@@ -174,7 +176,7 @@ PyObject*  MeshPy::write(PyObject *args)
     };
 
     PY_TRY {
-        getMeshObjectPtr()->save(Name, format);
+        getMeshObjectPtr()->save(Name, format, 0, ObjName);
     } PY_CATCH;
     
     Py_Return; 
@@ -240,15 +242,15 @@ PyObject*  MeshPy::crossSections(PyObject *args)
     PyObject *obj;
     PyObject *poly=Py_False;
     float min_eps = 1.0e-2f;
-    if (!PyArg_ParseTuple(args, "O!|fO!", &PyList_Type, &obj, &min_eps, &PyBool_Type, &poly))
+    if (!PyArg_ParseTuple(args, "O|fO!", &obj, &min_eps, &PyBool_Type, &poly))
         return 0;
 
-    Py::List list(obj);
+    Py::Sequence list(obj);
     union PyType_Object pyType = {&(Base::VectorPy::Type)};
     Py::Type vType(pyType.o);
 
     std::vector<MeshObject::TPlane> csPlanes;
-    for (Py::List::iterator it = list.begin(); it != list.end(); ++it) {
+    for (Py::Sequence::iterator it = list.begin(); it != list.end(); ++it) {
         Py::Tuple pair(*it);
         Py::Object p1 = pair.getItem(0);
         Py::Object p2 = pair.getItem(1);
@@ -578,12 +580,12 @@ PyObject*  MeshPy::addFacets(PyObject *args)
 PyObject* MeshPy::removeFacets(PyObject *args)
 {
     PyObject* list;
-    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &list))
+    if (!PyArg_ParseTuple(args, "O", &list))
         return 0;
 
     std::vector<unsigned long> indices;
-    Py::List ary(list);
-    for (Py::List::iterator it = ary.begin(); it != ary.end(); ++it) {
+    Py::Sequence ary(list);
+    for (Py::Sequence::iterator it = ary.begin(); it != ary.end(); ++it) {
         Py::Int f(*it);
         indices.push_back((long)f);
     }
@@ -726,12 +728,12 @@ PyObject* MeshPy::getPointSelection(PyObject *args)
 PyObject* MeshPy::meshFromSegment(PyObject *args)
 {
     PyObject* list;
-    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &list))
+    if (!PyArg_ParseTuple(args, "O", &list))
         return 0;
 
     std::vector<unsigned long> segment;
-    Py::List ary(list);
-    for (Py::List::iterator it = ary.begin(); it != ary.end(); ++it) {
+    Py::Sequence ary(list);
+    for (Py::Sequence::iterator it = ary.begin(); it != ary.end(); ++it) {
         Py::Int f(*it);
         segment.push_back((long)f);
     }
@@ -1284,13 +1286,13 @@ PyObject*  MeshPy::cut(PyObject *args)
 {
     PyObject* poly;
     int mode;
-    if (!PyArg_ParseTuple(args, "O!i", &PyList_Type, &poly, &mode))
+    if (!PyArg_ParseTuple(args, "Oi", &poly, &mode))
         return NULL;
 
-    Py::List list(poly);
+    Py::Sequence list(poly);
     std::vector<Base::Vector3f> polygon;
     polygon.reserve(list.size());
-    for (Py::List::iterator it = list.begin(); it != list.end(); ++it) {
+    for (Py::Sequence::iterator it = list.begin(); it != list.end(); ++it) {
         Base::Vector3d pnt = Py::Vector(*it).toVector();
         polygon.push_back(Base::convertTo<Base::Vector3f>(pnt));
     }
@@ -1318,13 +1320,13 @@ PyObject*  MeshPy::trim(PyObject *args)
 {
     PyObject* poly;
     int mode;
-    if (!PyArg_ParseTuple(args, "O!i", &PyList_Type, &poly, &mode))
+    if (!PyArg_ParseTuple(args, "Oi", &poly, &mode))
         return NULL;
 
-    Py::List list(poly);
+    Py::Sequence list(poly);
     std::vector<Base::Vector3f> polygon;
     polygon.reserve(list.size());
-    for (Py::List::iterator it = list.begin(); it != list.end(); ++it) {
+    for (Py::Sequence::iterator it = list.begin(); it != list.end(); ++it) {
         Base::Vector3d pnt = Py::Vector(*it).toVector();
         polygon.push_back(Base::convertTo<Base::Vector3f>(pnt));
     }
@@ -1453,7 +1455,7 @@ PyObject*  MeshPy::getPlanarSegments(PyObject *args)
 PyObject*  MeshPy::getSegmentsByCurvature(PyObject *args)
 {
     PyObject* l;
-    if (!PyArg_ParseTuple(args, "O!",&PyList_Type,&l))
+    if (!PyArg_ParseTuple(args, "O",&l))
         return NULL;
 
     const MeshCore::MeshKernel& kernel = getMeshObjectPtr()->getKernel();
@@ -1461,9 +1463,9 @@ PyObject*  MeshPy::getSegmentsByCurvature(PyObject *args)
     MeshCore::MeshCurvature meshCurv(kernel);
     meshCurv.ComputePerVertex();
 
-    Py::List func(l);
+    Py::Sequence func(l);
     std::vector<MeshCore::MeshSurfaceSegment*> segm;
-    for (Py::List::iterator it = func.begin(); it != func.end(); ++it) {
+    for (Py::Sequence::iterator it = func.begin(); it != func.end(); ++it) {
         Py::Tuple t(*it);
         float c1 = (float)Py::Float(t[0]);
         float c2 = (float)Py::Float(t[1]);
@@ -1503,12 +1505,12 @@ Py::Int MeshPy::getCountFacets(void) const
 
 Py::Float MeshPy::getArea(void) const
 {
-    return Py::Float((long)getMeshObjectPtr()->getSurface());
+    return Py::Float(getMeshObjectPtr()->getSurface());
 }
 
 Py::Float MeshPy::getVolume(void) const
 {
-    return Py::Float((long)getMeshObjectPtr()->getVolume());
+    return Py::Float(getMeshObjectPtr()->getVolume());
 }
 
 PyObject *MeshPy::getCustomAttributes(const char* attr) const

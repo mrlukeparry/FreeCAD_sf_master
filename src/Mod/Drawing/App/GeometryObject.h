@@ -58,19 +58,19 @@ public:
     const std::vector<Face *>     & getFaceGeometry() const { return faceGeom; };
 
     const std::vector<int> & getVertexRefs() const { return vertexReferences; };
-    const std::vector<int> & getEdgeRefs() const { return edgeReferences; };
-    const std::vector<int> & getFaceRefs() const { return faceReferences; };
+    const std::vector<int> & getEdgeRefs()   const { return edgeReferences; };
+    const std::vector<int> & getFaceRefs()   const { return faceReferences; };
 
-    DrawingGeometry::BaseGeom * projectEdge(const TopoDS_Shape &edge, const TopoDS_Shape &support, const Base::Vector3f &direction) const;
-    DrawingGeometry::Vertex   * projectVertex(const TopoDS_Shape &vert, const TopoDS_Shape &support, const Base::Vector3f &direction) const;
+    DrawingGeometry::BaseGeom * projectEdge(const TopoDS_Shape &edge, const TopoDS_Shape &support, const Base::Vector3d &direction) const;
+    DrawingGeometry::Vertex   * projectVertex(const TopoDS_Shape &vert, const TopoDS_Shape &support, const Base::Vector3d &direction) const;
 
-    void projectSurfaces(const TopoDS_Shape &face,
-                         const TopoDS_Shape &support,
-                         const Base::Vector3f &direction,
-                         const Base::Vector3f &xaxis,
+    void projectSurfaces(const TopoDS_Shape   &face,
+                         const TopoDS_Shape   &support,
+                         const Base::Vector3d &direction,
+                         const Base::Vector3d &xaxis,
                          std::vector<DrawingGeometry::Face *> &result) const;
 
-    void extractGeometry(const TopoDS_Shape &input,const Base::Vector3f &direction, bool extractHidden = false, const Base::Vector3f &vAxis = Base::Vector3f(0.,0.,0.));
+    void extractGeometry(const TopoDS_Shape &input,const Base::Vector3d &direction, bool extractHidden = false, const Base::Vector3d &vAxis = Base::Vector3d(0.,0.,0.));
 
 protected:
     bool shouldDraw(const bool inFace, const int typ,HLRBRep_EdgeData& ed);
@@ -107,8 +107,8 @@ protected:
     std::vector<int> edgeReferences;
     std::vector<int> faceReferences;
 
-    Base::Vector3f projNorm;
-    Base::Vector3f projXAxis;
+    Base::Vector3d projNorm;
+    Base::Vector3d projXAxis;
 
     double Tolerance;
     double Scale;

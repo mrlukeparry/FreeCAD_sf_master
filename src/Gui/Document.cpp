@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2004 Jürgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2004 Jrgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -653,6 +653,7 @@ void Document::RestoreDocFile(Base::Reader &reader)
 {
     // We must create an XML parser to read from the input stream
     Base::XMLReader xmlReader("GuiDocument.xml", reader);
+    xmlReader.FileVersion = reader.getFileVersion();
 
     int i,Cnt;
 
@@ -680,7 +681,7 @@ void Document::RestoreDocFile(Base::Reader &reader)
             ViewProvider* pObj = getViewProviderByName(name.c_str());
             if (pObj) // check if this feature has been registered
                 pObj->Restore(xmlReader);
-            if (expanded) {
+            if (pObj && expanded) {
                 Gui::ViewProviderDocumentObject* vp = static_cast<Gui::ViewProviderDocumentObject*>(pObj);
                 this->signalExpandObject(*vp, Gui::Expand);
             }
@@ -708,7 +709,7 @@ void Document::RestoreDocFile(Base::Reader &reader)
 
     // In the file GuiDocument.xml new data files might be added
     if (!xmlReader.getFilenames().empty())
-        xmlReader.readFiles(static_cast<zipios::ZipInputStream&>(reader));
+        xmlReader.readFiles(static_cast<zipios::ZipInputStream&>(reader.getStream()));
 
     // reset modified flag
     setModified(false);
@@ -751,7 +752,7 @@ void Document::SaveDocFile (Base::Writer &writer) const
 {
     writer.Stream() << "<?xml version='1.0' encoding='utf-8'?>" << std::endl
                     << "<!--" << std::endl
-                    << " FreeCAD Document, see http://free-cad.sourceforge.net for more information..."
+                    << " FreeCAD Document, see http://www.freecadweb.org for more information..."
                     << std::endl << "-->" << std::endl;
 
     writer.Stream() << "<Document SchemaVersion=\"1\">" << std::endl;
@@ -759,13 +760,13 @@ void Document::SaveDocFile (Base::Writer &writer) const
     std::map<const App::DocumentObject*,ViewProviderDocumentObject*>::const_iterator it;
 
     // writing the view provider names itself
-    writer.incInd(); // indention for 'ViewProviderData Count'
+    writer.incInd(); // indentation for 'ViewProviderData Count'
     writer.Stream() << writer.ind() << "<ViewProviderData Count=\"" 
                     << d->_ViewProviderMap.size() <<"\">" << std::endl;
 
     bool xml = writer.isForceXML();
     //writer.setForceXML(true);
-    writer.incInd(); // indention for 'ViewProvider name'
+    writer.incInd(); // indentation for 'ViewProvider name'
     for(it = d->_ViewProviderMap.begin(); it != d->_ViewProviderMap.end(); ++it) {
         const App::DocumentObject* doc = it->first;
         ViewProvider* obj = it->second;
@@ -778,9 +779,9 @@ void Document::SaveDocFile (Base::Writer &writer) const
     }
     writer.setForceXML(xml);
 
-    writer.decInd(); // indention for 'ViewProvider name'
+    writer.decInd(); // indentation for 'ViewProvider name'
     writer.Stream() << writer.ind() << "</ViewProviderData>" << std::endl;
-    writer.decInd();  // indention for 'ViewProviderData Count'
+    writer.decInd();  // indentation for 'ViewProviderData Count'
 
     // set camera settings
     QString viewPos;
@@ -796,10 +797,10 @@ void Document::SaveDocFile (Base::Writer &writer) const
         }
     }
 
-    writer.incInd(); // indention for camera settings
+    writer.incInd(); // indentation for camera settings
     writer.Stream() << writer.ind() << "<Camera settings=\"" 
                     << (const char*)viewPos.toAscii() <<"\"/>" << std::endl;
-    writer.decInd(); // indention for camera settings
+    writer.decInd(); // indentation for camera settings
     writer.Stream() << "</Document>" << std::endl;
 }
 
@@ -818,13 +819,13 @@ void Document::exportObjects(const std::vector<App::DocumentObject*>& obj, Base:
     }
 
     // writing the view provider names itself
-    writer.incInd(); // indention for 'ViewProviderData Count'
+    writer.incInd(); // indentation for 'ViewProviderData Count'
     writer.Stream() << writer.ind() << "<ViewProviderData Count=\"" 
                     << views.size() <<"\">" << std::endl;
 
     bool xml = writer.isForceXML();
     //writer.setForceXML(true);
-    writer.incInd(); // indention for 'ViewProvider name'
+    writer.incInd(); // indentation for 'ViewProvider name'
     std::map<const App::DocumentObject*,ViewProvider*>::const_iterator jt;
     for (jt = views.begin(); jt != views.end(); ++jt) {
         const App::DocumentObject* doc = jt->first;
@@ -838,12 +839,12 @@ void Document::exportObjects(const std::vector<App::DocumentObject*>& obj, Base:
     }
     writer.setForceXML(xml);
 
-    writer.decInd(); // indention for 'ViewProvider name'
+    writer.decInd(); // indentation for 'ViewProvider name'
     writer.Stream() << writer.ind() << "</ViewProviderData>" << std::endl;
-    writer.decInd();  // indention for 'ViewProviderData Count'
-    writer.incInd(); // indention for camera settings
+    writer.decInd();  // indentation for 'ViewProviderData Count'
+    writer.incInd(); // indentation for camera settings
     writer.Stream() << writer.ind() << "<Camera settings=\"\"/>" << std::endl;
-    writer.decInd(); // indention for camera settings
+    writer.decInd(); // indentation for camera settings
     writer.Stream() << "</Document>" << std::endl;
 }
 
@@ -1110,6 +1111,19 @@ MDIView* Document::getActiveView(void) const
     return active;
 }
 
+Gui::MDIView* Document::getViewOfViewProvider(Gui::ViewProvider* vp) const
+{
+    std::list<MDIView*> mdis = getMDIViews();
+    for (std::list<MDIView*>::const_iterator it = mdis.begin(); it != mdis.end(); ++it) {
+        if ((*it)->getTypeId().isDerivedFrom(View3DInventor::getClassTypeId())) {
+            View3DInventor* view = static_cast<View3DInventor*>(*it);
+            if (view->getViewer()->hasViewProvider(vp))
+                return *it;
+        }
+    }
+
+    return 0;
+}
 
 //--------------------------------------------------------------------------
 // UNDO REDO transaction handling  

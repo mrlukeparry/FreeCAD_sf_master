@@ -18,6 +18,7 @@ include_directories(
     ${XERCESC_INCLUDE_DIR}
     ${ZLIB_INCLUDE_DIR}
     ${FREETYPE_INCLUDE_DIRS}
+    ${QT_INCLUDE_DIR}
 )
 
 link_directories(${OCC_LIBRARY_DIR})
@@ -100,6 +101,8 @@ SET(Features_SRCS
     FeaturePartPolygon.h
     FeaturePartSection.cpp
     FeaturePartSection.h
+    FeaturePartSpline.cpp
+    FeaturePartSpline.h
     FeatureChamfer.cpp
     FeatureChamfer.h
     FeatureCompound.cpp

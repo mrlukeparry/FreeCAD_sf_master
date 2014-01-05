@@ -38,9 +38,8 @@ namespace Base {
 class UnitsSchemaMKS: public UnitsSchema
 {
 public:
-    void setSchemaUnits(void);
-    void toStrWithUserPrefs(QuantityType t,double Value,QString &outValue,QString &outUnit);
-    QString toStrWithUserPrefs(QuantityType t,double Value);
+	virtual QString schemaTranslate(Base::Quantity quant,double &factor,QString &unitString);
+
 };
 
 

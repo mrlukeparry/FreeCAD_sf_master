@@ -61,11 +61,11 @@ using namespace PartDesign;
 
 PROPERTY_SOURCE(PartDesign::Draft, PartDesign::DressUp)
 
-const App::PropertyFloatConstraint::Constraints floatAngle = {0.0f,89.99f,0.1f};
+const App::PropertyFloatConstraint::Constraints floatAngle = {0.0,89.99,0.1};
 
 Draft::Draft()
 {
-    ADD_PROPERTY(Angle,(1.5f));
+    ADD_PROPERTY(Angle,(1.5));
     Angle.setConstraints(&floatAngle);
     ADD_PROPERTY_TYPE(NeutralPlane,(0),"Draft",(App::PropertyType)(App::Prop_None),"NeutralPlane");
     ADD_PROPERTY_TYPE(PullDirection,(0),"Draft",(App::PropertyType)(App::Prop_None),"PullDirection");
@@ -104,7 +104,7 @@ App::DocumentObjectExecReturn *Draft::execute(void)
         return new App::DocumentObjectExecReturn("No faces specified");
 
     // Draft angle
-    float angle = Angle.getValue() / 180.0 * M_PI;
+    double angle = Angle.getValue() / 180.0 * M_PI;
 
     // Pull direction
     gp_Dir pullDirection;
@@ -266,7 +266,7 @@ App::DocumentObjectExecReturn *Draft::execute(void)
                 if (!mkDraft.AddDone()) {
                     // Note: the function ProblematicShape returns the face on which the error occurred
                     // Note: mkDraft.Remove() stumbles on a bug in Draft_Modification::Remove() and is
-                    //       therefore unusable. See https://sourceforge.net/apps/phpbb/free-cad/viewtopic.php?f=10&t=3209&start=10#p25341
+                    //       therefore unusable. See http://forum.freecadweb.org/viewtopic.php?f=10&t=3209&start=10#p25341
                     //       The only solution is to discard mkDraft and start over without the current face
                     // mkDraft.Remove(face);
                     Base::Console().Error("Adding face failed on %s. Omitted\n", it->c_str());
