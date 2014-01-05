@@ -212,7 +212,7 @@ void QGraphicsItemViewDimension::select(bool state)
 void QGraphicsItemViewDimension::hover(bool state)
 {
     this->hasHover = state;
-    draw();
+    //draw();
 }
 
 void QGraphicsItemViewDimension::updateView(bool update)
@@ -257,7 +257,7 @@ void QGraphicsItemViewDimension::updateDim()
     if(this->getViewObject() == 0 || !this->getViewObject()->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
         return;
 
-    Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getViewObject());
+    const Drawing::FeatureViewDimension  *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getViewObject());
 
     QString str = QString::number((absolute) ? fabs(dim->getValue()) : dim->getValue(), 'f', dim->Precision.getValue());
 

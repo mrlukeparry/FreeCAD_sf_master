@@ -367,7 +367,8 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
     bounds.SetGap(0.0);
     Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
     bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
-    mat.SetMirror(gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2), gp_Dir(0,1,0)));
+    mat.SetMirror(gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2), gp_Dir(0.f,1.f,0.f)));
+    
     gp_Trsf matScale;
     matScale.SetScaleFactor(Scale);
 
@@ -386,12 +387,12 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
                            gp_Dir(direction.x, direction.y, direction.z));
     }
 
-    HLRAlgo_Projector *projector = new HLRAlgo_Projector(transform);
-    projector->Scaled(true);
+    HLRAlgo_Projector projector = HLRAlgo_Projector(transform);
+    projector.Scaled(true);
 
-    HLRBRep_Curve curve;
-    curve.Projector(projector);
+    HLRBRep_Curve curve;    
     curve.Curve(refEdge);
+    curve.Projector(&projector);
 
     DrawingGeometry::BaseGeom *result = 0;
     switch(HLRBRep_BCurveTool::GetType(curve.Curve()))
@@ -468,10 +469,6 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
         default:
           break;
     }
-
-    // Housekeeping
-    delete projector;
-    projector = 0;
 
     return result;
 }

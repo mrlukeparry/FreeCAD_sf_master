@@ -124,7 +124,7 @@ DrawingGeometry::BaseGeom *FeatureViewPart::getCompleteEdge(int idx) const
     const Part::TopoShape &topoShape = static_cast<Part::Feature*>(link)->Shape.getShape();
     std::stringstream str;
     str << "Edge" << idx;
-    TopoDS_Shape shape = topoShape.getSubShape(str.str().c_str());
+    const TopoDS_Shape shape = topoShape.getSubShape(str.str().c_str());
 
     const TopoDS_Shape &support = static_cast<Part::Feature*>(link)->Shape.getValue();
     DrawingGeometry::BaseGeom *prjShape = geometryObject->projectEdge(shape, support, Direction.getValue());
