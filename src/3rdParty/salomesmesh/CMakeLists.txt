@@ -15,6 +15,7 @@ include_directories(
     ${Boost_INCLUDE_DIRS}
     ${OCC_INCLUDE_DIR}
     ${NGLIB_INCLUDE_DIR}
+    ${NETGEN_INCLUDE_DIRS}
     src/SMDS
     src/Driver
     src/DriverUNV
@@ -55,10 +56,18 @@ if(MSVC)
 	endif(FREECAD_BUILD_FEM_NETGEN)
 	
 else(MSVC)
-    set(SMESH_LIBS
-        ${OCC_LIBRARIES}
-        ${OCC_OCAF_LIBRARIES}
-    )
+    if(FREECAD_BUILD_FEM_NETGEN)
+        set(SMESH_LIBS
+            ${NGLIB_LIBRARIES}
+            ${OCC_LIBRARIES}
+            ${OCC_OCAF_LIBRARIES}
+        )
+    else(FREECAD_BUILD_FEM_NETGEN)
+        set(SMESH_LIBS
+            ${OCC_LIBRARIES}
+            ${OCC_OCAF_LIBRARIES}
+        )
+    endif(FREECAD_BUILD_FEM_NETGEN)
 endif(MSVC)
 
 
@@ -99,6 +108,9 @@ INCLUDE(CMakeDetermineFortranCompiler)
 ############################
 IF (${CMAKE_SIZEOF_VOID_P} MATCHES "8") # It is 64bit, 32 bit systems returns 4
     ADD_DEFINITIONS(-D_OCC64)
+    IF(CMAKE_COMPILER_IS_GNUCXX)
+        ADD_DEFINITIONS(-DPCLINUX64)
+    ENDIF(CMAKE_COMPILER_IS_GNUCXX)
     #MESSAGE("-- Build 64bit")
 ELSE (${CMAKE_SIZEOF_VOID_P} MATCHES "8")
     #MESSAGE("-- Build 32bit")
@@ -140,13 +152,13 @@ if(MSVC)
 elseif(MINGW)
     set_target_properties(SMDS PROPERTIES COMPILE_FLAGS "-DSMDS_EXPORTS")
     set_target_properties(SMDS PROPERTIES OUTPUT_NAME "SMDS")
-    set_target_properties(SMDS PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(SMDS PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(SMDS PROPERTIES PREFIX "")
 else(MSVC)
     set_target_properties(SMDS PROPERTIES OUTPUT_NAME "SMDS")
-    set_target_properties(SMDS PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(SMDS PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(SMDS PROPERTIES PREFIX "")
-    set_target_properties(SMDS PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/bin)
+    set_target_properties(SMDS PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 endif(MSVC)
 
 ##########
@@ -165,13 +177,13 @@ if(MSVC)
 elseif(MINGW)
     set_target_properties(Driver PROPERTIES COMPILE_FLAGS "-DMESHDRIVER_EXPORTS")
     set_target_properties(Driver PROPERTIES OUTPUT_NAME "Driver")
-    set_target_properties(Driver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(Driver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(Driver PROPERTIES PREFIX "")
 else(MSVC)
     set_target_properties(Driver PROPERTIES OUTPUT_NAME "Driver")
-    set_target_properties(Driver PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(Driver PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(Driver PROPERTIES PREFIX "")
-    set_target_properties(Driver PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/bin)
+    set_target_properties(Driver PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 endif(MSVC)
 
 
@@ -199,13 +211,13 @@ if(MSVC)
 elseif(MINGW)
     set_target_properties(DriverSTL PROPERTIES COMPILE_FLAGS "-DMESHDRIVERSTL_EXPORTS")
     set_target_properties(DriverSTL PROPERTIES OUTPUT_NAME "DriverSTL")
-    set_target_properties(DriverSTL PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(DriverSTL PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(DriverSTL PROPERTIES PREFIX "")
 else(MSVC)
     set_target_properties(DriverSTL PROPERTIES OUTPUT_NAME "DriverSTL")
-    set_target_properties(DriverSTL PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(DriverSTL PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(DriverSTL PROPERTIES PREFIX "")
-    set_target_properties(DriverSTL PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/bin)
+    set_target_properties(DriverSTL PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 endif(MSVC)
 
 
@@ -233,13 +245,13 @@ if(MSVC)
 elseif(MINGW)
     set_target_properties(DriverDAT PROPERTIES COMPILE_FLAGS "-DMESHDRIVERDAT_EXPORTS")
     set_target_properties(DriverDAT PROPERTIES OUTPUT_NAME "DriverDAT")
-    set_target_properties(DriverDAT PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(DriverDAT PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(DriverDAT PROPERTIES PREFIX "")
 else(MSVC)
     set_target_properties(DriverDAT PROPERTIES OUTPUT_NAME "DriverDAT")
-    set_target_properties(DriverDAT PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(DriverDAT PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(DriverDAT PROPERTIES PREFIX "")
-    set_target_properties(DriverDAT PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/bin)
+    set_target_properties(DriverDAT PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 endif(MSVC)
 
 
@@ -267,13 +279,13 @@ if(MSVC)
 elseif(MINGW)
     set_target_properties(DriverUNV PROPERTIES COMPILE_FLAGS "-DMESHDRIVERUNV_EXPORTS")
     set_target_properties(DriverUNV PROPERTIES OUTPUT_NAME "DriverUNV")
-    set_target_properties(DriverUNV PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(DriverUNV PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(DriverUNV PROPERTIES PREFIX "")
 else(MSVC)
     set_target_properties(DriverUNV PROPERTIES OUTPUT_NAME "DriverUNV")
-    set_target_properties(DriverUNV PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(DriverUNV PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(DriverUNV PROPERTIES PREFIX "")
-    set_target_properties(DriverUNV PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/bin)
+    set_target_properties(DriverUNV PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 endif(MSVC)
 
 
@@ -299,13 +311,13 @@ if(MSVC)
     set_target_properties(SMESHDS PROPERTIES PREFIX "../")
 elseif(MINGW)
     set_target_properties(SMESHDS PROPERTIES OUTPUT_NAME "SMESHDS")
-    set_target_properties(SMESHDS PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(SMESHDS PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(SMESHDS PROPERTIES PREFIX "")
 else(MSVC)
     set_target_properties(SMESHDS PROPERTIES OUTPUT_NAME "SMESHDS")
-    set_target_properties(SMESHDS PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(SMESHDS PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(SMESHDS PROPERTIES PREFIX "")
-    set_target_properties(SMESHDS PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/bin)
+    set_target_properties(SMESHDS PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 endif(MSVC)
 
 
@@ -330,12 +342,13 @@ if(MSVC)
 elseif(MINGW)
     set_target_properties(SMESH PROPERTIES COMPILE_FLAGS "-DSMESH_EXPORTS -DSMESHCONTROLS_EXPORTS -DSMESHimpl_EXPORTS")
     set_target_properties(SMESH PROPERTIES OUTPUT_NAME "SMESH")
-    set_target_properties(SMESH PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(SMESH PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(SMESH PROPERTIES PREFIX "")
 else(MSVC)
     set_target_properties(SMESH PROPERTIES OUTPUT_NAME "SMESH") 
+    set_target_properties(SMESH PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(SMESH PROPERTIES PREFIX "")
-    set_target_properties(SMESH PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/bin)
+    set_target_properties(SMESH PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 endif(MSVC)
 					  
 					  
@@ -379,14 +392,15 @@ elseif(MINGW)
     TARGET_LINK_LIBRARIES(MEFISTO2 ${SMESH_LIBS} gfortran)
     set_target_properties(MEFISTO2 PROPERTIES COMPILE_FLAGS "-DMEFISTO2D_EXPORTS")
     set_target_properties(MEFISTO2 PROPERTIES OUTPUT_NAME "MEFISTO2")
-    set_target_properties(MEFISTO2 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(MEFISTO2 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(MEFISTO2 PROPERTIES PREFIX "")
 else(MSVC)
     TARGET_LINK_LIBRARIES(MEFISTO2 ${SMESH_LIBS} gfortran)
     set_target_properties(MEFISTO2 PROPERTIES COMPILE_FLAGS "${MEFISTO2_CFLAGS}")
     set_target_properties(MEFISTO2 PROPERTIES OUTPUT_NAME "MEFISTO2") 
+    set_target_properties(MEFISTO2 PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(MEFISTO2 PROPERTIES PREFIX "")
-    set_target_properties(MEFISTO2 PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/bin)
+    set_target_properties(MEFISTO2 PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 endif(MSVC)
 
 
@@ -407,20 +421,15 @@ elseif(MINGW)
     TARGET_LINK_LIBRARIES(StdMeshers SMESH ${SMESH_LIBS} MEFISTO2)
     set_target_properties(StdMeshers PROPERTIES COMPILE_FLAGS "-DSTDMESHERS_EXPORTS")
     set_target_properties(StdMeshers PROPERTIES OUTPUT_NAME "StdMeshers")
-    set_target_properties(StdMeshers PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(StdMeshers PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(StdMeshers PROPERTIES PREFIX "")
 else(MSVC)
     TARGET_LINK_LIBRARIES(StdMeshers SMESH ${SMESH_LIBS}  MEFISTO2)
-    # special compiler flag for g++ 64-bit
-    IF (${CMAKE_SIZEOF_VOID_P} MATCHES "8")
-        IF(CMAKE_COMPILER_IS_GNUCXX)
-            SET(StdMeshers_CFLAGS "${StdMeshers_CFLAGS} -DPCLINUX64")
-        ENDIF(CMAKE_COMPILER_IS_GNUCXX)
-    ENDIF(${CMAKE_SIZEOF_VOID_P} MATCHES "8")
     set_target_properties(StdMeshers PROPERTIES COMPILE_FLAGS "${StdMeshers_CFLAGS}")
     set_target_properties(StdMeshers PROPERTIES OUTPUT_NAME "StdMeshers") 
+    set_target_properties(StdMeshers PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(StdMeshers PROPERTIES PREFIX "")
-    set_target_properties(StdMeshers PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/bin)
+    set_target_properties(StdMeshers PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 endif(MSVC)
 
 #SET(StdMeshers_CFLAGS "")
@@ -442,20 +451,21 @@ ADD_LIBRARY(NETGENPlugin SHARED ${NETGENPlugin_source_files})
 TARGET_LINK_LIBRARIES(NETGENPlugin SMDS SMESHDS SMESH StdMeshers  ${SMESH_LIBS} )
 
 if(MSVC)
-    set_target_properties(NETGENPlugin PROPERTIES COMPILE_FLAGS "-DNETGENPLUGIN_EXPORTS -DNO_PARALLEL_THREADS -DOCCGEOMETRY")
+    set_target_properties(NETGENPlugin PROPERTIES COMPILE_FLAGS "-DNETGENPLUGIN_EXPORTS -DNO_PARALLEL_THREADS -DOCCGEOMETRY -DNETGEN_V5")
     set_target_properties(NETGENPlugin PROPERTIES DEBUG_OUTPUT_NAME "NETGENPlugind")
     set_target_properties(NETGENPlugin PROPERTIES OUTPUT_NAME "NETGENPlugin")
     set_target_properties(NETGENPlugin PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
     set_target_properties(NETGENPlugin PROPERTIES PREFIX "../")
 elseif(MINGW)
-    set_target_properties(NETGENPlugin PROPERTIES COMPILE_FLAGS "-DNETGENPLUGIN_EXPORTS -DNO_PARALLEL_THREADS -DOCCGEOMETRY")
+    set_target_properties(NETGENPlugin PROPERTIES COMPILE_FLAGS "-DNETGENPLUGIN_EXPORTS -DNO_PARALLEL_THREADS -DOCCGEOMETRY -DNETGEN_V5")
     set_target_properties(NETGENPlugin PROPERTIES OUTPUT_NAME "NETGENPlugin")
-    set_target_properties(NETGENPlugin PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set_target_properties(NETGENPlugin PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(NETGENPlugin PROPERTIES PREFIX "")
 else(MSVC)
     set_target_properties(NETGENPlugin PROPERTIES OUTPUT_NAME "NETGENPlugin") 
+    set_target_properties(NETGENPlugin PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set_target_properties(NETGENPlugin PROPERTIES PREFIX "")
-    set_target_properties(NETGENPlugin PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/bin)
+    set_target_properties(NETGENPlugin PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 endif(MSVC)
 
 endif (FREECAD_BUILD_FEM_NETGEN)
@@ -468,4 +478,27 @@ endif (FREECAD_BUILD_FEM_NETGEN)
 #ENDIF(MINGW)
 
 
+if(WIN32)
+    INSTALL(TARGETS SMDS Driver DriverSTL DriverDAT DriverUNV SMESHDS SMESH MEFISTO2 StdMeshers
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+    )
+else(WIN32)
+    INSTALL(TARGETS SMDS Driver DriverSTL DriverDAT DriverUNV SMESHDS SMESH MEFISTO2 StdMeshers
+        LIBRARY DESTINATION lib
+    )
+endif(WIN32)
+
+if (FREECAD_BUILD_FEM_NETGEN)
+    if(WIN32)
+        INSTALL(TARGETS NETGENPlugin
+            RUNTIME DESTINATION bin
+            LIBRARY DESTINATION lib
+        )
+    else(WIN32)
+        INSTALL(TARGETS NETGENPlugin
+            LIBRARY DESTINATION lib
+        )
+    endif(WIN32)
+endif (FREECAD_BUILD_FEM_NETGEN)
 

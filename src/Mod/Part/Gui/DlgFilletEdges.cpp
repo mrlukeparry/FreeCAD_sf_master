@@ -24,6 +24,7 @@
 #include "PreCompiled.h"
 #ifndef _PreComp_
 # include <algorithm>
+# include <climits>
 # include <sstream>
 # include <BRep_Tool.hxx>
 # include <TopoDS.hxx>
@@ -49,7 +50,10 @@
 
 #include "DlgFilletEdges.h"
 #include "ui_DlgFilletEdges.h"
-#include "SoBrepShape.h"
+#include "SoBrepFaceSet.h"
+#include "SoBrepEdgeSet.h"
+#include "SoBrepPointSet.h"
+
 
 #include "../App/PartFeature.h"
 #include "../App/FeatureFillet.h"
@@ -81,7 +85,7 @@ QWidget *FilletRadiusDelegate::createEditor(QWidget *parent, const QStyleOptionV
 
     QDoubleSpinBox *editor = new QDoubleSpinBox(parent);
     editor->setMinimum(0.0);
-    editor->setMaximum(100.0);
+    editor->setMaximum(INT_MAX);
     editor->setSingleStep(0.1);
 
     return editor;
@@ -169,12 +173,13 @@ namespace PartGui {
                 return element.substr(0,4) == "Face";
         }
     };
-    class DlgFilletEdgesP
+    class DlgFilletEdges::Private
     {
     public:
         App::DocumentObject* object;
         EdgeFaceSelection* selection;
         Part::FilletBase* fillet;
+        FilletType filletType;
         std::vector<int> edge_ids;
         TopTools_IndexedMapOfShape all_edges;
         TopTools_IndexedMapOfShape all_faces;
@@ -186,10 +191,12 @@ namespace PartGui {
 
 /* TRANSLATOR PartGui::DlgFilletEdges */
 
-DlgFilletEdges::DlgFilletEdges(Part::FilletBase* fillet, QWidget* parent, Qt::WFlags fl)
-  : QWidget(parent, fl), ui(new Ui_DlgFilletEdges()), d(new DlgFilletEdgesP())
+DlgFilletEdges::DlgFilletEdges(FilletType type, Part::FilletBase* fillet, QWidget* parent, Qt::WFlags fl)
+  : QWidget(parent, fl), ui(new Ui_DlgFilletEdges()), d(new Private())
 {
     ui->setupUi(this);
+    ui->filletStartRadius->setMaximum(INT_MAX);
+    ui->filletEndRadius->setMaximum(INT_MAX);
 
     d->object = 0;
     d->selection = new EdgeFaceSelection(d->object);
@@ -205,9 +212,22 @@ DlgFilletEdges::DlgFilletEdges(Part::FilletBase* fillet, QWidget* parent, Qt::WF
     connect(model, SIGNAL(toggleCheckState(const QModelIndex&)),
             this, SLOT(toggleCheckState(const QModelIndex&)));
     model->insertColumns(0,3);
-    model->setHeaderData(0, Qt::Horizontal, tr("Edges to fillet"), Qt::DisplayRole);
-    model->setHeaderData(1, Qt::Horizontal, tr("Start radius"), Qt::DisplayRole);
-    model->setHeaderData(2, Qt::Horizontal, tr("End radius"), Qt::DisplayRole);
+
+    d->filletType = type;
+    if (d->filletType == DlgFilletEdges::CHAMFER) {
+        ui->labelRadius->setText(tr("Length:"));
+        ui->filletType->setItemText(0, tr("Constant Length"));
+        ui->filletType->setItemText(1, tr("Variable Length"));
+
+        model->setHeaderData(0, Qt::Horizontal, tr("Edges to chamfer"), Qt::DisplayRole);
+        model->setHeaderData(1, Qt::Horizontal, tr("Start length"), Qt::DisplayRole);
+        model->setHeaderData(2, Qt::Horizontal, tr("End length"), Qt::DisplayRole);
+    }
+    else {
+        model->setHeaderData(0, Qt::Horizontal, tr("Edges to fillet"), Qt::DisplayRole);
+        model->setHeaderData(1, Qt::Horizontal, tr("Start radius"), Qt::DisplayRole);
+        model->setHeaderData(2, Qt::Horizontal, tr("End radius"), Qt::DisplayRole);
+    }
     ui->treeView->setRootIsDecorated(false);
     ui->treeView->setItemDelegate(new FilletRadiusDelegate(this));
     ui->treeView->setModel(model);
@@ -657,12 +677,18 @@ void DlgFilletEdges::on_filletType_activated(int index)
 {
     QStandardItemModel *model = qobject_cast<QStandardItemModel*>(ui->treeView->model());
     if (index == 0) {
-        model->setHeaderData(1, Qt::Horizontal, tr("Radius"), Qt::DisplayRole);
+        if (d->filletType == DlgFilletEdges::CHAMFER)
+            model->setHeaderData(1, Qt::Horizontal, tr("Length"), Qt::DisplayRole);
+        else
+            model->setHeaderData(1, Qt::Horizontal, tr("Radius"), Qt::DisplayRole);
         ui->treeView->hideColumn(2);
         ui->filletEndRadius->hide();
     }
     else {
-        model->setHeaderData(1, Qt::Horizontal, tr("Start radius"), Qt::DisplayRole);
+        if (d->filletType == DlgFilletEdges::CHAMFER)
+            model->setHeaderData(1, Qt::Horizontal, tr("Start length"), Qt::DisplayRole);
+        else
+            model->setHeaderData(1, Qt::Horizontal, tr("Start radius"), Qt::DisplayRole);
         ui->treeView->showColumn(2);
         ui->filletEndRadius->show();
     }
@@ -790,10 +816,10 @@ bool DlgFilletEdges::accept()
 
 // ---------------------------------------
 
-FilletEdgesDialog::FilletEdgesDialog(Part::FilletBase* fillet, QWidget* parent, Qt::WFlags fl)
+FilletEdgesDialog::FilletEdgesDialog(DlgFilletEdges::FilletType type, Part::FilletBase* fillet, QWidget* parent, Qt::WFlags fl)
   : QDialog(parent, fl)
 {
-    widget = new DlgFilletEdges(fillet, this);
+    widget = new DlgFilletEdges(type, fillet, this);
     this->setWindowTitle(widget->windowTitle());
 
     QVBoxLayout* hboxLayout = new QVBoxLayout(this);
@@ -821,7 +847,7 @@ void FilletEdgesDialog::accept()
 
 TaskFilletEdges::TaskFilletEdges(Part::Fillet* fillet)
 {
-    widget = new DlgFilletEdges(fillet);
+    widget = new DlgFilletEdges(DlgFilletEdges::FILLET, fillet);
     taskbox = new Gui::TaskView::TaskBox(
         Gui::BitmapFactory().pixmap("Part_Fillet"),
         widget->windowTitle(), true, 0);
@@ -861,7 +887,7 @@ bool TaskFilletEdges::reject()
 /* TRANSLATOR PartGui::DlgChamferEdges */
 
 DlgChamferEdges::DlgChamferEdges(Part::FilletBase* chamfer, QWidget* parent, Qt::WFlags fl)
-  : DlgFilletEdges(chamfer, parent, fl)
+  : DlgFilletEdges(DlgFilletEdges::CHAMFER, chamfer, parent, fl)
 {
     this->setWindowTitle(tr("Chamfer Edges"));
 }

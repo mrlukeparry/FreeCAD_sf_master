@@ -26,6 +26,7 @@
 
 #include <Gui/ViewProviderGeometryObject.h>
 #include <Gui/ViewProviderBuilder.h>
+#include <Gui/ViewProviderPythonFeature.h>
 
 class SoCoordinate3;
 class SoDrawStyle;  
@@ -39,16 +40,16 @@ namespace FemGui
 
 
 
-class FemGuiExport ViewProviderAnalysis : public Gui::ViewProviderDocumentObject
+class FemGuiExport ViewProviderFemAnalysis : public Gui::ViewProviderDocumentObject
 {
     PROPERTY_HEADER(FemGui::ViewProviderAnalysis);
 
 public:
     /// constructor.
-    ViewProviderAnalysis();
+    ViewProviderFemAnalysis();
 
     /// destructor.
-    ~ViewProviderAnalysis();
+    ~ViewProviderFemAnalysis();
 
     virtual bool doubleClicked(void);
 
@@ -59,11 +60,16 @@ public:
 
     virtual bool onDelete(const std::vector<std::string> &);
 
+    // shows solid in the tree
+    virtual bool isShow(void) const{return true;}
+
 protected:
     virtual bool setEdit(int ModNum);
     virtual void unsetEdit(int ModNum);
 
 };
+
+typedef Gui::ViewProviderPythonFeatureT<ViewProviderFemAnalysis> ViewProviderFemAnalysisPython;
 
 } //namespace FemGui
 

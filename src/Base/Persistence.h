@@ -33,7 +33,7 @@
 
 namespace Base
 {
-typedef std::istream Reader;
+class Reader;
 class Writer;
 class XMLReader;
 
@@ -59,7 +59,7 @@ public:
      *                                            "\" valueZ=\"" <<  _cVec.z <<"\"/>" << endl;
      *  }
      * \endcode
-     * The writer.ind() expression writes the indention, just for pretty printing of the XML.
+     * The writer.ind() expression writes the indentation, just for pretty printing of the XML.
      * As you see, the writing of the XML document is not done with a DOM implementation because
      * of performance reasons. Therefore the programmer has to take care that a valid XML document
      * is written. This means closing tags and writing UTF-8. 
@@ -75,9 +75,9 @@ public:
      *   // read my Element
      *   reader.readElement("PropertyVector");
      *   // get the value of my Attribute
-     *   _cVec.x = (float)reader.getAttributeAsFloat("valueX");
-     *   _cVec.y = (float)reader.getAttributeAsFloat("valueY");
-     *   _cVec.z = (float)reader.getAttributeAsFloat("valueZ");
+     *   _cVec.x = reader.getAttributeAsFloat("valueX");
+     *   _cVec.y = reader.getAttributeAsFloat("valueY");
+     *   _cVec.z = reader.getAttributeAsFloat("valueZ");
      * }
      * \endcode
      */

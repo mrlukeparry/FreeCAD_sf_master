@@ -48,10 +48,13 @@ public:
     // Returns the icon
     QIcon getIcon() const;
     std::vector<App::DocumentObject*> claimChildren(const std::vector<App::DocumentObject*>&) const;
+    bool useNewSelectionModel() const;
     std::string getElement(const SoDetail *det) const;
+    SoDetail* getDetail(const char*) const;
     std::vector<Base::Vector3d> getSelectionShape(const char* Element) const;
     bool setEdit(int ModNum);
     bool unsetEdit(int ModNum);
+    bool doubleClicked(void);
 
     /** @name Update data methods*/
     //@{
@@ -123,10 +126,17 @@ public:
     /** @name Selection handling */
     //@{
     virtual bool useNewSelectionModel() const {
-        return ViewProviderT::useNewSelectionModel();
+        return imp->useNewSelectionModel();
     }
     virtual std::string getElement(const SoDetail *det) const {
+        std::string name = imp->getElement(det);
+        if (!name.empty()) return name;
         return ViewProviderT::getElement(det);
+    }
+    virtual SoDetail* getDetail(const char* name) const {
+        SoDetail* det = imp->getDetail(name);
+        if (det) return det;
+        return ViewProviderT::getDetail(name);
     }
     virtual std::vector<Base::Vector3d> getSelectionShape(const char* Element) const {
         return ViewProviderT::getSelectionShape(Element);
@@ -306,6 +316,15 @@ protected:
     {
         bool ok = imp->unsetEdit(ModNum);
         if (!ok) ViewProviderT::unsetEdit(ModNum);
+    }
+
+    virtual bool doubleClicked(void)
+    {
+        bool ok = imp->doubleClicked();
+        if (!ok) 
+            return ViewProviderT::doubleClicked();
+        else 
+            return true;
     }
 
 private:

@@ -44,7 +44,7 @@ public:
     App::PropertyFloat          MaxSize;
     App::PropertyBool           SecondOrder;
     App::PropertyEnumeration    Fininess;
-    App::PropertyFloat          GrothRate;
+    App::PropertyFloat          GrowthRate;
     App::PropertyInteger        NbSegsPerEdge;
     App::PropertyInteger        NbSegsPerRadius;    
     App::PropertyBool           Optimize;
@@ -62,7 +62,7 @@ public:
 
 protected:
     /// get called by the container when a property has changed
-    virtual void onChanged (const App::Property* prop);
+    //virtual void onChanged (const App::Property* prop);
 };
 
 } //namespace Fem

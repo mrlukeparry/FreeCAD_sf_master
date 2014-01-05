@@ -67,6 +67,8 @@
 #include <Base/Exception.h>
 #include <Base/FileInfo.h>
 #include <Base/Reader.h>
+#include <Base/Parameter.h>
+#include <App/Application.h>
 #include <App/Document.h>
 #include <App/GeoFeature.h>
 #include <App/DocumentObjectGroup.h>
@@ -796,7 +798,7 @@ void StdCmdToggleObjects::activated(int iMsg)
         (App::DocumentObject::getClassTypeId());
 
     for (std::vector<App::DocumentObject*>::const_iterator it=obj.begin();it!=obj.end();++it) {
-        if (doc && doc->isShow((*it)->getNameInDocument()))
+        if (doc->isShow((*it)->getNameInDocument()))
             doCommand(Gui,"Gui.getDocument(\"%s\").getObject(\"%s\").Visibility=False"
                          , app->getName(), (*it)->getNameInDocument());
         else
@@ -1316,11 +1318,17 @@ void StdViewScreenShot::activated(int iMsg)
             formats = rd.getWriteImageFiletypeInfo();
         }
 
+        Base::Reference<ParameterGrp> hExt = App::GetApplication().GetUserParameter().GetGroup("BaseApp")
+                                   ->GetGroup("Preferences")->GetGroup("General");
+        QString ext = QString::fromAscii(hExt->GetASCII("OffscreenImageFormat").c_str());
+
         QStringList filter;
         QString selFilter;
         for (QStringList::Iterator it = formats.begin(); it != formats.end(); ++it) {
             filter << QString::fromAscii("%1 %2 (*.%3)").arg((*it).toUpper()).
                 arg(QObject::tr("files")).arg((*it).toLower());
+            if (ext == *it)
+                selFilter = filter.last();
         }
 
         FileOptionsDialog fd(getMainWindow(), 0);
@@ -1328,6 +1336,8 @@ void StdViewScreenShot::activated(int iMsg)
         fd.setAcceptMode(QFileDialog::AcceptSave);
         fd.setWindowTitle(QObject::tr("Save picture"));
         fd.setFilters(filter);
+        if (!selFilter.isEmpty())
+            fd.selectNameFilter(selFilter);
 
         // create the image options widget
         DlgSettingsImageImp* opt = new DlgSettingsImageImp(&fd);
@@ -1341,7 +1351,7 @@ void StdViewScreenShot::activated(int iMsg)
                          opt, SLOT(onSelectedFilter(const QString&)));
 
         if (fd.exec() == QDialog::Accepted) {
-            selFilter = fd.selectedFilter();
+            selFilter = fd.selectedNameFilter();
             QString fn = fd.selectedFiles().front();
             // We must convert '\' path separators to '/' before otherwise
             // Python would interpret them as escape sequences.
@@ -1361,6 +1371,8 @@ void StdViewScreenShot::activated(int iMsg)
                     break;
                 }
             }
+
+            hExt->SetASCII("OffscreenImageFormat", (const char*)format.toAscii());
 
             // which background chosen
             const char* background;
@@ -1468,6 +1480,9 @@ bool StdCmdToggleNavigation::isActive(void)
     return false;
 }
 
+
+
+#if 0 // old Axis command
 // Command to show/hide axis cross
 class StdCmdAxisCross : public Gui::Command
 {
@@ -1549,6 +1564,50 @@ protected:
         }
     }
 };
+#else 
+//===========================================================================
+// Std_ViewExample1
+//===========================================================================
+DEF_STD_CMD_A(StdCmdAxisCross);
+
+StdCmdAxisCross::StdCmdAxisCross()
+  : Command("Std_AxisCross")
+{
+        sGroup        = QT_TR_NOOP("Standard-View");
+        sMenuText     = QT_TR_NOOP("Toggle axis cross");
+        sToolTipText  = QT_TR_NOOP("Toggle axis cross");
+        sStatusTip    = QT_TR_NOOP("Toggle axis cross");
+        sWhatsThis    = "Std_AxisCross";
+}
+
+void StdCmdAxisCross::activated(int iMsg)
+{
+  Gui::View3DInventor* view = qobject_cast<View3DInventor*>(Gui::getMainWindow()->activeWindow());
+  if (view ){
+      if(view->getViewer()->hasAxisCross()== false) 
+         doCommand(Command::Gui,"Gui.ActiveDocument.ActiveView.setAxisCross(True)");
+      else
+         doCommand(Command::Gui,"Gui.ActiveDocument.ActiveView.setAxisCross(False)");
+  }
+}
+
+bool StdCmdAxisCross::isActive(void)
+{
+    Gui::View3DInventor* view = qobject_cast<View3DInventor*>(Gui::getMainWindow()->activeWindow());
+    if (view && view->getViewer()->hasAxisCross()) {
+        if (!_pcAction->isChecked())
+            _pcAction->setChecked(true);
+    }
+    else {
+        if (_pcAction->isChecked())
+            _pcAction->setChecked(false);
+    }
+    if (view ) return true;
+    return false;
+
+}
+
+#endif 
 
 //===========================================================================
 // Std_ViewExample1
@@ -1556,7 +1615,7 @@ protected:
 DEF_STD_CMD_A(StdCmdViewExample1);
 
 StdCmdViewExample1::StdCmdViewExample1()
-  : Command("Std_ViewExample1")
+  : Command("Std_AxisCross")
 {
   sGroup        = QT_TR_NOOP("Standard-View");
   sMenuText     = QT_TR_NOOP("Inventor example #1");
@@ -2156,6 +2215,62 @@ void StdCmdDemoMode::activated(int iMsg)
     dlg->show();
 }
 
+//===========================================================================
+// Part_Measure_Clear_All
+//===========================================================================
+
+DEF_STD_CMD(CmdViewMeasureClearAll);
+
+CmdViewMeasureClearAll::CmdViewMeasureClearAll()
+  : Command("View_Measure_Clear_All")
+{
+    sGroup        = QT_TR_NOOP("Measure");
+    sMenuText     = QT_TR_NOOP("Clear measurement");
+    sToolTipText  = QT_TR_NOOP("Clear measurement");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Part_Measure_Clear_All";
+}
+
+void CmdViewMeasureClearAll::activated(int iMsg)
+{
+  Gui::View3DInventor *view = dynamic_cast<Gui::View3DInventor*>(Gui::Application::Instance->
+    activeDocument()->getActiveView());
+  if (!view)
+    return;
+  Gui::View3DInventorViewer *viewer = view->getViewer();
+  if (!viewer)
+    return;
+  viewer->eraseAllDimensions();
+}
+
+//===========================================================================
+// Part_Measure_Toggle_All
+//===========================================================================
+
+DEF_STD_CMD(CmdViewMeasureToggleAll);
+
+CmdViewMeasureToggleAll::CmdViewMeasureToggleAll()
+  : Command("View_Measure_Toggle_All")
+{
+  sGroup        = QT_TR_NOOP("Measure");
+  sMenuText     = QT_TR_NOOP("Toggle measurement");
+  sToolTipText  = QT_TR_NOOP("Toggle measurement");
+  sWhatsThis    = sToolTipText;
+  sStatusTip    = sToolTipText;
+  sPixmap       = "Part_Measure_Toggle_All";
+}
+
+void CmdViewMeasureToggleAll::activated(int iMsg)
+{
+  ParameterGrp::handle group = App::GetApplication().GetUserParameter().
+  GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("View");
+  bool visibility = group->GetBool("DimensionsVisible", true);
+  if (visibility)
+    group->SetBool("DimensionsVisible", false);
+  else
+    group->SetBool("DimensionsVisible", true);
+}
 
 //===========================================================================
 // Instantiation
@@ -2221,6 +2336,8 @@ void CreateViewStdCommands(void)
     rcCmdMgr.addCommand(new StdCmdDemoMode());
     rcCmdMgr.addCommand(new StdCmdToggleNavigation());
     rcCmdMgr.addCommand(new StdCmdAxisCross());
+    rcCmdMgr.addCommand(new CmdViewMeasureClearAll());
+    rcCmdMgr.addCommand(new CmdViewMeasureToggleAll());
 }
 
 } // namespace Gui

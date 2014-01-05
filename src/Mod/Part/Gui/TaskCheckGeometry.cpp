@@ -600,6 +600,8 @@ void SetupResultShellNotClosed::go(ResultEntry *entry)
 
     addTypedSelection(entry, closedWires, TopAbs_EDGE);
     addTypedSelection(entry, openWires, TopAbs_EDGE);
+
+    getSetupResultBoundingBoxObject().go(entry);
 }
 
 SetupResultShellNotClosed& PartGui::getSetupResultShellNotClosedObject()
@@ -633,6 +635,7 @@ SetupResultInvalidPointCurve& PartGui::getSetupResultInvalidPointCurveObject()
 void SetupResultIntersectingWires::go(ResultEntry *entry)
 {
     addTypedSelection(entry, entry->shape, TopAbs_FACE);
+    getSetupResultBoundingBoxObject().go(entry);
 }
 
 SetupResultIntersectingWires& PartGui::getSetupResultIntersectingWiresObject()

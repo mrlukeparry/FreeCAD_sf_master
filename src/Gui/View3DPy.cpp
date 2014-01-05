@@ -125,6 +125,10 @@ void View3DInventorPy::init_type()
         "\n"
         "Return the according 3D point on the focal plane to the given 2D point (in\n"
         "pixel coordinates).\n");
+    add_varargs_method("getPointOnScreen",&View3DInventorPy::getPointOnScreen,
+        "getPointOnScreen(3D vector) -> pixel coords (as integer)\n"
+        "\n"
+        "Return the projected 3D point (in pixel coordinates).\n");
     add_varargs_method("addEventCallback",&View3DInventorPy::addEventCallback,"addEventCallback()");
     add_varargs_method("removeEventCallback",&View3DInventorPy::removeEventCallback,"removeEventCallback()");
     add_varargs_method("setAnnotation",&View3DInventorPy::setAnnotation,"setAnnotation()");
@@ -140,6 +144,9 @@ void View3DInventorPy::init_type()
     add_varargs_method("listNavigationTypes",&View3DInventorPy::listNavigationTypes,"listNavigationTypes()");
     add_varargs_method("getNavigationType",&View3DInventorPy::getNavigationType,"getNavigationType()");
     add_varargs_method("setNavigationType",&View3DInventorPy::setNavigationType,"setNavigationType()");
+    add_varargs_method("setAxisCross",&View3DInventorPy::setAxisCross,"switch the big axis-cross on and off");
+    add_varargs_method("hasAxisCross",&View3DInventorPy::hasAxisCross,"check if the big axis-cross is on or off()");
+
 }
 
 View3DInventorPy::View3DInventorPy(View3DInventor *vi)
@@ -1180,6 +1187,56 @@ Py::Object View3DInventorPy::getPoint(const Py::Tuple& args)
     }
 }
 
+Py::Object View3DInventorPy::getPointOnScreen(const Py::Tuple& args)
+{
+    PyObject* v;
+    double vx,vy,vz;
+    if (PyArg_ParseTuple(args.ptr(), "O!", &Base::VectorPy::Type, &v)) {
+        Base::Vector3d* vec = static_cast<Base::VectorPy*>(v)->getVectorPtr();
+        vx = vec->x;
+        vy = vec->y;
+        vz = vec->z;
+    }
+    else {
+        PyErr_Clear();
+        if (!PyArg_ParseTuple(args.ptr(), "ddd", &vx,&vy,&vz)) {
+            throw Py::Exception("Wrong argument, Vector or three floats expected expected");
+        }
+    }
+
+    try {
+        const SbViewportRegion& vp = _view->getViewer()->getViewportRegion();
+        float fRatio = vp.getViewportAspectRatio();
+        const SbVec2s& sp = vp.getViewportSizePixels();
+        //float dX, dY; vp.getViewportSize().getValue(dX, dY);
+        SbViewVolume vv = _view->getViewer()->getCamera()->getViewVolume(fRatio);
+
+        SbVec3f pt(vx,vy,vz);
+        vv.projectToScreen(pt, pt);
+
+        //if (fRatio > 1.0f) {
+        //    pt[0] = (pt[0] - 0.5f*dX) / fRatio + 0.5f*dX;
+        //}
+        //else {
+        //    pt[1] = (pt[1] - 0.5f*dY) * fRatio + 0.5f*dY;
+        //}
+
+        int x = pt[0] * sp[0];
+        int y = pt[1] * sp[1];
+        Py::Tuple tuple(2);
+        tuple.setItem(0, Py::Int(x));
+        tuple.setItem(1, Py::Int(y));
+
+        return tuple;
+    }
+    catch (const Base::Exception& e) {
+        throw Py::Exception(e.what());
+    }
+    catch (const Py::Exception&) {
+        throw;
+    }
+}
+
 Py::Object View3DInventorPy::listNavigationTypes(const Py::Tuple&)
 {
     std::vector<Base::Type> types;
@@ -2046,4 +2103,21 @@ Py::Object View3DInventorPy::removeEventCallbackPivy(const Py::Tuple& args)
     catch (const Py::Exception&) {
         throw;
     }
+}
+
+Py::Object View3DInventorPy::setAxisCross(const Py::Tuple& args)
+{
+    int ok;
+    if (!PyArg_ParseTuple(args.ptr(), "i", &ok))
+        throw Py::Exception();
+    _view->getViewer()->setAxisCross(ok!=0);
+    return Py::None();
+}
+
+Py::Object View3DInventorPy::hasAxisCross(const Py::Tuple& args)
+{
+    if (!PyArg_ParseTuple(args.ptr(), ""))
+        throw Py::Exception();
+    SbBool ok = _view->getViewer()->hasAxisCross();
+    return Py::Boolean(ok ? true : false);
 }

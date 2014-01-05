@@ -66,7 +66,7 @@ void CmdPartSimpleCylinder::activated(int iMsg)
 {
     PartGui::DlgPartCylinderImp dlg(Gui::getMainWindow());
     if (dlg.exec()== QDialog::Accepted) {
-        Base::Vector3f dir = dlg.getDirection();
+        Base::Vector3d dir = dlg.getDirection();
         openCommand("Create Part Cylinder");
         doCommand(Doc,"from FreeCAD import Base");
         doCommand(Doc,"import Part");
@@ -109,6 +109,7 @@ CmdPartShapeFromMesh::CmdPartShapeFromMesh()
     sToolTipText  = QT_TR_NOOP("Create shape from selected mesh object");
     sWhatsThis    = sToolTipText;
     sStatusTip    = sToolTipText;
+    sPixmap       = "Part_Shape_from_Mesh.svg";
 }
 
 void CmdPartShapeFromMesh::activated(int iMsg)
@@ -214,6 +215,7 @@ CmdPartRefineShape::CmdPartRefineShape()
     sToolTipText  = QT_TR_NOOP("Refine the copy of a shape");
     sWhatsThis    = sToolTipText;
     sStatusTip    = sToolTipText;
+    sPixmap       = "Part_Refine_Shape";
 }
 
 void CmdPartRefineShape::activated(int iMsg)

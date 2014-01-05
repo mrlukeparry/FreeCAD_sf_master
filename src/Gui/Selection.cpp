@@ -337,25 +337,9 @@ bool SelectionSingleton::hasSelection(const char* doc) const
     return false;
 }
 
-//std::vector<SelectionObject> SelectionSingleton::getSelectionEx(const char* pDocName) const
-//{
-//    return getSelectionEx(pDocName,App::DocumentObject::getClassTypeId());
-//}
-//
-//std::vector<SelectionObject> SelectionSingleton::getSelectionEx(const char* pDocName,const char* typeName) const
-//{
-//    // search the type
-//    Base::Type typeId;
-//    if(typeName)
-//        typeId = Base::Type::fromName(typeName);
-//    else
-//        typeId = App::DocumentObject::getClassTypeId();
-//    return getSelectionEx(pDocName,typeId);
-//}
 std::vector<SelectionObject> SelectionSingleton::getSelectionEx(const char* pDocName, Base::Type typeId) const
 {
     std::vector<SelectionObject> temp;
-    
     std::map<App::DocumentObject*,SelectionObject> SortMap;
 
     // check the type
@@ -398,8 +382,14 @@ std::vector<SelectionObject> SelectionSingleton::getSelectionEx(const char* pDoc
         }
     }
 
-    for (std::map<App::DocumentObject*,SelectionObject>::const_iterator It = SortMap.begin();It != SortMap.end();++It) 
-        temp.push_back(It->second);
+    // The map looses the order thus we have to go again through the list and pick up the SelectionObject from the map
+    for (std::list<_SelObj>::const_iterator It = _SelList.begin();It != _SelList.end();++It) {
+        std::map<App::DocumentObject*,SelectionObject>::iterator Jt = SortMap.find(It->pObject);
+        if (Jt != SortMap.end()) {
+            temp.push_back(Jt->second);
+            SortMap.erase(Jt);
+        }
+    }
 
     return temp;
 }
@@ -955,7 +945,8 @@ void SelectionSingleton::removeObject(App::DocumentObject *f)
 // SelectionSingleton Methods  // Methods structure
 PyMethodDef SelectionSingleton::Methods[] = {
     {"addSelection",         (PyCFunction) SelectionSingleton::sAddSelection, 1, 
-     "addSelection(object) -- Add an object to the selection"},
+     "addSelection(object,[string,float,float,float]) -- Add an object to the selection\n"
+     "where string is the sub-element name and the three floats represent a 3d point"},
     {"removeSelection",      (PyCFunction) SelectionSingleton::sRemoveSelection, 1,
      "removeSelection(object) -- Remove an object from the selection"},
     {"clearSelection"  ,     (PyCFunction) SelectionSingleton::sClearSelection, 1,
