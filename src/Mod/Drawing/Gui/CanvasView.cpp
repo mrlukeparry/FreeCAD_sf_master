@@ -194,8 +194,24 @@ QGraphicsItemView * CanvasView::addViewDimension(Drawing::FeatureViewDimension *
     QGraphicsItemViewDimension *dimGroup = new QGraphicsItemViewDimension(QPoint(0,0), this->scene());
     dimGroup->setViewPartFeature(dim);
 
-    // The dimensions parent couldn't be found. Add for now.
-    this->addView(dimGroup);
+    // TODO consider changing dimension feature to use another property for label position
+    // Instead of calling addView - the view must for now be added manually
+
+    views.push_back(dimGroup);
+
+    // Find if it belongs to a parent
+    QGraphicsItemView *parent = 0;
+    parent = this->findParent(dimGroup);
+
+    if(parent) {
+        // Transfer the child vierw to the parent
+        QPointF posRef(0.,0.);
+        QPointF mapPos = dimGroup->mapToItem(parent, posRef);
+        dimGroup->moveBy(-mapPos.x(), -mapPos.y());
+
+        parent->addToGroup(dimGroup);
+    }
+
     return dimGroup;
 }
 

@@ -576,12 +576,14 @@ void DrawingView::updateDrawing()
 
         // Update the canvas view list of QGraphicsItemViews
         m_view->setViews(myViews);
-    }
-
+    } 
+    
     // Updated all the views
     const std::vector<QGraphicsItemView *> &upviews = m_view->getViews();
     for(std::vector<QGraphicsItemView *>::const_iterator it = upviews.begin(); it != upviews.end(); ++it) {
-        (*it)->updateView();
+        if((*it)->getViewObject()->isTouched()) {
+            (*it)->updateView();
+        }
     }
 
 }

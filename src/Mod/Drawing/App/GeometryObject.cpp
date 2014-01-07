@@ -599,13 +599,13 @@ void GeometryObject::extractVerts(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, H
             if(iv < 0)
                 continue;
 
-            // Check if vertex has alrady been addded
+            // Check if vertex has already been addded
             std::vector<int>::iterator vert;
             vert = std::find(vertexReferences.begin(), vertexReferences.end(), iv);
 
             if(vert == vertexReferences.end()) {
 
-                // If the index was found and is unique, the point is projected using the HLR Projector Algorithm
+                // If the index wasnt found and is unique, the point is projected using the HLR Projector Algorithm
                 gp_Pnt2d prjPnt;
                 DS->Projector().Project(BRep_Tool::Pnt(TopoDS::Vertex(*it)), prjPnt);
 

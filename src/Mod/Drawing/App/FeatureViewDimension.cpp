@@ -156,7 +156,7 @@ double FeatureViewDimension::getValue() const
             strcmp(projType, "DistanceY") == 0 ||
             strcmp(projType, "DistanceZ") == 0) {
 
-            Base::Vector3d delta = measurement->delta();
+            Base::Vector3d delta   = measurement->delta();
             Base::Vector3d projDir = ProjDirection.getValue();
             Base::Vector3d projDim = delta.ProjToPlane(Base::Vector3d(0.,0.,0.),
                                                        Base::Vector3d(projDir.x, projDir.y, projDir.z));
@@ -181,7 +181,7 @@ double FeatureViewDimension::getValue() const
             // Must project lines to 2D so cannot use measurement framework this time
             //Relcalculate the measurement based on references stored.
             const std::vector<App::DocumentObject*> &objects = References.getValues();
-            const std::vector<std::string> &subElements = References.getSubValues();
+            const std::vector<std::string> &subElements      = References.getSubValues();
 
             std::vector<App::DocumentObject*>::const_iterator obj = objects.begin();
             std::vector<std::string>::const_iterator subEl = subElements.begin();

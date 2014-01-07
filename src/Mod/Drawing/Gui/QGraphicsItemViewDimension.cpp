@@ -212,7 +212,7 @@ void QGraphicsItemViewDimension::select(bool state)
 void QGraphicsItemViewDimension::hover(bool state)
 {
     this->hasHover = state;
-    //draw();
+    draw();
 }
 
 void QGraphicsItemViewDimension::updateView(bool update)
