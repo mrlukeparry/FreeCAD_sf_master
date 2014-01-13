@@ -53,6 +53,8 @@ public:
     App::PropertyEnumeration Type;
     App::PropertyEnumeration ProjectionType;
     App::PropertyVector ProjDirection;
+    App::PropertyVector XAxisDirection;
+
 
     short mustExecute() const;
 

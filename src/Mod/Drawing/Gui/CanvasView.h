@@ -74,7 +74,10 @@ public Q_SLOTS:
 protected:
     void wheelEvent(QWheelEvent *event);
     void paintEvent(QPaintEvent *event);
-
+    void enterEvent(QEvent *event);
+    void mousePressEvent(QMouseEvent *event);
+    void mouseReleaseEvent(QMouseEvent *event);
+    
     static QColor SelectColor;
     static QColor PreselectColor;
 

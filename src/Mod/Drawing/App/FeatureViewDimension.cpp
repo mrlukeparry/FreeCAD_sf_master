@@ -107,6 +107,7 @@ App::DocumentObjectExecReturn *FeatureViewDimension::execute(void)
 
         //Overall assumption is that the dimensions are only allowed for one view
         ProjDirection.setValue(viewPart->Direction.getValue());
+        XAxisDirection.setValue(viewPart->XAxisDirection.getValue());
         App::DocumentObject *docObj = viewPart->Source.getValue();
 
         if((*subEl).substr(0,4) == "Edge") {
@@ -160,15 +161,28 @@ double FeatureViewDimension::getValue() const
             Base::Vector3d projDir = ProjDirection.getValue();
             Base::Vector3d projDim = delta.ProjToPlane(Base::Vector3d(0.,0.,0.),
                                                        Base::Vector3d(projDir.x, projDir.y, projDir.z));
-
-            Base::Console().Log("proj <%f %f %f>", delta.x, delta.y, delta.z);
-            Base::Console().Log("proj <%f %f %f>", projDim.x, projDim.y, projDim.z);
+            
+            Base::Vector3d xaxis = XAxisDirection.getValue();
+       
+            Base::Vector3d yaxis(projDir.y * xaxis.z - projDir.z * xaxis.y,
+                                 projDir.z * xaxis.x - projDir.x * xaxis.z,
+                                 projDir.x * xaxis.y - projDir.y * xaxis.x);
+            
+            // TODO not sure if this is a good idea to do i.e. works in all cases
+            // Argument that 2D projection is always orientated the same way
+            double x, y;
+            x = projDim.x * xaxis.x + projDim.y * xaxis.y + projDim.z * xaxis.z;
+            y = projDim.x * yaxis.x + projDim.y * yaxis.y + projDim.z * yaxis.z;
+        
+            //Base::Console().Log("proj <%f %f %f>", delta.x, delta.y, delta.z);
+            //Base::Console().Log("yaxis <%f %f %f>", yaxis.x, yaxis.y, yaxis.z);
+            //Base::Console().Log("proj <%f %f %f>", projDim.x, projDim.y, projDim.z);
             if(strcmp(projType, "Distance") == 0) {
                 return projDim.Length();
             } else if(strcmp(projType, "DistanceX") == 0) {
-                return projDim.x;
+                return x;
             } else if(strcmp(projType, "DistanceY") == 0) {
-                return projDim.y;
+                return y;
             } else if(strcmp(projType, "DistanceZ") == 0) {
                 throw Base::Exception("Cannot use z direction for projection type");
             }

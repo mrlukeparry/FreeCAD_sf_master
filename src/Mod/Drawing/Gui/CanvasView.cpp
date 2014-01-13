@@ -75,8 +75,11 @@ CanvasView::CanvasView(QWidget *parent)
 {
     setScene(new QGraphicsScene(this));
     setTransformationAnchor(AnchorUnderMouse);
+    
+    
+    
     setDragMode(ScrollHandDrag);
-
+    setCursor(QCursor(Qt::ArrowCursor));
     setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
 
     m_backgroundItem = new QGraphicsRectItem();
@@ -283,6 +286,7 @@ void CanvasView::setPageFeature(Drawing::FeaturePage *page)
 
     paperRect.setWidth(pageWidth);
     paperRect.setHeight(pageHeight);
+   
     QBrush brush(Qt::white);
 
     m_backgroundItem->setBrush(brush);
@@ -384,5 +388,22 @@ void CanvasView::wheelEvent(QWheelEvent *event)
     scale(factor, factor);
     event->accept();
 }
+void CanvasView::enterEvent(QEvent *event)
+{
+    QGraphicsView::enterEvent(event);
+    viewport()->setCursor(Qt::ArrowCursor);
+}
 
+void CanvasView::mousePressEvent(QMouseEvent *event)
+{
+    QGraphicsView::mousePressEvent(event);
+    viewport()->setCursor(Qt::ClosedHandCursor);
+}
+
+void CanvasView::mouseReleaseEvent(QMouseEvent *event)
+{
+    QGraphicsView::mouseReleaseEvent(event);
+    viewport()->setCursor(Qt::ArrowCursor);
+}
+    
 #include "moc_CanvasView.cpp"

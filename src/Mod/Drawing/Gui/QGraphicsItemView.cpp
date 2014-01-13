@@ -97,7 +97,7 @@ QVariant QGraphicsItemView::itemChange(GraphicsItemChange change, const QVariant
 
 void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 {
-    if(scene() && this == scene()->mouseGrabberItem()) {
+    if(scene() && this == scene()->mouseGrabberItem() && !this->locked) {
         Gui::Command::openCommand("Drag View");
         Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", this->getViewObject()->getNameInDocument(), this->x());
         Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", this->getViewObject()->getNameInDocument(), this->y());
