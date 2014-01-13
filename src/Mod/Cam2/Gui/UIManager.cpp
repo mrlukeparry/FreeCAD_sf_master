@@ -332,7 +332,7 @@ void UIManagerInst::updateCamProjectSelection(const char* pDocName) {
             	Q_EMIT updatedTPGSelection(NULL);
             Q_EMIT updatedToolPathSelection(NULL);
     	}
-		if (docObj->isDerivedFrom(Cam::TPGFeature::getClassTypeId()))
+		else if (docObj->isDerivedFrom(Cam::TPGFeature::getClassTypeId()))
     	{
 			Cam::TPGFeature *feature = dynamic_cast<Cam::TPGFeature *>(docObj);
 			if (feature) {

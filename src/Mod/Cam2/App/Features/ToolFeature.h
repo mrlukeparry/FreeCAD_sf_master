@@ -192,7 +192,122 @@ public:
 	Settings::Length	*diameter;
 	Settings::Length	*tool_length_offset;
 	Settings::Enumeration *material;
-	Settings::Enumeration *type;
+	Settings::Enumeration *tool_type;
+
+	/**
+		The next three parameters describe the cutting surfaces of the bit.
+
+		The two radii go from the centre of the bit -> flat radius -> corner radius.
+		The vertical_cutting_edge_angle is the angle between the centre line of the
+		milling bit and the angle of the outside cutting edges.  For an end-mill, this
+		would be zero.  i.e. the cutting edges are parallel to the centre line
+		of the milling bit.  For a chamfering bit, it may be something like 45 degrees.
+		i.e. 45 degrees from the centre line which has both cutting edges at 2 * 45 = 90
+		degrees to each other
+
+		For a ball-nose milling bit we would have;
+			- m_corner_radius = m_diameter / 2
+			- m_flat_radius = 0;	// No middle bit at the bottom of the cutter that remains flat
+						// before the corner radius starts.
+			- m_cutting_edge_angle = 0
+
+		For an end-mill we would have;
+			- m_corner_radius = 0;
+			- m_flat_radius = m_diameter / 2
+			- m_cutting_edge_angle = 0
+
+		For a chamfering bit we would have;
+			- m_corner_radius = 0;
+			- m_flat_radius = 0;	// sharp pointed end.  This may be larger if we can't use the centre point.
+			- m_cutting_edge_angle = 45	// degrees from centre line of tool
+	 */
+	Settings::Length	*m_corner_radius;
+	Settings::Length	*m_flat_radius;
+	Settings::Double	*m_cutting_edge_angle;
+	Settings::Length	*m_cutting_edge_height;	// How far, from the bottom of the cutter, do the flutes extend?
+
+	Settings::Length	*m_max_advance_per_revolution;	// This is the maximum distance a tool should advance during a single
+						// revolution.  This value is often defined by the manufacturer in
+						// terms of an advance no a per-tooth basis.  This value, however,
+						// must be expressed on a per-revolution basis.  i.e. we don't want
+						// to maintain the number of cutting teeth so a per-revolution
+						// value is easier to use.
+
+	Settings::Enumeration *m_automatically_generate_title;	// Set to true by default but reset to false when the user edits the title.
+
+	// The following coordinates relate ONLY to touch probe tools.  They describe
+	// the error the probe tool has in locating an X,Y point.  These values are
+	// added to a probed point's location to find the actual point.  The values
+	// should come from calibrating the touch probe.  i.e. set machine position
+	// to (0,0,0), drill a hole and then probe for the centre of the hole.  The
+	// coordinates found by the centre finding operation should be entered into
+	// these values verbatim.  These will represent how far off concentric the
+	// touch probe's tip is with respect to the quil.  Of course, these only
+	// make sense if the probe's body is aligned consistently each time.  I will
+	// ASSUME this is correct.
+
+	Settings::Length	*m_probe_offset_x;
+	Settings::Length	*m_probe_offset_y;
+
+	// The gradient is the steepest angle at which this tool can plunge into the material.  Many
+	// tools behave better if they are slowly ramped down into the material.  This gradient
+	// specifies the steepest angle of decsent.  This is expected to be a negative number indicating
+	// the 'rise / run' ratio.  Since the 'rise' will be downward, it will be negative.
+	// By this measurement, a drill bit's straight plunge would have an infinite gradient (all rise, no run).
+	// To cater for this, a value of zero will indicate a straight plunge.
+
+	Settings::Length	*m_gradient;
+
+	// properties for tapping tools
+	typedef enum {
+		eRightHandThread = 0,
+		eLeftHandThread
+	} eTappingDirection_t;
+
+	friend QString & operator << ( QString & ss, const eTappingDirection_t & direction )
+	{
+		switch (direction)
+		{
+		case eRightHandThread:
+			ss.append(QString::fromAscii("Right Hand"));
+			break;
+
+		case eLeftHandThread:
+			ss.append(QString::fromAscii("Left Hand"));
+			break;
+		}
+
+		return(ss);
+	}
+
+	Settings::Enumeration *m_direction;    // 0.. right hand tapping, 1..left hand tapping
+	Settings::Length *m_pitch;     // in units/rev
+
+	// properties for centre-drills
+	Settings::Enumeration *centre_drill_size;
+
+	Settings::Text *m_setup_instructions;	// Note to add to GCode file to make sure the operator sets up the tool correctly at the start.
+	Settings::Text *title;					// This reflects the object's name.  It can be automatically or manually generated.
+
+public:
+	const eToolType ToolType() const;
+
+public:
+    typedef struct
+    {
+        QString description;
+        double  diameter;
+        double  pitch;
+    } tap_sizes_t;
+
+	typedef struct
+	{
+		QString size;
+		double body_diameter;
+		double drill_diameter;
+		double drill_length;
+		double overall_length;
+	} centre_drill_t;
 
 private:
 	Settings::TPGSettings *settings;
