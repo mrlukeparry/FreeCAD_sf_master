@@ -75,14 +75,13 @@ CanvasView::CanvasView(QWidget *parent)
 {
     setScene(new QGraphicsScene(this));
     setTransformationAnchor(AnchorUnderMouse);
-    
-    
-    
+
     setDragMode(ScrollHandDrag);
     setCursor(QCursor(Qt::ArrowCursor));
     setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
 
     m_backgroundItem = new QGraphicsRectItem();
+    m_backgroundItem->setCacheMode(QGraphicsItem::NoCache);
     this->scene()->addItem(m_backgroundItem);
 
     // Prepare background check-board pattern
@@ -117,7 +116,7 @@ void CanvasView::drawBackground(QPainter *p, const QRectF &)
     p->save();
     p->resetTransform();
     p->setBrush(*bkgBrush);
-    p->drawRect( viewport()->rect());
+    p->drawRect(viewport()->rect());
     p->restore();
 
 }
@@ -129,18 +128,21 @@ int CanvasView::addView(QGraphicsItemView * view) {
     QGraphicsItemView *parent = 0;
     parent = this->findParent(view);
 
+    QPointF viewPos(view->getViewObject()->X.getValue(),
+                    view->getViewObject()->Y.getValue() * -1);
+    
     if(parent) {
         // Transfer the child vierw to the parent
         QPointF posRef(0.,0.);
-        QPointF viewPos(view->getViewObject()->X.getValue(),
-                        view->getViewObject()->Y.getValue());
+        
         QPointF mapPos = view->mapToItem(parent, posRef);
         view->moveBy(-mapPos.x(), -mapPos.y());
 
         parent->addToGroup(view);
-        view->setPos(viewPos); //update with relative position inside new coord system
-
     }
+    
+    view->setPos(viewPos);
+
     return views.size();
 }
 
@@ -279,13 +281,12 @@ void CanvasView::setPageFeature(Drawing::FeaturePage *page)
 {
     this->pageFeat = page;
 
-    QRectF paperRect;
+    
 
     float pageWidth  = this->pageFeat->Width.getValue();
     float pageHeight = this->pageFeat->Height.getValue();
 
-    paperRect.setWidth(pageWidth);
-    paperRect.setHeight(pageHeight);
+    QRectF paperRect(0, -pageHeight, pageWidth, pageHeight);
    
     QBrush brush(Qt::white);
 
