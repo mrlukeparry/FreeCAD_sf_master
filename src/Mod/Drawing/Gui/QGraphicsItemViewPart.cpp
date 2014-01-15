@@ -699,25 +699,32 @@ QRectF QGraphicsItemViewPart::boundingRect() const
     return bbox.adjusted(-5.,-5.,5.,5.);
 }
 
-void QGraphicsItemViewPart::drawBorder(QPainter *painter){
-  QRectF box = this->boundingRect().adjusted(2.,2.,-2.,-2.);
+void QGraphicsItemViewPart::drawBorder(QPainter *painter)
+{
   // Save the current painter state and restore at end
   painter->save();
+  
+  // Adjust the bounding box to have a fixed margin and draw dashed line for selection
+  QRectF box = this->boundingRect().adjusted(2.,2.,-2.,-2.);
+  
   QPen myPen = pen;
   myPen.setStyle(Qt::DashLine);
   myPen.setWidth(0.3);
   painter->setPen(myPen);
+  
+  // Draw Label
   QString name = QString::fromAscii(this->getViewObject()->Label.getValue());
-
+  
   QFont font;
-  font.setPointSize(3.f);
+  font.setFamily(QString::fromAscii("osifont")); // Set to generic sans-serif font
+  font.setPointSize(5.f);
   painter->setFont(font);
   QFontMetrics fm(font);
 
-  QPointF pos = box.center();
+  QPointF pos = box.center();  
   pos.setY(pos.y() + box.height() / 2. - 3.);
-
   pos.setX(pos.x() - fm.width(name) / 2.);
+  
   painter->drawText(pos, name);
   painter->drawRect(box);
 

@@ -37,7 +37,7 @@ FeatureViewAnnotation::FeatureViewAnnotation(void)
 {
     static const char *vgroup = "Drawing annotation";
 
-    ADD_PROPERTY_TYPE(Font ,("osifont")            ,vgroup,App::Prop_None, "The name of the font to use");
+    ADD_PROPERTY_TYPE(Font ,("osifont")         ,vgroup,App::Prop_None, "The name of the font to use");
     ADD_PROPERTY_TYPE(TextColor,(0.0f,0.0f,0.0f),vgroup,App::Prop_None, "The color of the text");
 }
 

@@ -51,7 +51,6 @@ QGraphicsItemView::QGraphicsItemView(const QPoint &pos, QGraphicsScene *scene)
     this->setFlag(QGraphicsItem::ItemSendsScenePositionChanges, true);
     this->setPos(pos);
 
-
     //Add object to scene
     scene->addItem(this);
 }
