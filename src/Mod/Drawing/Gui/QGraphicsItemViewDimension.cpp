@@ -257,11 +257,19 @@ void QGraphicsItemViewDimension::updateDim()
     if(this->getViewObject() == 0 || !this->getViewObject()->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
         return;
 
-    const Drawing::FeatureViewDimension  *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getViewObject());
+    const Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getViewObject());
 
     QString str = QString::number((absolute) ? fabs(dim->getValue()) : dim->getValue(), 'f', dim->Precision.getValue());
 
     QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
+
+
+    // TODO eventually dimension should be individually customisable with placeholders, this should later be modularised
+    const char *dimType = dim->Type.getValueAsString();
+    if(strcmp(dimType, "Angle") == 0) {
+        // Append the degree symbol sign using unicode
+        str += QString(QChar(0x00b0));
+    }
 
     QFont font = dLabel->font();
     font.setPointSizeF(dim->Fontsize.getValue());
@@ -805,8 +813,8 @@ void QGraphicsItemViewDimension::draw()
                 Base::Vector3d p0(x,y,0);
 
                 // Get directions with outwards orientation and check if coincident
-                dir1 = ((p1E - p0).Length() > FLT_EPSILON) ? p1E - p0 : p1S - p0;
-                dir2 = ((p2E - p0).Length() > FLT_EPSILON) ? p2E - p0 : p2S - p0;
+                dir1 = ((p1E - p0).Length() > (p1S - p0).Length()) ? p1E - p0 : p1S - p0;
+                dir2 = ((p2E - p0).Length() > (p2S - p0).Length()) ? p2E - p0 : p2S - p0;
 
                 // Qt y coordinates are flipped
                 dir1.y *= -1.;
@@ -819,6 +827,7 @@ void QGraphicsItemViewDimension::draw()
                 double startangle = atan2(dir1.y,dir1.x);
                 double range      = atan2(-dir1.y*dir2.x+dir1.x*dir2.y,
                                            dir1.x*dir2.x+dir1.y*dir2.y);
+
                 double endangle = startangle + range;
 
                 // Obtain the Label Position and measure the length between intersection
@@ -857,27 +866,83 @@ void QGraphicsItemViewDimension::draw()
                     path.moveTo(p1.x, p1.y);
                     p1 = ar1Pos + (p1-p0).Normalize() * 5.;
                     path.lineTo(p1.x, p1.y);
+                }
 
+                if(length > (p2-p0).Length()) {
                     path.moveTo(p2.x, p2.y);
                     p2 = ar2Pos + (p2-p0).Normalize() * 5.;
                     path.lineTo(p2.x, p2.y);
                 }
 
 
-                bool isOutside = false;
-                if(labelangle < startangle || labelangle > endangle) {
-                    isOutside = true;
+                bool isOutside = true;
+
+                // TODO find a better solution for this. Addmitedely not tidy
+                // ###############
+                // Treat zero as positive to be consistent for horizontal lines
+                if(std::abs(startangle) < FLT_EPSILON)
+                    startangle = 0;
+
+                 if(std::abs(endangle) < FLT_EPSILON)
+                    endangle = 0;
+
+                if(startangle >= 0 && endangle >= 0) {
+                    // Both are in positive side
+                  double langle = labelangle;
+                  if(labelangle < 0)
+                    langle += M_PI * 2;
+                    if(endangle - startangle > 0) {
+                        if(langle > startangle && langle < endangle)
+                            isOutside = false;
+                    } else {
+                        if(langle < startangle && langle > endangle)
+                            isOutside = false;
+                    }
+                } else if(startangle < 0 && endangle < 0) {
+                    // Both are in positive side
+                   double langle = labelangle;
+                    if(labelangle > 0)
+                        langle -= M_PI * 2;
+                    if(endangle - startangle < 0) {
+                        if(langle > endangle && langle < startangle) // clockwise
+                            isOutside = false;
+                    } else {
+                        if(langle < endangle && langle > startangle) // anticlockwise
+                            isOutside = false;
+                    }
+                } else if(startangle >= 0 && endangle < 0) {
+                    if(labelangle < startangle && labelangle > endangle) // clockwise
+                        isOutside = false;
+
+                } else if(startangle < 0 && endangle >= 0) {
+                   // Both are in positive side
+
+                    if(labelangle > startangle && labelangle < endangle) // clockwise
+                        isOutside = false;
                 }
+
+                // ###############
+//                 Base::Console().Log("<%f, %f, %f>\n", startangle, endangle, labelangle);
 
                 QRectF arcRect(p0.x - length, p0.y - length, 2. * length, 2. * length);
                 path.arcMoveTo(arcRect, endangle * 180 / M_PI);
                 if(isOutside) {
-                    path.arcTo(arcRect, endangle * 180 / M_PI, 180 / 12);
-                    path.arcMoveTo(arcRect,startangle * 180 / M_PI);
-                    path.arcTo(arcRect, startangle * 180 / M_PI, -180 / 12);
+                    if(labelangle > endangle)
+                    {
+                        path.arcTo(arcRect, endangle * 180 / M_PI, (labelangle  - endangle) * 180 / M_PI); // chosen a nominal value for 10 degrees
+                        path.arcMoveTo(arcRect,startangle * 180 / M_PI);
+                        path.arcTo(arcRect, startangle * 180 / M_PI, -10);
+                    } else {
+                        path.arcTo(arcRect, endangle * 180 / M_PI, 10); // chosen a nominal value for 10 degrees
+                        path.arcMoveTo(arcRect,startangle * 180 / M_PI);
+                        path.arcTo(arcRect, startangle * 180 / M_PI, (labelangle - startangle) * 180 / M_PI);
+                    }
+
+
                 } else {
                     path.arcTo(arcRect, endangle * 180 / M_PI, -range * 180 / M_PI);
                 }
+
                 QGraphicsPathItem *arrw = dynamic_cast<QGraphicsPathItem *> (this->arrows);
                 arrw->setPath(path);
                 arrw->setPen(pen);
@@ -908,17 +973,18 @@ void QGraphicsItemViewDimension::draw()
                 QGraphicsItemArrow *ar1 = dynamic_cast<QGraphicsItemArrow *>(arw.at(0));
                 QGraphicsItemArrow *ar2 = dynamic_cast<QGraphicsItemArrow *>(arw.at(1));
 
-                // Find the normal of the angle lines
-                Base::Vector3d norm1 = (p1-p0).Normalize(); //(-dir1.y, dir1.x, 0.);
-                Base::Vector3d norm2 = (p2-p0).Normalize(); //(-dir2.y, dir2.x, 0.);
+                Base::Vector3d norm1 = p1-p0; //(-dir1.y, dir1.x, 0.);
+                Base::Vector3d norm2 = p2-p0; //(-dir2.y, dir2.x, 0.);
 
-                norm1 = Base::Vector3d(norm1.y, -norm1.x);
-                norm2 = Base::Vector3d(norm2.y, -norm2.x);
+                Base::Vector3d avg = (norm1 + norm2) / 2.;
+
+                norm1 = norm1.ProjToLine(avg, norm1);
+                norm2 = norm2.ProjToLine(avg, norm2);
 
                 ar1->setPos(ar1Pos.x,ar1Pos.y );
                 ar2->setPos(ar2Pos.x,ar2Pos.y );
 
-                float ar1angle = atan2(norm1.y, norm1.x) * 180 / M_PI;
+                float ar1angle = atan2(-norm1.y, -norm1.x) * 180 / M_PI;
                 float ar2angle = atan2(norm2.y, norm2.x) * 180 / M_PI;
 
                 if(isOutside) {
