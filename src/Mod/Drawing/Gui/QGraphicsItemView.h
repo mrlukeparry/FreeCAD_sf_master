@@ -53,8 +53,9 @@ public:
     const char * getViewName() const;
     void setViewFeature(Drawing::FeatureView *obj);
     void setLocked(bool state = true) { this->locked = true; }
-    
-    /// Method to ensure that Y-Coordinates are orientated correctly.
+
+    /// Methods to ensure that Y-Coordinates are orientated correctly.
+    void setPosition(qreal x, qreal y);
     inline qreal getY() { return this->y() * -1; }
 
     void alignTo(QGraphicsItem *, const QString &alignment);

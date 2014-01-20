@@ -106,9 +106,14 @@ void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
     QGraphicsItem::mouseReleaseEvent(event);
 }
 
+void QGraphicsItemView::setPosition(qreal x, qreal y)
+{
+    this->setPos(x, -y);
+}
+
 void QGraphicsItemView::updateView(bool update)
 {
-    this->setPos(this->getViewObject()->X.getValue(), this->getViewObject()->Y.getValue());
+    this->setPosition(this->getViewObject()->X.getValue(), this->getViewObject()->Y.getValue());
 }
 
 const char * QGraphicsItemView::getViewName() const
