@@ -52,9 +52,6 @@ public:
     /// recalculate the Feature
     virtual void onDocumentRestored();
     virtual App::DocumentObjectExecReturn *execute(void);
-
-    void setPageFeature(const char *pageName);
-    App::DocumentObject * getPageFeature() const;
     //@}
 
     /// returns the type name of the ViewProvider

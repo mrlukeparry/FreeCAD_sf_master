@@ -81,25 +81,16 @@ std::vector<std::string> ViewProviderViewPart::getDisplayModes(void) const
     return StrList;
 }
 
-#if 0
+
 std::vector<App::DocumentObject*> ViewProviderViewPart::claimChildren(void) const
 {
     // Collect any child fields and put this in the CamFeature tree
     std::vector<App::DocumentObject*> temp;
-    Base::Console().Log("found page %s\n\n", "hi");
-    App::DocumentObject *obj = getViewPart()->getPageFeature();
-    if(!obj)
-        return temp;
-
-
-
-    Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(obj);
-    const std::vector<App::DocumentObject *> &views = page->Views.getValues();
+    const std::vector<App::DocumentObject *> &views = getViewPart()->getInList();
     try {
       for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
           if((*it)->getTypeId().isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId())) {
               Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(*it);
-              //
               const std::vector<App::DocumentObject *> &refs = dim->References.getValues();
               for(std::vector<App::DocumentObject *>::const_iterator it = refs.begin(); it != refs.end(); ++it) {
                   if(strcmp(getViewPart()->getNameInDocument(), (*it)->getNameInDocument()) == 0) {
@@ -107,7 +98,6 @@ std::vector<App::DocumentObject*> ViewProviderViewPart::claimChildren(void) cons
                   }
               }
           }
-
       }
       return temp;
     } catch (...) {
@@ -116,7 +106,6 @@ std::vector<App::DocumentObject*> ViewProviderViewPart::claimChildren(void) cons
     }
 }
 
-#endif
 
 void ViewProviderViewPart::updateData(const App::Property*)
 {

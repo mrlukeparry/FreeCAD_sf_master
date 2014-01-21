@@ -53,8 +53,8 @@ PROPERTY_SOURCE(Drawing::FeaturePage, App::DocumentObjectGroup)
 const char *group = "Drawing view";
 
 const char* FeaturePage::OrientationEnums[]= {"Portrait",
-                                                   "Landscape",
-                                                   NULL};
+                                              "Landscape",
+                                              NULL};
 
 FeaturePage::FeaturePage(void)
 {

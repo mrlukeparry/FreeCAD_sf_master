@@ -55,6 +55,9 @@
 #include <Mod/Drawing/App/FeaturePage.h>
 #include <Mod/Drawing/App/FeatureView.h>
 
+#include <Mod/Drawing/App/FeatureOrthoView.h>
+#include <Mod/Drawing/App/FeatureViewDimension.h>
+
 #include "DrawingView.h"
 #include "ViewProviderPage.h"
 
@@ -160,7 +163,13 @@ std::vector<App::DocumentObject*> ViewProviderDrawingPage::claimChildren(void) c
     const std::vector<App::DocumentObject *> &views = getPageObject()->Views.getValues();
     try {
       for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
-          temp.push_back(*it);
+          App::DocumentObject *docObj = *it;
+          // Don't collect if dimension or ortho view as these should be grouped elsewhere
+          if(docObj->isDerivedFrom(Drawing::FeatureOrthoView::getClassTypeId())    ||
+             docObj->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId())  )
+              continue;
+          else
+              temp.push_back(*it);
       }
       return temp;
     } catch (...) {

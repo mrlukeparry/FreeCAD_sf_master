@@ -50,7 +50,7 @@ public:
     virtual void updateData(const App::Property*);
 
 public:
-    //std::vector<App::DocumentObject*> claimChildren(void) const;
+    std::vector<App::DocumentObject*> claimChildren(void) const;
 
     Drawing::FeatureViewPart* getViewPart() const;
 };
