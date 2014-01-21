@@ -316,7 +316,6 @@ void QGraphicsItemViewPart::drawViewPart()
           QPointF mapPos = item->mapToItem(this, posRef);
           item->moveBy(-mapPos.x(), -mapPos.y());
           if(part->ShowHiddenLines.getValue()) {
-              Base::Console().Log("show hidden");
               item->setShowHidden(true);
         }
       }
@@ -703,28 +702,28 @@ void QGraphicsItemViewPart::drawBorder(QPainter *painter)
 {
   // Save the current painter state and restore at end
   painter->save();
-  
+
   // Adjust the bounding box to have a fixed margin and draw dashed line for selection
   QRectF box = this->boundingRect().adjusted(2.,2.,-2.,-2.);
-  
+
   QPen myPen = pen;
   myPen.setStyle(Qt::DashLine);
   myPen.setWidth(0.3);
   painter->setPen(myPen);
-  
+
   // Draw Label
   QString name = QString::fromAscii(this->getViewObject()->Label.getValue());
-  
+
   QFont font;
   font.setFamily(QString::fromAscii("osifont")); // Set to generic sans-serif font
   font.setPointSize(5.f);
   painter->setFont(font);
   QFontMetrics fm(font);
 
-  QPointF pos = box.center();  
+  QPointF pos = box.center();
   pos.setY(pos.y() + box.height() / 2. - 3.);
   pos.setX(pos.x() - fm.width(name) / 2.);
-  
+
   painter->drawText(pos, name);
   painter->drawRect(box);
 

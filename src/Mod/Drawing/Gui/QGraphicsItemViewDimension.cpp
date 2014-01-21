@@ -332,7 +332,6 @@ void QGraphicsItemViewDimension::draw()
     const std::vector<App::DocumentObject*> &objects = dim->References.getValues();
     const std::vector<std::string> &SubNames         = dim->References.getSubValues();
 
-
     const char *dimType = dim->Type.getValueAsString();
 
     if(strcmp(dimType, "Distance") == 0 ||

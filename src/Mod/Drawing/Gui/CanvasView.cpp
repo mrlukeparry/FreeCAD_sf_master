@@ -130,17 +130,17 @@ int CanvasView::addView(QGraphicsItemView * view) {
 
     QPointF viewPos(view->getViewObject()->X.getValue(),
                     view->getViewObject()->Y.getValue() * -1);
-    
+
     if(parent) {
         // Transfer the child vierw to the parent
         QPointF posRef(0.,0.);
-        
+
         QPointF mapPos = view->mapToItem(parent, posRef);
         view->moveBy(-mapPos.x(), -mapPos.y());
 
         parent->addToGroup(view);
     }
-    
+
     view->setPos(viewPos);
 
     return views.size();
@@ -281,13 +281,11 @@ void CanvasView::setPageFeature(Drawing::FeaturePage *page)
 {
     this->pageFeat = page;
 
-    
-
     float pageWidth  = this->pageFeat->Width.getValue();
     float pageHeight = this->pageFeat->Height.getValue();
 
     QRectF paperRect(0, -pageHeight, pageWidth, pageHeight);
-   
+
     QBrush brush(Qt::white);
 
     m_backgroundItem->setBrush(brush);
@@ -297,7 +295,7 @@ void CanvasView::setPageFeature(Drawing::FeaturePage *page)
     shadow->setBlurRadius(10.0);
     shadow->setColor(Qt::white);
     shadow->setOffset(0,0);
-    //m_backgroundItem->setGraphicsEffect(shadow);
+    m_backgroundItem->setGraphicsEffect(shadow);
 
     QRectF myRect = paperRect;
     myRect.adjust(20,20,20,20);
@@ -350,13 +348,15 @@ void CanvasView::toggleEdit(bool enable)
         QGraphicsItemView *itemView = dynamic_cast<QGraphicsItemView *>(*it);
         if(itemView) {
             QGraphicsItemViewPart *viewPart = dynamic_cast<QGraphicsItemViewPart *>(*it);
+            itemView->setSelected(false);
             if(viewPart) {
                 viewPart->toggleVertices(enable);
                 viewPart->toggleBorder(enable);
                 setViewBackground(enable);
             }
-            itemView->setSelected(false);
+            itemView->updateView(true);
         }
+        
         QGraphicsItem *item = dynamic_cast<QGraphicsItem *>(*it);
         if(item) {
             item->setCacheMode((enable) ? QGraphicsItem::DeviceCoordinateCache : QGraphicsItem::NoCache);
@@ -406,5 +406,5 @@ void CanvasView::mouseReleaseEvent(QMouseEvent *event)
     QGraphicsView::mouseReleaseEvent(event);
     viewport()->setCursor(Qt::ArrowCursor);
 }
-    
+
 #include "moc_CanvasView.cpp"
