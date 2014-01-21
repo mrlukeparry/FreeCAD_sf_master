@@ -26,9 +26,9 @@ import os,sys,string,math,shutil,glob,subprocess,tempfile
 if FreeCAD.GuiUp:
     import FreeCADGui,FemGui
     from FreeCAD import Vector
-    from PyQt4 import QtCore, QtGui
+    from PySide import QtCore, QtGui
     from pivy import coin
-    import PyQt4.uic as uic
+    from FreeCADGui import PySideUic as uic
 
 __title__="Mechanical Analysis managment"
 __author__ = "Juergen Riegel"
@@ -380,25 +380,20 @@ class _ResultControlTaskPanel:
             self.formUi.lineEdit_Max.setText(str(maxL))
             self.formUi.doubleSpinBox_MinValueColor.setValue(maxL)
             
-            colors = []
-            for i in values:
-                colors.append( FemLib.colorValue(i.Length,0.0,maxL) )
-            self.MeshObject.ViewObject.NodeColor = dict(zip( self.DisplacementObject.ElementNumbers,colors))
+            self.MeshObject.ViewObject.setNodeColorByResult(self.DisplacementObject)
+            
     def setDisplacement(self):
         if self.DisplacementObject:
-            values = self.DisplacementObject.Values
-            self.MeshObject.ViewObject.NodeDisplacement = dict(zip( self.DisplacementObject.ElementNumbers,values))   
+            self.MeshObject.ViewObject.setNodeDisplacementByResult(self.DisplacementObject)   
     
     def setColorStress(self):
         if self.StressObject:
             values = self.StressObject.Values
             maxVal = max(values)
             self.formUi.doubleSpinBox_MinValueColor.setValue(maxVal)
-            colors = []
-            for i in values:
-                colors.append( FemLib.colorValue(i,0.0,maxVal) )
-            self.MeshObject.ViewObject.ElementColor = dict(zip(self.StressObject.ElementNumbers,colors))
-    
+            
+            self.MeshObject.ViewObject.setNodeColorByResult(self.StressObject)
+
     def update(self):
         'fills the widgets'
 

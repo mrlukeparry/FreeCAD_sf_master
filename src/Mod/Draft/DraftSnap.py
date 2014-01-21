@@ -29,7 +29,7 @@ __url__ = "http://www.freecadweb.org"
 import FreeCAD, FreeCADGui, math, Draft, DraftGui, DraftTrackers, DraftVecUtils
 from FreeCAD import Vector
 from pivy import coin
-from PyQt4 import QtCore,QtGui
+from PySide import QtCore,QtGui
 
 class Snapper:
     """The Snapper objects contains all the functionality used by draft
@@ -53,7 +53,6 @@ class Snapper:
 
     def __init__(self):
         self.lastObj = [None,None]
-        self.views = []
         self.maxEdges = 0
         self.radius = 0
         self.constraintAxis = None
@@ -137,7 +136,7 @@ class Snapper:
 
         if not hasattr(self,"toolbar"):
             self.makeSnapToolBar()
-        mw = DraftGui.getMainWindow()
+        mw = FreeCADGui.getMainWindow()
         bt = mw.findChild(QtGui.QToolBar,"Draft Snap")
         if not bt:
             mw.addToolBar(self.toolbar)
@@ -557,16 +556,17 @@ class Snapper:
                             v = DraftVecUtils.rotate(ax[1],math.radians(a),ax[2])
                             vecs.extend([v,v.negative()])
                 for v in vecs:
-                    de = Part.Line(last,last.add(v)).toShape()  
-                    np = self.getPerpendicular(de,point)
-                    if ((self.radius == 0) and (point.sub(last).getAngle(v) < 0.087)) \
-                    or ((np.sub(point)).Length < self.radius):
-                        if self.tracker and not self.selectMode:
-                            self.tracker.setCoords(np)
-                            self.tracker.setMarker(self.mk['parallel'])
-                            self.tracker.on()
-                            self.setCursor('ortho')
-                        return np,de
+                    if not DraftVecUtils.isNull(v):
+                        de = Part.Line(last,last.add(v)).toShape()  
+                        np = self.getPerpendicular(de,point)
+                        if ((self.radius == 0) and (point.sub(last).getAngle(v) < 0.087)) \
+                        or ((np.sub(point)).Length < self.radius):
+                            if self.tracker and not self.selectMode:
+                                self.tracker.setCoords(np)
+                                self.tracker.setMarker(self.mk['parallel'])
+                                self.tracker.on()
+                                self.setCursor('ortho')
+                            return np,de
         return point,None
 
     def snapToGrid(self,point):
@@ -797,21 +797,20 @@ class Snapper:
 
     def setCursor(self,mode=None):
         "setCursor(self,mode=None): sets or resets the cursor to the given mode or resets"
-        if self.selectMode: 
-            for v in self.views:
-                v.unsetCursor()
-            self.views = []
+        if self.selectMode:
+            mw = FreeCADGui.getMainWindow()
+            for w in mw.findChildren(QtGui.QWidget):
+                if w.metaObject().className() == "SoQtGLArea":
+                    w.unsetCursor()
             self.cursorMode = None
         elif not mode:
-            for v in self.views:
-                v.unsetCursor()
-            self.views = []
+            mw = FreeCADGui.getMainWindow()
+            for w in mw.findChildren(QtGui.QWidget):
+                if w.metaObject().className() == "SoQtGLArea":
+                    w.unsetCursor()
             self.cursorMode = None
         else:
             if mode != self.cursorMode:
-                if not self.views:
-                    mw = DraftGui.getMainWindow()
-                    self.views = mw.findChildren(QtGui.QWidget,"QtGLArea")
                 baseicon = QtGui.QPixmap(":/icons/Draft_Cursor.svg")
                 newicon = QtGui.QPixmap(32,24)
                 newicon.fill(QtCore.Qt.transparent)
@@ -823,8 +822,10 @@ class Snapper:
                     qp.drawPixmap(QtCore.QPoint(16, 8), tp);
                 qp.end()
                 cur = QtGui.QCursor(newicon,8,8)
-                for v in self.views:
-                    v.setCursor(cur)
+                mw = FreeCADGui.getMainWindow()
+                for w in mw.findChildren(QtGui.QWidget):
+                    if w.metaObject().className() == "SoQtGLArea":
+                        w.setCursor(cur)
                 self.cursorMode = mode
 
     def restack(self):
@@ -1129,7 +1130,7 @@ class Snapper:
         "shows the toolbar and the grid"
         if not hasattr(self,"toolbar"):
             self.makeSnapToolBar()
-        mw = DraftGui.getMainWindow()
+        mw = FreeCADGui.getMainWindow()
         bt = mw.findChild(QtGui.QToolBar,"Draft Snap")
         if not bt:
             mw.addToolBar(self.toolbar)

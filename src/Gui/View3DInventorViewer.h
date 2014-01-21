@@ -159,6 +159,10 @@ public:
     SbBool isEditingViewProvider() const;
     /// reset from edit mode
     void resetEditingViewProvider();
+    /// display override mode
+    void setOverrideMode(const std::string &mode);
+    void updateOverrideMode(const std::string &mode);
+    std::string getOverrideMode() {return overrideMode;}
     //@}
 
     /** @name Making pictures */
@@ -303,6 +307,7 @@ public:
 protected:
     void renderScene();
     void renderFramebuffer();
+    void animatedViewAll(int steps, int ms);
     virtual void actualRedraw(void);
     virtual void setSeekMode(SbBool enable);
     virtual void afterRealizeHook(void);
@@ -358,6 +363,8 @@ private:
     QCursor editCursor;
     SbBool redirected;
     SbBool allowredir;
+
+    std::string overrideMode;
 
     // friends
     friend class NavigationStyle;
