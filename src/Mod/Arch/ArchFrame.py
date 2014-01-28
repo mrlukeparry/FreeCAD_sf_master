@@ -21,17 +21,22 @@
 #*                                                                         *
 #***************************************************************************
 
-import FreeCAD,FreeCADGui,Draft,ArchComponent,DraftVecUtils,ArchCommands
+import FreeCAD,Draft,ArchComponent,DraftVecUtils,ArchCommands
 from FreeCAD import Vector
-from PyQt4 import QtCore
-from DraftTools import translate
+if FreeCAD.GuiUp:
+    import FreeCADGui
+    from PySide import QtCore, QtGui
+    from DraftTools import translate
+else:
+    def translate(ctxt,txt):
+        return txt
 
 __title__="FreeCAD Arch Frame"
 __author__ = "Yorik van Havre"
 __url__ = "http://www.freecadweb.org"
 
     
-def makeFrame(base,profile,name="Frame"):
+def makeFrame(base,profile,name=translate("Arch","Frame")):
     """makeFrame(base,profile,[name]): creates a frame object from a base sketch (or any other object
     containing wires) and a profile object (an extrudable 2D object containing faces or closed wires)"""
     obj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython",name)
@@ -53,7 +58,7 @@ class _CommandFrame:
     def Activated(self):
         s = FreeCADGui.Selection.getSelection()
         if len(s) == 2:
-            FreeCAD.ActiveDocument.openTransaction(str(translate("Arch","Create Frame")))
+            FreeCAD.ActiveDocument.openTransaction(translate("Arch","Create Frame"))
             FreeCADGui.doCommand("import Arch")
             FreeCADGui.doCommand("Arch.makeFrame(FreeCAD.ActiveDocument."+s[0].Name+",FreeCAD.ActiveDocument."+s[1].Name+")")
             FreeCAD.ActiveDocument.commitTransaction()
@@ -148,5 +153,5 @@ class _ViewProviderFrame(ArchComponent.ViewProviderComponent):
         import Arch_rc
         return ":/icons/Arch_Frame_Tree.svg"
 
-
-FreeCADGui.addCommand('Arch_Frame',_CommandFrame())
+if FreeCAD.GuiUp:
+    FreeCADGui.addCommand('Arch_Frame',_CommandFrame())

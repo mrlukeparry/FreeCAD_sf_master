@@ -44,7 +44,7 @@
 
 # include "DrawingView.h"
 # include "TaskDialog.h"
-# include "TaskOrthoViews.h"
+//# include "TaskOrthoViews.h"
 # include "ViewProviderPage.h"
 
 using namespace DrawingGui;
@@ -772,7 +772,7 @@ void CmdDrawingSymbol::activated(int iMsg)
         return;
     }
     // Reading an image
-    QString filename = Gui::FileDialog::getOpenFileName(Gui::getMainWindow(), QObject::tr("Choose an SVG file to open"), QString::null, 
+    QString filename = Gui::FileDialog::getOpenFileName(Gui::getMainWindow(), QObject::tr("Choose an SVG file to open"), QString::null,
                                            QObject::tr("Scalable Vector Graphics (*.svg *.svgz)"));
     if (!filename.isEmpty())
     {

@@ -32,7 +32,7 @@ set(DrawingGui_MOC_HDRS
     QGraphicsItemViewOrthographic.h
     QGraphicsItemViewPart.h
     QGraphicsItemViewSection.h
-    TaskOrthoViews.h
+    #TaskOrthoViews.h
     TaskDialog.h
 )
 
@@ -57,9 +57,9 @@ SET(DrawingGui_SRCS
     PreCompiled.h
     TaskDialog.cpp
     TaskDialog.h
-    TaskOrthoViews.ui
-    TaskOrthoViews.cpp
-    TaskOrthoViews.h
+    #TaskOrthoViews.ui
+    #TaskOrthoViews.cpp
+    #TaskOrthoViews.h
     Workbench.cpp
     Workbench.h
 )

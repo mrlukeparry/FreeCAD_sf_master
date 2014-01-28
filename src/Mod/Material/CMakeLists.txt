@@ -5,6 +5,7 @@ SET(Material_SRCS
     Material.py
     importFCMat.py
     MaterialEditor.py
+    materials-editor.ui
 )
 SOURCE_GROUP("Module" FILES ${Material_SRCS})
 
@@ -25,8 +26,12 @@ ADD_CUSTOM_TARGET(Material ALL
     SOURCES ${all_files}
 )
 
-fc_copy_sources(Material "${CMAKE_BINARY_DIR}/Mod/Material" ${all_files})
+#fc_copy_sources(Material "${CMAKE_BINARY_DIR}/Mod/Material" ${Material_SRCS})
 
+fc_target_copy_resource(Material 
+    ${CMAKE_SOURCE_DIR}/src/Mod/Material
+    ${CMAKE_BINARY_DIR}/Mod/Material
+    ${Material_SRCS})
 
 fc_target_copy_resource(Material 
     ${CMAKE_SOURCE_DIR}/src/Mod/Material

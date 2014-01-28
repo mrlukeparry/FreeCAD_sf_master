@@ -25,10 +25,15 @@ __title__="FreeCAD Arch Component"
 __author__ = "Yorik van Havre"
 __url__ = "http://www.freecadweb.org"
 
-import FreeCAD,FreeCADGui,Draft
+import FreeCAD,Draft
 from FreeCAD import Vector
-from PyQt4 import QtGui,QtCore
-from DraftTools import translate
+if FreeCAD.GuiUp:
+    import FreeCADGui
+    from PySide import QtGui,QtCore
+    from DraftTools import translate
+else:
+    def translate(ctxt,txt):
+        return txt
 
 def addToComponent(compobject,addobject,mod=None):
     '''addToComponent(compobject,addobject,mod): adds addobject
@@ -321,6 +326,9 @@ class Component:
             if hasattr(obj,prop):
                 for o in getattr(obj,prop):
                     if Draft.getType(o) != "Window":
+                        if (Draft.getType(obj) == "Wall"):
+                            if (Draft.getType(o) == "Roof"):
+                                continue
                         o.ViewObject.hide()
 
     def processSubShapes(self,obj,base,pl=None):
@@ -387,6 +395,13 @@ class Component:
                                 if pl:
                                     f.Placement = f.Placement.multiply(pl)
                                 base = base.cut(f)
+
+                elif (Draft.getType(o) == "Roof") or (Draft.isClone(o,"Roof")):
+                    # roofs define their own special subtraction volume
+                    f = o.Proxy.getSubVolume(o)
+                    if f:
+                        if base.Solids and f.Solids:
+                            base = base.cut(f)
                             
                 elif o.isDerivedFrom("Part::Feature"):
                     if o.Shape:
@@ -419,18 +434,7 @@ class ViewProviderComponent:
         return modes
 
     def setDisplayMode(self,mode):
-        if mode == "Detailed":
-            if hasattr(self,"Object"):
-                if hasattr(self.Object,"Fixtures"):
-                    for f in self.Object.Fixtures:
-                        f.ViewObject.show()
-            return "Flat Lines"
-        else:
-            if hasattr(self,"Object"):
-                if hasattr(self.Object,"Fixtures"):
-                    for f in self.Object.Fixtures:
-                        f.ViewObject.hide()
-            return mode
+        return mode
 
     def __getstate__(self):
         return None
@@ -446,7 +450,12 @@ class ViewProviderComponent:
                 c = []
             else:
                 c = [self.Object.Base]
-            c = c + self.Object.Additions + self.Object.Subtractions
+            c = c + self.Object.Additions
+            for s in self.Object.Subtractions:
+                if Draft.getType(self.Object) == "Wall":
+                    if Draft.getType(s) == "Roof":
+                        continue
+                c.append(s)
             if hasattr(self.Object,"Fixtures"):
                 c.extend(self.Object.Fixtures)
             if hasattr(self.Object,"Armatures"):
@@ -490,7 +499,7 @@ class ArchSelectionObserver:
             del FreeCAD.ArchObserver
         elif object == self.watched.Name:
             if not element:
-                FreeCAD.Console.PrintMessage(str(translate("Arch","closing Sketch edit")))
+                FreeCAD.Console.PrintMessage(translate("Arch","closing Sketch edit"))
                 if self.hide:
                     if self.origin:
                         self.origin.ViewObject.Transparency = 0

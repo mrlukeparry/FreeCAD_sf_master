@@ -177,7 +177,7 @@ IF(EIGEN3_FOUND)
     if(FREECAD_BUILD_SKETCHER)
       add_subdirectory(Sketcher)
     endif(FREECAD_BUILD_SKETCHER)
-    
+
     if(FREECAD_BUILD_ROBOT)
       add_subdirectory(Robot)
     endif(FREECAD_BUILD_ROBOT)

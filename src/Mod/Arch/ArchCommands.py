@@ -21,10 +21,15 @@
 #*                                                                         *
 #***************************************************************************
 
-import FreeCAD,FreeCADGui,Draft,ArchComponent,DraftVecUtils
+import FreeCAD,Draft,ArchComponent,DraftVecUtils
 from FreeCAD import Vector
-from PyQt4 import QtCore
-from DraftTools import translate
+if FreeCAD.GuiUp:
+    import FreeCADGui
+    from PySide import QtGui,QtCore
+    from DraftTools import translate
+else:
+    def translate(ctxt,txt):
+        return txt
 
 __title__="FreeCAD Arch Commands"
 __author__ = "Yorik van Havre"
@@ -137,16 +142,16 @@ def removeComponents(objectsList,host=None):
                             if o.Base.Support:
                                 if isinstance(o.Base.Support,tuple):
                                    if o.Base.Support[0].Name == host.Name:
-                                       FreeCAD.Console.PrintMessage(str(translate("Arch","removing sketch support to avoid cross-referencing")))
+                                       FreeCAD.Console.PrintMessage(translate("Arch","removing sketch support to avoid cross-referencing"))
                                        o.Base.Support = None
                                 elif o.Base.Support.Name == host.Name:
-                                    FreeCAD.Console.PrintMessage(str(translate("Arch","removing sketch support to avoid cross-referencing")))
+                                    FreeCAD.Console.PrintMessage(translate("Arch","removing sketch support to avoid cross-referencing"))
                                     o.Base.Support = None
                             elif o.Base.ExternalGeometry:
                                 for i in range(len(o.Base.ExternalGeometry)):
                                     if o.Base.ExternalGeometry[i][0].Name == host.Name:
                                         o.Base.delExternal(i)
-                                        FreeCAD.Console.PrintMessage(str(translate("Arch","removing sketch support to avoid cross-referencing")))
+                                        FreeCAD.Console.PrintMessage(translate("Arch","removing sketch support to avoid cross-referencing"))
                                         break                                        
             host.Subtractions = s
     else:
@@ -189,16 +194,16 @@ def fixWindow(obj):
                 if obj.Base.Support:
                     if isinstance(o.Base.Support,tuple):
                        if obj.Base.Support[0]:
-                           FreeCAD.Console.PrintMessage(str(translate("Arch","removing sketch support to avoid cross-referencing")))
+                           FreeCAD.Console.PrintMessage(translate("Arch","removing sketch support to avoid cross-referencing"))
                            obj.Base.Support = None
                     elif obj.Base.Support:
-                        FreeCAD.Console.PrintMessage(str(translate("Arch","removing sketch support to avoid cross-referencing")))
+                        FreeCAD.Console.PrintMessage(translate("Arch","removing sketch support to avoid cross-referencing"))
                         obj.Base.Support = None
             if hasattr(obj.Base,"ExternalGeometry"):
                 if obj.Base.ExternalGeometry:
                     for i in range(len(obj.Base.ExternalGeometry)):
                         obj.Base.delExternal(0)
-                        FreeCAD.Console.PrintMessage(str(translate("Arch","removing sketch external references to avoid cross-referencing")))
+                        FreeCAD.Console.PrintMessage(translate("Arch","removing sketch external references to avoid cross-referencing"))
 
 def copyProperties(obj1,obj2):
     '''copyProperties(obj1,obj2): Copies properties values from obj1 to obj2,
@@ -337,14 +342,14 @@ def getCutVolume(cutplane,shapes):
         else:
             p = cutplane.copy().Faces[0]
     except:
-        FreeCAD.Console.PrintMessage(str(translate("Arch","Invalid cutplane")))
+        FreeCAD.Console.PrintMessage(translate("Arch","Invalid cutplane"))
         return None,None,None 
     ce = p.CenterOfMass
     ax = p.normalAt(0,0)
     u = p.Vertexes[1].Point.sub(p.Vertexes[0].Point).normalize()
     v = u.cross(ax)
     if not bb.isCutPlane(ce,ax):
-        FreeCAD.Console.PrintMessage(str(translate("Arch","No objects are cut by the plane")))
+        FreeCAD.Console.PrintMessage(translate("Arch","No objects are cut by the plane"))
         return None,None,None
     else:
         corners = [FreeCAD.Vector(bb.XMin,bb.YMin,bb.ZMin),
@@ -567,19 +572,19 @@ def check(objectslist,includehidden=False):
         else:
             s = o.Shape
             if (not s.isClosed()) and (not (Draft.getType(o) == "Axis")):
-                bad.append([o,str(translate("Arch","is not closed"))])
+                bad.append([o,translate("Arch","is not closed")])
             elif not s.isValid():
-                bad.append([o,str(translate("Arch","is not valid"))])
+                bad.append([o,translate("Arch","is not valid")])
             elif (not s.Solids) and (not (Draft.getType(o) == "Axis")):
-                bad.append([o,str(translate("Arch","doesn't contain any solid"))])
+                bad.append([o,translate("Arch","doesn't contain any solid")])
             else:
                 f = 0
                 for sol in s.Solids:
                     f += len(sol.Faces)
                     if not sol.isClosed():
-                        bad.append([o,str(translate("Arch","contains a non-closed solid"))])
+                        bad.append([o,translate("Arch","contains a non-closed solid")])
                 if len(s.Faces) != f:
-                    bad.append([o,str(translate("Arch","contains faces that are not part of any solid"))])
+                    bad.append([o,translate("Arch","contains faces that are not part of any solid")])
     return bad
 
 
@@ -593,7 +598,7 @@ def addFixture(fixture,baseobject):
         if baseobject.ViewObject.DisplayMode != "Detailed":
             fixture.ViewObject.hide()
     else:
-        FreeCAD.Console.PrintMessage(str(translate("Arch","This object has no support for fixtures")))
+        FreeCAD.Console.PrintMessage(translate("Arch","This object has no support for fixtures"))
 
 def getTuples(data,scale=1,placement=None):
     """getTuples(data,[scale,placement]): returns a tuple or a list of tuples from a vector
@@ -944,13 +949,13 @@ class _CommandFixture:
         FreeCAD.ActiveDocument.commitTransaction()
         FreeCAD.ActiveDocument.recompute()
 
-
-FreeCADGui.addCommand('Arch_Add',_CommandAdd())
-FreeCADGui.addCommand('Arch_Remove',_CommandRemove())
-FreeCADGui.addCommand('Arch_SplitMesh',_CommandSplitMesh())
-FreeCADGui.addCommand('Arch_MeshToShape',_CommandMeshToShape())
-FreeCADGui.addCommand('Arch_SelectNonSolidMeshes',_CommandSelectNonSolidMeshes())
-FreeCADGui.addCommand('Arch_RemoveShape',_CommandRemoveShape())
-FreeCADGui.addCommand('Arch_CloseHoles',_CommandCloseHoles())
-FreeCADGui.addCommand('Arch_Check',_CommandCheck())
-#FreeCADGui.addCommand('Arch_Fixture',_CommandFixture())
+if FreeCAD.GuiUp:
+    FreeCADGui.addCommand('Arch_Add',_CommandAdd())
+    FreeCADGui.addCommand('Arch_Remove',_CommandRemove())
+    FreeCADGui.addCommand('Arch_SplitMesh',_CommandSplitMesh())
+    FreeCADGui.addCommand('Arch_MeshToShape',_CommandMeshToShape())
+    FreeCADGui.addCommand('Arch_SelectNonSolidMeshes',_CommandSelectNonSolidMeshes())
+    FreeCADGui.addCommand('Arch_RemoveShape',_CommandRemoveShape())
+    FreeCADGui.addCommand('Arch_CloseHoles',_CommandCloseHoles())
+    FreeCADGui.addCommand('Arch_Check',_CommandCheck())
+    #FreeCADGui.addCommand('Arch_Fixture',_CommandFixture())

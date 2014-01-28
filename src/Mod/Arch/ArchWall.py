@@ -21,16 +21,21 @@
 #*                                                                         *
 #***************************************************************************
 
-import FreeCAD,FreeCADGui,Draft,ArchComponent,DraftVecUtils,ArchCommands,math
+import FreeCAD,Draft,ArchComponent,DraftVecUtils,ArchCommands,math
 from FreeCAD import Vector
-from PyQt4 import QtCore
-from DraftTools import translate
+if FreeCAD.GuiUp:
+    import FreeCADGui
+    from PySide import QtCore, QtGui
+    from DraftTools import translate
+else:
+    def translate(ctxt,txt):
+        return txt
 
 __title__="FreeCAD Wall"
 __author__ = "Yorik van Havre"
 __url__ = "http://www.freecadweb.org"
 
-def makeWall(baseobj=None,length=None,width=None,height=None,align="Center",face=None,name=str(translate("Arch","Wall"))):
+def makeWall(baseobj=None,length=None,width=None,height=None,align="Center",face=None,name=translate("Arch","Wall")):
     '''makeWall([obj],[length],[width],[height],[align],[face],[name]): creates a wall based on the
     given object, which can be a sketch, a draft object, a face or a solid, or no object at
     all, then you must provide length, width and height. Align can be "Center","Left" or "Right", 
@@ -38,7 +43,10 @@ def makeWall(baseobj=None,length=None,width=None,height=None,align="Center",face
     p = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Arch")
     obj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython",name)
     _Wall(obj)
-    _ViewProviderWall(obj.ViewObject)
+    if FreeCAD.GuiUp:
+        _ViewProviderWall(obj.ViewObject)
+        obj.ViewObject.ShapeColor = ArchCommands.getDefaultColor("Wall")
+
     if baseobj:
         obj.Base = baseobj
     if face:
@@ -54,10 +62,9 @@ def makeWall(baseobj=None,length=None,width=None,height=None,align="Center",face
     else:
         obj.Height = p.GetFloat("WallHeight",3000)
     obj.Align = align
-    if obj.Base:
+    if obj.Base and FreeCAD.GuiUp:
         if Draft.getType(obj.Base) != "Space":
             obj.Base.ViewObject.hide()
-    obj.ViewObject.ShapeColor = ArchCommands.getDefaultColor("Wall")
     return obj
 
 def joinWalls(walls,delete=False):
@@ -141,17 +148,14 @@ class _CommandWall:
                 'ToolTip': QtCore.QT_TRANSLATE_NOOP("Arch_Wall","Creates a wall object from scratch or from a selected object (wire, face or solid)")}
         
     def Activated(self):
-
-        global QtGui, QtCore
-        from PyQt4 import QtGui, QtCore
-
         self.Align = "Center"
         self.Length = None
         self.continueCmd = False
         p = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Arch")
         self.Width = p.GetFloat("WallWidth",200)
         self.Height = p.GetFloat("WallHeight",3000)
-        self.JOIN_WALLS = p.GetBool("joinWallSketches")
+        self.JOIN_WALLS_SKETCHES = p.GetBool("joinWallSketches",False)
+        self.AUTOJOIN = p.GetBool("autoJoinWalls",True)
         sel = FreeCADGui.Selection.getSelectionEx()
         done = False
         self.existing = []
@@ -160,7 +164,7 @@ class _CommandWall:
             # automatic mode
             import Draft
             if Draft.getType(sel[0].Object) != "Wall":
-                FreeCAD.ActiveDocument.openTransaction(str(translate("Arch","Create Wall")))
+                FreeCAD.ActiveDocument.openTransaction(translate("Arch","Create Wall"))
                 FreeCADGui.doCommand('import Arch')
                 for selobj in sel:
                     if Draft.getType(selobj.Object) == "Space":
@@ -204,7 +208,7 @@ class _CommandWall:
             import Part
             l = Part.Line(self.points[0],self.points[1])
             self.tracker.finalize()
-            FreeCAD.ActiveDocument.openTransaction(str(translate("Arch","Create Wall")))
+            FreeCAD.ActiveDocument.openTransaction(translate("Arch","Create Wall"))
             FreeCADGui.doCommand('import Arch')
             FreeCADGui.doCommand('import Part')
             FreeCADGui.doCommand('trace=Part.Line(FreeCAD.'+str(l.StartPoint)+',FreeCAD.'+str(l.EndPoint)+')')
@@ -212,7 +216,7 @@ class _CommandWall:
                 # no existing wall snapped, just add a default wall
                 self.addDefault(l)
             else:
-                if self.JOIN_WALLS:
+                if self.JOIN_WALLS_SKETCHES:
                     # join existing subwalls first if possible, then add the new one
                     w = joinWalls(self.existing)
                     if w:
@@ -221,20 +225,22 @@ class _CommandWall:
                         else:
                             # if not possible, add new wall as addition to the existing one
                             self.addDefault(l)
-                            FreeCADGui.doCommand('Arch.addComponents(FreeCAD.ActiveDocument.'+FreeCAD.ActiveDocument.Objects[-1].Name+',FreeCAD.ActiveDocument.'+w.Name+')')
+                            if self.AUTOJOIN:
+                                FreeCADGui.doCommand('Arch.addComponents(FreeCAD.ActiveDocument.'+FreeCAD.ActiveDocument.Objects[-1].Name+',FreeCAD.ActiveDocument.'+w.Name+')')
                     else:
                         self.addDefault(l)
                 else:
                     # add new wall as addition to the first existing one
                     self.addDefault(l)
-                    FreeCADGui.doCommand('Arch.addComponents(FreeCAD.ActiveDocument.'+FreeCAD.ActiveDocument.Objects[-1].Name+',FreeCAD.ActiveDocument.'+self.existing[0].Name+')')
+                    if self.AUTOJOIN:
+                        FreeCADGui.doCommand('Arch.addComponents(FreeCAD.ActiveDocument.'+FreeCAD.ActiveDocument.Objects[-1].Name+',FreeCAD.ActiveDocument.'+self.existing[0].Name+')')
             FreeCAD.ActiveDocument.commitTransaction()
             FreeCAD.ActiveDocument.recompute()
             if self.continueCmd:
                 self.Activated()
 
     def addDefault(self,l):
-        FreeCADGui.doCommand('base=FreeCAD.ActiveDocument.addObject("Sketcher::SketchObject","'+str(translate('Arch','WallTrace'))+'")')
+        FreeCADGui.doCommand('base=FreeCAD.ActiveDocument.addObject("Sketcher::SketchObject","'+translate('Arch','WallTrace')+'")')
         FreeCADGui.doCommand('base.addGeometry(trace)')
         FreeCADGui.doCommand('Arch.makeWall(base,width='+str(self.Width)+',height='+str(self.Height)+',align="'+str(self.Align)+'")')
 
@@ -259,12 +265,12 @@ class _CommandWall:
         "sets up a taskbox widget"
         d = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Units").GetInt("Decimals",2)
         w = QtGui.QWidget()
-        w.setWindowTitle(unicode(translate("Arch","Wall options")))
+        w.setWindowTitle(translate("Arch","Wall options").decode("utf8"))
         lay0 = QtGui.QVBoxLayout(w)
         
         lay5 = QtGui.QHBoxLayout()
         lay0.addLayout(lay5)
-        label5 = QtGui.QLabel(unicode(translate("Arch","Length")))
+        label5 = QtGui.QLabel(translate("Arch","Length").decode("utf8"))
         lay5.addWidget(label5)
         self.Length = QtGui.QDoubleSpinBox()
         self.Length.setDecimals(d)
@@ -273,7 +279,7 @@ class _CommandWall:
         
         lay1 = QtGui.QHBoxLayout()
         lay0.addLayout(lay1)
-        label1 = QtGui.QLabel(unicode(translate("Arch","Width")))
+        label1 = QtGui.QLabel(translate("Arch","Width").decode("utf8"))
         lay1.addWidget(label1)
         value1 = QtGui.QDoubleSpinBox()
         value1.setDecimals(d)
@@ -282,7 +288,7 @@ class _CommandWall:
         
         lay2 = QtGui.QHBoxLayout()
         lay0.addLayout(lay2)
-        label2 = QtGui.QLabel(unicode(translate("Arch","Height")))
+        label2 = QtGui.QLabel(translate("Arch","Height").decode("utf8"))
         lay2.addWidget(label2)
         value2 = QtGui.QDoubleSpinBox()
         value2.setDecimals(d)
@@ -291,7 +297,7 @@ class _CommandWall:
         
         lay3 = QtGui.QHBoxLayout()
         lay0.addLayout(lay3)
-        label3 = QtGui.QLabel(unicode(translate("Arch","Alignment")))
+        label3 = QtGui.QLabel(translate("Arch","Alignment").decode("utf8"))
         lay3.addWidget(label3)
         value3 = QtGui.QComboBox()
         items = ["Center","Left","Right"]
@@ -299,7 +305,7 @@ class _CommandWall:
         value3.setCurrentIndex(items.index(self.Align))
         lay3.addWidget(value3)
         
-        value4 = QtGui.QCheckBox(unicode(translate("Arch","Continue")))
+        value4 = QtGui.QCheckBox(translate("Arch","Continue").decode("utf8"))
         lay0.addWidget(value4)
         QtCore.QObject.connect(value1,QtCore.SIGNAL("valueChanged(double)"),self.setWidth)
         QtCore.QObject.connect(value2,QtCore.SIGNAL("valueChanged(double)"),self.setHeight)
@@ -511,16 +517,16 @@ class _Wall(ArchComponent.Component):
         if hasattr(obj,"Width"):
             if obj.Width:
                 width = obj.Width
-        height = normal = None
+        height = 1
         if hasattr(obj,"Height"):
             if obj.Height:
                 height = obj.Height
             else:
                 for p in obj.InList:
                     if Draft.getType(p) == "Floor":
-                        height = p.Height
-        if not height: 
-            height = 1
+                        if p.Height:
+                            height = p.Height
+        normal = None
         if hasattr(obj,"Normal"):
             if obj.Normal == Vector(0,0,0):
                 normal = Vector(0,0,1)
@@ -601,5 +607,6 @@ class _ViewProviderWall(ArchComponent.ViewProviderComponent):
         self.Object = vobj.Object
         return
 
-FreeCADGui.addCommand('Arch_Wall',_CommandWall())
-FreeCADGui.addCommand('Arch_MergeWalls',_CommandMergeWalls())
+if FreeCAD.GuiUp:
+    FreeCADGui.addCommand('Arch_Wall',_CommandWall())
+    FreeCADGui.addCommand('Arch_MergeWalls',_CommandMergeWalls())
