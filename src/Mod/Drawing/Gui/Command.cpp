@@ -369,6 +369,11 @@ void CmdDrawingNewDimension::activated(int iMsg)
     std::string support = selection[0].getAsPropertyLinkSubString();
     std::string FeatName = getUniqueObjectName("Dimension");
 
+    std::string dimType;
+
+    openCommand("Create Dimension");
+    doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewDimension','%s')",FeatName.c_str());
+
     if (SubNames.size() == 1) {
         // Selected edge constraint
         if (SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge") {
@@ -376,18 +381,16 @@ void CmdDrawingNewDimension::activated(int iMsg)
 
             DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
 
-            std::string dimMode = "Distance";
             if(geom->geomType == DrawingGeometry::CIRCLE ||
                geom->geomType == DrawingGeometry::ARCOFCIRCLE ||
                geom->geomType == DrawingGeometry::ELLIPSE ||
-               geom->geomType == DrawingGeometry::ARCOFELLIPSE
-            ) {
-                dimMode = "Radius";
+               geom->geomType == DrawingGeometry::ARCOFELLIPSE ) {
+                // Radius Constraint
+                dimType = "Radius";
             }
 
-            openCommand("Create Dimension");
-            doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewDimension','%s')",FeatName.c_str());
-            doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str(), dimMode.c_str());
+            doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str()
+                                                               ,dimType.c_str());
 
             dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
             dim->References.setValue(Obj, SubNames[0].c_str());
@@ -395,15 +398,15 @@ void CmdDrawingNewDimension::activated(int iMsg)
             return;
         }
 
-
     } else if(SubNames.size() == 2) {
         if (SubNames[0].size() > 6 && SubNames[0].substr(0,6) == "Vertex" &&
             SubNames[1].size() > 6 && SubNames[1].substr(0,6) == "Vertex") {
             int GeoId1 = std::atoi(SubNames[0].substr(6,4000).c_str());
             int GeoId2 = std::atoi(SubNames[1].substr(6,4000).c_str());
-            openCommand("Create Dimension");
-            doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewDimension','%s')",FeatName.c_str());
-            doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str(), "Distance");
+
+            dimType = "Distance";
+            doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str()
+                                                               ,dimType.c_str());
 
             dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
             std::vector<App::DocumentObject *> objs;
@@ -423,8 +426,6 @@ void CmdDrawingNewDimension::activated(int iMsg)
             Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart * >(Obj);
             DrawingGeometry::BaseGeom *ed1 = viewPart->getCompleteEdge(GeoId1);
             DrawingGeometry::BaseGeom *ed2 = viewPart->getCompleteEdge(GeoId2);
-
-            std::string dimType;
 
             if(ed1->geomType == DrawingGeometry::GENERIC &&
                ed2->geomType == DrawingGeometry::GENERIC) {
@@ -464,9 +465,8 @@ void CmdDrawingNewDimension::activated(int iMsg)
                 return;
             }
 
-            openCommand("Create Dimension");
-            doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewDimension','%s')",FeatName.c_str());
-            doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str(), dimType.c_str());
+            doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str()
+                                                               ,dimType.c_str());
 
             dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
             std::vector<App::DocumentObject *> objs;
@@ -484,6 +484,22 @@ void CmdDrawingNewDimension::activated(int iMsg)
             return;
         }
     }
+
+    QString contentStr = QString::fromAscii("%value");
+
+    if(strcmp(dimType.c_str(), "Angle") == 0) {
+        // Append the degree symbol sign using unicode to content string
+        contentStr += QString(QChar(0x00b0));
+
+    } else if(strcmp(dimType.c_str(), "Radius") == 0) {
+        contentStr.prepend(QString::fromAscii("r"));
+    } else if(strcmp(dimType.c_str(), "Diameter") == 0) {
+        contentStr += QString(QChar(0x00d8));
+    }
+
+
+    doCommand(Doc,"App.activeDocument().%s.Content = '%s'",FeatName.c_str()
+                                                          ,contentStr.toStdString().c_str());
 
     // Check if the part is an orthographic view;
     Drawing::FeatureOrthoView *orthoView = dynamic_cast<Drawing::FeatureOrthoView *>(Obj);

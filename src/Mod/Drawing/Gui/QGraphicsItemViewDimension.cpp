@@ -259,17 +259,14 @@ void QGraphicsItemViewDimension::updateDim()
 
     const Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getViewObject());
 
-    QString str = QString::number((absolute) ? fabs(dim->getValue()) : dim->getValue(), 'f', dim->Precision.getValue());
+    QString str = QString::fromStdString(dim->getContent()); //QString::number((absolute) ? fabs(dim->getValue()) : dim->getValue(), 'f', dim->Precision.getValue());
 
     QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
 
 
     // TODO eventually dimension should be individually customisable with placeholders, this should later be modularised
     const char *dimType = dim->Type.getValueAsString();
-    if(strcmp(dimType, "Angle") == 0) {
-        // Append the degree symbol sign using unicode
-        str += QString(QChar(0x00b0));
-    }
+
 
     QFont font = dLabel->font();
     font.setPointSizeF(dim->Fontsize.getValue());

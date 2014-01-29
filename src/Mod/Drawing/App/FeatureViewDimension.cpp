@@ -25,6 +25,9 @@
 #ifndef _PreComp_
 # include <sstream>
 # include <cstring>
+# include <QString>
+# include <QStringList>
+# include <QRegExp>
 #endif
 
 #include <Base/Console.h>
@@ -60,7 +63,8 @@ FeatureViewDimension::FeatureViewDimension(void)
     ADD_PROPERTY_TYPE(References,(0,0),"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Supporting References");
     ADD_PROPERTY_TYPE(Precision,(2)   ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Precision");
     ADD_PROPERTY_TYPE(Fontsize,(7)    ,"Dimension",(App::PropertyType)(App::Prop_None),"Dimension Font Size");
-    ADD_PROPERTY_TYPE(ProjDirection ,(0,0,1.0), "Dimension",App::Prop_None,"Projection normal direction");
+    ADD_PROPERTY_TYPE(ProjDirection ,(0.,0.,1.0), "Dimension",App::Prop_None,"Projection normal direction");
+    ADD_PROPERTY_TYPE(Content,("%value") ,"Dimension",(App::PropertyType)(App::Prop_None),"Datum Label Content");
 
     Type.setEnums(TypeEnums);
     ADD_PROPERTY(Type,((long)0));
@@ -126,6 +130,36 @@ App::DocumentObjectExecReturn *FeatureViewDimension::execute(void)
     return App::DocumentObject::StdReturn;
 }
 
+std::string  FeatureViewDimension::getContent() const
+{
+    QString str = QString::fromStdString(Content.getStrValue());
+
+    QRegExp rx(QString::fromAscii("%(\\w+)"));
+    QStringList list;
+    int pos = 0;
+
+    // Match any placeholders prepended with '%' using Regular Expression
+    while ((pos = rx.indexIn(str, pos)) != -1) {
+        list << rx.cap(1);
+        pos += rx.matchedLength();
+    }
+
+    // Iterate through for any known subsitutions
+    for(QStringList::const_iterator it = list.begin(); it != list.end(); ++it) {
+        QString s = *it;
+        //Base::Console().Log(s.toStdString().c_str());
+
+        s.prepend(QString::fromAscii("%"));
+        if(*it == QString::fromAscii("value")){
+            str.replace(s, QString::number(getValue(), 'f', Precision.getValue()) );
+        } else {
+            str.replace(s, QString::fromAscii("")); // Replace with empty statement
+        }
+    }
+
+    return str.toStdString();
+}
+
 double FeatureViewDimension::getValue() const
 {
     const char *projType = Type.getValueAsString();
@@ -161,19 +195,19 @@ double FeatureViewDimension::getValue() const
             Base::Vector3d projDir = ProjDirection.getValue();
             Base::Vector3d projDim = delta.ProjToPlane(Base::Vector3d(0.,0.,0.),
                                                        Base::Vector3d(projDir.x, projDir.y, projDir.z));
-            
+
             Base::Vector3d xaxis = XAxisDirection.getValue();
-       
+
             Base::Vector3d yaxis(projDir.y * xaxis.z - projDir.z * xaxis.y,
                                  projDir.z * xaxis.x - projDir.x * xaxis.z,
                                  projDir.x * xaxis.y - projDir.y * xaxis.x);
-            
+
             // TODO not sure if this is a good idea to do i.e. works in all cases
             // Argument that 2D projection is always orientated the same way
             double x, y;
             x = projDim.x * xaxis.x + projDim.y * xaxis.y + projDim.z * xaxis.z;
             y = projDim.x * yaxis.x + projDim.y * yaxis.y + projDim.z * yaxis.z;
-        
+
             //Base::Console().Log("proj <%f %f %f>", delta.x, delta.y, delta.z);
             //Base::Console().Log("yaxis <%f %f %f>", yaxis.x, yaxis.y, yaxis.z);
             //Base::Console().Log("proj <%f %f %f>", projDim.x, projDim.y, projDim.z);

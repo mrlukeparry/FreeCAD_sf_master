@@ -46,15 +46,17 @@ public:
     FeatureViewDimension();
     virtual ~FeatureViewDimension();
 
-//     App::PropertyLinkSubList View;
-    App::PropertyLinkSubList References;
-    App::PropertyInteger Precision;
-    App::PropertyFloat Fontsize;
-    App::PropertyEnumeration Type;
+  //     App::PropertyLinkSubList View;
     App::PropertyEnumeration ProjectionType;
     App::PropertyVector ProjDirection;
+    App::PropertyLinkSubList References;
+    App::PropertyEnumeration Type;
     App::PropertyVector XAxisDirection;
 
+    /// Properties for Visualisation
+    App::PropertyInteger Precision;
+    App::PropertyFloat   Fontsize;
+    App::PropertyString  Content;
 
     short mustExecute() const;
 
@@ -69,7 +71,8 @@ public:
         return "DrawingGui::ViewProviderDrawingView";
     }
 
-    double virtual getValue() const;
+    virtual std::string getContent() const;
+    virtual double getValue() const;
 
 protected:
     Measure::Measurement *measurement;
