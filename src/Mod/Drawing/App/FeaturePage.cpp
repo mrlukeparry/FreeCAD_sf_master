@@ -56,16 +56,25 @@ const char* FeaturePage::OrientationEnums[]= {"Portrait",
                                               "Landscape",
                                               NULL};
 
+const char* FeaturePage::OrthoProjectionTypeEnums[]= {"First Angle",
+                                                  "Third Angle",
+                                                  NULL};
+
 FeaturePage::FeaturePage(void)
 {
-    static const char *group = "Drawing view";
+    static const char *group = "Page";
     ADD_PROPERTY_TYPE(Template ,(""),group, (App::PropertyType) App::Prop_None,"Template for the page");
     ADD_PROPERTY_TYPE(Views    ,(0), group, (App::PropertyType)(App::Prop_None),"Attached Views");
 
+    // Projection Properties
+    OrthoProjectionType.setEnums(OrthoProjectionTypeEnums);
+    ADD_PROPERTY(OrthoProjectionType,((long)0));
+    ADD_PROPERTY_TYPE(Scale ,(1.0)     ,group,App::Prop_None,"Scale factor for Document Views");
+
     // Physical Properties
-    ADD_PROPERTY_TYPE(Width,(2)        ,"Page",(App::PropertyType)(App::Prop_None),"Width (mm)");
-    ADD_PROPERTY_TYPE(Height,(7)       ,"Page",(App::PropertyType)(App::Prop_None),"Height(mm");
-    ADD_PROPERTY_TYPE(PaperSize,("A3") ,"Page",(App::PropertyType)(App::Prop_None),"Paper Format");
+    ADD_PROPERTY_TYPE(Width,(2)        ,group,(App::PropertyType)(App::Prop_None),"Width (mm)");
+    ADD_PROPERTY_TYPE(Height,(7)       ,group,(App::PropertyType)(App::Prop_None),"Height(mm");
+    ADD_PROPERTY_TYPE(PaperSize,("A3") ,group,(App::PropertyType)(App::Prop_None),"Paper Format");
     Orientation.setEnums(OrientationEnums);
     ADD_PROPERTY(Orientation,((long)0));
 }

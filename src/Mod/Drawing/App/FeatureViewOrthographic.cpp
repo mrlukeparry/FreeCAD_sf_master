@@ -55,7 +55,7 @@ short FeatureViewOrthographic::mustExecute() const
     if(Views.isTouched() ||
        Source.isTouched()) {
         return 1;
-        Base::Console().Log("Oview touched");
+        Base::Console().Log("view touched");
      }
 
     if (Type.isTouched())

@@ -46,6 +46,8 @@ public:
     // Page Physical Properties
     App::PropertyFloat Width;
     App::PropertyFloat Height;
+    App::PropertyFloat Scale;
+    App::PropertyEnumeration OrthoProjectionType; // First or Third Angle
     App::PropertyEnumeration Orientation;
     App::PropertyString PaperSize;
 
@@ -69,6 +71,7 @@ protected:
 
 private:
     static const char* OrientationEnums[];
+    static const char* OrthoProjectionTypeEnums[];
 };
 
 

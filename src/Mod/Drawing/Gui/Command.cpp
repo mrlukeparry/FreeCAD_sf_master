@@ -381,6 +381,8 @@ void CmdDrawingNewDimension::activated(int iMsg)
 
             DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
 
+            dimType = "Distance";
+            
             if(geom->geomType == DrawingGeometry::CIRCLE ||
                geom->geomType == DrawingGeometry::ARCOFCIRCLE ||
                geom->geomType == DrawingGeometry::ELLIPSE ||
