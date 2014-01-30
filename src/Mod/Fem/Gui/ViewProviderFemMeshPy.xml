@@ -20,8 +20,6 @@
         <UserDocu></UserDocu>
       </Documentation>
     </Methode>
-<<<<<<< HEAD
-=======
       <Methode Name="setNodeColorByResult">
           <Documentation>
               <UserDocu></UserDocu>
@@ -32,7 +30,6 @@
               <UserDocu></UserDocu>
           </Documentation>
       </Methode>
->>>>>>> master
       <Attribute Name="NodeColor" ReadOnly="false">
           <Documentation>
               <UserDocu>Postprocessing color of the nodes. The faces between the nodes gets interpolated. </UserDocu>

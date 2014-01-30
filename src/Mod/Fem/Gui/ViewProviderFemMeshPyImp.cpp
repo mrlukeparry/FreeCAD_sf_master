@@ -4,15 +4,11 @@
 #include <Base/VectorPy.h>
 #include <Base/GeometryPyCXX.h>
 
-<<<<<<< HEAD
-#include "Mod/Fem/Gui/ViewProviderFemMesh.h"
-=======
 #include <App/DocumentObjectPy.h>
 
 #include "Mod/Fem/Gui/ViewProviderFemMesh.h"
 #include "Mod/Fem/App/FemResultVector.h"
 #include "Mod/Fem/App/FemResultValue.h"
->>>>>>> master
 
 // inclusion of the generated files (generated out of ViewProviderFemMeshPy.xml)
 #include "ViewProviderFemMeshPy.h"
@@ -39,12 +35,6 @@ PyObject* ViewProviderFemMeshPy::animate(PyObject * args)
     Py_Return;
 }
 
-<<<<<<< HEAD
-
-
-
-
-=======
 App::Color calcColor(double value,double min, double max)
 {
     if (value < min) 
@@ -133,7 +123,6 @@ PyObject* ViewProviderFemMeshPy::setNodeDisplacementByResult(PyObject *args)
     Py_Return;
 
 }
->>>>>>> master
 Py::Dict ViewProviderFemMeshPy::getNodeColor(void) const
 {
     //return Py::List();
@@ -142,19 +131,6 @@ Py::Dict ViewProviderFemMeshPy::getNodeColor(void) const
 
 void ViewProviderFemMeshPy::setNodeColor(Py::Dict arg)
 {
-<<<<<<< HEAD
-    if(arg.size() == 0)
-        this->getViewProviderFemMeshPtr()->resetColorByNodeId();
-    else {
-        std::map<long,App::Color> NodeColorMap;
-
-        for( Py::Dict::iterator it = arg.begin(); it!= arg.end();++it){
-            Py::Int id((*it).first);
-            Py::Tuple color((*it).second);
-            NodeColorMap[id] = App::Color(Py::Float(color[0]),Py::Float(color[1]),Py::Float(color[2]),0);
-        }
-        this->getViewProviderFemMeshPtr()->setColorByNodeId(NodeColorMap);
-=======
     long size = arg.size();
     if(size == 0)
         this->getViewProviderFemMeshPtr()->resetColorByNodeId();
@@ -183,7 +159,6 @@ void ViewProviderFemMeshPy::setNodeColor(Py::Dict arg)
         //this->getViewProviderFemMeshPtr()->setColorByNodeId(NodeColorMap);
         this->getViewProviderFemMeshPtr()->setColorByNodeId(NodeIds,NodeColors);
         Base::Console().Log("    %f: Finish ViewProviderFemMeshPy::setNodeColor() call \n",Base::TimeInfo::diffTimeF(Start,Base::TimeInfo()));
->>>>>>> master
 	}
 }
 

@@ -87,7 +87,8 @@ FeaturePage::~FeaturePage()
 short FeaturePage::mustExecute() const
 {
     // If Tolerance Property is touched
-    if(Template.isTouched())
+    if(Template.isTouched() ||
+       Scale.isTouched())
         return 1;
 
     // Check if within the selection, any Document Object have been touched
