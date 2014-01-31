@@ -92,8 +92,7 @@ ToolFeature::tap_sizes_t metric_tap_sizes[] = {
       {QString::fromAscii("M60 x 5.5 mm coarse"), 60.0, 5.5},
       {QString::fromAscii("M60 x 4 mm fine"), 60.0, 4.0},
       {QString::fromAscii("M64 x 6 mm coarse"), 64.0, 6.0},
-      {QString::fromAscii("M64 x 4 mm fine"), 64.0, 4.0},
-      {QString::fromAscii("End of table marker"), -1.0, -1.0}   // WARNING DO NOT REMOVE THIS ENTRY.  IT MUST BE THE LAST ENTRY IN THE TABLE
+      {QString::fromAscii("M64 x 4 mm fine"), 64.0, 4.0}
     };
 
 ToolFeature::tap_sizes_t unified_thread_standard_tap_sizes[] = {
@@ -146,8 +145,7 @@ ToolFeature::tap_sizes_t unified_thread_standard_tap_sizes[] = {
       {QString::fromAscii("7/8 x 20 UNEF"), (7.0/8.0) * 25.4, 25.4 / 20},
       {QString::fromAscii("1 x 8 UNC"), 1.0 * 25.4, 25.4 / 8},
       {QString::fromAscii("1 x 14 UNF"), 1.0 * 25.4, 25.4 / 14},
-      {QString::fromAscii("1 x 20 UNEF"), 1.0 * 25.4, 25.4 / 20},
-      {QString::fromAscii("End of table marker"), -1.0, -1.0}   // WARNING DO NOT REMOVE THIS ENTRY.  IT MUST BE THE LAST ENTRY IN THE TABLE
+      {QString::fromAscii("1 x 20 UNEF"), 1.0 * 25.4, 25.4 / 20}
     };
 
 ToolFeature::tap_sizes_t british_standard_whitworth_tap_sizes[] = {
@@ -174,8 +172,7 @@ ToolFeature::tap_sizes_t british_standard_whitworth_tap_sizes[] = {
       {QString::fromAscii("1 1/4 x 7 BSW"), (1.0 + (1.0/4.0)) * 25.4, 25.4 / 7},
       {QString::fromAscii("1 1/2 x 6 BSW"), (1.0 + (1.0/2.0)) * 25.4, 25.4 / 6},
       {QString::fromAscii("1 3/4 x 5 BSW"), (1.0 + (3.0/4.0)) * 25.4, 25.4 / 5},
-      {QString::fromAscii("2 x 4.5 BSW"), 2.0 * 25.4, 25.4 / 4.5},
-      {QString::fromAscii("End of table marker"), -1.0, -1.0}   // WARNING DO NOT REMOVE THIS ENTRY.  IT MUST BE THE LAST ENTRY IN THE TABLE
+      {QString::fromAscii("2 x 4.5 BSW"), 2.0 * 25.4, 25.4 / 4.5}
     };
 
 
@@ -307,6 +304,46 @@ void ToolFeature::onSettingDocument()
 			else if (definition == this->title)
 			{
 				this->Label.setValue(this->title->getValue().toAscii().constData());
+			}
+			else if (definition == m_standard_tap_sizes)
+			{
+				// The operator has chosen a new tap size from the standard sizes available.  We need to lookup
+				// the pre-loaded data and populate the other settings from these definitions.
+
+				::size_t num_metric = (sizeof(metric_tap_sizes)/sizeof(metric_tap_sizes[0]));
+				::size_t num_un = (sizeof(unified_thread_standard_tap_sizes)/sizeof(unified_thread_standard_tap_sizes[0]));
+				::size_t num_whitworth = (sizeof(british_standard_whitworth_tap_sizes)/sizeof(british_standard_whitworth_tap_sizes[0]));
+
+				::size_t offset = this->m_standard_tap_sizes->get().first;
+				if ((offset >= 0) && (offset < num_metric))
+				{
+					// The diameters in the tables are ALL defined in metric.
+					this->diameter->set( metric_tap_sizes[offset].diameter, Cam::Settings::Length::Metric );
+					this->m_pitch->set( metric_tap_sizes[offset].pitch, Cam::Settings::Length::Metric );
+					this->diameter->setUnits( Cam::Settings::Length::Metric );
+					this->m_pitch->setUnits( Cam::Settings::Length::Metric );
+
+				}
+				else if ((offset >= num_metric) && (offset < (num_metric + num_un)))
+				{
+					offset -= num_metric;	// Adjust the offset so that it's relevant to the unified sizes list.
+
+					// The diameters in the tables are ALL defined in metric.
+					this->diameter->set( unified_thread_standard_tap_sizes[offset].diameter, Cam::Settings::Length::Metric );
+					this->m_pitch->set( unified_thread_standard_tap_sizes[offset].pitch, Cam::Settings::Length::Metric );
+					this->diameter->setUnits( Cam::Settings::Length::Imperial );
+					this->m_pitch->setUnits( Cam::Settings::Length::Imperial );
+				}
+				else if ((offset >= (num_metric + num_un)) && (offset < (num_metric + num_un + num_whitworth)))
+				{
+					offset -= (num_metric + num_un);	// Adjust the offset so that it's relevant to the whitworth sizes list.
+
+					// The diameters in the tables are ALL defined in metric.
+					this->diameter->set( british_standard_whitworth_tap_sizes[offset].diameter, Cam::Settings::Length::Metric );
+					this->m_pitch->set( british_standard_whitworth_tap_sizes[offset].pitch, Cam::Settings::Length::Metric );
+					this->diameter->setUnits( Cam::Settings::Length::Imperial );
+					this->m_pitch->setUnits( Cam::Settings::Length::Imperial );
+				}
 			}
 		}
 	}
@@ -519,6 +556,34 @@ void ToolFeature::initialise()
 											 Settings::Definition::Metric );	
 		settings->addSettingDefinition(qaction, this->m_pitch);
 
+		
+
+		this->m_standard_tap_sizes = new Settings::Enumeration(	 "Standard Tap Sizes", 
+												 "Standard Tap Sizes",
+												 int(0),
+												 "Standard Tap Sizes",
+												 "Standard Tap Sizes");
+
+		::size_t num_metric = (sizeof(metric_tap_sizes)/sizeof(metric_tap_sizes[0]));
+		::size_t num_un = (sizeof(unified_thread_standard_tap_sizes)/sizeof(unified_thread_standard_tap_sizes[0]));
+		::size_t num_whitworth = (sizeof(british_standard_whitworth_tap_sizes)/sizeof(british_standard_whitworth_tap_sizes[0]));
+
+		for (::size_t i=0; i<num_metric; i++)
+		{
+			this->m_standard_tap_sizes->Add(int(i), metric_tap_sizes[i].description);
+		}
+		for (::size_t i=num_metric; i<(num_un + num_metric); i++)
+		{
+			this->m_standard_tap_sizes->Add(int(i), unified_thread_standard_tap_sizes[i-(num_metric)].description);
+		}
+		for (::size_t i=(num_un + num_metric); i<(num_un + num_metric + num_whitworth); i++)
+		{
+			this->m_standard_tap_sizes->Add(int(i), british_standard_whitworth_tap_sizes[i-(num_metric+num_un)].description);
+		}
+		settings->addSettingDefinition(qaction, this->m_standard_tap_sizes);
+
+
+
 		this->centre_drill_size = new Settings::Enumeration(	"Centre-Drill size", 
 											 "Centre-Drill size",
 											 0,	// Value.
@@ -539,6 +604,275 @@ void ToolFeature::initialise()
 	}
 }
 
+
+void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /* = false */ )
+{
+	// Force all settings to be invisible and then turn on just those settings that make sense.
+	std::vector<Settings::Definition *> all_settings = this->settings->getSettings();
+	for (std::vector<Settings::Definition *>::iterator itSetting = all_settings.begin(); itSetting != all_settings.end(); itSetting++)
+	{
+		itSetting->visible = false;
+	}
+	
+	// These settings are true for all tool types.
+	this->tool_type->visible = true;
+	this->title->visible = true;
+	this->m_automatically_generate_title->visible = true;
+
+	switch (this->tool_type->get().first)
+	{
+		case eDrill:
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_cutting_edge_angle->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			break;
+
+		case eCentreDrill:
+			this->material->visible = true;
+			this->centre_drill_size->visible = true;
+			break;
+
+		case eEndmill:
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_corner_radius->visible = true;
+			this->m_flat_radius->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = false;
+			this->m_probe_offset_x = false;
+			this->m_probe_offset_y->visible = false;
+			this->m_gradient->visible = false;
+			this->m_direction->visible = false;
+			this->m_pitch->visible = false;
+			this->m_standard_tap_sizes->visible = false;
+			this->centre_drill_size->visible = false;
+			this->m_setup_instructions->visible = false;
+		break;
+
+	case eSlotCutter:
+					this->diameter->visible = true;
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_corner_radius->visible = false;
+			this->m_flat_radius->visible = false;
+			this->m_cutting_edge_angle->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = false;
+			this->m_probe_offset_x = false;
+			this->m_probe_offset_y->visible = false;
+			this->m_gradient->visible = false;
+			this->m_direction->visible = false;
+			this->m_pitch->visible = false;
+			this->m_standard_tap_sizes->visible = false;
+			this->centre_drill_size->visible = false;
+			this->m_setup_instructions->visible = false;
+		break;
+
+	case eBallEndMill:
+					this->diameter->visible = true;
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_corner_radius->visible = false;
+			this->m_flat_radius->visible = false;
+			this->m_cutting_edge_angle->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = false;
+			this->m_probe_offset_x = false;
+			this->m_probe_offset_y->visible = false;
+			this->m_gradient->visible = false;
+			this->m_direction->visible = false;
+			this->m_pitch->visible = false;
+			this->m_standard_tap_sizes->visible = false;
+			this->centre_drill_size->visible = false;
+			this->m_setup_instructions->visible = false;
+		break;
+
+	case eChamfer:
+					this->diameter->visible = true;
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_corner_radius->visible = false;
+			this->m_flat_radius->visible = false;
+			this->m_cutting_edge_angle->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = false;
+			this->m_probe_offset_x = false;
+			this->m_probe_offset_y->visible = false;
+			this->m_gradient->visible = false;
+			this->m_direction->visible = false;
+			this->m_pitch->visible = false;
+			this->m_standard_tap_sizes->visible = false;
+			this->centre_drill_size->visible = false;
+			this->m_setup_instructions->visible = false;
+		break;
+
+	case eTurningTool:
+					this->diameter->visible = true;
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_corner_radius->visible = false;
+			this->m_flat_radius->visible = false;
+			this->m_cutting_edge_angle->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = false;
+			this->m_probe_offset_x = false;
+			this->m_probe_offset_y->visible = false;
+			this->m_gradient->visible = false;
+			this->m_direction->visible = false;
+			this->m_pitch->visible = false;
+			this->m_standard_tap_sizes->visible = false;
+			this->centre_drill_size->visible = false;
+			this->m_setup_instructions->visible = false;
+		break;
+
+	case eTouchProbe:
+					this->diameter->visible = true;
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_corner_radius->visible = false;
+			this->m_flat_radius->visible = false;
+			this->m_cutting_edge_angle->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = false;
+			this->m_probe_offset_x = false;
+			this->m_probe_offset_y->visible = false;
+			this->m_gradient->visible = false;
+			this->m_direction->visible = false;
+			this->m_pitch->visible = false;
+			this->m_standard_tap_sizes->visible = false;
+			this->centre_drill_size->visible = false;
+			this->m_setup_instructions->visible = false;
+		break;
+
+	case eToolLengthSwitch:
+					this->diameter->visible = true;
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_corner_radius->visible = false;
+			this->m_flat_radius->visible = false;
+			this->m_cutting_edge_angle->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = false;
+			this->m_probe_offset_x = false;
+			this->m_probe_offset_y->visible = false;
+			this->m_gradient->visible = false;
+			this->m_direction->visible = false;
+			this->m_pitch->visible = false;
+			this->m_standard_tap_sizes->visible = false;
+			this->centre_drill_size->visible = false;
+			this->m_setup_instructions->visible = false;
+		break;
+
+	case eExtrusion:
+					this->diameter->visible = true;
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_corner_radius->visible = false;
+			this->m_flat_radius->visible = false;
+			this->m_cutting_edge_angle->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = false;
+			this->m_probe_offset_x = false;
+			this->m_probe_offset_y->visible = false;
+			this->m_gradient->visible = false;
+			this->m_direction->visible = false;
+			this->m_pitch->visible = false;
+			this->m_standard_tap_sizes->visible = false;
+			this->centre_drill_size->visible = false;
+			this->m_setup_instructions->visible = false;
+		break;
+
+	case eTapTool:
+					this->diameter->visible = true;
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_corner_radius->visible = false;
+			this->m_flat_radius->visible = false;
+			this->m_cutting_edge_angle->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = false;
+			this->m_probe_offset_x = false;
+			this->m_probe_offset_y->visible = false;
+			this->m_gradient->visible = false;
+			this->m_direction->visible = false;
+			this->m_pitch->visible = false;
+			this->m_standard_tap_sizes->visible = false;
+			this->centre_drill_size->visible = false;
+			this->m_setup_instructions->visible = false;
+		break;
+
+	case eEngravingTool:
+					this->diameter->visible = true;
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_corner_radius->visible = false;
+			this->m_flat_radius->visible = false;
+			this->m_cutting_edge_angle->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = false;
+			this->m_probe_offset_x = false;
+			this->m_probe_offset_y->visible = false;
+			this->m_gradient->visible = false;
+			this->m_direction->visible = false;
+			this->m_pitch->visible = false;
+			this->m_standard_tap_sizes->visible = false;
+			this->centre_drill_size->visible = false;
+			this->m_setup_instructions->visible = false;
+		break;
+
+	case eBoringHead:
+					this->diameter->visible = true;
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_corner_radius->visible = false;
+			this->m_flat_radius->visible = false;
+			this->m_cutting_edge_angle->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = false;
+			this->m_probe_offset_x = false;
+			this->m_probe_offset_y->visible = false;
+			this->m_gradient->visible = false;
+			this->m_direction->visible = false;
+			this->m_pitch->visible = false;
+			this->m_standard_tap_sizes->visible = false;
+			this->centre_drill_size->visible = false;
+			this->m_setup_instructions->visible = false;
+		break;
+
+	case eDragKnife:
+					this->diameter->visible = true;
+			this->diameter->visible = true;
+			this->tool_length_offset = true;
+			this->material->visible = true;
+			this->m_corner_radius->visible = false;
+			this->m_flat_radius->visible = false;
+			this->m_cutting_edge_angle->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = false;
+			this->m_probe_offset_x = false;
+			this->m_probe_offset_y->visible = false;
+			this->m_gradient->visible = false;
+			this->m_direction->visible = false;
+			this->m_pitch->visible = false;
+			this->m_standard_tap_sizes->visible = false;
+			this->centre_drill_size->visible = false;
+			this->m_setup_instructions->visible = false;
+		break;
+	}
+}
 
 const ToolFeature::eToolType ToolFeature::ToolType() const
 {
