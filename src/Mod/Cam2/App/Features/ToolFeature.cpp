@@ -92,8 +92,7 @@ ToolFeature::tap_sizes_t metric_tap_sizes[] = {
       {QString::fromAscii("M60 x 5.5 mm coarse"), 60.0, 5.5},
       {QString::fromAscii("M60 x 4 mm fine"), 60.0, 4.0},
       {QString::fromAscii("M64 x 6 mm coarse"), 64.0, 6.0},
-      {QString::fromAscii("M64 x 4 mm fine"), 64.0, 4.0},
-      {QString::fromAscii("End of table marker"), -1.0, -1.0}   // WARNING DO NOT REMOVE THIS ENTRY.  IT MUST BE THE LAST ENTRY IN THE TABLE
+      {QString::fromAscii("M64 x 4 mm fine"), 64.0, 4.0}
     };
 
 ToolFeature::tap_sizes_t unified_thread_standard_tap_sizes[] = {
@@ -146,8 +145,7 @@ ToolFeature::tap_sizes_t unified_thread_standard_tap_sizes[] = {
       {QString::fromAscii("7/8 x 20 UNEF"), (7.0/8.0) * 25.4, 25.4 / 20},
       {QString::fromAscii("1 x 8 UNC"), 1.0 * 25.4, 25.4 / 8},
       {QString::fromAscii("1 x 14 UNF"), 1.0 * 25.4, 25.4 / 14},
-      {QString::fromAscii("1 x 20 UNEF"), 1.0 * 25.4, 25.4 / 20},
-      {QString::fromAscii("End of table marker"), -1.0, -1.0}   // WARNING DO NOT REMOVE THIS ENTRY.  IT MUST BE THE LAST ENTRY IN THE TABLE
+      {QString::fromAscii("1 x 20 UNEF"), 1.0 * 25.4, 25.4 / 20}
     };
 
 ToolFeature::tap_sizes_t british_standard_whitworth_tap_sizes[] = {
@@ -174,8 +172,7 @@ ToolFeature::tap_sizes_t british_standard_whitworth_tap_sizes[] = {
       {QString::fromAscii("1 1/4 x 7 BSW"), (1.0 + (1.0/4.0)) * 25.4, 25.4 / 7},
       {QString::fromAscii("1 1/2 x 6 BSW"), (1.0 + (1.0/2.0)) * 25.4, 25.4 / 6},
       {QString::fromAscii("1 3/4 x 5 BSW"), (1.0 + (3.0/4.0)) * 25.4, 25.4 / 5},
-      {QString::fromAscii("2 x 4.5 BSW"), 2.0 * 25.4, 25.4 / 4.5},
-      {QString::fromAscii("End of table marker"), -1.0, -1.0}   // WARNING DO NOT REMOVE THIS ENTRY.  IT MUST BE THE LAST ENTRY IN THE TABLE
+      {QString::fromAscii("2 x 4.5 BSW"), 2.0 * 25.4, 25.4 / 4.5}
     };
 
 
@@ -518,6 +515,34 @@ void ToolFeature::initialise()
 											 0.0,
 											 Settings::Definition::Metric );	
 		settings->addSettingDefinition(qaction, this->m_pitch);
+
+		
+
+		this->m_standard_tap_sizes = new Settings::Enumeration(	 "Standard Tap Sizes", 
+												 "Standard Tap Sizes",
+												 int(0),
+												 "Standard Tap Sizes",
+												 "Standard Tap Sizes");
+
+		::size_t num_metric = (sizeof(metric_tap_sizes)/sizeof(metric_tap_sizes[0]));
+		::size_t num_un = (sizeof(unified_thread_standard_tap_sizes)/sizeof(unified_thread_standard_tap_sizes[0]));
+		::size_t num_whitworth = (sizeof(british_standard_whitworth_tap_sizes)/sizeof(british_standard_whitworth_tap_sizes[0]));
+
+		for (::size_t i=0; i<num_metric; i++)
+		{
+			this->m_standard_tap_sizes->Add(int(i), metric_tap_sizes[i].description);
+		}
+		for (::size_t i=num_metric; i<(num_un + num_metric); i++)
+		{
+			this->m_standard_tap_sizes->Add(int(i), unified_thread_standard_tap_sizes[i-(num_metric)].description);
+		}
+		for (::size_t i=(num_un + num_metric); i<(num_un + num_metric + num_whitworth); i++)
+		{
+			this->m_standard_tap_sizes->Add(int(i), british_standard_whitworth_tap_sizes[i-(num_metric+num_un)].description);
+		}
+		settings->addSettingDefinition(qaction, this->m_standard_tap_sizes);
+
+
 
 		this->centre_drill_size = new Settings::Enumeration(	"Centre-Drill size", 
 											 "Centre-Drill size",

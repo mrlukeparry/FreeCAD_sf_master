@@ -282,6 +282,7 @@ public:
 
 	Settings::Enumeration *m_direction;    // 0.. right hand tapping, 1..left hand tapping
 	Settings::Length *m_pitch;     // in units/rev
+	Settings::Enumeration *m_standard_tap_sizes;
 
 	// properties for centre-drills
 	Settings::Enumeration *centre_drill_size;
