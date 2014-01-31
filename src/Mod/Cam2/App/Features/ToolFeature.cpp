@@ -321,7 +321,7 @@ void ToolFeature::initialise()
 	{
 		this->title = new Settings::Text(	"Title", 
 											 "Title",
-											 this->getNameInDocument(),
+											 this->Label.getValue(),
 											 "",
 											 "This reflects the object's name.  It can be automatically or manually generated" );		
 		settings->addSettingDefinition(qaction, this->title);
