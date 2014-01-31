@@ -293,6 +293,9 @@ public:
 public:
 	const eToolType ToolType() const;
 
+private:
+	void ResetSettingsToReasonableValues(const bool suppress_warnings = false );
+
 public:
     typedef struct
     {
