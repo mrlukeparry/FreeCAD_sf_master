@@ -346,6 +346,8 @@ void ToolFeature::onSettingDocument()
 				}
 			}
 		}
+
+		ResetSettingsToReasonableValues(true);
 	}
 }
 
@@ -601,6 +603,8 @@ void ToolFeature::initialise()
 											 "",
 											 "Note to add to GCode file to make sure the operator sets up the tool correctly at the start." );		
 		settings->addSettingDefinition(qaction, this->m_setup_instructions);
+
+		ResetSettingsToReasonableValues(true);
 	}
 }
 
@@ -611,7 +615,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	std::vector<Settings::Definition *> all_settings = this->settings->getSettings();
 	for (std::vector<Settings::Definition *>::iterator itSetting = all_settings.begin(); itSetting != all_settings.end(); itSetting++)
 	{
-		itSetting->visible = false;
+		(*itSetting)->visible = false;
 	}
 	
 	// These settings are true for all tool types.
@@ -623,7 +627,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	{
 		case eDrill:
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_cutting_edge_angle->visible = true;
 			this->m_cutting_edge_height->visible = true;
@@ -636,46 +640,32 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 
 		case eEndmill:
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_corner_radius->visible = true;
 			this->m_flat_radius->visible = true;
 			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = false;
-			this->m_probe_offset_x = false;
-			this->m_probe_offset_y->visible = false;
-			this->m_gradient->visible = false;
-			this->m_direction->visible = false;
-			this->m_pitch->visible = false;
-			this->m_standard_tap_sizes->visible = false;
-			this->centre_drill_size->visible = false;
-			this->m_setup_instructions->visible = false;
+			this->m_max_advance_per_revolution->visible = true;
+			this->m_gradient->visible = true;
 		break;
 
 	case eSlotCutter:
-					this->diameter->visible = true;
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->diameter->visible = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
-			this->m_corner_radius->visible = false;
-			this->m_flat_radius->visible = false;
+			this->m_corner_radius->visible = true;
+			this->m_flat_radius->visible = true;
 			this->m_cutting_edge_angle->visible = true;
 			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = false;
-			this->m_probe_offset_x = false;
-			this->m_probe_offset_y->visible = false;
-			this->m_gradient->visible = false;
-			this->m_direction->visible = false;
-			this->m_pitch->visible = false;
-			this->m_standard_tap_sizes->visible = false;
-			this->centre_drill_size->visible = false;
-			this->m_setup_instructions->visible = false;
+			this->m_max_advance_per_revolution->visible = true;
+			this->m_gradient->visible = true;
 		break;
 
 	case eBallEndMill:
 					this->diameter->visible = true;
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_corner_radius->visible = false;
 			this->m_flat_radius->visible = false;
@@ -695,7 +685,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	case eChamfer:
 					this->diameter->visible = true;
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_corner_radius->visible = false;
 			this->m_flat_radius->visible = false;
@@ -715,7 +705,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	case eTurningTool:
 					this->diameter->visible = true;
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_corner_radius->visible = false;
 			this->m_flat_radius->visible = false;
@@ -735,7 +725,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	case eTouchProbe:
 					this->diameter->visible = true;
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_corner_radius->visible = false;
 			this->m_flat_radius->visible = false;
@@ -755,7 +745,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	case eToolLengthSwitch:
 					this->diameter->visible = true;
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_corner_radius->visible = false;
 			this->m_flat_radius->visible = false;
@@ -775,7 +765,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	case eExtrusion:
 					this->diameter->visible = true;
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_corner_radius->visible = false;
 			this->m_flat_radius->visible = false;
@@ -795,7 +785,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	case eTapTool:
 					this->diameter->visible = true;
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_corner_radius->visible = false;
 			this->m_flat_radius->visible = false;
@@ -815,7 +805,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	case eEngravingTool:
 					this->diameter->visible = true;
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_corner_radius->visible = false;
 			this->m_flat_radius->visible = false;
@@ -835,7 +825,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	case eBoringHead:
 					this->diameter->visible = true;
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_corner_radius->visible = false;
 			this->m_flat_radius->visible = false;
@@ -855,7 +845,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	case eDragKnife:
 					this->diameter->visible = true;
 			this->diameter->visible = true;
-			this->tool_length_offset = true;
+			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_corner_radius->visible = false;
 			this->m_flat_radius->visible = false;
