@@ -187,12 +187,62 @@ public:
 		return(qs);
 	}
 
+	friend std::ostringstream & operator<< ( std::ostringstream & oss, const eToolType & tool_type )
+	{
+		QString qs;
+		qs << tool_type;
+		oss << qs.toAscii().constData();
+		return(oss);
+	}
+
+	// The following  properties relate to the extrusions created by a reprap style 3D printer.
+	// using temperature, speed, and the height of the nozzle, and the nozzle size it's possible to create
+	// many different sizes and shapes of extrusion.
+
+	typedef enum {
+		eABS = 0,
+		ePLA,
+		eHDPE,
+		eUndefinedExtrusionMaterialType
+	} eExtrusionMaterial_t;
+
+	friend QString & operator<< ( QString & qs, const eExtrusionMaterial_t & extrusion_material )
+	{
+		std::ostringstream ss;
+		switch (extrusion_material)
+		{
+		case eABS:		ss << "ABS";
+			break;
+
+		case ePLA:	ss << "PLA";
+			break;
+
+		case eHDPE:	ss << "HDPE";
+			break;
+
+		case eUndefinedExtrusionMaterialType:	ss << "Undefined";
+			break;
+		} // End switch
+
+		qs.append( QString::fromStdString(ss.str()) );
+		return(qs);
+	}
+
+	friend std::ostringstream & operator<< ( std::ostringstream & oss, const eExtrusionMaterial_t & extrusion_material )
+	{
+		QString qs;
+		qs << extrusion_material;
+		oss << qs.toAscii().constData();
+		return(oss);
+	}
 	
 public:
 	Settings::Length	*diameter;
 	Settings::Length	*tool_length_offset;
 	Settings::Enumeration *material;
 	Settings::Enumeration *tool_type;
+
+	Settings::Enumeration *extrusion_material;
 
 	/**
 		The next three parameters describe the cutting surfaces of the bit.
@@ -315,6 +365,16 @@ public:
 
 private:
 	Settings::TPGSettings *settings;
+
+	void ResetTitle();
+
+public:
+	static QString FractionalRepresentation( const Cam::Settings::Length *original_value, const int max_denominator = 64 );
+	static QString PrintedCircuitBoardRepresentation( const Cam::Settings::Length *pDiameter );
+	static QString ToolFeature::GuageNumberRepresentation( const Cam::Settings::Length *pDiameter );
+
+	ToolFeature::centre_drill_t *ToolFeature::CentreDrillDefinition( const QString size ) const;
+	double CuttingRadius( const Cam::Settings::Length::Units_t units, const Cam::Settings::Length length = Cam::Settings::Length(-1, Cam::Settings::Length::Metric) ) const;
 };
 
 } //namespace Cam

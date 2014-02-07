@@ -615,6 +615,9 @@ public:
 			const double default_value,
 			const Definition::Units_t units );
 
+	Length( const double default_value,
+		const Definition::Units_t units );
+
 	bool Evaluate( const char *entered_value, double *pResult ) const;
 	virtual ValidationState validate(QString & input,int & position) const;
 
@@ -631,6 +634,10 @@ public:
 	double get(const Definition::Units_t requested_units) const;
 	void   set(const double value);
 	void   set(const double value, const Settings::Definition::Units_t units);
+
+	bool operator< ( const Length & rhs ) const;
+	bool operator> ( const Length & rhs ) const;
+	bool operator== ( const Length & rhs ) const;
 };
 
 

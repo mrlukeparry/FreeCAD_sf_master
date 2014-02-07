@@ -2094,6 +2094,23 @@ QString SingleObjectNameForType::GetName() const
 	}
 }
 
+bool Settings::Length::operator< ( const Settings::Length & rhs ) const
+{
+	if (*this == rhs) return(false);
+	return( get(Settings::Length::Metric) < rhs.get(Settings::Length::Metric) );
+}
+
+bool Settings::Length::operator> ( const Settings::Length & rhs ) const
+{
+	if (*this == rhs) return(false);
+	return( get(Settings::Length::Metric) > rhs.get(Settings::Length::Metric) );
+}
+
+bool Settings::Length::operator== ( const Settings::Length & rhs ) const
+{
+	const double tolerance = 1e-7;
+	return( fabs(get(Settings::Length::Metric) - rhs.get(Settings::Length::Metric)) < tolerance );
+}
 
 bool Settings::Length::Evaluate( const char *formula, double *pResult ) const
 {
@@ -2131,6 +2148,19 @@ Settings::Length::Length(
 
 	this->defaultvalue = this->encode( data );
 }
+
+Settings::Length::Length(
+		const double default_value,
+		const Definition::Units_t units ):
+	Definition(QString::null, QString::null, SettingType_Length, QString::null, QString::null, QString::null)
+{
+	Encode_t data;
+	boost::tuples::get<valueOffset>(data) = default_value;
+	boost::tuples::get<unitsOffset>(data) = units;
+
+	this->defaultvalue = this->encode( data );
+}
+
 
 Settings::Length::Length(
 		const char *name, 

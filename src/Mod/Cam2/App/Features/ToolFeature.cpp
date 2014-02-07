@@ -224,6 +224,7 @@ ToolFeature::ToolFeature()
 	centre_drill_size = NULL;
 	m_setup_instructions = NULL;
 	title = NULL;
+	extrusion_material = NULL;
 }
 
 ToolFeature::~ToolFeature()
@@ -250,6 +251,7 @@ ToolFeature::~ToolFeature()
 	if (centre_drill_size) centre_drill_size->release();
 	if (m_setup_instructions) m_setup_instructions->release();
 	if (title) title->release();
+	if (extrusion_material) extrusion_material->release();
 }
 
 App::DocumentObjectExecReturn *ToolFeature::execute(void)
@@ -295,6 +297,20 @@ void ToolFeature::onSettingDocument()
 				case eSlotCutter:
 				case eBoringHead:
 					this->m_flat_radius->set( this->diameter->get(this->m_flat_radius->getUnits()) / 2.0, this->m_flat_radius->getUnits() );
+					break;
+
+				case eChamfer:
+				case eEngravingTool:
+				case eCentreDrill:
+					{
+						// Recalculate the cutting edge length based on this new diameter
+						// and the cutting angle.
+
+						double opposite = (this->diameter->get(this->diameter->getUnits()) / 2.0) - this->m_flat_radius->get(this->diameter->getUnits());
+						double angle = this->m_cutting_edge_angle->get() / 360.0 * 2 * M_PI;
+
+						this->m_cutting_edge_height->set( opposite / tan(angle) );
+					}
 					break;
 
 				default:
@@ -358,6 +374,28 @@ void ToolFeature::initialise()
 
 	if ((settings != NULL) && (this->diameter == NULL))
 	{
+		this->tool_type = new Settings::Enumeration(	 "Type", 
+												 "Type",
+												 int(eEndmill),
+												 "Type of tool",
+												 "Type of tool");
+
+		// Enumerated types MUST have one option for each different value.  For each option, the Id must be the integer form and the Label must
+		// be the string (verbose) form.  Only the verbose forms are used on the user interface but the values used in the TPGSettingDefinition.value will
+		// always be the integer form.
+		// The integer forms need not start from zero or be sequential.  The values will appear in the combo-box in the order that
+		// they're defined in the options list.  Their position in the list will be used by the combo-box.
+
+		for (eToolType tool_type = eDrill; tool_type < eUndefinedToolType; tool_type = eToolType(int(tool_type)+1))
+		{
+			QString label;
+			label << tool_type;		// use the operator<< override to convert from the enum to the string form.
+
+			this->tool_type->Add(int(tool_type), label);
+		}
+		settings->addSettingDefinition(qaction, this->tool_type);
+
+
 		this->title = new Settings::Text(	"Title", 
 											 "Title",
 											 this->Label.getValue(),
@@ -414,28 +452,6 @@ void ToolFeature::initialise()
 		}
 
 		settings->addSettingDefinition(qaction, this->material);
-
-
-		this->tool_type = new Settings::Enumeration(	 "Type", 
-												 "Type",
-												 int(eEndmill),
-												 "Type of tool",
-												 "Type of tool");
-
-		// Enumerated types MUST have one option for each different value.  For each option, the Id must be the integer form and the Label must
-		// be the string (verbose) form.  Only the verbose forms are used on the user interface but the values used in the TPGSettingDefinition.value will
-		// always be the integer form.
-		// The integer forms need not start from zero or be sequential.  The values will appear in the combo-box in the order that
-		// they're defined in the options list.  Their position in the list will be used by the combo-box.
-
-		for (eToolType tool_type = eDrill; tool_type < eUndefinedToolType; tool_type = eToolType(int(tool_type)+1))
-		{
-			QString label;
-			label << tool_type;		// use the operator<< override to convert from the enum to the string form.
-
-			this->tool_type->Add(int(tool_type), label);
-		}
-		settings->addSettingDefinition(qaction, this->tool_type);
 
 
 		this->m_corner_radius = new Settings::Length(	"Corner Radius", 
@@ -551,6 +567,26 @@ void ToolFeature::initialise()
 		settings->addSettingDefinition(qaction, this->m_direction);
 
 
+
+		this->extrusion_material = new Settings::Enumeration(	 "Extrusion Material", 
+												 "Extrusion Material",
+												 int(eABS),
+												 "Extrusion Material",
+												 "Extrusion Material");
+
+		for (eExtrusionMaterial_t eMaterial = eABS; eMaterial <= eUndefinedExtrusionMaterialType; eMaterial = eExtrusionMaterial_t(int(eMaterial)+1))
+		{
+			QString label;
+			label << eMaterial;		// use the operator<< override to convert from the enum to the string form.
+
+			this->extrusion_material->Add(int(eMaterial), label);
+		}
+		settings->addSettingDefinition(qaction, this->extrusion_material);
+
+
+
+
+
 		this->m_pitch = new Settings::Length(	"Thread Pitch", 
 											 "Thread Pitch",
 											 "Thread Pitch",
@@ -623,6 +659,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	this->title->visible = true;
 	this->m_automatically_generate_title->visible = true;
 
+	// Turn settings on and off based on the tool's type.
 	switch (this->tool_type->get().first)
 	{
 		case eDrill:
@@ -631,13 +668,18 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 			this->material->visible = true;
 			this->m_cutting_edge_angle->visible = true;
 			this->m_cutting_edge_height->visible = true;
+			this->m_gradient->set(0.0);
+			this->m_cutting_edge_angle->set(59.0);
+			this->m_cutting_edge_height->set( this->diameter->get(this->m_cutting_edge_height->getUnits()) * 3.0 );
 			break;
 
 		case eCentreDrill:
 			this->material->visible = true;
 			this->centre_drill_size->visible = true;
+			this->m_gradient->set(0.0);
 			break;
 
+		case eSlotCutter:
 		case eEndmill:
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
@@ -647,222 +689,507 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 			this->m_cutting_edge_height->visible = true;
 			this->m_max_advance_per_revolution->visible = true;
 			this->m_gradient->visible = true;
+			this->m_gradient->set(-1.0 / 50.0);
 		break;
 
-	case eSlotCutter:
-			this->diameter->visible = true;
+	case eBallEndMill:
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
 			this->material->visible = true;
 			this->m_corner_radius->visible = true;
+			this->m_cutting_edge_height->visible = true;
+			this->m_max_advance_per_revolution->visible = true;
+			this->m_gradient->visible = true;
+			this->m_gradient->set(-1.0 / 50.0);
+		break;
+
+	case eChamfer:
+			this->diameter->visible = true;
+			this->tool_length_offset->visible = true;
+			this->material->visible = true;
 			this->m_flat_radius->visible = true;
 			this->m_cutting_edge_angle->visible = true;
 			this->m_cutting_edge_height->visible = true;
 			this->m_max_advance_per_revolution->visible = true;
-			this->m_gradient->visible = true;
-		break;
-
-	case eBallEndMill:
-					this->diameter->visible = true;
-			this->diameter->visible = true;
-			this->tool_length_offset->visible = true;
-			this->material->visible = true;
-			this->m_corner_radius->visible = false;
-			this->m_flat_radius->visible = false;
-			this->m_cutting_edge_angle->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = false;
-			this->m_probe_offset_x = false;
-			this->m_probe_offset_y->visible = false;
-			this->m_gradient->visible = false;
-			this->m_direction->visible = false;
-			this->m_pitch->visible = false;
-			this->m_standard_tap_sizes->visible = false;
-			this->centre_drill_size->visible = false;
-			this->m_setup_instructions->visible = false;
-		break;
-
-	case eChamfer:
-					this->diameter->visible = true;
-			this->diameter->visible = true;
-			this->tool_length_offset->visible = true;
-			this->material->visible = true;
-			this->m_corner_radius->visible = false;
-			this->m_flat_radius->visible = false;
-			this->m_cutting_edge_angle->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = false;
-			this->m_probe_offset_x = false;
-			this->m_probe_offset_y->visible = false;
-			this->m_gradient->visible = false;
-			this->m_direction->visible = false;
-			this->m_pitch->visible = false;
-			this->m_standard_tap_sizes->visible = false;
-			this->centre_drill_size->visible = false;
-			this->m_setup_instructions->visible = false;
+			this->m_gradient->set(0.0);
 		break;
 
 	case eTurningTool:
-					this->diameter->visible = true;
-			this->diameter->visible = true;
-			this->tool_length_offset->visible = true;
 			this->material->visible = true;
-			this->m_corner_radius->visible = false;
-			this->m_flat_radius->visible = false;
 			this->m_cutting_edge_angle->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = false;
-			this->m_probe_offset_x = false;
-			this->m_probe_offset_y->visible = false;
-			this->m_gradient->visible = false;
-			this->m_direction->visible = false;
-			this->m_pitch->visible = false;
-			this->m_standard_tap_sizes->visible = false;
-			this->centre_drill_size->visible = false;
-			this->m_setup_instructions->visible = false;
+			this->m_max_advance_per_revolution->visible = true;
+			this->m_gradient->set(0.0);
 		break;
 
 	case eTouchProbe:
-					this->diameter->visible = true;
-			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
-			this->material->visible = true;
-			this->m_corner_radius->visible = false;
-			this->m_flat_radius->visible = false;
-			this->m_cutting_edge_angle->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = false;
-			this->m_probe_offset_x = false;
-			this->m_probe_offset_y->visible = false;
-			this->m_gradient->visible = false;
-			this->m_direction->visible = false;
-			this->m_pitch->visible = false;
-			this->m_standard_tap_sizes->visible = false;
-			this->centre_drill_size->visible = false;
-			this->m_setup_instructions->visible = false;
+			this->m_probe_offset_x->visible = true;
+			this->m_probe_offset_y->visible = true;
+			this->m_gradient->set(0.0);
 		break;
 
 	case eToolLengthSwitch:
-					this->diameter->visible = true;
-			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
-			this->material->visible = true;
-			this->m_corner_radius->visible = false;
-			this->m_flat_radius->visible = false;
-			this->m_cutting_edge_angle->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = false;
-			this->m_probe_offset_x = false;
-			this->m_probe_offset_y->visible = false;
-			this->m_gradient->visible = false;
-			this->m_direction->visible = false;
-			this->m_pitch->visible = false;
-			this->m_standard_tap_sizes->visible = false;
-			this->centre_drill_size->visible = false;
-			this->m_setup_instructions->visible = false;
+			this->m_gradient->set(0.0);
 		break;
 
 	case eExtrusion:
-					this->diameter->visible = true;
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
-			this->material->visible = true;
-			this->m_corner_radius->visible = false;
-			this->m_flat_radius->visible = false;
-			this->m_cutting_edge_angle->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = false;
-			this->m_probe_offset_x = false;
-			this->m_probe_offset_y->visible = false;
-			this->m_gradient->visible = false;
-			this->m_direction->visible = false;
-			this->m_pitch->visible = false;
-			this->m_standard_tap_sizes->visible = false;
-			this->centre_drill_size->visible = false;
-			this->m_setup_instructions->visible = false;
+			this->m_setup_instructions->visible = true;
+			this->m_gradient->set(0.0);
 		break;
 
 	case eTapTool:
-					this->diameter->visible = true;
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
 			this->material->visible = true;
-			this->m_corner_radius->visible = false;
-			this->m_flat_radius->visible = false;
-			this->m_cutting_edge_angle->visible = true;
 			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = false;
-			this->m_probe_offset_x = false;
-			this->m_probe_offset_y->visible = false;
-			this->m_gradient->visible = false;
-			this->m_direction->visible = false;
-			this->m_pitch->visible = false;
-			this->m_standard_tap_sizes->visible = false;
-			this->centre_drill_size->visible = false;
-			this->m_setup_instructions->visible = false;
+			this->m_direction->visible = true;
+			this->m_pitch->visible = true;
+			this->m_standard_tap_sizes->visible = true;
+			this->m_gradient->set(0.0);
 		break;
 
 	case eEngravingTool:
-					this->diameter->visible = true;
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
 			this->material->visible = true;
-			this->m_corner_radius->visible = false;
-			this->m_flat_radius->visible = false;
+			this->m_corner_radius->set(0.0);
+			this->m_flat_radius->visible = true;
 			this->m_cutting_edge_angle->visible = true;
 			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = false;
-			this->m_probe_offset_x = false;
-			this->m_probe_offset_y->visible = false;
-			this->m_gradient->visible = false;
-			this->m_direction->visible = false;
-			this->m_pitch->visible = false;
-			this->m_standard_tap_sizes->visible = false;
-			this->centre_drill_size->visible = false;
-			this->m_setup_instructions->visible = false;
+			this->m_max_advance_per_revolution->visible = true;
+			this->m_gradient->set(0.0);
 		break;
 
 	case eBoringHead:
-					this->diameter->visible = true;
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
 			this->material->visible = true;
-			this->m_corner_radius->visible = false;
-			this->m_flat_radius->visible = false;
-			this->m_cutting_edge_angle->visible = true;
 			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = false;
-			this->m_probe_offset_x = false;
-			this->m_probe_offset_y->visible = false;
-			this->m_gradient->visible = false;
-			this->m_direction->visible = false;
-			this->m_pitch->visible = false;
-			this->m_standard_tap_sizes->visible = false;
-			this->centre_drill_size->visible = false;
-			this->m_setup_instructions->visible = false;
+			this->m_max_advance_per_revolution->visible = true;
+			this->m_gradient->set(0.0);
 		break;
 
 	case eDragKnife:
-					this->diameter->visible = true;
-			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
-			this->material->visible = true;
-			this->m_corner_radius->visible = false;
-			this->m_flat_radius->visible = false;
-			this->m_cutting_edge_angle->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = false;
-			this->m_probe_offset_x = false;
-			this->m_probe_offset_y->visible = false;
-			this->m_gradient->visible = false;
-			this->m_direction->visible = false;
-			this->m_pitch->visible = false;
-			this->m_standard_tap_sizes->visible = false;
-			this->centre_drill_size->visible = false;
-			this->m_setup_instructions->visible = false;
 		break;
 	}
+
+	if (this->m_automatically_generate_title->get().first != 0)
+	{
+		this->ResetTitle();
+	}
 }
+
+/**
+	Find a fraction that represents this floating point number.  We use this
+	purely for readability purposes.  It only looks accurate to the nearest 1/64th
+
+	eg: 0.125 -> "1/8"
+	    1.125 -> "1 1/8"
+	    0.109375 -> "7/64"
+ */
+/* static */ QString ToolFeature::FractionalRepresentation( const Cam::Settings::Length *original_value, const int max_denominator /* = 64 */ )
+{
+
+	std::ostringstream result;
+	double _value(original_value->get(Cam::Settings::Length::Imperial));
+	double near_enough = 0.00001;
+
+	if (floor(_value) > 0)
+	{
+		result << floor(_value);
+		_value -= floor(_value);
+	} // End if - then
+
+	double fraction = 0.0;
+	if ( ((_value > fraction) && ((_value - fraction) < near_enough)) ||
+	     ((_value < fraction) && ((fraction - _value) < near_enough)) ||
+	     (_value == fraction) )
+	{
+		return(QString::fromStdString(result.str()));
+	} // End if - then
+
+	if (result.str().length() > 0)
+	{
+	    result << " ";
+	}
+
+	// We only want even numbers between 2 and 64 for the denominator.  The others just look 'wierd'.
+	for (int denominator = 2; denominator <= max_denominator; denominator *= 2)
+	{
+		for (int numerator = 1; numerator < denominator; numerator++)
+		{
+			double fraction = double( double(numerator) / double(denominator) );
+			if ( ((_value > fraction) && ((_value - fraction) < near_enough)) ||
+			     ((_value < fraction) && ((fraction - _value) < near_enough)) ||
+			     (_value == fraction) )
+			{
+				result << numerator << "/" << denominator;
+				return(QString::fromStdString(result.str()));
+			} // End if - then
+		} // End for
+	} // End for
+
+	return(QString::null);	// It's not a recognisable fraction.  Return nothing to indicate such.
+} // End FractionalRepresentation() method
+
+
+/* static */ QString ToolFeature::PrintedCircuitBoardRepresentation( const Cam::Settings::Length *pDiameter )
+{
+	// Only look up to 200 thousanths of an inch
+	Cam::Settings::Length TwoHundredThousanths( 200.0 / 1000.0, Cam::Settings::Length::Imperial );
+	if (*pDiameter < TwoHundredThousanths)
+	{
+		for (int mil=1; mil<=200; mil++)
+		{
+			Cam::Settings::Length size_in_mil((mil / 1000.0), Cam::Settings::Length::Imperial);
+			if (*pDiameter == size_in_mil)
+			{
+				std::ostringstream result;
+				result << mil << " thou";
+				return(QString::fromStdString(result.str()));
+			}
+		}
+	}
+
+	return(QString::null);
+} // End PrintedCircuitBoardRepresentation() method
+
+
+
+/* static */ QString ToolFeature::GuageNumberRepresentation( const Cam::Settings::Length *pDiameter )
+{
+
+    typedef struct Guages {
+        const QString guage;
+        double imperial;
+        double metric;
+    } Guages_t;
+
+    static Guages_t guages[] = {{QString::fromAscii("80"),0.0135,0.343},{QString::fromAscii("79"),0.0145,0.368},{QString::fromAscii("78"),0.016,0.406},{QString::fromAscii("77"),0.018,0.457},{QString::fromAscii("76"),0.020,0.508},
+                         {QString::fromAscii("75"),0.021,0.533},{QString::fromAscii("74"),0.0225,0.572},{QString::fromAscii("73"),0.024,0.610},{QString::fromAscii("72"),0.025,0.635},{QString::fromAscii("71"),0.026,0.660},
+                         {QString::fromAscii("70"),0.028,0.711},{QString::fromAscii("69"),0.0292,0.742},{QString::fromAscii("68"),0.031,0.787},{QString::fromAscii("67"),0.032,0.813},{QString::fromAscii("66"),0.033,0.838},
+                         {QString::fromAscii("65"),0.035,0.889},{QString::fromAscii("64"),0.036,0.914},{QString::fromAscii("63"),0.037,0.940},{QString::fromAscii("62"),0.038,0.965},{QString::fromAscii("61"),0.039,0.991},
+                         {QString::fromAscii("60"),0.040,1.016},{QString::fromAscii("59"),0.041,1.041},{QString::fromAscii("58"),0.042,1.067},{QString::fromAscii("57"),0.043,1.092},{QString::fromAscii("56"),0.0465,1.181},
+                         {QString::fromAscii("55"),0.052,1.321},{QString::fromAscii("54"),0.055,1.397},{QString::fromAscii("53"),0.0595,1.511},{QString::fromAscii("52"),0.0635,1.613},{QString::fromAscii("51"),0.067,1.702},
+                         {QString::fromAscii("50"),0.070,1.778},{QString::fromAscii("49"),0.073,1.854},{QString::fromAscii("48"),0.076,1.930},{QString::fromAscii("47"),0.0785,1.994},{QString::fromAscii("46"),0.081,2.057},
+                         {QString::fromAscii("45"),0.082,2.083},{QString::fromAscii("44"),0.086,2.184},{QString::fromAscii("43"),0.089,2.261},{QString::fromAscii("42"),0.0935,2.375},{QString::fromAscii("41"),0.096,2.438},
+                         {QString::fromAscii("40"),0.098,2.489},{QString::fromAscii("39"),0.0995,2.527},{QString::fromAscii("38"),0.1015,2.578},{QString::fromAscii("37"),0.104,2.642},{QString::fromAscii("36"),0.1065,2.705},
+                         {QString::fromAscii("35"),0.110,2.794},{QString::fromAscii("34"),0.111,2.819},{QString::fromAscii("33"),0.113,2.870},{QString::fromAscii("32"),0.116,2.946},{QString::fromAscii("31"),0.120,3.048},
+                         {QString::fromAscii("30"),0.1285,3.264},{QString::fromAscii("29"),0.136,3.454},{QString::fromAscii("28"),0.1405,3.569},{QString::fromAscii("27"),0.144,3.658},{QString::fromAscii("26"),0.147,3.734},
+                         {QString::fromAscii("25"),0.1495,3.797},{QString::fromAscii("24"),0.152,3.861},{QString::fromAscii("23"),0.154,3.912},{QString::fromAscii("22"),0.157,3.988},{QString::fromAscii("21"),0.159,4.039},
+                         {QString::fromAscii("20"),0.161,4.089},{QString::fromAscii("19"),0.166,4.216},{QString::fromAscii("18"),0.1695,4.305},{QString::fromAscii("17"),0.173,4.394},{QString::fromAscii("16"),0.177,4.496},
+                         {QString::fromAscii("15"),0.180,4.572},{QString::fromAscii("14"),0.182,4.623},{QString::fromAscii("13"),0.185,4.699},{QString::fromAscii("12"),0.189,4.801},{QString::fromAscii("11"),0.191,4.851},
+                         {QString::fromAscii("10"),0.1935,4.915},{QString::fromAscii("9"),0.196,4.978},{QString::fromAscii("8"),0.199,5.055},{QString::fromAscii("7"),0.201,5.105},{QString::fromAscii("6"),0.204,5.182},
+                         {QString::fromAscii("5"),0.2055,5.220},{QString::fromAscii("4"),0.209,5.309},{QString::fromAscii("3"),0.213,5.410},{QString::fromAscii("2"),0.221,5.613},{QString::fromAscii("1"),0.228,5.791},
+                         {QString::fromAscii("A"),0.234,5.944},{QString::fromAscii("B"),0.238,6.045},{QString::fromAscii("C"),0.242,6.147},{QString::fromAscii("D"),0.246,6.248},{QString::fromAscii("E"),0.250,6.350},
+                         {QString::fromAscii("F"),0.257,6.528},{QString::fromAscii("G"),0.261,6.629},{QString::fromAscii("H"),0.266,6.756},{QString::fromAscii("I"),0.272,6.909},{QString::fromAscii("J"),0.277,7.036},
+                         {QString::fromAscii("K"),0.281,7.137},{QString::fromAscii("L"),0.290,7.366},{QString::fromAscii("M"),0.295,7.493},{QString::fromAscii("N"),0.302,7.671},{QString::fromAscii("O"),0.316,8.026},
+                         {QString::fromAscii("P"),0.323,8.204},{QString::fromAscii("Q"),0.332,8.433},{QString::fromAscii("R"),0.339,8.611},{QString::fromAscii("S"),0.348,8.839},{QString::fromAscii("T"),0.358,9.093},
+                         {QString::fromAscii("U"),0.368,9.347},{QString::fromAscii("V"),0.377,9.576},{QString::fromAscii("W"),0.386,9.804},{QString::fromAscii("X"),0.397,10.08},{QString::fromAscii("Y"),0.404,10.26},
+                         {QString::fromAscii("Z"),0.413,10.49}};
+
+    double tolerance = 1e-7;	// Todo handle tolerance properly.
+    for (::size_t offset=0; offset < (sizeof(guages)/sizeof(guages[0])); offset++)
+    {
+		if (pDiameter->getUnits() == Cam::Settings::Length::Imperial)
+        {
+			if (fabs(pDiameter->get(Cam::Settings::Length::Imperial) - guages[offset].imperial) < tolerance)
+            {
+				std::ostringstream result;
+				result << "#" << guages[offset].guage.toAscii().constData();
+				return(QString::fromStdString(result.str()));
+            }
+        }
+        else
+        {
+            if (fabs(pDiameter->get(Cam::Settings::Length::Metric) - guages[offset].metric) < tolerance)
+            {
+				std::ostringstream result;
+                result << "#" << guages[offset].guage.toAscii().constData();
+                return(QString::fromStdString(result.str()));
+            }
+        }
+    } // End for
+
+	return(QString::null);
+} // End GuageNumberRepresentation() method
+
+
+void ToolFeature::ResetTitle()
+{
+	std::ostringstream name;
+
+	eToolType ToolType(eToolType(this->tool_type->get().first));
+	name << ToolType;
+	
+	if (ToolType == eCentreDrill)
+	{
+		centre_drill_t *pCentreDrill = this->CentreDrillDefinition(this->centre_drill_size->get().second);
+		if (pCentreDrill != NULL)
+		{
+			name << "Size " << this->centre_drill_size->get().second.toAscii().constData() << " ";
+		}
+
+		QString fraction = FractionalRepresentation(diameter);
+		if (fraction.length() > 0)
+		{
+			name << "(" << fraction.toAscii().constData() << "\"=";
+		}
+		else
+		{
+			name << "(";
+		}
+
+		QString mm = QString::number(diameter->get(Cam::Settings::Length::Metric), 'f', 2);
+		name << mm.toAscii().constData() << "mm) ";
+	}
+
+	if ((ToolType != eTurningTool) &&
+		(ToolType != eTouchProbe) &&
+		(ToolType != eToolLengthSwitch) &&
+		(ToolType != eCentreDrill))
+	{
+		if (diameter->getUnits() == Cam::Settings::Length::Metric)
+		{
+			// We're using metric.  Leave the diameter as a floating point number.  It just looks more natural.
+			name << diameter->get(Cam::Settings::Length::Metric) << " mm ";
+
+			QString fraction = FractionalRepresentation( diameter );
+			if (fraction.toStdString().length() > 0)
+			{
+				name << "(" << fraction.toAscii().constData() << "\") ";
+			}
+			else
+			{
+				QString pcb = PrintedCircuitBoardRepresentation( diameter );
+				if (pcb.length() > 0)
+				{
+					name << "(" << pcb.toAscii().constData() << ") ";
+				}
+			}
+		} // End if - then
+		else
+		{
+			// We're using inches.  Find a fractional representation if one matches.
+			QString fraction = FractionalRepresentation(diameter);
+			if (fraction.length() > 0)
+			{
+                name << fraction.toAscii().constData() << " inch ";
+			}
+			else
+			{
+				QString guage = GuageNumberRepresentation( diameter );
+			    if (guage.length() > 0)
+			    {
+                    name << guage.toAscii().constData() << " ";
+
+					/*
+					TODO Add the title format setting when we get somewhere to store long-term settings.
+                    if (TOOLS)
+                    {
+                        if (TOOLS->m_title_format == CTools::eIncludeGuageAndSize)
+                        {
+						*/
+							name << "(" << diameter->get(Cam::Settings::Length::Imperial) << " inch) ";
+						/*
+                        }
+                    }
+					*/
+			    }
+			    else
+			    {
+					QString pcb = PrintedCircuitBoardRepresentation( diameter );
+					if (pcb.length() > 0)
+					{
+						name << pcb.toAscii().constData() << " ";
+					}
+					else
+					{
+						name << diameter->get(Cam::Settings::Length::Imperial) << " inch ";
+					}
+			    }
+			}
+		} // End if - else
+	} // End if - then
+
+	if ((ToolType != eTouchProbe) && (ToolType != eToolLengthSwitch) && (ToolType != eExtrusion))
+	{
+		name << eMaterial_t(this->material->get().first) << " ";
+	} // End if - then
+
+	if ((ToolType == eExtrusion))
+	{
+		name << eExtrusionMaterial_t(extrusion_material->get().first);
+	} // End if - then
+
+	switch (ToolType)
+	{
+        case eTapTool:
+        {
+            // See if we can find a name for it in the standard TAP sizes tables.
+            bool found = false;
+
+            for (::size_t i=0; ((metric_tap_sizes[i].diameter > 0.0) && (! found)); i++)
+            {
+				if ((*diameter == Cam::Settings::Length(metric_tap_sizes[i].diameter, Cam::Settings::Length::Metric)) &&
+					(*m_pitch == Cam::Settings::Length(metric_tap_sizes[i].pitch, Cam::Settings::Length::Metric)))
+                    {
+                        name.clear();  // Replace what came before.
+                        QString description = metric_tap_sizes[i].description;
+						description.replace(QString::fromAscii("  "), QString::fromAscii(" "));
+						name << metric_tap_sizes[i].description.toAscii().constData();
+                        found = true;
+                    }
+            }
+
+            for (::size_t i=0; ((unified_thread_standard_tap_sizes[i].diameter > 0.0) && (! found)); i++)
+            {
+				if ((*diameter == Cam::Settings::Length(unified_thread_standard_tap_sizes[i].diameter, Cam::Settings::Length::Metric)) &&
+					(*m_pitch == Cam::Settings::Length(unified_thread_standard_tap_sizes[i].pitch, Cam::Settings::Length::Metric)))
+                    {
+						name.clear();  // Replace what came before.
+                        QString description = unified_thread_standard_tap_sizes[i].description;
+						description.replace(QString::fromAscii("  "), QString::fromAscii(" "));
+						name << metric_tap_sizes[i].description.toAscii().constData();
+                        found = true;
+                    }
+            }
+
+            for (::size_t i=0; ((british_standard_whitworth_tap_sizes[i].diameter > 0.0) && (! found)); i++)
+            {
+				if ((*diameter == Cam::Settings::Length(british_standard_whitworth_tap_sizes[i].diameter, Cam::Settings::Length::Metric)) &&
+					(*m_pitch == Cam::Settings::Length(british_standard_whitworth_tap_sizes[i].pitch, Cam::Settings::Length::Metric)))
+                    {
+						name.clear();  // Replace what came before.
+                        QString description = british_standard_whitworth_tap_sizes[i].description;
+						description.replace(QString::fromAscii("  "), QString::fromAscii(" "));
+						name << metric_tap_sizes[i].description.toAscii().constData();
+                        found = true;
+                    }
+            }
+
+            name << " Tap Tool";
+            if (eTappingDirection_t(m_direction->get().first) == eLeftHandThread) {
+                name << ", " << eTappingDirection_t(m_direction->get().first);
+            }
+        }
+		break;
+
+        case eEngravingTool:	name.clear();	// Remove all that we've already prepared.
+			name << m_cutting_edge_angle->get() << " degreee ";
+    				name << "Engraving Bit";
+		break;
+
+		default:
+			break;
+	} // End switch
+
+	this->title->setValue( QString::fromAscii(name.str().c_str()) );
+}
+
+
+/**
+	The CuttingRadius is almost always the same as half the tool's diameter.
+	The exception to this is if it's a chamfering bit.  In this case we
+	want to use the flat_radius plus a little bit.  i.e. if we're chamfering the edge
+	then we want to use the part of the cutting surface just a little way from
+	the flat radius.  If it has a flat radius of zero (i.e. it has a pointed end)
+	then it will be a small number.  If it is a carbide tipped bit then the
+	flat radius will allow for the area below the bit that doesn't cut.  In this
+	case we want to cut around the middle of the carbide tip.  In this case
+	the carbide tip should represent the full cutting edge height.  We can
+	use this method to make all these adjustments based on the tool's
+	geometry and return a reasonable value.
+
+	If express_in_drawing_units is true then we need to divide by the drawing
+	units value.  We use metric (mm) internally and convert to inches only
+	if we need to and only as the last step in the process.  By default, return
+	the value in internal (metric) units.
+
+	If the depth value is passed in as a positive number then the radius is given
+	for the corresponding depth (from the bottom-most tip of the tool).  This is
+	only relevant for chamfering (angled) bits.
+ */
+double ToolFeature::CuttingRadius( const Cam::Settings::Length::Units_t units, const Cam::Settings::Length depth /* = -1 */ ) const
+{
+	double radius;
+	double _depth = fabs(depth.get(units));
+	switch (eToolType(this->tool_type->get().first))
+	{
+		case eChamfer:
+		case eEngravingTool:
+			{
+				radius = this->m_flat_radius->get(units) + (_depth * tan((m_cutting_edge_angle->get() / 360.0 * 2 * M_PI)));
+		        if (radius > (diameter->get(units) / 2.0))
+		        {
+		            // The angle and depth would have us cutting larger than our largest diameter.
+		            radius = (diameter->get(units) / 2.0);
+		        }
+		        if (radius <= 0.0)
+		        {
+		            radius = diameter->get(units) / 2.0;
+		        }
+			}
+			break;
+
+        case eCentreDrill:
+            {
+				centre_drill_t *pCentreDrill = CentreDrillDefinition(this->centre_drill_size->get().second);
+
+                if (pCentreDrill != NULL)
+                {
+					Cam::Settings::Length drill_diameter(pCentreDrill->drill_diameter, Cam::Settings::Length::Metric);
+                    radius = drill_diameter.get(units) / 2.0;
+                }
+                else
+                {
+                    radius = diameter->get(units) / 2.0;
+                }
+            }
+			break;
+
+		case eDragKnife:
+			radius = 0.0;
+			break;
+
+		case eDrill:
+		case eEndmill:
+		case eSlotCutter:
+		case eBallEndMill:
+		case eTurningTool:
+		case eTouchProbe:
+		case eExtrusion:
+		case eToolLengthSwitch:
+		case eTapTool:
+		default:
+			radius = diameter->get(units) / 2.0;
+	} // End switch
+
+	return(radius);
+
+} // End CuttingRadius() method
+
+
+
+ToolFeature::centre_drill_t *ToolFeature::CentreDrillDefinition( const QString size ) const
+{
+	for (::size_t i=0; i<sizeof(centre_drill_sizes)/sizeof(centre_drill_sizes[0]); i++)
+	{
+		if (centre_drill_sizes[i].size == size)
+		{
+			return(&(centre_drill_sizes[i]));
+		}
+	}
+
+	return(NULL);
+}
+
+
+
 
 const ToolFeature::eToolType ToolFeature::ToolType() const
 {
