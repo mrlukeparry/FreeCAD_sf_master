@@ -296,7 +296,10 @@ void ToolFeature::onSettingDocument()
 				case eEndmill:
 				case eSlotCutter:
 				case eBoringHead:
-					this->m_flat_radius->set( this->diameter->get(this->m_flat_radius->getUnits()) / 2.0, this->m_flat_radius->getUnits() );
+					{
+						Cam::Settings::Length::Units_t units( this->m_flat_radius->getUnits() );
+						this->m_flat_radius->set( this->diameter->get(units) / 2.0, units );
+					}
 					break;
 
 				case eChamfer:
@@ -306,7 +309,8 @@ void ToolFeature::onSettingDocument()
 						// Recalculate the cutting edge length based on this new diameter
 						// and the cutting angle.
 
-						double opposite = (this->diameter->get(this->diameter->getUnits()) / 2.0) - this->m_flat_radius->get(this->diameter->getUnits());
+						Cam::Settings::Length::Units_t units( this->diameter->getUnits() );
+						double opposite = (this->diameter->get(units) / 2.0) - this->m_flat_radius->get(units);
 						double angle = this->m_cutting_edge_angle->get() / 360.0 * 2 * M_PI;
 
 						this->m_cutting_edge_height->set( opposite / tan(angle) );
@@ -923,10 +927,9 @@ void ToolFeature::ResetTitle()
 {
 	std::ostringstream name;
 
-	eToolType ToolType(eToolType(this->tool_type->get().first));
-	name << ToolType;
+	name << ToolType();
 	
-	if (ToolType == eCentreDrill)
+	if (ToolType() == eCentreDrill)
 	{
 		centre_drill_t *pCentreDrill = this->CentreDrillDefinition(this->centre_drill_size->get().second);
 		if (pCentreDrill != NULL)
@@ -948,10 +951,10 @@ void ToolFeature::ResetTitle()
 		name << mm.toAscii().constData() << "mm) ";
 	}
 
-	if ((ToolType != eTurningTool) &&
-		(ToolType != eTouchProbe) &&
-		(ToolType != eToolLengthSwitch) &&
-		(ToolType != eCentreDrill))
+	if ((ToolType() != eTurningTool) &&
+		(ToolType() != eTouchProbe) &&
+		(ToolType() != eToolLengthSwitch) &&
+		(ToolType() != eCentreDrill))
 	{
 		if (diameter->getUnits() == Cam::Settings::Length::Metric)
 		{
@@ -1016,17 +1019,17 @@ void ToolFeature::ResetTitle()
 		} // End if - else
 	} // End if - then
 
-	if ((ToolType != eTouchProbe) && (ToolType != eToolLengthSwitch) && (ToolType != eExtrusion))
+	if ((ToolType() != eTouchProbe) && (ToolType() != eToolLengthSwitch) && (ToolType() != eExtrusion))
 	{
 		name << eMaterial_t(this->material->get().first) << " ";
 	} // End if - then
 
-	if ((ToolType == eExtrusion))
+	if ((ToolType() == eExtrusion))
 	{
 		name << eExtrusionMaterial_t(extrusion_material->get().first);
 	} // End if - then
 
-	switch (ToolType)
+	switch (ToolType())
 	{
         case eTapTool:
         {
