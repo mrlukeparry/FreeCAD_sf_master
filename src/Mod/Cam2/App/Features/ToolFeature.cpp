@@ -31,6 +31,8 @@
 #include <App/Document.h>
 #include <App/PropertyContainer.h>
 
+#include <Mod/Cam2/App/Graphics/Paths.h>
+
 #include <Base/Console.h>
 #include <Base/Reader.h>
 #include <Base/Writer.h>
@@ -38,6 +40,20 @@
 #include "ToolFeature.h"
 
 using namespace Cam;
+
+#include <BRepAlgoAPI_Fuse.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
+#include <BRepPrimAPI_MakeCone.hxx>
+#include <BRepPrimAPI_MakeCylinder.hxx>
+#include <BRepPrimAPI_MakePrism.hxx>
+#include <BRepPrimAPI_MakeSphere.hxx>
+#include <Handle_Geom_TrimmedCurve.hxx>
+#include <GC_MakeSegment.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRepBuilderAPI_MakeWire.hxx>
+#include <BRepPrimAPI_MakeTorus.hxx>
+#include <BRepPrimAPI_MakeBox.hxx>
 
 ToolFeature::tap_sizes_t metric_tap_sizes[] = {
       {QString::fromAscii("M1 x 0.25 mm coarse"), 1.0, 0.25},
@@ -210,21 +226,30 @@ ToolFeature::ToolFeature()
 	material = NULL;
 	tool_type = NULL;
 
-	m_corner_radius = NULL;
-	m_flat_radius = NULL;
-	m_cutting_edge_angle = NULL;
-	m_cutting_edge_height = NULL;
-	m_max_advance_per_revolution = NULL;
-	m_automatically_generate_title = NULL;
-	m_probe_offset_x = NULL;
-	m_probe_offset_y = NULL;
-	m_gradient = NULL;
-	m_direction = NULL;
-	m_pitch = NULL;
+	corner_radius = NULL;
+	flat_radius = NULL;
+	cutting_edge_angle = NULL;
+	cutting_edge_height = NULL;
+	max_advance_per_revolution = NULL;
+	automatically_generate_title = NULL;
+	probe_offset_x = NULL;
+	probe_offset_y = NULL;
+	gradient = NULL;
+	direction = NULL;
+	pitch = NULL;
 	centre_drill_size = NULL;
-	m_setup_instructions = NULL;
+	setup_instructions = NULL;
 	title = NULL;
 	extrusion_material = NULL;
+
+	x_offset = NULL;
+	front_angle = NULL;
+	tool_angle = NULL;
+	back_angle = NULL;
+	orientation = NULL;
+
+	drag_knife_blade_offset = NULL;
+	drag_knife_initial_cutting_direction = NULL;
 }
 
 ToolFeature::~ToolFeature()
@@ -236,22 +261,32 @@ ToolFeature::~ToolFeature()
 	if (material) material->release();
 	if (tool_type) tool_type->release();
 
-	if (m_corner_radius) m_corner_radius->release();
-	if (m_flat_radius) m_flat_radius->release();
-	if (m_cutting_edge_angle) m_cutting_edge_angle->release();
-	if (m_cutting_edge_height) m_cutting_edge_height->release();
-	if (m_max_advance_per_revolution) m_max_advance_per_revolution->release();
-	if (m_automatically_generate_title) m_automatically_generate_title->release();
-	if (m_probe_offset_x) m_probe_offset_x->release();
-	if (m_probe_offset_y) m_probe_offset_y->release();
+	if (corner_radius) corner_radius->release();
+	if (flat_radius) flat_radius->release();
+	if (cutting_edge_angle) cutting_edge_angle->release();
+	if (cutting_edge_height) cutting_edge_height->release();
+	if (max_advance_per_revolution) max_advance_per_revolution->release();
+	if (automatically_generate_title) automatically_generate_title->release();
+	if (probe_offset_x) probe_offset_x->release();
+	if (probe_offset_y) probe_offset_y->release();
 
-	if (m_gradient) m_gradient->release();
-	if (m_direction) m_direction->release();
-	if (m_pitch) m_pitch->release();
+	if (gradient) gradient->release();
+	if (direction) direction->release();
+	if (pitch) pitch->release();
 	if (centre_drill_size) centre_drill_size->release();
-	if (m_setup_instructions) m_setup_instructions->release();
+	if (setup_instructions) setup_instructions->release();
 	if (title) title->release();
 	if (extrusion_material) extrusion_material->release();
+
+	if (x_offset) x_offset->release();
+	if (front_angle) front_angle->release();
+	if (tool_angle) tool_angle->release();
+	if (back_angle) back_angle->release();
+	if (orientation) orientation->release();
+
+	if (drag_knife_blade_offset) drag_knife_blade_offset->release();
+	if (drag_knife_initial_cutting_direction) drag_knife_initial_cutting_direction->release();
+
 }
 
 App::DocumentObjectExecReturn *ToolFeature::execute(void)
@@ -289,7 +324,11 @@ void ToolFeature::onSettingDocument()
 		Cam::Settings::Definition *definition = this->settings->getDefinition( QString::fromStdString(key) );
 		if (definition != NULL)
 		{
-			if (definition == this->diameter)
+			if (definition == this->tool_type)
+			{
+				ResetSettingsToReasonableValues(true);
+			}
+			else if (definition == this->diameter)
 			{
 				switch (ToolType())
 				{
@@ -297,8 +336,8 @@ void ToolFeature::onSettingDocument()
 				case eSlotCutter:
 				case eBoringHead:
 					{
-						Cam::Settings::Length::Units_t units( this->m_flat_radius->getUnits() );
-						this->m_flat_radius->set( this->diameter->get(units) / 2.0, units );
+						Cam::Settings::Length::Units_t units( this->flat_radius->getUnits() );
+						this->flat_radius->set( this->diameter->get(units) / 2.0, units );
 					}
 					break;
 
@@ -310,10 +349,10 @@ void ToolFeature::onSettingDocument()
 						// and the cutting angle.
 
 						Cam::Settings::Length::Units_t units( this->diameter->getUnits() );
-						double opposite = (this->diameter->get(units) / 2.0) - this->m_flat_radius->get(units);
-						double angle = this->m_cutting_edge_angle->get() / 360.0 * 2 * M_PI;
+						double opposite = (this->diameter->get(units) / 2.0) - this->flat_radius->get(units);
+						double angle = this->cutting_edge_angle->get() / 360.0 * 2 * M_PI;
 
-						this->m_cutting_edge_height->set( opposite / tan(angle) );
+						this->cutting_edge_height->set( opposite / tan(angle) );
 					}
 					break;
 
@@ -325,7 +364,7 @@ void ToolFeature::onSettingDocument()
 			{
 				this->Label.setValue(this->title->getValue().toAscii().constData());
 			}
-			else if (definition == m_standard_tap_sizes)
+			else if (definition == standard_tap_sizes)
 			{
 				// The operator has chosen a new tap size from the standard sizes available.  We need to lookup
 				// the pre-loaded data and populate the other settings from these definitions.
@@ -334,14 +373,14 @@ void ToolFeature::onSettingDocument()
 				::size_t num_un = (sizeof(unified_thread_standard_tap_sizes)/sizeof(unified_thread_standard_tap_sizes[0]));
 				::size_t num_whitworth = (sizeof(british_standard_whitworth_tap_sizes)/sizeof(british_standard_whitworth_tap_sizes[0]));
 
-				::size_t offset = this->m_standard_tap_sizes->get().first;
+				::size_t offset = this->standard_tap_sizes->get().first;
 				if ((offset >= 0) && (offset < num_metric))
 				{
 					// The diameters in the tables are ALL defined in metric.
 					this->diameter->set( metric_tap_sizes[offset].diameter, Cam::Settings::Length::Metric );
-					this->m_pitch->set( metric_tap_sizes[offset].pitch, Cam::Settings::Length::Metric );
+					this->pitch->set( metric_tap_sizes[offset].pitch, Cam::Settings::Length::Metric );
 					this->diameter->setUnits( Cam::Settings::Length::Metric );
-					this->m_pitch->setUnits( Cam::Settings::Length::Metric );
+					this->pitch->setUnits( Cam::Settings::Length::Metric );
 
 				}
 				else if ((offset >= num_metric) && (offset < (num_metric + num_un)))
@@ -350,9 +389,9 @@ void ToolFeature::onSettingDocument()
 
 					// The diameters in the tables are ALL defined in metric.
 					this->diameter->set( unified_thread_standard_tap_sizes[offset].diameter, Cam::Settings::Length::Metric );
-					this->m_pitch->set( unified_thread_standard_tap_sizes[offset].pitch, Cam::Settings::Length::Metric );
+					this->pitch->set( unified_thread_standard_tap_sizes[offset].pitch, Cam::Settings::Length::Metric );
 					this->diameter->setUnits( Cam::Settings::Length::Imperial );
-					this->m_pitch->setUnits( Cam::Settings::Length::Imperial );
+					this->pitch->setUnits( Cam::Settings::Length::Imperial );
 				}
 				else if ((offset >= (num_metric + num_un)) && (offset < (num_metric + num_un + num_whitworth)))
 				{
@@ -360,14 +399,12 @@ void ToolFeature::onSettingDocument()
 
 					// The diameters in the tables are ALL defined in metric.
 					this->diameter->set( british_standard_whitworth_tap_sizes[offset].diameter, Cam::Settings::Length::Metric );
-					this->m_pitch->set( british_standard_whitworth_tap_sizes[offset].pitch, Cam::Settings::Length::Metric );
+					this->pitch->set( british_standard_whitworth_tap_sizes[offset].pitch, Cam::Settings::Length::Metric );
 					this->diameter->setUnits( Cam::Settings::Length::Imperial );
-					this->m_pitch->setUnits( Cam::Settings::Length::Imperial );
+					this->pitch->setUnits( Cam::Settings::Length::Imperial );
 				}
 			}
 		}
-
-		ResetSettingsToReasonableValues(true);
 	}
 }
 
@@ -408,30 +445,23 @@ void ToolFeature::initialise()
 		settings->addSettingDefinition(qaction, this->title);
 
 
-		this->m_automatically_generate_title = new Settings::Enumeration(	 "Title Generation", 
+		this->automatically_generate_title = new Settings::Enumeration(	 "Title Generation", 
 												 "Title Generation",
 												 int(true),
 												 "Title Generation",
 												 "Set to true by default but reset to false when the user edits the title");
 
-		this->m_automatically_generate_title->Add(int(false), QString::fromAscii("Leave manually assigned title"));
-		this->m_automatically_generate_title->Add(int(true), QString::fromAscii("Automatically generate title"));
-		settings->addSettingDefinition(qaction, this->m_automatically_generate_title);
+		this->automatically_generate_title->Add(int(false), QString::fromAscii("Leave manually assigned title"));
+		this->automatically_generate_title->Add(int(true), QString::fromAscii("Automatically generate title"));
+		settings->addSettingDefinition(qaction, this->automatically_generate_title);
 
 
-		this->diameter = new Settings::Length(	"Diameter", 
-											 "Cutting diameter",
-											 "Cutting diameter",
-											 5.0,
-											 Settings::Definition::Metric );
+		this->diameter = new Settings::Length(	"Diameter", 5.0, Settings::Definition::Metric );
 		this->diameter->Minimum(0.0);	// must be positive.  No maximum.
 		settings->addSettingDefinition(qaction, this->diameter);
 
-		this->tool_length_offset = new Settings::Length( "Tool Length Offset", 
-											 "Tool Length Offset",
-											 "Full length of the tool.  Includes both cutting and non-cutting areas of the tool.  Used for rendering of the tool solid.",
-											 5.0,
-											 Settings::Definition::Metric );
+		this->tool_length_offset = new Settings::Length( "Tool Length Offset", 5.0, Settings::Definition::Metric );
+		this->tool_length_offset->helptext = QString::fromAscii("Full length of the tool.  Includes both cutting and non-cutting areas of the tool.  Used for rendering of the tool solid.");
 		this->tool_length_offset->Minimum(0.0);	// must be positive.  No maximum.
 		settings->addSettingDefinition(qaction, this->tool_length_offset);
 
@@ -458,41 +488,25 @@ void ToolFeature::initialise()
 		settings->addSettingDefinition(qaction, this->material);
 
 
-		this->m_corner_radius = new Settings::Length(	"Corner Radius", 
-											 "Corner radius",
-											 "Corner radius",
-											 0.0,
-											 Settings::Definition::Metric );
-		this->m_corner_radius->Minimum(0.0);	// must be positive.  No maximum.
-		settings->addSettingDefinition(qaction, this->m_corner_radius);
+		this->corner_radius = new Settings::Length(	"Corner Radius", 0.0, Settings::Definition::Metric );
+		this->corner_radius->Minimum(0.0);	// must be positive.  No maximum.
+		settings->addSettingDefinition(qaction, this->corner_radius);
 
-		this->m_flat_radius = new Settings::Length(	"Flat Radius", 
-											 "Flat radius",
-											 "Flat radius",
-											 0.0,
-											 Settings::Definition::Metric );
-		this->m_flat_radius->Minimum(0.0);	// must be positive.  No maximum.
-		settings->addSettingDefinition(qaction, this->m_flat_radius);
-		this->m_flat_radius->set( this->diameter->get(this->m_flat_radius->getUnits()) / 2.0 );
+		this->flat_radius = new Settings::Length(	"Flat Radius", 0.0, Settings::Definition::Metric );
+		this->flat_radius->Minimum(0.0);	// must be positive.  No maximum.
+		settings->addSettingDefinition(qaction, this->flat_radius);
+		this->flat_radius->set( this->diameter->get(this->flat_radius->getUnits()) / 2.0 );
 
-		this->m_cutting_edge_height = new Settings::Length(	"Cutting Edge Height", 
-											 "Cutting Edge Height",
-											 "Cutting Edge Height",
-											 0.0,
-											 Settings::Definition::Metric );
-		this->m_cutting_edge_height->Minimum(0.0);	// must be positive.  No maximum.
-		settings->addSettingDefinition(qaction, this->m_cutting_edge_height);
+		this->cutting_edge_height = new Settings::Length(	"Cutting Edge Height", 0.0, Settings::Definition::Metric );
+		this->cutting_edge_height->Minimum(0.0);	// must be positive.  No maximum.
+		settings->addSettingDefinition(qaction, this->cutting_edge_height);
 
-		this->m_cutting_edge_angle = new Settings::Double(	"Cutting Edge Angle", 
-											 "Cutting Edge Angle",
-											 "Cutting Edge Angle",
-											 0.0,
-											 "degrees" );
-		this->m_cutting_edge_angle->Minimum(0.0);	// must be positive.
-		this->m_cutting_edge_angle->Minimum(90.0);
-		settings->addSettingDefinition(qaction, this->m_cutting_edge_angle);
+		this->cutting_edge_angle = new Settings::Double(	"Cutting Edge Angle", 0.0, "degrees" );
+		this->cutting_edge_angle->Minimum(0.0);	// must be positive.
+		this->cutting_edge_angle->Minimum(90.0);
+		settings->addSettingDefinition(qaction, this->cutting_edge_angle);
 
-		this->m_max_advance_per_revolution = new Settings::Length(	"Max advance per revolution", 
+		this->max_advance_per_revolution = new Settings::Length(	"Max advance per revolution", 
 											 "Max advance per revolution",
 											 "This is the maximum distance a tool should advance during a single "
 											"revolution.  This value is often defined by the manufacturer in "
@@ -502,12 +516,12 @@ void ToolFeature::initialise()
 											"value is easier to use.",
 											 0.0,
 											 Settings::Definition::Metric );
-		this->m_max_advance_per_revolution->Minimum(0.0);	// must be positive.  No maximum.
-		settings->addSettingDefinition(qaction, this->m_max_advance_per_revolution);
+		this->max_advance_per_revolution->Minimum(0.0);	// must be positive.  No maximum.
+		settings->addSettingDefinition(qaction, this->max_advance_per_revolution);
 
 
 
-		this->m_probe_offset_x = new Settings::Length(	"Probe Offset X", 
+		this->probe_offset_x = new Settings::Length(	"Probe Offset X", 
 											 "Probe Offset X",
 											 "The following coordinates relate ONLY to touch probe tools.  They describe "
 											 "the error the probe tool has in locating an X,Y point.  These values are "
@@ -521,9 +535,9 @@ void ToolFeature::initialise()
 											"ASSUME this is correct.",
 											 0.0,
 											 Settings::Definition::Metric );
-		settings->addSettingDefinition(qaction, this->m_probe_offset_x);
+		settings->addSettingDefinition(qaction, this->probe_offset_x);
 
-		this->m_probe_offset_y = new Settings::Length(	"Probe Offset Y", 
+		this->probe_offset_y = new Settings::Length(	"Probe Offset Y", 
 											 "Probe Offset Y",
 											 "The following coordinates relate ONLY to touch probe tools.  They describe "
 											 "the error the probe tool has in locating an X,Y point.  These values are "
@@ -537,12 +551,12 @@ void ToolFeature::initialise()
 											"ASSUME this is correct.",
 											 0.0,
 											 Settings::Definition::Metric );	
-		settings->addSettingDefinition(qaction, this->m_probe_offset_y);
+		settings->addSettingDefinition(qaction, this->probe_offset_y);
 
 
 
 
-		this->m_gradient = new Settings::Length(	"Ramp entry gradient", 
+		this->gradient = new Settings::Length(	"Ramp entry gradient", 
 											 "Ramp entry gradient",
 											 "The gradient is the steepest angle at which this tool can plunge into the material.  Many "
 											 "tools behave better if they are slowly ramped down into the material.  This gradient "
@@ -552,10 +566,10 @@ void ToolFeature::initialise()
 											 "To cater for this, a value of zero will indicate a straight plunge.",
 											 0.0,
 											 Settings::Definition::Metric );	
-		settings->addSettingDefinition(qaction, this->m_gradient);
+		settings->addSettingDefinition(qaction, this->gradient);
 
 		
-		this->m_direction = new Settings::Enumeration(	 "Tapping direction", 
+		this->direction = new Settings::Enumeration(	 "Tapping direction", 
 												 "Tapping direction",
 												 int(eRightHandThread),
 												 "Tapping direction",
@@ -566,9 +580,9 @@ void ToolFeature::initialise()
 			QString label;
 			label << direction;		// use the operator<< override to convert from the enum to the string form.
 
-			this->m_direction->Add(int(direction), label);
+			this->direction->Add(int(direction), label);
 		}
-		settings->addSettingDefinition(qaction, this->m_direction);
+		settings->addSettingDefinition(qaction, this->direction);
 
 
 
@@ -591,16 +605,11 @@ void ToolFeature::initialise()
 
 
 
-		this->m_pitch = new Settings::Length(	"Thread Pitch", 
-											 "Thread Pitch",
-											 "Thread Pitch",
-											 0.0,
-											 Settings::Definition::Metric );	
-		settings->addSettingDefinition(qaction, this->m_pitch);
-
+		this->pitch = new Settings::Length(	"Thread Pitch", 0.0, Settings::Definition::Metric );	
+		settings->addSettingDefinition(qaction, this->pitch);
 		
 
-		this->m_standard_tap_sizes = new Settings::Enumeration(	 "Standard Tap Sizes", 
+		this->standard_tap_sizes = new Settings::Enumeration(	 "Standard Tap Sizes", 
 												 "Standard Tap Sizes",
 												 int(0),
 												 "Standard Tap Sizes",
@@ -612,17 +621,17 @@ void ToolFeature::initialise()
 
 		for (::size_t i=0; i<num_metric; i++)
 		{
-			this->m_standard_tap_sizes->Add(int(i), metric_tap_sizes[i].description);
+			this->standard_tap_sizes->Add(int(i), metric_tap_sizes[i].description);
 		}
 		for (::size_t i=num_metric; i<(num_un + num_metric); i++)
 		{
-			this->m_standard_tap_sizes->Add(int(i), unified_thread_standard_tap_sizes[i-(num_metric)].description);
+			this->standard_tap_sizes->Add(int(i), unified_thread_standard_tap_sizes[i-(num_metric)].description);
 		}
 		for (::size_t i=(num_un + num_metric); i<(num_un + num_metric + num_whitworth); i++)
 		{
-			this->m_standard_tap_sizes->Add(int(i), british_standard_whitworth_tap_sizes[i-(num_metric+num_un)].description);
+			this->standard_tap_sizes->Add(int(i), british_standard_whitworth_tap_sizes[i-(num_metric+num_un)].description);
 		}
-		settings->addSettingDefinition(qaction, this->m_standard_tap_sizes);
+		settings->addSettingDefinition(qaction, this->standard_tap_sizes);
 
 
 
@@ -637,12 +646,47 @@ void ToolFeature::initialise()
 		}
 		settings->addSettingDefinition(qaction, this->centre_drill_size);
 
-		this->m_setup_instructions = new Settings::Text(	"Setup Instructions", 
+		this->setup_instructions = new Settings::Text(	"Setup Instructions", 
 											 "Setup Instructions",
 											 "",	// Value.
 											 "",
 											 "Note to add to GCode file to make sure the operator sets up the tool correctly at the start." );		
-		settings->addSettingDefinition(qaction, this->m_setup_instructions);
+		settings->addSettingDefinition(qaction, this->setup_instructions);
+
+
+		this->x_offset = new Settings::Length(	"X Offset", 0.0, Settings::Definition::Metric );
+		this->x_offset->Minimum(0.0);
+		settings->addSettingDefinition(qaction, this->x_offset);
+
+		this->front_angle = new Settings::Double( "Front Angle", 95.0, "Degrees" );
+		settings->addSettingDefinition(qaction, this->front_angle);
+
+		this->tool_angle = new Settings::Double( "Tool Angle", 60.0, "Degrees" );
+		settings->addSettingDefinition(qaction, this->tool_angle);
+
+		this->back_angle = new Settings::Double( "Back Angle", 25.0, "Degrees" );
+		settings->addSettingDefinition(qaction, this->back_angle);
+
+		this->orientation = new Settings::Enumeration(	"Orientation", 
+											 "Turning tool orientation",
+											 int(eFacing),	// Value.
+											 "",
+											 "Turning tool orientation" );
+
+		for (eOrientation_t i=eUnused; i<=eCentre; i = eOrientation_t(int(i) + 1))
+		{
+			QString description;
+			description << i;
+			this->orientation->Add(int(i), description);
+		}
+		settings->addSettingDefinition(qaction, this->orientation);
+
+		this->drag_knife_blade_offset = new Settings::Length(	"Blade Offset", 5.0, Settings::Definition::Metric );
+		this->drag_knife_blade_offset->Minimum(0.0);
+		settings->addSettingDefinition(qaction, this->drag_knife_blade_offset);
+
+		this->drag_knife_initial_cutting_direction = new Settings::Double( "Cutting Direction", 0.0, "Degrees from positive X axis" );
+		settings->addSettingDefinition(qaction, this->drag_knife_initial_cutting_direction);
 
 		ResetSettingsToReasonableValues(true);
 	}
@@ -661,7 +705,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	// These settings are true for all tool types.
 	this->tool_type->visible = true;
 	this->title->visible = true;
-	this->m_automatically_generate_title->visible = true;
+	this->automatically_generate_title->visible = true;
 
 	// Turn settings on and off based on the tool's type.
 	switch (this->tool_type->get().first)
@@ -670,17 +714,18 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
 			this->material->visible = true;
-			this->m_cutting_edge_angle->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_gradient->set(0.0);
-			this->m_cutting_edge_angle->set(59.0);
-			this->m_cutting_edge_height->set( this->diameter->get(this->m_cutting_edge_height->getUnits()) * 3.0 );
+			this->cutting_edge_angle->visible = true;
+			this->cutting_edge_height->visible = true;
+			this->gradient->set(0.0);
+			this->cutting_edge_angle->set(59.0);
+			this->cutting_edge_height->set( this->diameter->get(this->cutting_edge_height->getUnits()) * 3.0 );
+			this->tool_length_offset->set( this->cutting_edge_height->get( this->tool_length_offset->getUnits() ) * 3.0 );
 			break;
 
 		case eCentreDrill:
 			this->material->visible = true;
 			this->centre_drill_size->visible = true;
-			this->m_gradient->set(0.0);
+			this->gradient->set(0.0);
 			break;
 
 		case eSlotCutter:
@@ -688,100 +733,121 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
 			this->material->visible = true;
-			this->m_corner_radius->visible = true;
-			this->m_flat_radius->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = true;
-			this->m_gradient->visible = true;
-			this->m_gradient->set(-1.0 / 50.0);
+			this->corner_radius->visible = true;
+			this->flat_radius->visible = true;
+			this->cutting_edge_height->visible = true;
+			this->max_advance_per_revolution->visible = true;
+			this->gradient->visible = true;
+			this->gradient->set(-1.0 / 50.0);
+			this->flat_radius->set( this->diameter->get( this->flat_radius->getUnits() ) / 2.0 );
+			this->corner_radius->set( 0.0 );
+			this->cutting_edge_height->set( this->diameter->get(this->cutting_edge_height->getUnits()) * 3.0 );
+			this->tool_length_offset->set( this->cutting_edge_height->get( this->tool_length_offset->getUnits() ) * 3.0 );
 		break;
 
 	case eBallEndMill:
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
 			this->material->visible = true;
-			this->m_corner_radius->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = true;
-			this->m_gradient->visible = true;
-			this->m_gradient->set(-1.0 / 50.0);
+			this->corner_radius->visible = true;
+			this->cutting_edge_height->visible = true;
+			this->max_advance_per_revolution->visible = true;
+			this->gradient->visible = true;
+			this->gradient->set(-1.0 / 50.0);
+			this->flat_radius->set( 0.0 );
+			this->corner_radius->set( this->diameter->get( this->corner_radius->getUnits() ) / 2.0 );
+			this->cutting_edge_height->set( this->diameter->get(this->cutting_edge_height->getUnits()) * 3.0 );
+			this->tool_length_offset->set( this->cutting_edge_height->get( this->tool_length_offset->getUnits() ) * 3.0 );
 		break;
 
 	case eChamfer:
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
 			this->material->visible = true;
-			this->m_flat_radius->visible = true;
-			this->m_cutting_edge_angle->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = true;
-			this->m_gradient->set(0.0);
+			this->flat_radius->visible = true;
+			this->cutting_edge_angle->visible = true;
+			this->cutting_edge_height->visible = true;
+			this->max_advance_per_revolution->visible = true;
+			this->gradient->set(0.0);
+			this->flat_radius->set( 0.0 );
+			this->cutting_edge_height->set( this->diameter->get(this->cutting_edge_height->getUnits()) * 3.0 );
+			this->tool_length_offset->set( this->cutting_edge_height->get( this->tool_length_offset->getUnits() ) * 3.0 );
 		break;
 
 	case eTurningTool:
 			this->material->visible = true;
-			this->m_cutting_edge_angle->visible = true;
-			this->m_max_advance_per_revolution->visible = true;
-			this->m_gradient->set(0.0);
+			this->cutting_edge_angle->visible = true;
+			this->max_advance_per_revolution->visible = true;
+			this->gradient->set(0.0);
+			this->orientation->visible = true;
 		break;
 
 	case eTouchProbe:
 			this->tool_length_offset->visible = true;
-			this->m_probe_offset_x->visible = true;
-			this->m_probe_offset_y->visible = true;
-			this->m_gradient->set(0.0);
+			this->probe_offset_x->visible = true;
+			this->probe_offset_y->visible = true;
+			this->gradient->set(0.0);
 		break;
 
 	case eToolLengthSwitch:
 			this->tool_length_offset->visible = true;
-			this->m_gradient->set(0.0);
+			this->gradient->set(0.0);
 		break;
 
 	case eExtrusion:
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
-			this->m_setup_instructions->visible = true;
-			this->m_gradient->set(0.0);
+			this->setup_instructions->visible = true;
+			this->gradient->set(0.0);
 		break;
 
 	case eTapTool:
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
 			this->material->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_direction->visible = true;
-			this->m_pitch->visible = true;
-			this->m_standard_tap_sizes->visible = true;
-			this->m_gradient->set(0.0);
+			this->cutting_edge_height->visible = true;
+			this->direction->visible = true;
+			this->pitch->visible = true;
+			this->standard_tap_sizes->visible = true;
+			this->gradient->set(0.0);
+			this->cutting_edge_height->set( this->diameter->get(this->cutting_edge_height->getUnits()) * 3.0 );
+			this->tool_length_offset->set( this->cutting_edge_height->get( this->tool_length_offset->getUnits() ) * 3.0 );
 		break;
 
 	case eEngravingTool:
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
 			this->material->visible = true;
-			this->m_corner_radius->set(0.0);
-			this->m_flat_radius->visible = true;
-			this->m_cutting_edge_angle->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = true;
-			this->m_gradient->set(0.0);
+			this->corner_radius->set(0.0);
+			this->flat_radius->visible = true;
+			this->cutting_edge_angle->visible = true;
+			this->cutting_edge_height->visible = true;
+			this->max_advance_per_revolution->visible = true;
+			this->gradient->set(0.0);
+			this->flat_radius->set( 0.0 );
+			this->cutting_edge_height->set( this->diameter->get(this->cutting_edge_height->getUnits()) * 3.0 );
+			this->tool_length_offset->set( this->cutting_edge_height->get( this->tool_length_offset->getUnits() ) * 3.0 );
 		break;
 
 	case eBoringHead:
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
 			this->material->visible = true;
-			this->m_cutting_edge_height->visible = true;
-			this->m_max_advance_per_revolution->visible = true;
-			this->m_gradient->set(0.0);
+			this->cutting_edge_height->visible = true;
+			this->max_advance_per_revolution->visible = true;
+			this->gradient->set(0.0);
+			this->cutting_edge_height->set( this->diameter->get(this->cutting_edge_height->getUnits()) * 3.0 );
+			this->tool_length_offset->set( this->cutting_edge_height->get( this->tool_length_offset->getUnits() ) * 3.0 );
 		break;
 
 	case eDragKnife:
 			this->tool_length_offset->visible = true;
+			this->drag_knife_blade_offset->visible = true;
+			this->drag_knife_initial_cutting_direction->visible = true;
 		break;
 	}
 
-	if (this->m_automatically_generate_title->get().first != 0)
+	if (this->automatically_generate_title->get().first != 0)
 	{
 		this->ResetTitle();
 	}
@@ -1039,7 +1105,7 @@ void ToolFeature::ResetTitle()
             for (::size_t i=0; ((metric_tap_sizes[i].diameter > 0.0) && (! found)); i++)
             {
 				if ((*diameter == Cam::Settings::Length(metric_tap_sizes[i].diameter, Cam::Settings::Length::Metric)) &&
-					(*m_pitch == Cam::Settings::Length(metric_tap_sizes[i].pitch, Cam::Settings::Length::Metric)))
+					(*pitch == Cam::Settings::Length(metric_tap_sizes[i].pitch, Cam::Settings::Length::Metric)))
                     {
                         name.clear();  // Replace what came before.
                         QString description = metric_tap_sizes[i].description;
@@ -1052,7 +1118,7 @@ void ToolFeature::ResetTitle()
             for (::size_t i=0; ((unified_thread_standard_tap_sizes[i].diameter > 0.0) && (! found)); i++)
             {
 				if ((*diameter == Cam::Settings::Length(unified_thread_standard_tap_sizes[i].diameter, Cam::Settings::Length::Metric)) &&
-					(*m_pitch == Cam::Settings::Length(unified_thread_standard_tap_sizes[i].pitch, Cam::Settings::Length::Metric)))
+					(*pitch == Cam::Settings::Length(unified_thread_standard_tap_sizes[i].pitch, Cam::Settings::Length::Metric)))
                     {
 						name.clear();  // Replace what came before.
                         QString description = unified_thread_standard_tap_sizes[i].description;
@@ -1065,7 +1131,7 @@ void ToolFeature::ResetTitle()
             for (::size_t i=0; ((british_standard_whitworth_tap_sizes[i].diameter > 0.0) && (! found)); i++)
             {
 				if ((*diameter == Cam::Settings::Length(british_standard_whitworth_tap_sizes[i].diameter, Cam::Settings::Length::Metric)) &&
-					(*m_pitch == Cam::Settings::Length(british_standard_whitworth_tap_sizes[i].pitch, Cam::Settings::Length::Metric)))
+					(*pitch == Cam::Settings::Length(british_standard_whitworth_tap_sizes[i].pitch, Cam::Settings::Length::Metric)))
                     {
 						name.clear();  // Replace what came before.
                         QString description = british_standard_whitworth_tap_sizes[i].description;
@@ -1076,14 +1142,14 @@ void ToolFeature::ResetTitle()
             }
 
             name << " Tap Tool";
-            if (eTappingDirection_t(m_direction->get().first) == eLeftHandThread) {
-                name << ", " << eTappingDirection_t(m_direction->get().first);
+            if (eTappingDirection_t(direction->get().first) == eLeftHandThread) {
+                name << ", " << eTappingDirection_t(direction->get().first);
             }
         }
 		break;
 
         case eEngravingTool:	name.clear();	// Remove all that we've already prepared.
-			name << m_cutting_edge_angle->get() << " degreee ";
+			name << cutting_edge_angle->get() << " degreee ";
     				name << "Engraving Bit";
 		break;
 
@@ -1126,7 +1192,7 @@ double ToolFeature::CuttingRadius( const Cam::Settings::Length::Units_t units, c
 		case eChamfer:
 		case eEngravingTool:
 			{
-				radius = this->m_flat_radius->get(units) + (_depth * tan((m_cutting_edge_angle->get() / 360.0 * 2 * M_PI)));
+				radius = this->flat_radius->get(units) + (_depth * tan((cutting_edge_angle->get() / 360.0 * 2 * M_PI)));
 		        if (radius > (diameter->get(units) / 2.0))
 		        {
 		            // The angle and depth would have us cutting larger than our largest diameter.
@@ -1199,6 +1265,491 @@ const ToolFeature::eToolType ToolFeature::ToolType() const
 	if (this->tool_type == NULL) return(this->eUndefinedToolType);
 	return(eToolType(this->tool_type->get().first));
 }
+
+
+
+/* static */ TopoDS_Shape ToolFeature::StanleyKnifeBlade_MountingPlate(const double blade_angle_degrees, const double blade_thickness)
+{
+	
+	double y = +1.0 * (blade_thickness / 2.0);
+
+	{
+		Cam::Paths paths;
+		paths.Add( Cam::Edge( gp_Pnt(35.575, y, 18.8), gp_Pnt( 35.575, y, 16.8 )) );
+		
+		{
+			gp_Pnt start(35.575, y, 16.8);
+			gp_Pnt end(32.275, y, 16.80);
+			gp_Pnt pivot(33.925, y, 16.8);
+			gp_Ax2 axis(pivot, gp_Dir(gp_Vec(0.0,1.0,0.0)));
+			gp_Circ circle(axis, start.Distance(pivot));
+			paths.Add( Cam::Edge( start, end, circle ) );
+		}
+		
+		paths.Add( Cam::Edge( gp_Pnt(32.275, y, 16.8), gp_Pnt( 32.275, y, 18.8 )) );
+		paths.Add( Cam::Edge( gp_Pnt( 32.275, y, 18.8 ), gp_Pnt(35.575, y, 18.8)) );
+
+		TopoDS_Face face = BRepBuilderAPI_MakeFace( paths[0].Wire() );
+		gp_Vec vec( 0.0 ,blade_thickness * -3.0, 0.0 );
+		TopoDS_Shape shape = BRepPrimAPI_MakePrism( face, vec );
+
+		gp_Trsf rotate;
+		gp_Ax1 ax1(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(gp_XYZ(0.0,-1.0,0.0)));
+		double angle_radians = (M_PI / 2.0) - ((blade_angle_degrees / 360.0) * (2.0 * M_PI));
+		rotate.SetRotation(ax1, angle_radians);
+		BRepBuilderAPI_Transform transform(rotate);
+		transform.Perform(shape, false); // notice false as second parameter
+		TopoDS_Shape blade(transform.Shape());
+
+		return(blade);
+	}
+}
+
+
+/* static */ TopoDS_Shape ToolFeature::StanleyKnifeBlade(const double blade_angle_degrees, const double blade_thickness)
+{
+	Cam::Paths paths;
+	double y = -1.0 * (blade_thickness / 2.0);
+	double angle_radians = (M_PI / 2.0) - ((blade_angle_degrees / 360.0) * (2.0 * M_PI));
+
+	paths.Add( Cam::Edge( gp_Pnt(0.0, y, 0.0), gp_Pnt( 61.5, y, 0.0 )) );
+	paths.Add( Cam::Edge( gp_Pnt(61.5, y, 0.0), gp_Pnt( 46.25, y, 18.8 )) );
+	paths.Add( Cam::Edge( gp_Pnt(46.25, y, 18.8), gp_Pnt( 35.575, y, 18.8 )) );
+	paths.Add( Cam::Edge( gp_Pnt(35.575, y, 18.8), gp_Pnt( 35.575, y, 16.8 )) );
+	
+	{
+		gp_Pnt start(35.575, y, 16.8);
+		gp_Pnt end(32.275, y, 16.80);
+		gp_Pnt pivot(33.925, y, 16.8);
+		gp_Ax2 axis(pivot, gp_Dir(gp_Vec(0.0,1.0,0.0)));
+		gp_Circ circle(axis, start.Distance(pivot));
+		paths.Add( Cam::Edge( start, end, circle ) );
+	}
+	
+	paths.Add( Cam::Edge( gp_Pnt(32.275, y, 16.8), gp_Pnt( 32.275, y, 18.8 )) );
+	paths.Add( Cam::Edge( gp_Pnt(32.275, y, 18.8), gp_Pnt( 29.225, y, 18.8 )) );
+	paths.Add( Cam::Edge( gp_Pnt(29.225, y, 18.8), gp_Pnt( 29.225, y, 16.8)) );
+	
+	{
+		gp_Pnt start(29.225, y, 16.8);
+		gp_Pnt end(25.925, y, 16.80);
+		gp_Pnt pivot(27.575, y, 16.8);
+		gp_Ax2 axis(pivot, gp_Dir(gp_Vec(0.0,1.0,0.0)));
+		gp_Circ circle(axis, start.Distance(pivot));
+		paths.Add( Cam::Edge( start, end, circle ) );
+	}
+   
+	paths.Add( Cam::Edge( gp_Pnt(25.925, y, 16.8), gp_Pnt( 25.925, y, 18.8 )) );
+	paths.Add( Cam::Edge( gp_Pnt(25.925, y, 18.8), gp_Pnt( 15.25, y, 18.8 )) );
+	paths.Add( Cam::Edge( gp_Pnt(15.25, y, 18.8), gp_Pnt( 0.0, y, 0.0 )) );
+
+	TopoDS_Face face = BRepBuilderAPI_MakeFace( paths[0].Wire() );
+	gp_Vec vec( 0.0 ,blade_thickness, 0.0 );
+	TopoDS_Shape shape = BRepPrimAPI_MakePrism( face, vec );
+
+	{
+		gp_Trsf rotate;
+		gp_Ax1 ax1(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(gp_XYZ(0.0,-1.0,0.0)));
+		double angle_radians = (M_PI / 2.0) - ((blade_angle_degrees / 360.0) * (2.0 * M_PI));
+		rotate.SetRotation(ax1, angle_radians);
+		BRepBuilderAPI_Transform transform(rotate);
+		transform.Perform(shape, false); // notice false as second parameter
+		TopoDS_Shape blade(transform.Shape());
+
+		return(blade);
+	}
+}
+
+
+double ToolFeature::degrees_to_radians( const double degrees ) const
+{
+	return((degrees / 360.0) * (PI * 2.0));
+}
+
+/**
+	This method produces a "Topology Data Structure - Shape" based on the parameters
+	describing the tool's dimensions.  We will (probably) use this, along with the
+	NCCode paths to find out what devastation this tool will make when run through
+	the program.  We will then (again probably) intersect the resulting solid with
+	things like fixture solids to see if we're going to break anything.  We could
+	also intersect it with a solid that represents the raw material (i.e before it
+	has been machined).  This would give us an idea of what we'd end up with if
+	we ran the GCode program.
+
+	Finally, we might use this to 'apply' a GCode operation to existing geometry.  eg:
+	where a drilling cycle is defined, the result of drilling a hole from one
+	location for a certain depth will be a hole in that green solid down there.  We
+	may want to do this so as to use the edges (or other side-effects) to define
+	subsequent NC operations.  (just typing out loud)
+
+	NOTE: The shape is always drawn with the tool's tip at the origin.
+	It is always drawn along the Z axis.  The calling routine may move and rotate the drawn
+	shape if need be but this method returns a standard straight up and down version.
+ */
+TopoDS_Shape ToolFeature::Shape() const
+{
+   try {
+	gp_Dir orientation(0,0,1);	// This method always draws it up and down.  Leave it
+					// for other methods to rotate the resultant shape if
+					// they need to.
+	gp_Pnt tool_tip_location(0,0,0);	// Always from the origin in this method.
+
+	// Do all the calculations in mm (for now)
+	Cam::Settings::Length::Units_t units(Cam::Settings::Length::Metric);
+
+	double diameter = this->CuttingRadius(units) * 2.0;
+	if (diameter < 0.01) diameter = 2;
+
+	double tool_length_offset = this->ToolLengthOffset(units);
+	if (tool_length_offset <  diameter) tool_length_offset = 10 * diameter;
+
+	double cutting_edge_height = this->CuttingEdgeHeight(units);
+	if (cutting_edge_height < (2 * diameter)) cutting_edge_height = 2 * diameter;
+
+	switch (ToolType())
+	{
+		case eDragKnife:
+		{
+			double blade_thickness = 0.6;
+			TopoDS_Shape blade = StanleyKnifeBlade(this->CuttingEdgeAngle(), blade_thickness);
+			return(blade);
+			/*
+			TopoDS_Shape mounting_plate = StanleyKnifeBlade_MountingPlate(m_params.m_cutting_edge_angle, blade_thickness);
+			TopoDS_Shape tool_shape = BRepAlgoAPI_Fuse(blade , mounting_plate );
+			return(tool_shape);
+			*/
+		}
+		break;
+
+		case eCentreDrill:
+		{
+			// First a cylinder to represent the shaft.
+			double body_diameter = diameter * 5.0;	// Default.
+			centre_drill_t *pCentreDrill = CentreDrillDefinition(this->CentreDrillSize());
+
+			if (pCentreDrill != NULL)
+			{
+				body_diameter = pCentreDrill->body_diameter;
+				tool_length_offset = pCentreDrill->overall_length;
+				cutting_edge_height = pCentreDrill->drill_length;
+			}
+
+			double tool_tip_length = (diameter / 2) * tan( degrees_to_radians(90.0 - this->CuttingEdgeAngle()));
+			double second_cone_height = ((body_diameter / 2.0) - (diameter / 2.0)) * tan( degrees_to_radians(90.0 - 30));
+			double body_length = tool_length_offset - (2.0 * tool_tip_length) - (2.0 * cutting_edge_height) - (2.0 * second_cone_height);
+
+			gp_Pnt location(tool_tip_location);
+			location.SetZ( location.Z() + tool_tip_length );
+			BRepPrimAPI_MakeCone bottom_tool_tip( gp_Ax2( location, gp_Dir(0,0,-1) ), diameter/2, this->FlatRadius(units), tool_tip_length);
+
+			BRepPrimAPI_MakeCylinder bottom_cutting_shaft( gp_Ax2( location, gp_Dir(0,0,+1) ), diameter / 2, cutting_edge_height );
+			TopoDS_Shape tool_shape = BRepAlgoAPI_Fuse(bottom_tool_tip.Shape() , bottom_cutting_shaft.Shape() );
+
+			location.SetZ( location.Z() + cutting_edge_height );
+			BRepPrimAPI_MakeCone bottom_shaft_cone( gp_Ax2( location, gp_Dir(0,0,+1) ), diameter/2, body_diameter/2.0, second_cone_height);
+			tool_shape = BRepAlgoAPI_Fuse(tool_shape, bottom_shaft_cone.Shape() );
+
+			location.SetZ( location.Z() + second_cone_height );
+			BRepPrimAPI_MakeCylinder body_shaft( gp_Ax2( location, gp_Dir(0,0,+1) ), body_diameter / 2, body_length );
+			tool_shape = BRepAlgoAPI_Fuse(tool_shape, body_shaft.Shape() );
+
+			location.SetZ( location.Z() + body_length );
+			BRepPrimAPI_MakeCone top_shaft_cone( gp_Ax2( location, gp_Dir(0,0,+1) ), body_diameter/2.0, diameter/2, second_cone_height);
+			tool_shape = BRepAlgoAPI_Fuse(tool_shape, top_shaft_cone.Shape() );
+
+			location.SetZ( location.Z() + second_cone_height );
+			BRepPrimAPI_MakeCylinder top_cutting_shaft( gp_Ax2( location, gp_Dir(0,0,+1) ), diameter / 2, cutting_edge_height );
+			tool_shape = BRepAlgoAPI_Fuse(tool_shape , top_cutting_shaft.Shape() );
+
+			location.SetZ( location.Z() + cutting_edge_height );
+			BRepPrimAPI_MakeCone top_tool_tip( gp_Ax2( location, gp_Dir(0,0,+1) ), diameter/2, this->FlatRadius(units), tool_tip_length);
+			tool_shape = BRepAlgoAPI_Fuse(tool_shape , top_tool_tip.Shape() );
+
+			return( tool_shape );
+		}
+
+		case eDrill:
+		{
+			// First a cylinder to represent the shaft.
+			double tool_tip_length = (diameter / 2) * tan( degrees_to_radians(90 - this->CuttingEdgeAngle()));
+			double shaft_length = tool_length_offset - tool_tip_length;
+
+			gp_Pnt shaft_start_location( tool_tip_location );
+			shaft_start_location.SetZ( tool_tip_location.Z() + tool_tip_length );
+
+			gp_Ax2 shaft_position_and_orientation( shaft_start_location, orientation );
+
+			BRepPrimAPI_MakeCylinder shaft( shaft_position_and_orientation, diameter / 2, shaft_length );
+
+			// And a cone for the tip.
+			gp_Ax2 tip_position_and_orientation( shaft_start_location, gp_Dir(0,0,-1) );
+
+			BRepPrimAPI_MakeCone tool_tip( tip_position_and_orientation,
+							diameter/2,
+							this->FlatRadius(units),
+							tool_tip_length);
+
+			TopoDS_Shape tool_shape = BRepAlgoAPI_Fuse(shaft.Shape() , tool_tip.Shape() );
+			return tool_shape;
+		}
+
+		case eChamfer:
+		case eEngravingTool:
+		{
+			if (this->CuttingEdgeAngle() <= 0.0)
+			{
+				BRepPrimAPI_MakeSphere ball( gp_Pnt(0.0, 0.0, 0.0), 1.0 );
+				return ball.Shape();
+			}
+
+			// First a cylinder to represent the shaft.
+			double tool_tip_length_a = (diameter / 2) / tan( degrees_to_radians(this->CuttingEdgeAngle()));
+			double tool_tip_length_b = (this->FlatRadius(units))  / tan( degrees_to_radians(this->CuttingEdgeAngle()));
+			double tool_tip_length = tool_tip_length_a - tool_tip_length_b;
+
+			double shaft_length = tool_length_offset - tool_tip_length;
+
+			gp_Pnt shaft_start_location( tool_tip_location );
+			shaft_start_location.SetZ( tool_tip_location.Z() + tool_tip_length );
+
+			gp_Ax2 shaft_position_and_orientation( shaft_start_location, orientation );
+
+			BRepPrimAPI_MakeCylinder shaft( shaft_position_and_orientation, (diameter / 2) * ((this->ToolType() == eEngravingTool) ? 1.0 : 0.5), shaft_length );
+
+			// And a cone for the tip.
+			// double cutting_edge_angle_in_radians = ((m_params.m_cutting_edge_angle / 2) / 360) * (2 * PI);
+			gp_Ax2 tip_position_and_orientation( shaft_start_location, gp_Dir(0,0,-1) );
+
+			BRepPrimAPI_MakeCone tool_tip( tip_position_and_orientation,
+							diameter/2,
+							this->FlatRadius(units),
+							tool_tip_length);
+
+			TopoDS_Shape tool_shape = BRepAlgoAPI_Fuse(shaft.Shape() , tool_tip.Shape() );
+			return tool_shape;
+		}
+
+		case eBallEndMill:
+		{
+			// First a cylinder to represent the shaft.
+			double shaft_length = tool_length_offset - this->CornerRadius(units);
+
+			gp_Pnt shaft_start_location( tool_tip_location );
+			shaft_start_location.SetZ( tool_tip_location.Z() + this->CornerRadius(units) );
+
+			gp_Ax2 shaft_position_and_orientation( shaft_start_location, orientation );
+
+			BRepPrimAPI_MakeCylinder shaft( shaft_position_and_orientation, diameter / 2, shaft_length );
+			BRepPrimAPI_MakeSphere ball( shaft_start_location, diameter / 2 );
+
+			// TopoDS_Compound tool_shape;
+			TopoDS_Shape tool_shape;
+			tool_shape = BRepAlgoAPI_Fuse(shaft.Shape() , ball.Shape() );
+			return tool_shape;
+		}
+
+		case eTouchProbe:
+		case eToolLengthSwitch:	// TODO: Draw a tool length switch
+		{
+			// First a cylinder to represent the shaft.
+			double shaft_length = tool_length_offset - diameter;
+
+			gp_Pnt shaft_start_location( tool_tip_location );
+			shaft_start_location.SetZ( tool_tip_location.Z() - shaft_length );
+
+			gp_Ax2 tip_position_and_orientation( tool_tip_location, gp_Dir(0,0,+1) );
+			BRepPrimAPI_MakeCone shaft( tip_position_and_orientation,
+							diameter/16.0,
+							diameter/2,
+							shaft_length);
+
+			BRepPrimAPI_MakeSphere ball( tool_tip_location, diameter / 2.0 );
+
+			// TopoDS_Compound tool_shape;
+			TopoDS_Shape tool_shape;
+			tool_shape = BRepAlgoAPI_Fuse(shaft.Shape() , ball.Shape() );
+			return tool_shape;
+		}
+
+		case eTurningTool:
+		{
+			// First draw the cutting tip.
+			double triangle_radius = 8.0;	// mm
+			double cutting_tip_thickness = 3.0;	// mm
+
+			gp_Trsf rotation;
+
+			gp_Pnt p1(0.0, triangle_radius, 0.0);
+			rotation.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(0,0,1)), degrees_to_radians(0) );
+			p1.Transform(rotation);
+
+			rotation.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(0,0,1)), degrees_to_radians(+1 * ((360 - this->ToolAngle())/2)) );
+			gp_Pnt p2(p1);
+			p2.Transform(rotation);
+
+			rotation.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(0,0,1)), degrees_to_radians(-1 * ((360 - this->ToolAngle())/2)) );
+			gp_Pnt p3(p1);
+			p3.Transform(rotation);
+
+			Handle(Geom_TrimmedCurve) line1 = GC_MakeSegment(p1,p2);
+			Handle(Geom_TrimmedCurve) line2 = GC_MakeSegment(p2,p3);
+			Handle(Geom_TrimmedCurve) line3 = GC_MakeSegment(p3,p1);
+
+			TopoDS_Edge edge1 = BRepBuilderAPI_MakeEdge( line1 );
+			TopoDS_Edge edge2 = BRepBuilderAPI_MakeEdge( line2 );
+			TopoDS_Edge edge3 = BRepBuilderAPI_MakeEdge( line3 );
+
+			TopoDS_Wire wire = BRepBuilderAPI_MakeWire( edge1, edge2, edge3 );
+			TopoDS_Face face = BRepBuilderAPI_MakeFace( wire );
+			gp_Vec vec( 0,0, cutting_tip_thickness );
+			TopoDS_Shape cutting_tip = BRepPrimAPI_MakePrism( face, vec );
+
+			// Now make the supporting shaft
+			gp_Pnt p4(p3); p4.SetZ( p3.Z() + cutting_tip_thickness );
+			gp_Pnt p5(p2); p5.SetZ( p2.Z() + cutting_tip_thickness );
+
+			Handle(Geom_TrimmedCurve) shaft_line1 = GC_MakeSegment(p2,p3);
+			Handle(Geom_TrimmedCurve) shaft_line2 = GC_MakeSegment(p3,p4);
+			Handle(Geom_TrimmedCurve) shaft_line3 = GC_MakeSegment(p4,p5);
+			Handle(Geom_TrimmedCurve) shaft_line4 = GC_MakeSegment(p5,p2);
+
+			TopoDS_Edge shaft_edge1 = BRepBuilderAPI_MakeEdge( shaft_line1 );
+			TopoDS_Edge shaft_edge2 = BRepBuilderAPI_MakeEdge( shaft_line2 );
+			TopoDS_Edge shaft_edge3 = BRepBuilderAPI_MakeEdge( shaft_line3 );
+			TopoDS_Edge shaft_edge4 = BRepBuilderAPI_MakeEdge( shaft_line4 );
+
+			TopoDS_Wire shaft_wire = BRepBuilderAPI_MakeWire( shaft_edge1, shaft_edge2, shaft_edge3, shaft_edge4 );
+			TopoDS_Face shaft_face = BRepBuilderAPI_MakeFace( shaft_wire );
+			gp_Vec shaft_vec( 0, (-1 * tool_length_offset), 0 );
+			TopoDS_Shape shaft = BRepPrimAPI_MakePrism( shaft_face, shaft_vec );
+
+			// Aggregate the shaft and cutting tip
+			TopoDS_Shape tool_shape = BRepAlgoAPI_Fuse(shaft , cutting_tip );
+
+			// Now orient the tool as per its settings.
+			gp_Trsf tool_holder_orientation;
+			gp_Trsf orient_for_lathe_use;
+
+			switch (this->Orientation())
+			{
+				case eTurningBackFacing: // South East
+					tool_holder_orientation.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(0,0,1)), degrees_to_radians(45 - 90) );
+					break;
+
+				case eTurningFacing: // South West
+					tool_holder_orientation.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(0,0,1)), degrees_to_radians(123 - 90) );
+					break;
+
+				case eBoringFacing: // North West
+					tool_holder_orientation.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(0,0,1)), degrees_to_radians(225 - 90) );
+					break;
+
+				case eBoringBackFacing: // North East
+					tool_holder_orientation.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(0,0,1)), degrees_to_radians(-45 - 90) );
+					break;
+
+				case eTurning: // East
+					tool_holder_orientation.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(0,0,1)), degrees_to_radians(0 - 90) );
+					break;
+
+				case eFacing: // West
+					tool_holder_orientation.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(0,0,1)), degrees_to_radians(180 - 90) );
+					break;
+
+				case eBoring: // North
+					tool_holder_orientation.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(0,0,1)), degrees_to_radians(-90 - 90) );
+					break;
+
+				case eCentre: // Boring (straight along Y axis)
+				default:
+					tool_holder_orientation.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(1,0,0)), degrees_to_radians(90.0) );
+					break;
+
+			} // End switch
+
+			// Rotate from drawing orientation (for easy mathematics in this code) to tool holder orientation.
+			tool_shape = BRepBuilderAPI_Transform( tool_shape, tool_holder_orientation, false );
+
+			// Rotate to use axes typically used for lathe work.
+			// i.e. z axis along the bed (from head stock to tail stock as z increases)
+			// and x across the bed.
+			orient_for_lathe_use.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(0,1,0) ), degrees_to_radians(-90.0) );
+			tool_shape = BRepBuilderAPI_Transform( tool_shape, orient_for_lathe_use, false );
+
+			orient_for_lathe_use.SetRotation( gp_Ax1( gp_Pnt(0,0,0), gp_Dir(0,0,1) ), degrees_to_radians(90.0) );
+			tool_shape = BRepBuilderAPI_Transform( tool_shape, orient_for_lathe_use, false );
+
+			return(tool_shape);
+		}
+
+		case eBoringHead:
+			{
+				double radius = diameter / 2.0;
+				double torus_radius = diameter * 0.05;
+				BRepPrimAPI_MakeTorus torus( radius, torus_radius );
+
+				double head_width = diameter * 0.3;
+				double head_thickness = diameter * 0.1;
+				double head_height = this->CuttingEdgeHeight(units);
+				BRepPrimAPI_MakeBox head( gp_Pnt(-1.0 * (radius + torus_radius), -1.0 * head_thickness / 2.0, 0.0),
+											head_width, 
+											head_thickness, 
+											head_height );
+
+				// Aggregate the shaft and cutting tip
+				TopoDS_Shape head_and_taurus = BRepAlgoAPI_Fuse(torus.Shape() , head.Shape() );
+
+				gp_Ax2 axis_of_shaft( gp_Pnt((-1.0 * (radius + torus_radius)) + (head_width - head_thickness), 0.0, head_height), gp_Dir(0.0, 0.0, 1.0));
+				double shaft_length = this->ToolLengthOffset(units) - head_height;
+				if (shaft_length < 1.0) shaft_length = this->ToolLengthOffset(units);
+				BRepPrimAPI_MakeCylinder shaft( axis_of_shaft, head_thickness / 2.0, shaft_length );
+
+				TopoDS_Shape with_shaft = BRepAlgoAPI_Fuse(head_and_taurus , shaft.Shape() );
+				return(with_shaft);				
+			}
+			break;
+
+		case eEndmill:
+		case eSlotCutter:
+		case eExtrusion:
+	    case eTapTool:             // reasonable?
+		default:
+		{
+			// First a cylinder to represent the shaft.
+			double shaft_length = tool_length_offset;
+			gp_Pnt shaft_start_location( tool_tip_location );
+
+			gp_Ax2 shaft_position_and_orientation( shaft_start_location, orientation );
+
+			BRepPrimAPI_MakeCylinder shaft( shaft_position_and_orientation, diameter / 2, shaft_length );
+
+			TopoDS_Compound tool_shape;
+			return(shaft.Shape());
+		}
+	} // End switch
+   } // End try
+   // These are due to poor parameter settings resulting in negative lengths and the like.  I need
+   // to work through the various parameters to either ensure they're correct or don't try
+   // to construct a shape.
+   catch (Standard_ConstructionError)
+   {
+	   // If we fail to create the solid then it's probably because the parameters of the geometry
+	   // don't make sense.  eg: a negative length.  If we return a small sphere then we avoid
+	   // the infinite loop that is created by the NULL shape pointer.
+
+	    BRepPrimAPI_MakeSphere ball( gp_Pnt(0.0, 0.0, 0.0), 1.0 );
+		return ball.Shape();
+   } // End catch
+   catch (Standard_DomainError)
+   {
+	   // If we fail to create the solid then it's probably because the parameters of the geometry
+	   // don't make sense.  eg: a negative length.  If we return a small sphere then we avoid
+	   // the infinite loop that is created by the NULL shape pointer.
+
+	    BRepPrimAPI_MakeSphere ball( gp_Pnt(0.0, 0.0, 0.0), 1.0 );
+		return ball.Shape();
+   } // End catch
+} // End GetShape() method
 
 
 void ToolFeature::onDelete(const App::DocumentObject &docObj) {

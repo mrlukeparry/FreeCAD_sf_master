@@ -564,6 +564,11 @@ public:
 	{
 	}
 
+	Color(const char *name):
+	  Definition(name, name, SettingType_Color, "", "", name)
+	{
+	}
+
 	bool get(int &red, int &green, int &blue, int &alpha) const;
 	void set(const int red, const int green, const int blue, const int alpha);
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
@@ -612,6 +617,10 @@ public:
 	Length(	const char *name, 
 			const char *label, 
 			const char *helptext,
+			const double default_value,
+			const Definition::Units_t units );
+
+	Length(	const char *name,
 			const double default_value,
 			const Definition::Units_t units );
 
@@ -681,6 +690,10 @@ public:
 			const double default_value,
 			const Definition::Units_t units );
 
+	Rate(	const char *name, 
+			const double default_value,
+			const Definition::Units_t units );
+
 	bool Evaluate( const char *entered_value, double *pResult ) const;
 	virtual ValidationState validate(QString & input,int & position) const;
 
@@ -710,17 +723,21 @@ class CamExport Double : public Definition
 {
 public:
 	Double(	const char *name, 
-								const char *label, 
-								const char *helptext,
-								const double default_value,
-								const double minimum, 
-								const double maximum, 
-								const char *units );
+			const char *label, 
+			const char *helptext,
+			const double default_value,
+			const double minimum, 
+			const double maximum, 
+			const char *units );
 	Double(	const char *name, 
-								const char *label, 
-								const char *helptext,
-								const double default_value,
-								const char *units );
+			const char *label, 
+			const char *helptext,
+			const double default_value,
+			const char *units );
+
+	Double(	const char *name, 
+			const double default_value,
+			const char *units );
 
 	bool Evaluate( const char *entered_value, double *pResult ) const;
 	virtual ValidationState validate(QString & input,int & position) const;

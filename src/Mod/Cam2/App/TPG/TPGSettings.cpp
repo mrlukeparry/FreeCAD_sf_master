@@ -1159,6 +1159,16 @@ Double::Double(
 	this->defaultvalue = QString::fromStdString(def_val.str());
 }
 
+Double::Double(
+		const char *name,
+		const double default_value,
+		const char * units ):
+	  Definition(name, name, SettingType_Double, "", units, name)
+{
+	std::ostringstream def_val;
+	def_val << default_value;
+	this->defaultvalue = QString::fromStdString(def_val.str());
+}
 	  
 double Settings::Double::Minimum() const
 {
@@ -1326,6 +1336,19 @@ Settings::Rate::Rate(
 		const double default_value,
 		const Definition::Units_t units ):
 	  Definition(name, label, SettingType_Rate, "", "", helptext)
+{
+	Encode_t data;
+	boost::tuples::get<valueOffset>(data) = default_value;
+	boost::tuples::get<unitsOffset>(data) = units;
+
+	this->defaultvalue = this->encode(data);
+}
+
+Settings::Rate::Rate(
+		const char *name, 
+		const double default_value,
+		const Definition::Units_t units ):
+	  Definition(name, name, SettingType_Rate, "", "", name)
 {
 	Encode_t data;
 	boost::tuples::get<valueOffset>(data) = default_value;
@@ -2169,6 +2192,19 @@ Settings::Length::Length(
 		const double default_value,
 		const Definition::Units_t units ):
 	  Definition(name, label, SettingType_Length, "", "", helptext)
+{
+	Encode_t data;
+	boost::tuples::get<valueOffset>(data) = default_value;
+	boost::tuples::get<unitsOffset>(data) = units;
+
+	this->defaultvalue = this->encode( data );
+}
+
+Settings::Length::Length(
+		const char *name, 
+		const double default_value,
+		const Definition::Units_t units ):
+	  Definition(name, name, SettingType_Length, "", "", name)
 {
 	Encode_t data;
 	boost::tuples::get<valueOffset>(data) = default_value;
