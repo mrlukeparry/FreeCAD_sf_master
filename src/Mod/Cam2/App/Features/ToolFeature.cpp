@@ -776,9 +776,7 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 
 	case eTurningTool:
 			this->material->visible = true;
-			this->cutting_edge_angle->visible = true;
 			this->max_advance_per_revolution->visible = true;
-			this->gradient->set(0.0);
 			this->orientation->visible = true;
 		break;
 
@@ -786,19 +784,16 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 			this->tool_length_offset->visible = true;
 			this->probe_offset_x->visible = true;
 			this->probe_offset_y->visible = true;
-			this->gradient->set(0.0);
 		break;
 
 	case eToolLengthSwitch:
 			this->tool_length_offset->visible = true;
-			this->gradient->set(0.0);
 		break;
 
 	case eExtrusion:
 			this->diameter->visible = true;
 			this->tool_length_offset->visible = true;
 			this->setup_instructions->visible = true;
-			this->gradient->set(0.0);
 		break;
 
 	case eTapTool:
@@ -809,7 +804,6 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 			this->direction->visible = true;
 			this->pitch->visible = true;
 			this->standard_tap_sizes->visible = true;
-			this->gradient->set(0.0);
 			this->cutting_edge_height->set( this->diameter->get(this->cutting_edge_height->getUnits()) * 3.0 );
 			this->tool_length_offset->set( this->cutting_edge_height->get( this->tool_length_offset->getUnits() ) * 3.0 );
 		break;
