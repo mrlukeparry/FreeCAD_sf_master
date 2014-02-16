@@ -405,6 +405,11 @@ void ToolFeature::onSettingDocument()
 				}
 			}
 		}
+
+		if ((automatically_generate_title != NULL) && (this->AutomaticallyGenerateTitle()))
+		{
+			ResetTitle();
+		}
 	}
 }
 
@@ -982,9 +987,47 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 	return(QString::null);
 } // End GuageNumberRepresentation() method
 
+bool ToolFeature::SettingsInitialized() const
+{
+	if (this->settings == NULL) return(false);
+	if (this->setup_instructions == NULL) return(false);
+	if (this->title == NULL) return(false);
+	if (this->diameter == NULL) return(false);
+	if (this->tool_length_offset == NULL) return(false);
+	if (this->material == NULL) return(false);
+	if (this->tool_type == NULL) return(false);
+	if (this->extrusion_material == NULL) return(false);
+	if (this->corner_radius == NULL) return(false);
+	if (this->flat_radius == NULL) return(false);
+	if (this->cutting_edge_angle == NULL) return(false);
+	if (this->cutting_edge_height == NULL) return(false);
+	if (this->max_advance_per_revolution == NULL) return(false);
+	if (this->automatically_generate_title == NULL) return(false);
+	if (this->probe_offset_x == NULL) return(false);
+	if (this->probe_offset_y == NULL) return(false);
+	if (this->gradient == NULL) return(false);
+	if (this->direction == NULL) return(false);
+	if (this->standard_tap_sizes == NULL) return(false);
+	if (this->centre_drill_size == NULL) return(false);
+	if (this->x_offset == NULL) return(false);
+	if (this->front_angle == NULL) return(false);
+	if (this->tool_angle == NULL) return(false);
+	if (this->back_angle == NULL) return(false);
+	if (this->orientation == NULL) return(false);
+	if (this->drag_knife_blade_offset == NULL) return(false);
+	if (this->drag_knife_initial_cutting_direction == NULL) return(false);
+
+	return(true);
+}
+
 
 void ToolFeature::ResetTitle()
 {
+	if (! SettingsInitialized())
+	{
+		return;
+	}
+
 	std::ostringstream name;
 
 	name << ToolType();
@@ -994,7 +1037,7 @@ void ToolFeature::ResetTitle()
 		centre_drill_t *pCentreDrill = this->CentreDrillDefinition(this->centre_drill_size->get().second);
 		if (pCentreDrill != NULL)
 		{
-			name << "Size " << this->centre_drill_size->get().second.toAscii().constData() << " ";
+			name << " Size " << this->centre_drill_size->get().second.toAscii().constData() << " ";
 		}
 
 		QString fraction = FractionalRepresentation(diameter);
@@ -1019,7 +1062,7 @@ void ToolFeature::ResetTitle()
 		if (diameter->getUnits() == Cam::Settings::Length::Metric)
 		{
 			// We're using metric.  Leave the diameter as a floating point number.  It just looks more natural.
-			name << diameter->get(Cam::Settings::Length::Metric) << " mm ";
+			name << " " << diameter->get(Cam::Settings::Length::Metric) << " mm ";
 
 			QString fraction = FractionalRepresentation( diameter );
 			if (fraction.toStdString().length() > 0)
@@ -1041,14 +1084,14 @@ void ToolFeature::ResetTitle()
 			QString fraction = FractionalRepresentation(diameter);
 			if (fraction.length() > 0)
 			{
-                name << fraction.toAscii().constData() << " inch ";
+                name << " " << fraction.toAscii().constData() << " inch ";
 			}
 			else
 			{
 				QString guage = GuageNumberRepresentation( diameter );
 			    if (guage.length() > 0)
 			    {
-                    name << guage.toAscii().constData() << " ";
+                    name << " " << guage.toAscii().constData() << " ";
 
 					/*
 					TODO Add the title format setting when we get somewhere to store long-term settings.
@@ -1068,11 +1111,11 @@ void ToolFeature::ResetTitle()
 					QString pcb = PrintedCircuitBoardRepresentation( diameter );
 					if (pcb.length() > 0)
 					{
-						name << pcb.toAscii().constData() << " ";
+						name << " " << pcb.toAscii().constData() << " ";
 					}
 					else
 					{
-						name << diameter->get(Cam::Settings::Length::Imperial) << " inch ";
+						name << " " << diameter->get(Cam::Settings::Length::Imperial) << " inch ";
 					}
 			    }
 			}
@@ -1081,7 +1124,9 @@ void ToolFeature::ResetTitle()
 
 	if ((ToolType() != eTouchProbe) && (ToolType() != eToolLengthSwitch) && (ToolType() != eExtrusion))
 	{
-		name << eMaterial_t(this->material->get().first) << " ";
+		QString material;
+		material << eMaterial_t(this->material->get().first);
+		name << " " << material.toAscii().constData() << " ";
 	} // End if - then
 
 	if ((ToolType() == eExtrusion))
@@ -1143,7 +1188,7 @@ void ToolFeature::ResetTitle()
 		break;
 
         case eEngravingTool:	name.clear();	// Remove all that we've already prepared.
-			name << cutting_edge_angle->get() << " degreee ";
+			name << cutting_edge_angle->get() << " degree ";
     				name << "Engraving Bit";
 		break;
 

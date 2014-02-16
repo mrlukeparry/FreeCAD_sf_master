@@ -298,6 +298,8 @@ public:
 	double DragKnifeBladeOffset( const Cam::Settings::Length::Units_t units ) const { return(drag_knife_blade_offset->get(units)); }
 	double DragKnifeInitialCuttingDirection() const { return(drag_knife_initial_cutting_direction->get()); }
 
+	bool SettingsInitialized() const;
+
 public:
 	static TopoDS_Shape StanleyKnifeBlade_MountingPlate(const double blade_angle_degrees, const double blade_thickness);
 	static TopoDS_Shape StanleyKnifeBlade(const double blade_angle_degrees, const double blade_thickness);
@@ -321,6 +323,14 @@ public:
 
 		qs.append( QString::fromStdString(ss.str()));
 		return(qs);
+	}
+
+	friend std::ostringstream & operator << ( std::ostringstream & oss, const eMaterial_t & material_type )
+	{
+		QString qs;
+		qs << material_type;
+		oss << qs.toAscii().constData();
+		return(oss);
 	}
 
 
@@ -434,6 +444,14 @@ public:
 		return(ss);
 	}
 
+	friend std::ostringstream & operator<< ( std::ostringstream & oss, const eTappingDirection_t & direction )
+	{
+		QString qs;
+		qs << direction;
+		oss << qs.toAscii().constData();
+		return(oss);
+	}
+
 	friend QString & operator << ( QString & ss, const eOrientation_t & orientation )
 	{
 		switch (orientation)
@@ -476,6 +494,14 @@ public:
 		}
 
 		return(ss);
+	}
+
+	friend std::ostringstream & operator<< ( std::ostringstream & oss, const eOrientation_t & orientation )
+	{
+		QString qs;
+		qs << orientation;
+		oss << qs.toAscii().constData();
+		return(oss);
 	}
 
 private:
