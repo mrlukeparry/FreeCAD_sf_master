@@ -362,7 +362,7 @@ void ToolFeature::onSettingDocument()
 			}
 			else if (definition == this->title)
 			{
-				this->Label.setValue(this->title->getValue().toAscii().constData());
+				this->Label.setValue(new_value.c_str());
 			}
 			else if (definition == standard_tap_sizes)
 			{
@@ -964,23 +964,11 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
     double tolerance = 1e-7;	// Todo handle tolerance properly.
     for (::size_t offset=0; offset < (sizeof(guages)/sizeof(guages[0])); offset++)
     {
-		if (pDiameter->getUnits() == Cam::Settings::Length::Imperial)
+        if (fabs(pDiameter->get(Cam::Settings::Length::Metric) - guages[offset].metric) < tolerance)
         {
-			if (fabs(pDiameter->get(Cam::Settings::Length::Imperial) - guages[offset].imperial) < tolerance)
-            {
-				std::ostringstream result;
-				result << "#" << guages[offset].guage.toAscii().constData();
-				return(QString::fromStdString(result.str()));
-            }
-        }
-        else
-        {
-            if (fabs(pDiameter->get(Cam::Settings::Length::Metric) - guages[offset].metric) < tolerance)
-            {
-				std::ostringstream result;
-                result << "#" << guages[offset].guage.toAscii().constData();
-                return(QString::fromStdString(result.str()));
-            }
+			std::ostringstream result;
+            result << "#" << guages[offset].guage.toAscii().constData();
+            return(QString::fromStdString(result.str()));
         }
     } // End for
 
@@ -1197,6 +1185,7 @@ void ToolFeature::ResetTitle()
 	} // End switch
 
 	this->title->setValue( QString::fromAscii(name.str().c_str()) );
+	this->Label.setValue(name.str().c_str());
 }
 
 

@@ -1457,14 +1457,16 @@ bool CamComboBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 						std::vector<App::DocumentObject *> objects = doc->getObjectsOfType( type );
 						for (std::vector<App::DocumentObject *>::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
 						{
-							QString name = QString::fromAscii((*itObject)->getNameInDocument());
-							this->combo_box->addItem( name );
+							QString label = QString::fromAscii((*itObject)->Label.getValue());		// Name as displayed to user (can be changed)
+							QString name = QString::fromAscii((*itObject)->getNameInDocument());	// Unique name - does not change.
+
+							this->combo_box->addItem( label );	// Show the name as it's assigned by the user.
 							if (pSetting->GetName() == name)
 							{
 								this->combo_box->setCurrentIndex(index);
 							}
 
-							values.push_back( std::make_pair( name, name ));
+							values.push_back( std::make_pair( name, label ));
 							index++;
 						}
 					}
@@ -1521,7 +1523,7 @@ void CamComboBoxComponent::refresh()
 			{
 				for (::size_t i=0; i<values.size(); i++)
 				{
-					if (values[i].second == pSetting->GetName())
+					if (values[i].first == pSetting->GetName())
 					{
 						this->combo_box->setCurrentIndex(int(i));
 					}
