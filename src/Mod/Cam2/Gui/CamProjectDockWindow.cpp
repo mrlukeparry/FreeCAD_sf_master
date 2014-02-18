@@ -195,10 +195,13 @@ bool CamProjectDockWindow::saveSettings()
     bool failure = false;
     QList<CamComponent*>::iterator it = components.begin();
     for (; it != components.end(); ++it)
-        if (!(*it)->close()) {
-        	Base::Console().Warning("Failed to save '%s'\n", (*it)->name());
+	{
+		CamComponent *pCamComponent = *it;
+        if (! pCamComponent->close()) {
+        	Base::Console().Warning("Failed to save '%s'\n", pCamComponent->name());
             failure = true;
         }
+	}
     return !failure;
 }
 

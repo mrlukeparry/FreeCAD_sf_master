@@ -1387,18 +1387,10 @@ bool CamRadioComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayou
 /**
  * Saves the values on the UI to the TPGSetting instance
  */
-bool CamRadioComponent::close() {
-
-	//TODO: make this happen when radio buttons lose focus or different one is selected
-	QMap<QString, QRadioButton*>::const_iterator it = radios.constBegin();
-	for (; it != radios.constEnd(); ++it) {
-		if (it.value()->isChecked()) {
-			QString qvalue = it.key();
-			return tpgsetting->setValue(qvalue);
-		}
-	}
-
-    return false;
+bool CamRadioComponent::close() 
+{
+	// We don't need to save here as it was saved as soon as the clicked() method was called.
+    return true;
 }
 
 
