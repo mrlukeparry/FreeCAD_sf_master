@@ -509,6 +509,7 @@ void ToolFeature::initialise()
 		this->cutting_edge_angle = new Settings::Double(	"Cutting Edge Angle", 0.0, "degrees" );
 		this->cutting_edge_angle->Minimum(0.0);	// must be positive.
 		this->cutting_edge_angle->Minimum(90.0);
+		this->cutting_edge_angle->helptext = QString::fromAscii("The angle between the centreline of the tool and the cutting edge.");
 		settings->addSettingDefinition(qaction, this->cutting_edge_angle);
 
 		this->max_advance_per_revolution = new Settings::Length(	"Max advance per revolution", 
@@ -578,7 +579,7 @@ void ToolFeature::initialise()
 												 "Tapping direction",
 												 int(eRightHandThread),
 												 "Tapping direction",
-												 "Tapping direction");
+												 "Direction of rotation when advancing the tap into the workpiece.  Right handed = clockwise.  Left handed = counter clockwise.");
 
 		for (eTappingDirection_t direction = eRightHandThread; direction <= eLeftHandThread; direction = eTappingDirection_t(int(direction)+1))
 		{
