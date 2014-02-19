@@ -856,6 +856,10 @@ void CamLengthComponent::editingFinished()
 	}
 	else
 		Base::Console().Error("Saving a setting failed!\n");
+
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 void CamLengthComponent::refresh() 
@@ -1742,6 +1746,10 @@ void CamDirectoryComponent::editingFinished() {
 	}
 	else
 		Base::Console().Error("Saving a setting failed!\n");
+
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 /**
