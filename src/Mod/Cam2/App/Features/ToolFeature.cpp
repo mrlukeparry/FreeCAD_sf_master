@@ -316,17 +316,88 @@ void ToolFeature::onSettingDocument()
 }
 
 
-// From Cam::Settings::Feature
-/* virtual */ void ToolFeature::onSettingChanged(const std::string key, const std::string previous_value, const std::string new_value)
+/** 
+	From Cam::Settings::Feature
+
+	This method is called whenever one of the settings changes value.  We catch this change
+	and make any corresponding changes that are necessary.  eg: For an endmill, the flat radius
+	is half the tool's diameter if the corner radius is zero.  We can make sure that a change
+	in one parameter influences related parameters if necessary.  We do need to be a little
+	careful here as a change in a related parameter will stimulate another call to this
+	same method.  If two settings both influence each other then we could end up in
+	an infinite loop (need to check for this at some point).
+ */
+void ToolFeature::onSettingChanged(const std::string key, const std::string previous_value, const std::string new_value)
 {
-	if (this->settings != NULL)
+	// If our parent settings container exists AND we have created all the settings
+	// objects within that container...
+	if ((this->settings != NULL) && (this->SettingsInitialized()))
 	{
+		// Figure out which of our settings changed.
 		Cam::Settings::Definition *definition = this->settings->getDefinition( QString::fromStdString(key) );
 		if (definition != NULL)
 		{
 			if (definition == this->tool_type)
 			{
 				ResetSettingsToReasonableValues(true);
+			}
+			else if (definition == this->drag_knife_initial_cutting_direction)
+			{
+				if (ToolType() == eDragKnife)
+				{
+					std::ostringstream ossInstructions;
+					ossInstructions << "Ensure the " << this->title->getValue().toAscii().constData() << " is pointing ready to cut at " << new_value << " degrees with respect to the positive X axis";
+
+					this->setup_instructions->setValue(QString::fromStdString(ossInstructions.str()));
+				}
+			}
+			else if (definition == this->gradient)
+			{
+				// Make sure the gradient is negative.
+				this->gradient->set( -1.0 * fabs(this->gradient->get(this->gradient->getUnits())), this->gradient->getUnits() );
+			}
+			else if (definition == this->flat_radius)
+			{
+				Cam::Settings::Length::Units_t units = this->flat_radius->getUnits();
+				if ((this->flat_radius->get(units) * 2.0) >= this->diameter->get(units))
+				{
+					// Can't have the flat radius that is larger than the radius of the tool.
+				}
+				else
+				{
+					// It's still OK.
+					if (ToolType() == eChamfer || ToolType() == eEngravingTool)
+					{
+						// Recalculate the cutting edge length based on this new diameter
+						// and the cutting angle.
+
+						double opposite = this->diameter->get(units) - this->flat_radius->get(units);
+						double angle = this->cutting_edge_angle->get() / 360.0 * 2 * M_PI;
+
+						this->cutting_edge_height->set( opposite / tan(angle), units );
+					}
+				}
+			}
+			else if (definition == this->cutting_edge_angle)
+			{
+				if (this->cutting_edge_angle->get() < 0)
+				{
+					// wxMessageBox(_T("Cutting edge angle must be zero or positive."));
+				}
+				else
+				{
+					if (ToolType() == eChamfer || ToolType() == eEngravingTool)
+					{
+						// Recalculate the cutting edge length based on this new diameter
+						// and the cutting angle.
+
+						Cam::Settings::Length::Units_t units = Cam::Settings::Length::Metric;
+						double opposite = this->diameter->get(units) - this->flat_radius->get(units);
+						double angle = this->cutting_edge_angle->get() / 360.0 * 2 * M_PI;
+
+						this->cutting_edge_height->set( opposite / tan(angle), units );
+					}
+				}
 			}
 			else if (definition == this->diameter)
 			{
@@ -353,6 +424,10 @@ void ToolFeature::onSettingDocument()
 						double angle = this->cutting_edge_angle->get() / 360.0 * 2 * M_PI;
 
 						this->cutting_edge_height->set( opposite / tan(angle) );
+						this->corner_radius->set(0.0, units);
+						this->flat_radius->set(0.0, units);
+						this->cutting_edge_angle->set(45.0);
+						this->cutting_edge_height->set( (this->diameter->get(units) / 2.0) * tan( degrees_to_radians( 90.0 - this->cutting_edge_angle->get() )));
 					}
 					break;
 
@@ -404,6 +479,23 @@ void ToolFeature::onSettingDocument()
 					this->pitch->setUnits( Cam::Settings::Length::Imperial );
 				}
 			}
+			else if (definition == this->centre_drill_size)
+			{
+				this->setup_instructions->setValue(QString::null);
+
+				for (::size_t i=0; i<sizeof(centre_drill_sizes)/sizeof(centre_drill_sizes[0]); i++)
+				{
+					if (centre_drill_sizes[i].size == this->centre_drill_size->get().second)
+					{
+						this->corner_radius->set(0.0, Cam::Settings::Length::Metric);
+						this->flat_radius->set(0.0, Cam::Settings::Length::Metric);
+						this->cutting_edge_angle->set(59.0);
+						this->diameter->set( centre_drill_sizes[i].drill_diameter, Cam::Settings::Length::Metric );
+						this->cutting_edge_height->set( centre_drill_sizes[i].drill_length, Cam::Settings::Length::Metric );
+						this->tool_length_offset->set( centre_drill_sizes[i].overall_length, Cam::Settings::Length::Metric );
+					}
+				}
+			}
 		}
 
 		if ((automatically_generate_title != NULL) && (this->AutomaticallyGenerateTitle()))
@@ -414,6 +506,11 @@ void ToolFeature::onSettingDocument()
 }
 
 
+/**
+	Establish a full set of settings.  i.e. we want settings that cover the full range of
+	supported types of tools.  We will look at these settings only when they make
+	sense based on the type of tool.
+ */
 void ToolFeature::initialise()
 {
 	QString qaction = QString::fromAscii("default");
@@ -699,6 +796,12 @@ void ToolFeature::initialise()
 }
 
 
+/**
+	This method is called when a tool's type is changed.  This is considered quite a
+	significant change and so this method adjust many of the other settings to 
+	values that 'make sense' for this new type of tool.  It provides a 'starting point'
+	for the user to adjust settings.
+ */
 void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /* = false */ )
 {
 	// Force all settings to be invisible and then turn on just those settings that make sense.
@@ -841,9 +944,16 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
 		break;
 
 	case eDragKnife:
+		{
 			this->tool_length_offset->visible = true;
 			this->drag_knife_blade_offset->visible = true;
 			this->drag_knife_initial_cutting_direction->visible = true;
+			this->cutting_edge_angle->set( 60.0 );
+			this->diameter->set( 0.0, Cam::Settings::Length::Metric );
+			std::ostringstream msg;
+			msg << "Ensure the " << this->title->getValue().toAscii().constData() << " is pointing ready to cut at " << this->drag_knife_initial_cutting_direction->get() << " degrees with respect to the positive X axis";
+			this->setup_instructions->setValue(QString::fromStdString(msg.str()));
+		}
 		break;
 	}
 
@@ -1186,7 +1296,6 @@ void ToolFeature::ResetTitle()
 	} // End switch
 
 	this->title->setValue( QString::fromAscii(name.str().c_str()) );
-	this->Label.setValue(name.str().c_str());
 }
 
 

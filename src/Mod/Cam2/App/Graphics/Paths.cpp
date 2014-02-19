@@ -1804,49 +1804,10 @@ bool Cam::ContiguousPath::Surrounds( const Cam::ContiguousPath & rhs ) const
 
 	if (Intersect(rhs, true).size() > 0) return(false);
 
-	/*
-	for (::size_t lhs_counter = 0; lhs_counter < m_paths.size(); lhs_counter++)
-	{
-		for (::size_t rhs_counter = 0; rhs_counter < rhs.m_paths.size(); rhs_counter++)
-		{
-			IntTools_BeanBeanIntersector intersector(m_paths[lhs_counter].Edge(), rhs.m_paths[rhs_counter].Edge());
-			intersector.Perform();
-			if (intersector.IsDone())
-			{
-				if (intersector.Result().Length() > 0) return(false);
-			}
-		} // End for
-	} // End for
-	*/
-
 	// The first test has passed.  They could be sitting next to each other.  Look at
 	// any point on the RHS shape and see if it's inside this shape.
 	bool surrounds = Surrounds( rhs.MidpointForSurroundsCheck() );
-	if (surrounds == true)
-	{
-		/*
-		#ifdef HEEKSCNC
-		static int count=0;
-		count++;
-		{
-			Cam::ContiguousPath temp(*this);
-			HeeksObj *lhsSketch = temp.Sketch();
-			QString lhsTitle;
-			lhsTitle << QString::fromUtf8("lhs ") << count;
-			lhsSketch->OnEditString(lhsTitle);
-			heeksCAD->Add(lhsSketch,NULL);
-		}
-		{
-			Cam::ContiguousPath temp(rhs);
-			HeeksObj *lhsSketch = temp.Sketch();
-			QString lhsTitle;
-			lhsTitle << QString::fromUtf8("rhs ") << count;
-			lhsSketch->OnEditString(lhsTitle);
-			heeksCAD->Add(lhsSketch,NULL);
-		}
-		#endif
-		*/
-	}
+
 	return( surrounds );
 }
 
@@ -1901,8 +1862,6 @@ bool Cam::ContiguousPath::Surrounds(const Cam::Point point) const
 
 				if (temp.size() > 0)
 				{
-					// Bnd_Box box = temp[0].BoundingBox();
-
 					// Construct a line from this point to a little past the edge of the bounding box.  We then
 					// want to intersect this line with every path within this ContiguousPath object.  If we end up
 					// with an even number of intersections then the point is outside the ContiguousPath.  Otherwise
@@ -1917,9 +1876,6 @@ bool Cam::ContiguousPath::Surrounds(const Cam::Point point) const
 					aBuilder.MakeVertex (start, adjusted_point.Location(), Cam::GetTolerance());
 					start.Orientation (TopAbs_REVERSED);
 
-					// Standard_Real aXmin, aYmin, aZmin, aXmax, aYmax, aZmax;
-					// box.Get(aXmin, aYmin, aZmin, aXmax, aYmax, aZmax);
-
 					Cam::Point best_end_point = MidpointForSurroundsCheck();
 					best_end_point.SetZ( StartPoint().Z() );
 
@@ -1933,32 +1889,8 @@ bool Cam::ContiguousPath::Surrounds(const Cam::Point point) const
 					Cam::Paths line;
 					line.Add(edge.Edge());
 
-					/*
-					#ifdef HEEKSCNC
-					if (count == 3)
-					{
-						heeksCAD->Add( line.Sketch(), NULL );
-						heeksCAD->Add( temp.Sketch(), NULL );
-					}
-					#endif
-					*/
-
 					// Now accumulate all the intersection points.
 					std::set<Cam::Point> intersections = temp[0].Intersect(line[0], false);
-
-					/*
-					for (std::list<Cam::Point>::iterator itPoint = intersections.begin(); itPoint != intersections.end(); itPoint++)
-					{
-					#ifdef HEEKSCNC
-						if (count == 3)
-						{
-							double p[3];
-							itPoint->ToDoubleArray(p);
-							heeksCAD->Add( heeksCAD->NewPoint(p), NULL );
-						}
-					#endif
-					}
-					*/
 
 					if (intersections.size() == 0) return(false);
 					return((intersections.size() % 2) != 0);
@@ -2319,30 +2251,6 @@ std::pair<gp_Pnt, gp_Vec> Cam::Path::Nearest(const gp_Pnt reference_location, St
 			if (pParameter) *pParameter = end_u;
 		}
 	}
-
-	/*
-	for (int i=1; i<=projection.NbPoints(); i++)
-	{
-		gp_Pnt n;
-		Standard_Real u;
-		projection.Parameter(i,u);
-		curve->D0( u, n );
-		if (nearest.Distance(reference_location) > n.Distance(reference_location))
-		{
-			nearest = n;
-		}
-	}
-	*/
-
-	/*
-	if (projection.NbPoints() > 0)
-	{
-		if (nearest.Distance(reference_location) > projection.NearestPoint().Distance(reference_location))
-		{
-			nearest = projection.NearestPoint();
-		}
-	}
-	*/
 
 	return(nearest);
 }

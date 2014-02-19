@@ -156,18 +156,18 @@ public:
 	
 private:
 	Settings::Text *setup_instructions;	// Note to add to GCode file to make sure the operator sets up the tool correctly at the start.
-	Settings::Text *title;					// This reflects the object's name.  It can be automatically or manually generated.
+	Settings::Text *title;					// This reflects the object's Label (in fact we should really use the Label instead).  It can be automatically or manually generated.
 
 	Settings::Length	*diameter;
 	Settings::Length	*tool_length_offset;
-	Settings::Enumeration *material;
-	Settings::Enumeration *tool_type;
+	Settings::Enumeration *material;			// eMaterial_t
+	Settings::Enumeration *tool_type;			// eToolType
 
 	// The following  properties relate to the extrusions created by a reprap style 3D printer.
 	// using temperature, speed, and the height of the nozzle, and the nozzle size it's possible to create
 	// many different sizes and shapes of extrusion.
 
-	Settings::Enumeration *extrusion_material;
+	Settings::Enumeration *extrusion_material;	// eExtrusionMaterial_t
 
 	/**
 		The next three parameters describe the cutting surfaces of the bit.
@@ -198,7 +198,7 @@ private:
 	 */
 	Settings::Length	*corner_radius;
 	Settings::Length	*flat_radius;
-	Settings::Double	*cutting_edge_angle;
+	Settings::Double	*cutting_edge_angle;	// Angle (in degrees) between the tool's centreline and the cutting edge.
 	Settings::Length	*cutting_edge_height;	// How far, from the bottom of the cutter, do the flutes extend?
 
 	Settings::Length	*max_advance_per_revolution;	// This is the maximum distance a tool should advance during a single
@@ -208,7 +208,7 @@ private:
 						// to maintain the number of cutting teeth so a per-revolution
 						// value is easier to use.
 
-	Settings::Enumeration *automatically_generate_title;	// Set to true by default but reset to false when the user edits the title.
+	Settings::Enumeration *automatically_generate_title;	// Set to true by default but reset to false when the user edits the title. - True/False
 
 	// The following coordinates relate ONLY to touch probe tools.  They describe
 	// the error the probe tool has in locating an X,Y point.  These values are
@@ -234,32 +234,28 @@ private:
 	Settings::Length	*gradient;
 
 	// properties for tapping tools
-	Settings::Enumeration *direction;    // 0.. right hand tapping, 1..left hand tapping
+	Settings::Enumeration *direction;    // eTappingDirection_t
 	Settings::Length *pitch;     // in units/rev
-	Settings::Enumeration *standard_tap_sizes;
+	Settings::Enumeration *standard_tap_sizes;	// Generated from the static tapping size objects (metric_tap_sizes, unified_thread_standard_tap_sizes and british_standard_whitworth_tap_sizes)
+    
+	Settings::Enumeration *centre_drill_size;	// Generated from static tapping sizes held in centre_drill_sizes
 
-	// properties for centre-drills
-	Settings::Enumeration *centre_drill_size;
-
-	// The following are all for lathe tools.  They become relevant when the m_type = eTurningTool
+	// The following are all for lathe tools.  They become relevant when the tool_type = eTurningTool
 	Settings::Length *x_offset;
 	Settings::Double *front_angle;
 	Settings::Double *tool_angle;
 	Settings::Double *back_angle;
-	Settings::Enumeration *orientation;
+	Settings::Enumeration *orientation;	// eOrientation_t
 
 	Settings::Length *drag_knife_blade_offset;	// Only relevant if the tool's type is eDragKnife.
 	Settings::Double *drag_knife_initial_cutting_direction;	// At program start, the drag knife will be pointing ready to cut in this direction (degrees from positive X axis)
-
-
-	
 
 private:
 	void ResetSettingsToReasonableValues(const bool suppress_warnings = false );
 
 
 private:
-	Settings::TPGSettings *settings;
+	Settings::TPGSettings *settings;	// Pointer to container within which all settings are stored for this object.
 
 	void ResetTitle();
 
@@ -298,7 +294,7 @@ public:
 	double DragKnifeBladeOffset( const Cam::Settings::Length::Units_t units ) const { return(drag_knife_blade_offset->get(units)); }
 	double DragKnifeInitialCuttingDirection() const { return(drag_knife_initial_cutting_direction->get()); }
 
-	bool SettingsInitialized() const;
+	bool SettingsInitialized() const;	// Have we created all the individual settings objects yet?
 
 public:
 	static TopoDS_Shape StanleyKnifeBlade_MountingPlate(const double blade_angle_degrees, const double blade_thickness);

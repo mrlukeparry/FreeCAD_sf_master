@@ -200,7 +200,7 @@ template <typename Iter, typename Skipper = qi::blank_type>
 
 		// N110 - i.e. use qi::lexeme to avoid qi::space_type skipper which allows the possibility of interpreting 'N 110'.  We don't want spaces here.
 		LineNumberRule = (ascii::no_case[qi::lit("N")] >> qi::int_)
-			[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetLineNumber, phx::ref(*this), qi::_1) ] // call this->SetLineNumber(_2);
+			[ phx::bind(&linuxcnc_grammar<Iter, Skipper>::SetLineNumber, phx::ref(*this), qi::_1) ] // call this->SetLineNumber(_1);
 			;
 
 		// X 1.1 etc.
@@ -724,13 +724,13 @@ template <typename Iter, typename Skipper = qi::blank_type>
 		// [ phx::bind(&linuxcnc_grammar<Iter, Skipper>::myMethod, phx::ref(*this), qi::_val, qi::_1, qi::_2) ]
 		// It's a cryptic way of getting the "action" code to call qi::_val = this->myMethod(int(qi::_1), double(qi::_2))
 		// The qi::_val is always the return type defined as part of the rule's declaration.  eg: this rule is
-		// returning an integer symbol ID so it would be defined something lile;
+		// returning an integer symbol ID so it would be defined something like;
 		//
 		// qi::rule<Iter, LinuxCNC::Variables::SymbolId_t(), Skipper> MyRule;
 		// i.e. the second argument to the template indicates the 'type' returned by the rule.  This defines the type of qi::_val
 		
 
-		// EMC2 units are defined via a setting (TODO Make this statement true)
+		// LinuxCNC units are defined via a setting (TODO Make this statement true)
 		// It defines the units for which values in the 'variables' symbol table
 		// are relevant.
 		double Emc2Units(const double value_in_parse_units)
@@ -1373,24 +1373,12 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					// The Z parameters given determine where we should think
 					// we are right now.
 					// this->tool_length_offset = this->k - ParseUnits(variables[eG54VariableBase+2]);
-					/*
-					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line z=\"") << adjust(2,this->z) << _T("\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-						*/
 					break;
 
 				case LinuxCNC::stToolLengthDisabled:
 					// The Z parameters given determine where we should think
 					// we are right now.
 					this->tool_length_offset = 0.0;
-					/*
-					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line z=\"") << adjust(2,this->previous[2]) << _T("\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-						*/
 					break;
 
 				case LinuxCNC::stRapid:
@@ -1409,16 +1397,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						movement.push_back(step);
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 						UpdateMachineLocation();
-
-						/*
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line ");
-						if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
-						if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
-						if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
-						xml << _T("/>\n")
-							<< _T("</path>\n");
-							*/
 					}
 					break;
 
@@ -1438,15 +1416,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 						UpdateMachineLocation();
 						
-						/*
-						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line ");
-						if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
-						if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
-						if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
-						xml << _T("/>\n")
-							<< _T("</path>\n");
-							*/
 						if (this->feed_rate <= 0.0) 
 						{
 							QString warning;
@@ -1472,15 +1441,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 						UpdateMachineLocation();
 					}
-					/*
-					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line ");
-					if (this->x_specified) xml << _T("x=\"") << adjust(0,this->x) << _T("\" ");
-					if (this->y_specified) xml << _T("y=\"") << adjust(1,this->y) << _T("\" ");
-					if (this->z_specified) xml << _T("z=\"") << adjust(2,this->z) << _T("\" ");
-					xml << _T("/>\n")
-						<< _T("</path>\n");
-						*/
 
 					// Assume that the furthest point of probing tripped the switch.  Store this location
 					// as though we found our probed object here.
@@ -1555,60 +1515,48 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						UpdateMachineLocation();
 					}
 
-					/*
-					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<arc x=\"") << adjust(0,this->x) << _T("\" ")
-						<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-						<< _T("z=\"") << adjust(1,this->z) << _T("\" ")
-						<< _T("i=\"") << HeeksUnits(Emc2Units(this->i)) << _T("\" ")
-						<< _T("j=\"") << HeeksUnits(Emc2Units(this->j)) << _T("\" ")
-						<< _T("k=\"") << HeeksUnits(Emc2Units(this->k)) << _T("\" ")
-						<< _T("d=\"-1\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-					*/
+					{
+						// Confirm that the previous location, the center-point and the final location all make
+						// sense for an arc movement.  If we have a rounding error then we want to know it.
+						gp_Pnt start(PreviousLocation().Location());
+						gp_Pnt end(NewLocation().Location());
+						gp_Pnt centre(this->i + this->previous[0], this->j + this->previous[1], this->k + this->previous[2]);
+
+						switch (this->plane)
 						{
-							// Confirm that the previous location, the center-point and the final location all make
-							// sense for an arc movement.  If we have a rounding error then we want to know it.
-							gp_Pnt start(PreviousLocation().Location());
-							gp_Pnt end(NewLocation().Location());
-							gp_Pnt centre(this->i + this->previous[0], this->j + this->previous[1], this->k + this->previous[2]);
+						case LinuxCNC::eXYPlane:
+							start  = gp_Pnt(this->previous[0],                  this->previous[1],                  0.0);
+							end    = gp_Pnt(this->x,                            this->y,                            0.0);
+							centre = gp_Pnt(this->i + this->previous[0], this->j + this->previous[1], 0.0);
+							break;
 
-							switch (this->plane)
+						case LinuxCNC::eXZPlane:
+							start  = gp_Pnt(this->previous[0],                  0.0, this->previous[2]);
+							end    = gp_Pnt(this->x,                            0.0, this->y);
+							centre = gp_Pnt(this->i + this->previous[0], 0.0, this->k + this->previous[2]);
+							break;
+
+						case LinuxCNC::eYZPlane:
+							start  = gp_Pnt(0.0, this->previous[1],                  this->previous[2]);
+							end    = gp_Pnt(0.0, this->y,                            this->y);
+							centre = gp_Pnt(0.0, this->j + this->previous[1], this->k + this->previous[2]);
+							break;
+						} // End switch
+
+						
+						double error = fabs(fabs(centre.Distance(end)) - fabs(start.Distance(centre)));
+						double tolerance = pLinuxCNC->Tolerance();
+						if (error > pLinuxCNC->Tolerance())
+						{
+							double magnitude = (fabs(error) - fabs(tolerance)) * pow(10, double(pLinuxCNC->RequiredDecimalPlaces()-1));
+							if (magnitude > 1.0)
 							{
-							case LinuxCNC::eXYPlane:
-								start  = gp_Pnt(this->previous[0],                  this->previous[1],                  0.0);
-								end    = gp_Pnt(this->x,                            this->y,                            0.0);
-								centre = gp_Pnt(this->i + this->previous[0], this->j + this->previous[1], 0.0);
-								break;
-
-							case LinuxCNC::eXZPlane:
-								start  = gp_Pnt(this->previous[0],                  0.0, this->previous[2]);
-								end    = gp_Pnt(this->x,                            0.0, this->y);
-								centre = gp_Pnt(this->i + this->previous[0], 0.0, this->k + this->previous[2]);
-								break;
-
-							case LinuxCNC::eYZPlane:
-								start  = gp_Pnt(0.0, this->previous[1],                  this->previous[2]);
-								end    = gp_Pnt(0.0, this->y,                            this->y);
-								centre = gp_Pnt(0.0, this->j + this->previous[1], this->k + this->previous[2]);
-								break;
-							} // End switch
-
-							
-							double error = fabs(fabs(centre.Distance(end)) - fabs(start.Distance(centre)));
-							double tolerance = pLinuxCNC->Tolerance();
-							if (error > pLinuxCNC->Tolerance())
-							{
-								double magnitude = (fabs(error) - fabs(tolerance)) * pow(10, double(pLinuxCNC->RequiredDecimalPlaces()-1));
-								if (magnitude > 1.0)
-								{
-									pLinuxCNC->AddWarning(QString::fromAscii("Clockwise arc offset between start and centre does not match that between centre and end."));
-								}
+								pLinuxCNC->AddWarning(QString::fromAscii("Clockwise arc offset between start and centre does not match that between centre and end."));
 							}
 						}
+					}
 
-						if (this->feed_rate <= 0.0) pLinuxCNC->AddWarning(QString::fromAscii("Zero feed rate found for arc movement"));
+					if (this->feed_rate <= 0.0) pLinuxCNC->AddWarning(QString::fromAscii("Zero feed rate found for arc movement"));
 					break;
 
 				case LinuxCNC::stArcCounterClockwise:
@@ -1661,59 +1609,48 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 						UpdateMachineLocation();
 					}
-					/*
-					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<arc x=\"") << adjust(0,this->x) << _T("\" ")
-						<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-						<< _T("z=\"") << adjust(1,this->z) << _T("\" ")
-						<< _T("i=\"") << HeeksUnits(Emc2Units(this->i)) << _T("\" ")
-						<< _T("j=\"") << HeeksUnits(Emc2Units(this->j)) << _T("\" ")
-						<< _T("k=\"") << HeeksUnits(Emc2Units(this->k)) << _T("\" ")
-						<< _T("d=\"1\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-					*/
+					
+					{
+						// Confirm that the previous location, the center-point and the final location all make
+						// sense for an arc movement.  If we have a rounding error then we want to know it.
+						gp_Pnt start(PreviousLocation().Location());
+						gp_Pnt end(NewLocation().Location());
+						gp_Pnt centre(adjust(0, this->i + this->previous[0]), adjust(1, this->j + this->previous[1]), adjust(2, this->k + this->previous[2]));
+
+						switch (this->plane)
 						{
-							// Confirm that the previous location, the center-point and the final location all make
-							// sense for an arc movement.  If we have a rounding error then we want to know it.
-							gp_Pnt start(PreviousLocation().Location());
-							gp_Pnt end(NewLocation().Location());
-							gp_Pnt centre(adjust(0, this->i + this->previous[0]), adjust(1, this->j + this->previous[1]), adjust(2, this->k + this->previous[2]));
+						case LinuxCNC::eXYPlane:
+							start  = gp_Pnt(this->previous[0],                  this->previous[1],                  0.0);
+							end    = gp_Pnt(this->x,                            this->y,                            0.0);
+							centre = gp_Pnt(this->i + this->previous[0], this->j + this->previous[1], 0.0);
+							break;
 
-							switch (this->plane)
+						case LinuxCNC::eXZPlane:
+							start  = gp_Pnt(this->previous[0],                  0.0, this->previous[2]);
+							end    = gp_Pnt(this->x,                            0.0, this->y);
+							centre = gp_Pnt(this->i + this->previous[0], 0.0, this->k + this->previous[2]);
+							break;
+
+						case LinuxCNC::eYZPlane:
+							start  = gp_Pnt(0.0, this->previous[1],                  this->previous[2]);
+							end    = gp_Pnt(0.0, this->y,                            this->y);
+							centre = gp_Pnt(0.0, this->j + this->previous[1], this->k + this->previous[2]);
+							break;
+						} // End switch
+
+						double error = fabs(fabs(centre.Distance(end)) - fabs(start.Distance(centre)));
+						double tolerance = pLinuxCNC->Tolerance();
+						if (error > pLinuxCNC->Tolerance())
+						{
+							double magnitude = (fabs(error) - fabs(tolerance)) * pow(10, double(pLinuxCNC->RequiredDecimalPlaces()-1));
+							if (magnitude > 1.0)
 							{
-							case LinuxCNC::eXYPlane:
-								start  = gp_Pnt(this->previous[0],                  this->previous[1],                  0.0);
-								end    = gp_Pnt(this->x,                            this->y,                            0.0);
-								centre = gp_Pnt(this->i + this->previous[0], this->j + this->previous[1], 0.0);
-								break;
-
-							case LinuxCNC::eXZPlane:
-								start  = gp_Pnt(this->previous[0],                  0.0, this->previous[2]);
-								end    = gp_Pnt(this->x,                            0.0, this->y);
-								centre = gp_Pnt(this->i + this->previous[0], 0.0, this->k + this->previous[2]);
-								break;
-
-							case LinuxCNC::eYZPlane:
-								start  = gp_Pnt(0.0, this->previous[1],                  this->previous[2]);
-								end    = gp_Pnt(0.0, this->y,                            this->y);
-								centre = gp_Pnt(0.0, this->j + this->previous[1], this->k + this->previous[2]);
-								break;
-							} // End switch
-
-							double error = fabs(fabs(centre.Distance(end)) - fabs(start.Distance(centre)));
-							double tolerance = pLinuxCNC->Tolerance();
-							if (error > pLinuxCNC->Tolerance())
-							{
-								double magnitude = (fabs(error) - fabs(tolerance)) * pow(10, double(pLinuxCNC->RequiredDecimalPlaces()-1));
-								if (magnitude > 1.0)
-								{
-									pLinuxCNC->AddWarning(QString::fromAscii("Counter-clockwise arc offset between start and centre does not match that between centre and end."));
-								}
+								pLinuxCNC->AddWarning(QString::fromAscii("Counter-clockwise arc offset between start and centre does not match that between centre and end."));
 							}
 						}
+					}
 
-						if (this->feed_rate <= 0.0) pLinuxCNC->AddWarning(QString::fromAscii("Zero feed rate found for arc movement"));
+					if (this->feed_rate <= 0.0) pLinuxCNC->AddWarning(QString::fromAscii("Zero feed rate found for arc movement"));
 					break;
 
 				case LinuxCNC::stBoring:
@@ -1765,25 +1702,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 						UpdateMachineLocation();
 
-						/*
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
-							<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line z=\"") << adjust(2,this->z) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-							<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
-							<< _T("/>\n")
-							<< _T("</path>\n");
-						*/
 						this->z = this->r;	// We end up at the clearance (r) position.
 						if (this->feed_rate <= 0.0) pLinuxCNC->AddWarning(QString::fromAscii("Zero feed rate found for arc movement"));
 					}
@@ -1838,25 +1756,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						UpdateMachineLocation();
 					}
 
-					/*
-					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
-						<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line z=\"") << adjust(2,this->z) << _T("\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-					xml << _T("<path col=\"feed\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line z=\"") << adjust(2,this->r) << _T("\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-					*/
 					this->z = this->r;	// We end up at the clearance (r) position.
 					if (this->feed_rate <= 0.0) pLinuxCNC->AddWarning(QString::fromAscii("Zero feed rate found for arc movement"));
 					break;
@@ -1895,14 +1794,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 						UpdateMachineLocation();
 					}
-					/*
-					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
-						<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-						<< _T("z=\"") << adjust(2,this->z) << _T("\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-					*/
 					break;
 
 				case LinuxCNC::stG30:
@@ -1938,15 +1829,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 						pLinuxCNC->geometry.insert( std::make_pair(this->line_offset, movement) );
 						UpdateMachineLocation();
 					}
-
-					/*
-					xml << _T("<path col=\"rapid\" fixture=\"") << int(this->modal_coordinate_system) << _T("\">\n")
-						<< _T("<line x=\"") << adjust(0,this->x) << _T("\" ")
-						<< _T("y=\"") << adjust(1,this->y) << _T("\" ")
-						<< _T("z=\"") << adjust(2,this->z) << _T("\" ")
-						<< _T("/>\n")
-						<< _T("</path>\n");
-					*/
 					break;
 
 				case LinuxCNC::stG92:
@@ -2002,8 +1884,6 @@ template <typename Iter, typename Skipper = qi::blank_type>
 					break;
 
 				} // End switch
-
-				// xml << _T("</ncblock>\n");
 			}
 
 			ResetForEndOfBlock();
