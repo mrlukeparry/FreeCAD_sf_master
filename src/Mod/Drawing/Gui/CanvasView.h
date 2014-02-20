@@ -30,11 +30,13 @@ class FeatureViewPart;
 class FeatureViewOrthographic;
 class FeatureViewDimension;
 class FeaturePage;
+class FeatureTemplate;
 }
 
 namespace DrawingGui
 {
 class QGraphicsItemView;
+class QGraphicsItemTemplate;
 
 class DrawingGuiExport CanvasView : public QGraphicsView
 {
@@ -63,6 +65,10 @@ public:
     int addView(QGraphicsItemView * view);
     void setViews(const std::vector<QGraphicsItemView *> &view) {views = view; }
     void setPageFeature(Drawing::FeaturePage *page);
+    void setPageTemplate(Drawing::FeatureTemplate *pageTemplate);
+
+    QGraphicsItemTemplate * getTemplate();
+    void removeTemplate();
 
     void toggleEdit(bool enable);
 
@@ -77,10 +83,11 @@ protected:
     void enterEvent(QEvent *event);
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
-    
+
     static QColor SelectColor;
     static QColor PreselectColor;
 
+    QGraphicsItemTemplate *pageTemplate;
     std::vector<QGraphicsItemView *> views;
 private:
     RendererType m_renderer;

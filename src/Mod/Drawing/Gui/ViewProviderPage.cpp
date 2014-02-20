@@ -158,9 +158,20 @@ bool ViewProviderDrawingPage::doubleClicked(void)
 
 std::vector<App::DocumentObject*> ViewProviderDrawingPage::claimChildren(void) const
 {
-    // Collect any child fields and put this in the CamFeature tree
+
     std::vector<App::DocumentObject*> temp;
+
+    // Attach the template if it exists
+    App::DocumentObject *templateFeat = 0;
+    templateFeat = getPageObject()->Template.getValue();
+
+    if(templateFeat) {
+        temp.push_back(templateFeat);
+    }
+
+    // Collect any child views
     const std::vector<App::DocumentObject *> &views = getPageObject()->Views.getValues();
+
     try {
       for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
           App::DocumentObject *docObj = *it;

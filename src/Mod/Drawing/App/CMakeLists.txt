@@ -22,6 +22,9 @@ set(Drawing_LIBS
     FreeCADApp
 )
 
+generate_from_xml(FeatureTemplatePy)
+generate_from_xml(FeatureParametricTemplatePy)
+
 SET(Features_SRCS
     FeaturePage.cpp
     FeaturePage.h
@@ -29,6 +32,12 @@ SET(Features_SRCS
     FeatureClip.h
     FeatureOrthoView.cpp
     FeatureOrthoView.h
+    FeatureParametricTemplate.cpp
+    FeatureParametricTemplate.h
+    FeatureSVGTemplate.cpp
+    FeatureSVGTemplate.h
+    FeatureTemplate.cpp
+    FeatureTemplate.h
     FeatureView.cpp
     FeatureView.h
     FeatureViewAnnotation.cpp
@@ -41,20 +50,20 @@ SET(Features_SRCS
     FeatureViewOrthographic.h
     FeatureViewPart.cpp
     FeatureViewPart.h
-    FeatureProjection.cpp
-    FeatureProjection.h
     FeatureViewSection.cpp
     FeatureViewSection.h
     PageGroup.cpp
     PageGroup.h
 )
+SOURCE_GROUP("Features" FILES ${Features_SRCS})
 
-SET(Drawing_SRCS
+SET(DrawingModule_SRCS
     AppDrawing.cpp
     AppDrawingPy.cpp
     PreCompiled.cpp
     PreCompiled.h
 )
+SOURCE_GROUP("Mod" FILES ${DrawingModule_SRCS})
 
 SET(DrawingGeometry_SRCS
     Geometry.cpp
@@ -62,23 +71,44 @@ SET(DrawingGeometry_SRCS
     GeometryObject.cpp
     GeometryObject.h
 )
+SOURCE_GROUP("Geometry" FILES ${DrawingGeometry_SRCS})
+
 SET(DrawingAlgos_SRCS
     DrawingExport.cpp
     DrawingExport.h
+    FeatureProjection.cpp
+    FeatureProjection.h
     ProjectionAlgos.cpp
     ProjectionAlgos.h
 )
-
-SOURCE_GROUP("Mod" FILES ${Drawing_SRCS})
-SOURCE_GROUP("Features" FILES ${Features_SRCS})
-SOURCE_GROUP("Geometry" FILES ${DrawingGeometry_SRCS})
 SOURCE_GROUP("Algorithms" FILES ${DrawingAlgos_SRCS})
+
+SET(Python_SRCS
+    FeatureTemplatePy.xml
+    FeatureTemplatePyImp.cpp
+    FeatureParametricTemplatePy.xml
+    FeatureParametricTemplatePyImp.cpp
+)
+SOURCE_GROUP("Python" FILES ${Python_SRCS})
+
+
+SET(Drawing_SRCS
+    ${DrawingModule_SRCS}
+    ${Features_SRCS}
+    ${DrawingGeometry_SRCS}
+    ${Python_SRCS}
+    ${DrawingAlgos_SRCS}
+)
 
 SET(Drawing_Templates
     Templates/A3_Landscape.svg
     Templates/A4_Landscape.svg
     Templates/A4_Simple.svg
 )
+
+add_library(Drawing SHARED ${Drawing_SRCS})
+target_link_libraries(Drawing ${Drawing_LIBS})
+
 
 if(MSVC)
     add_definitions(-D_PreComp_)
@@ -91,9 +121,6 @@ endif(MSVC)
 IF(MSVC)
 SET_SOURCE_FILES_PROPERTIES(ProjectionAlgos.cpp PROPERTIES COMPILE_FLAGS "/EHa")
 ENDIF(MSVC)
-
-add_library(Drawing SHARED ${Drawing_SRCS} ${Features_SRCS} ${DrawingAlgos_SRCS} ${DrawingGeometry_SRCS})
-target_link_libraries(Drawing ${Drawing_LIBS})
 
 SET(Drawing_Scripts
     Init.py

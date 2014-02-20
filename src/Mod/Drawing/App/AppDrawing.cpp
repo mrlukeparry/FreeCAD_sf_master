@@ -17,24 +17,26 @@
 # include <Base/Console.h>
 # include <Base/Interpreter.h>
 
-# include "FeaturePage.h"
-# include "FeatureView.h"
-# include "FeatureViewCollection.h"
-# include "FeatureViewPart.h"
-# include "FeatureViewSection.h"
+#include "FeaturePage.h"
+#include "FeatureSVGTemplate.h"
+#include "FeatureParametricTemplate.h"
+#include "FeatureView.h"
+#include "FeatureViewCollection.h"
+#include "FeatureViewPart.h"
+#include "FeatureViewSection.h"
 
-# include "FeatureViewAnnotation.h"
-# include "FeatureViewDimension.h"
-# include "FeatureOrthoView.h"
-# include "FeatureViewOrthographic.h"
-# include "FeatureProjection.h"
-# include "FeatureClip.h"
-# include "PageGroup.h"
+#include "FeatureViewAnnotation.h"
+#include "FeatureViewDimension.h"
+#include "FeatureOrthoView.h"
+#include "FeatureViewOrthographic.h"
+#include "FeatureProjection.h"
+#include "FeatureClip.h"
+#include "PageGroup.h"
 
 extern struct PyMethodDef Drawing_methods[];
 
 PyDoc_STRVAR(module_drawing_doc,
-"This module is the drawing module.");
+"This module is the Drawing module.");
 
 
 /* Python entry */
@@ -60,6 +62,9 @@ void DrawingExport initDrawing()
     // This function is responsible for adding inherited slots from a type's base class.
 
     Drawing::FeaturePage            ::init();
+    Drawing::FeatureTemplate        ::init();
+    Drawing::FeatureSVGTemplate     ::init();
+    Drawing::FeatureParametricTemplate::init();
     Drawing::FeatureView            ::init();
     Drawing::FeatureViewCollection  ::init();
 
@@ -69,6 +74,9 @@ void DrawingExport initDrawing()
     Drawing::FeatureViewDimension   ::init();
     Drawing::FeatureViewOrthographic::init();
     Drawing::FeatureOrthoView       ::init();
+
+    // Python Types
+    Drawing::FeatureTemplatePython  ::init();
 
     Drawing::FeatureProjection      ::init();
     Drawing::FeatureViewPartPython  ::init();

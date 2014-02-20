@@ -34,6 +34,7 @@
 #include "ViewProviderPage.h"
 #include "ViewProviderView.h"
 
+#include "ViewProviderTemplate.h"
 #include "ViewProviderViewPart.h"
 #include "ViewProviderViewOrthographic.h"
 #include "ViewProviderViewSection.h"
@@ -77,6 +78,7 @@ void DrawingGuiExport initDrawingGui()
 
     DrawingGui::ViewProviderDrawingPage::init();
     DrawingGui::ViewProviderDrawingView::init();
+    DrawingGui::ViewProviderTemplate::init();
     DrawingGui::ViewProviderViewPart::init();
     DrawingGui::ViewProviderViewOrthographic::init();
     DrawingGui::ViewProviderDrawingViewSection::init();

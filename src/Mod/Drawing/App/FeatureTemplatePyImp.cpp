@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2007     *
+ *   Copyright (c) 2014 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,62 +20,46 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _DRAWING_FeaturePage_h_
-#define _DRAWING_FeaturePage_h_
+#include "PreCompiled.h"
+#ifndef _PreComp_
+# include <sstream>
+#endif
 
-#include <App/DocumentObjectGroup.h>
-#include <App/PropertyStandard.h>
-#include <App/PropertyUnits.h>
-#include <App/PropertyFile.h>
+#include "Mod/Drawing/App/FeatureTemplate.h"
 
-namespace Drawing
+// inclusion of the generated files (generated out of FeatureTemplateSFPy.xml)
+#include "FeatureTemplatePy.h"
+#include "FeatureTemplatePy.cpp"
+
+using namespace Drawing;
+
+// returns a string which represents the object e.g. when printed in python
+std::string FeatureTemplatePy::representation(void) const
 {
+    return "<Drawing::FeatureTemplate>";
+}
 
-/** Base class of all View Features in the drawing module
- */
-class DrawingExport FeaturePage: public App::DocumentObjectGroup
+PyObject *FeatureTemplatePy::getCustomAttributes(const char* /*attr*/) const
 {
-    PROPERTY_HEADER(Drawing::FeaturePage);
+    return 0;
+}
 
-public:
-    FeaturePage(); /// Constructor
-    ~FeaturePage();
+int FeatureTemplatePy::setCustomAttributes(const char* attr, PyObject* obj)
+{
+    // search in PropertyList
+    App::Property *prop = getFeatureTemplatePtr()->getPropertyByName(attr);
+    if (prop) {
+        // Read-only attributes must not be set over its Python interface
+        short Type =  getFeatureTemplatePtr()->getPropertyType(prop);
+        if (Type & App::Prop_ReadOnly) {
+            std::stringstream s;
+            s << "Object attribute '" << attr << "' is read-only";
+            throw Py::AttributeError(s.str());
+        }
 
-    App::PropertyLinkList Views;
-    App::PropertyLink Template;
-
-    // Page Physical Properties
-    App::PropertyLength Width;
-    App::PropertyLength Height;
-    App::PropertyFloat Scale;
-    App::PropertyEnumeration OrthoProjectionType; // First or Third Angle
-    App::PropertyEnumeration Orientation;
-    App::PropertyString PaperSize;
-
-    /** @name methods overide Feature */
-    //@{
-    /// recalculate the Feature
-    virtual App::DocumentObjectExecReturn *execute(void);
-    //@}
-
-    int addView(App::DocumentObject *docObj);
-
-    short mustExecute() const;
-
-    /// returns the type name of the ViewProvider
-    virtual const char* getViewProviderName(void) const {
-        return "DrawingGui::ViewProviderDrawingPage";
+        prop->setPyObject(obj);
+        return 1;
     }
 
-protected:
-    void onChanged(const App::Property* prop);
-
-private:
-    static const char* OrientationEnums[];
-    static const char* OrthoProjectionTypeEnums[];
-};
-
-
-} //namespace Drawing
-
-#endif //_DRAWING_FeaturePage_h_
+    return 0;
+}

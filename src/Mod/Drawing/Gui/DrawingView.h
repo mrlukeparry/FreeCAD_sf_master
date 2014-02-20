@@ -44,6 +44,7 @@ QT_END_NAMESPACE
 
 namespace Drawing {
 class FeaturePage;
+class FeatureTemplate;
 }
 
 namespace DrawingGui
@@ -61,6 +62,7 @@ public:
 
 public Q_SLOTS:
     void attachPageObject(Drawing::FeaturePage *pageFeature);
+    void attachTemplate(Drawing::FeatureTemplate *obj);
     void setRenderer(QAction *action);
     void viewAll();
     void selectionChanged();

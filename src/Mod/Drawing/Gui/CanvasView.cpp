@@ -47,13 +47,18 @@
 #include <Gui/FileDialog.h>
 #include <Gui/WaitCursor.h>
 
-#include "../App/Geometry.h"
-#include "../App/FeaturePage.h"
-#include "../App/FeatureViewCollection.h"
-#include "../App/FeatureViewDimension.h"
-#include "../App/FeatureViewOrthographic.h"
-#include "../App/FeatureViewPart.h"
+#include <Mod/Drawing/App/Geometry.h>
+#include <Mod/Drawing/App/FeaturePage.h>
+#include <Mod/Drawing/App/FeatureTemplate.h>
+#include <Mod/Drawing/App/FeatureSVGTemplate.h>
+#include <Mod/Drawing/App/FeatureParametricTemplate.h>
+#include <Mod/Drawing/App/FeatureViewCollection.h>
+#include <Mod/Drawing/App/FeatureViewDimension.h>
+#include <Mod/Drawing/App/FeatureViewOrthographic.h>
+#include <Mod/Drawing/App/FeatureViewPart.h>
 
+#include "QGraphicsItemDrawingTemplate.h"
+#include "QGraphicsItemSVGTemplate.h"
 #include "QGraphicsItemViewCollection.h"
 #include "QGraphicsItemViewDimension.h"
 #include "QGraphicsItemViewOrthographic.h"
@@ -72,6 +77,7 @@ CanvasView::CanvasView(QWidget *parent)
     , m_backgroundItem(0)
     , m_outlineItem(0)
     , drawBkg(true)
+    , pageTemplate(0)
 {
     setScene(new QGraphicsScene(this));
     setTransformationAnchor(AnchorUnderMouse);
@@ -82,6 +88,7 @@ CanvasView::CanvasView(QWidget *parent)
 
     m_backgroundItem = new QGraphicsRectItem();
     m_backgroundItem->setCacheMode(QGraphicsItem::NoCache);
+    m_backgroundItem->setZValue(-999999);
     this->scene()->addItem(m_backgroundItem);
 
     // Prepare background check-board pattern
@@ -277,8 +284,10 @@ QGraphicsItemView * CanvasView::findParent(QGraphicsItemView *view) const
     // Not found a parent
     return 0;
 }
+
 void CanvasView::setPageFeature(Drawing::FeaturePage *page)
 {
+    // TODO verify if the pointer should even be used. Not really safe
     this->pageFeat = page;
 
     float pageWidth  = this->pageFeat->Width.getValue();
@@ -302,6 +311,39 @@ void CanvasView::setPageFeature(Drawing::FeaturePage *page)
     this->setSceneRect(myRect);
 }
 
+void CanvasView::setPageTemplate(Drawing::FeatureTemplate *obj)
+{
+    // Remove currently set background template
+    // Assign a base template class and create object dependent on
+    this->removeTemplate();
+
+    if(obj->isDerivedFrom(Drawing::FeatureParametricTemplate::getClassTypeId())) {
+        Drawing::FeatureParametricTemplate *dwgTemplate = static_cast<Drawing::FeatureParametricTemplate *>(obj);
+        QGraphicsItemDrawingTemplate *qTempItem = new QGraphicsItemDrawingTemplate(this->scene());
+        qTempItem->setTemplate(dwgTemplate);
+        this->pageTemplate = qTempItem;
+    } else if(obj->isDerivedFrom(Drawing::FeatureSVGTemplate::getClassTypeId())) {
+        Drawing::FeatureSVGTemplate *dwgTemplate = static_cast<Drawing::FeatureSVGTemplate *>(obj);
+        QGraphicsItemSVGTemplate *qTempItem = new QGraphicsItemSVGTemplate(this->scene());
+        qTempItem->setTemplate(dwgTemplate);
+        this->pageTemplate = qTempItem;
+    }
+
+}
+
+QGraphicsItemTemplate* CanvasView::getTemplate()
+{
+    return pageTemplate;
+}
+
+void CanvasView::removeTemplate()
+{
+    if(this->pageTemplate) {
+        this->scene()->removeItem(this->pageTemplate);
+        this->pageTemplate->deleteLater();
+        this->pageTemplate = 0;
+    }
+}
 void CanvasView::setRenderer(RendererType type)
 {
     m_renderer = type;
@@ -356,7 +398,7 @@ void CanvasView::toggleEdit(bool enable)
             }
             itemView->updateView(true);
         }
-        
+
         QGraphicsItem *item = dynamic_cast<QGraphicsItem *>(*it);
         if(item) {
             item->setCacheMode((enable) ? QGraphicsItem::DeviceCoordinateCache : QGraphicsItem::NoCache);

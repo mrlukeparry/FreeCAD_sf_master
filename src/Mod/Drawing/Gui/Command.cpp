@@ -113,13 +113,18 @@ void CmdDrawingNewPage::activated(int iMsg)
     Gui::ActionGroup* pcAction = qobject_cast<Gui::ActionGroup*>(_pcAction);
     QAction* a = pcAction->actions()[iMsg];
 
-    std::string FeatName = getUniqueObjectName("Page");
+    std::string PageName = getUniqueObjectName("Page");
+    std::string TemplateName = getUniqueObjectName("Template");
 
     QFileInfo tfi(a->property("Template").toString());
     if (tfi.isReadable()) {
         openCommand("Drawing create page");
-        doCommand(Doc,"App.activeDocument().addObject('Drawing::FeaturePage','%s')",FeatName.c_str());
-        doCommand(Doc,"App.activeDocument().%s.Template = '%s'",FeatName.c_str(), (const char*)tfi.filePath().toUtf8());
+        doCommand(Doc,"App.activeDocument().addObject('Drawing::FeaturePage','%s')",PageName.c_str());
+
+        // Create the Template Object to attach to the page
+        doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureSVGTemplate','%s')",TemplateName.c_str());
+        doCommand(Doc,"App.activeDocument().%s.Template = App.activeDocument().%s",PageName.c_str(),TemplateName.c_str());
+
         commitCommand();
     }
     else {
@@ -382,7 +387,7 @@ void CmdDrawingNewDimension::activated(int iMsg)
             DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
 
             dimType = "Distance";
-            
+
             if(geom->geomType == DrawingGeometry::CIRCLE ||
                geom->geomType == DrawingGeometry::ARCOFCIRCLE ||
                geom->geomType == DrawingGeometry::ELLIPSE ||

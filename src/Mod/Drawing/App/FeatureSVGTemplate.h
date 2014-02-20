@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2007     *
+ *   Copyright (c) 2014 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,37 +20,32 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _DRAWING_FeaturePage_h_
-#define _DRAWING_FeaturePage_h_
+#ifndef _DRAWING_FeatureSVGTemplate_h_
+#define _DRAWING_FeatureSVGTemplate_h_
 
-#include <App/DocumentObjectGroup.h>
+#include <App/PropertyLinks.h>
 #include <App/PropertyStandard.h>
-#include <App/PropertyUnits.h>
 #include <App/PropertyFile.h>
+#include <App/FeaturePython.h>
+
+#include "FeatureTemplate.h"
 
 namespace Drawing
 {
 
 /** Base class of all View Features in the drawing module
  */
-class DrawingExport FeaturePage: public App::DocumentObjectGroup
+class DrawingExport FeatureSVGTemplate: public Drawing::FeatureTemplate
 {
-    PROPERTY_HEADER(Drawing::FeaturePage);
+    PROPERTY_HEADER(Drawing::FeatureSVGTemplate);
 
 public:
-    FeaturePage(); /// Constructor
-    ~FeaturePage();
+    FeatureSVGTemplate(); /// Constructor
+    ~FeatureSVGTemplate();
 
-    App::PropertyLinkList Views;
-    App::PropertyLink Template;
-
-    // Page Physical Properties
-    App::PropertyLength Width;
-    App::PropertyLength Height;
-    App::PropertyFloat Scale;
-    App::PropertyEnumeration OrthoProjectionType; // First or Third Angle
-    App::PropertyEnumeration Orientation;
-    App::PropertyString PaperSize;
+    App::PropertyFileIncluded PageResult;
+    App::PropertyFile Template;
+    App::PropertyStringList EditableTexts;
 
     /** @name methods overide Feature */
     //@{
@@ -58,24 +53,26 @@ public:
     virtual App::DocumentObjectExecReturn *execute(void);
     //@}
 
-    int addView(App::DocumentObject *docObj);
-
     short mustExecute() const;
 
     /// returns the type name of the ViewProvider
     virtual const char* getViewProviderName(void) const {
-        return "DrawingGui::ViewProviderDrawingPage";
+        return "DrawingGui::ViewProviderTemplate";
     }
+
+    // from base class
+    //virtual PyObject *getPyObject(void);
+    virtual unsigned int getMemSize(void) const;
 
 protected:
     void onChanged(const App::Property* prop);
-
-private:
-    static const char* OrientationEnums[];
-    static const char* OrthoProjectionTypeEnums[];
+    std::vector<std::string> getEditableTextsFromTemplate() const;
 };
 
+//typedef App::FeaturePythonT<FeatureSVGTemplate> FeatureSVGTemplatePython;
 
 } //namespace Drawing
 
-#endif //_DRAWING_FeaturePage_h_
+
+
+#endif //_DRAWING_FeatureSVGTemplate_h_

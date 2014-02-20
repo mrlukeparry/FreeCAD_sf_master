@@ -334,8 +334,8 @@ void QGraphicsItemViewPart::drawViewPart()
         case DrawingGeometry::ARCOFCIRCLE: {
           DrawingGeometry::AOC  *geom = static_cast<DrawingGeometry::AOC *>(*it);
           pathArc(path, geom->radius, geom->radius, 0., geom->largeArc, geom->cw,
-                geom->endPnt.fX, geom->endPnt.fY,
-                geom->startPnt.fX, geom->startPnt.fY);
+                  geom->endPnt.fX, geom->endPnt.fY,
+                  geom->startPnt.fX, geom->startPnt.fY);
 
         } break;
         case DrawingGeometry::ELLIPSE: {

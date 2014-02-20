@@ -63,8 +63,8 @@ const char* FeaturePage::OrthoProjectionTypeEnums[]= {"First Angle",
 FeaturePage::FeaturePage(void)
 {
     static const char *group = "Page";
-    ADD_PROPERTY_TYPE(Template ,(""),group, (App::PropertyType) App::Prop_None,"Template for the page");
     ADD_PROPERTY_TYPE(Views    ,(0), group, (App::PropertyType)(App::Prop_None),"Attached Views");
+    ADD_PROPERTY_TYPE(Template ,(0), group, (App::PropertyType)(App::Prop_None),"Attached Template");
 
     // Projection Properties
     OrthoProjectionType.setEnums(OrthoProjectionTypeEnums);
@@ -87,8 +87,8 @@ FeaturePage::~FeaturePage()
 short FeaturePage::mustExecute() const
 {
     // If Tolerance Property is touched
-    if(Template.isTouched() ||
-       Scale.isTouched())
+    if(Scale.isTouched() ||
+       Template.isTouched())
         return 1;
 
     // Check if within the selection, any Document Object have been touched
@@ -106,11 +106,6 @@ short FeaturePage::mustExecute() const
 /// get called by the container when a Property was changed
 void FeaturePage::onChanged(const App::Property* prop)
 {
-    if (prop == &Template) {
-        if (!this->isRestoring()) {
-        }
-    } else if (prop == &Views) {
-    }
     App::DocumentObjectGroup::onChanged(prop);
 }
 

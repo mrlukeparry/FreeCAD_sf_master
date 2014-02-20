@@ -11,6 +11,7 @@ include_directories(
     ${COIN3D_INCLUDE_DIR}
     ${PYTHON_INCLUDE_PATH}
     ${QT_INCLUDE_DIR}
+    ${QT_USE_QTXML}
     ${OCC_INCLUDE_DIR}
     ${ZLIB_INCLUDE_DIR}
     ${SOQT_INCLUDE_DIR}
@@ -26,6 +27,9 @@ set(DrawingGui_LIBS
 set(DrawingGui_MOC_HDRS
     CanvasView.h
     DrawingView.h
+    QGraphicsItemTemplate.h
+    QGraphicsItemSVGTemplate.h
+    QGraphicsItemDrawingTemplate.h
     QGraphicsItemView.h
     QGraphicsItemViewCollection.h
     QGraphicsItemViewDimension.h
@@ -77,8 +81,14 @@ SET(DrawingGuiView_SRCS
     QGraphicsItemEdge.h
     QGraphicsItemFace.cpp
     QGraphicsItemFace.h
+    QGraphicsItemSVGTemplate.cpp
+    QGraphicsItemSVGTemplate.h
     QGraphicsItemVertex.cpp
     QGraphicsItemVertex.h
+    QGraphicsItemDrawingTemplate.cpp
+    QGraphicsItemDrawingTemplate.h
+    QGraphicsItemTemplate.cpp
+    QGraphicsItemTemplate.h
     QGraphicsItemViewCollection.cpp
     QGraphicsItemViewCollection.h
     QGraphicsItemViewDimension.cpp
@@ -93,6 +103,8 @@ SET(DrawingGuiView_SRCS
 SET(DrawingGuiViewProvider_SRCS
     ViewProviderPage.cpp
     ViewProviderPage.h
+    ViewProviderTemplate.cpp
+    ViewProviderTemplate.h
     ViewProviderView.cpp
     ViewProviderView.h
     ViewProviderViewPart.cpp

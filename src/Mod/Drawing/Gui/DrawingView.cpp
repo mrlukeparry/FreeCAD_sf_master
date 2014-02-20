@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2007 J�rgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2007 Juergen Riegel <juergen.riegel@web.de>              *
  *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
@@ -65,12 +65,14 @@
 #include <Gui/FileDialog.h>
 #include <Gui/WaitCursor.h>
 
-#include "../App/FeaturePage.h"
-#include "../App/FeatureViewOrthographic.h"
-#include "../App/FeatureViewPart.h"
-#include "../App/FeatureViewSection.h"
-#include "../App/FeatureViewDimension.h"
+#include <Mod/Drawing/App/FeaturePage.h>
+#include <Mod/Drawing/App/FeatureViewOrthographic.h>
+#include <Mod/Drawing/App/FeatureViewPart.h>
+#include <Mod/Drawing/App/FeatureViewSection.h>
+#include <Mod/Drawing/App/FeatureViewDimension.h>
+#include <Mod/Drawing/App/FeatureTemplate.h>
 
+#include "QGraphicsItemDrawingTemplate.h"
 #include "QGraphicsItemView.h"
 #include "QGraphicsItemViewPart.h"
 #include "QGraphicsItemViewDimension.h"
@@ -288,6 +290,17 @@ void DrawingView::attachPageObject(Drawing::FeaturePage *pageFeature)
     m_view->setPageFeature(pageFeature);
     // Save a link to the page feature - exclusivly one page per drawing view
     pageFeat.setValue(dynamic_cast<App::DocumentObject*>(pageFeature));
+
+    App::DocumentObject *obj = pageFeature->Template.getValue();
+    if(obj && obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) {
+        Drawing::FeatureTemplate *pageTemplate = dynamic_cast<Drawing::FeatureTemplate *>(obj);
+        this->attachTemplate(pageTemplate);
+    }
+}
+
+void DrawingView::attachTemplate(Drawing::FeatureTemplate *obj)
+{
+    m_view->setPageTemplate(obj);
 }
 
 int DrawingView::attachView(App::DocumentObject *obj)
@@ -522,6 +535,22 @@ void DrawingView::updateDrawing()
     Drawing::FeaturePage *pageFeature = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
     const std::vector<App::DocumentObject*> &grp = pageFeature->Views.getValues();
 
+
+    App::DocumentObject *templObj = pageFeature->Template.getValue();
+    if(pageFeature->Template.isTouched() || (templObj && templObj->isTouched())) {
+        // Template is touched so update
+
+        if(templObj && templObj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) {
+
+            QGraphicsItemTemplate *qItemTemplate = m_view->getTemplate();
+
+            if(qItemTemplate) {
+                Drawing::FeatureTemplate *pageTemplate = dynamic_cast<Drawing::FeatureTemplate *>(templObj);
+                qItemTemplate->setTemplate(pageTemplate);
+                qItemTemplate->updateView();
+            }
+        }
+    }
     m_view->setPageFeature(pageFeature);
 
     // Count total number of children
@@ -576,8 +605,8 @@ void DrawingView::updateDrawing()
 
         // Update the canvas view list of QGraphicsItemViews
         m_view->setViews(myViews);
-    } 
-    
+    }
+
     // Updated all the views
     const std::vector<QGraphicsItemView *> &upviews = m_view->getViews();
     for(std::vector<QGraphicsItemView *>::const_iterator it = upviews.begin(); it != upviews.end(); ++it) {
