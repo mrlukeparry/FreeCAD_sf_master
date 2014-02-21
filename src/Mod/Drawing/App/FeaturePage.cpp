@@ -87,8 +87,12 @@ FeaturePage::~FeaturePage()
 short FeaturePage::mustExecute() const
 {
     // If Tolerance Property is touched
-    if(Scale.isTouched() ||
-       Template.isTouched())
+    if(Scale.isTouched())
+        return 1;
+
+    // Check the value of template if this has been modified
+    App::DocumentObject* tmpl = Template.getValue();
+    if(tmpl && tmpl->isTouched())
         return 1;
 
     // Check if within the selection, any Document Object have been touched
@@ -134,56 +138,7 @@ int FeaturePage::addView(App::DocumentObject *docObj)
 
 App::DocumentObjectExecReturn *FeaturePage::execute(void)
 {
-    // get through the children and collect all the views
-    const std::vector<App::DocumentObject*> &Grp = Views.getValues();
-    for (std::vector<App::DocumentObject*>::const_iterator it = Grp.begin();it!=Grp.end();++it) {
-        if ( (*it)->getTypeId().isDerivedFrom(Drawing::FeatureView::getClassTypeId()) ) {
-            Drawing::FeatureView *View = dynamic_cast<Drawing::FeatureView *>(*it);
-        } else if ( (*it)->getTypeId().isDerivedFrom(Drawing::FeatureClip::getClassTypeId()) ) {
-            Drawing::FeatureClip *Clip = dynamic_cast<Drawing::FeatureClip *>(*it);
-        }
-    }
-
+    Template.touch();
     Views.touch();
     return App::DocumentObject::StdReturn;
 }
-
-
-#if 0
-std::vector<std::string> FeaturePage::getEditableTextsFromTemplate(void) const {
-    //getting editable texts from "freecad:editable" attributes in SVG template
-
-    std::vector<string> eds;
-
-    std::string temp = Template.getValue();
-    if (!temp.empty()) {
-        Base::FileInfo tfi(temp);
-        if (!tfi.isReadable()) {
-            // if there is a old absolute template file set use a redirect
-            tfi.setFile(App::Application::getResourceDir() + "Mod/Drawing/Templates/" + tfi.fileName());
-            // try the redirect
-            if (!tfi.isReadable()) {
-                return eds;
-            }
-        }
-        string tline, tfrag;
-        ifstream tfile (tfi.filePath().c_str());
-        while (!tfile.eof()) {
-            getline (tfile,tline);
-            tfrag += tline;
-            tfrag += "--endOfLine--";
-        }
-        tfile.close();
-        boost::regex e ("<text.*?freecad:editable=\"(.*?)\".*?<tspan.*?>(.*?)</tspan>");
-        string::const_iterator tbegin, tend;
-        tbegin = tfrag.begin();
-        tend = tfrag.end();
-        boost::match_results<std::string::const_iterator> twhat;
-        while (boost::regex_search(tbegin, tend, twhat, e)) {
-            eds.push_back(twhat[2]);
-            tbegin = twhat[0].second;
-        }
-    }
-    return eds;
-}
-#endif

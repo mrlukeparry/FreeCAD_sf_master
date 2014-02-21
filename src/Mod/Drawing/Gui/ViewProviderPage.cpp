@@ -107,6 +107,10 @@ void ViewProviderDrawingPage::updateData(const App::Property* prop)
         if(this->view) {
             view->updateDrawing();
         }
+    } else if (prop == &(getPageObject()->Template)) {
+       if(this->view) {
+            view->updateTemplate();
+        }
     }
 
     Gui::ViewProviderDocumentObjectGroup::updateData(prop);

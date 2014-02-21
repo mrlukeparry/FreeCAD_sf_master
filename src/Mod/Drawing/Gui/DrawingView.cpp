@@ -528,13 +528,10 @@ void DrawingView::selectionChanged()
 #endif
 }
 
-void DrawingView::updateDrawing()
+void DrawingView::updateTemplate()
 {
-    // We cannot guarantee if the number of views have changed so check the number
-    const std::vector<QGraphicsItemView *> &views = m_view->getViews();
-    Drawing::FeaturePage *pageFeature = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
-    const std::vector<App::DocumentObject*> &grp = pageFeature->Views.getValues();
 
+    Drawing::FeaturePage *pageFeature = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
 
     App::DocumentObject *templObj = pageFeature->Template.getValue();
     if(pageFeature->Template.isTouched() || (templObj && templObj->isTouched())) {
@@ -551,6 +548,17 @@ void DrawingView::updateDrawing()
             }
         }
     }
+
+    m_view->setPageFeature(pageFeature);
+}
+
+void DrawingView::updateDrawing()
+{
+    // We cannot guarantee if the number of views have changed so check the number
+    const std::vector<QGraphicsItemView *> &views = m_view->getViews();
+    Drawing::FeaturePage *pageFeature = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
+    const std::vector<App::DocumentObject*> &grp = pageFeature->Views.getValues();
+
     m_view->setPageFeature(pageFeature);
 
     // Count total number of children

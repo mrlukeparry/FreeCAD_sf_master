@@ -68,6 +68,7 @@ public Q_SLOTS:
     void selectionChanged();
     void preSelectionChanged(const QPoint &pos);
     void updateDrawing();
+    void updateTemplate();
 
 public:
    /// Observer message from the Selection

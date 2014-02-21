@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2014 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -94,9 +95,11 @@ void FeatureSVGTemplate::onChanged(const App::Property* prop)
                 return;
         }
     }
+
     if (prop == &Template) {
         if (!this->isRestoring()) {
             EditableTexts.setValues(getEditableTextsFromTemplate());
+            this->touch();
         }
     }
 
@@ -145,6 +148,7 @@ App::DocumentObjectExecReturn *FeatureSVGTemplate::execute(void)
 
     // checking for freecad editable texts
     string outfragment(ofile.str());
+
     if (EditableTexts.getSize() > 0) {
         boost::regex e1 ("<text.*?freecad:editable=\"(.*?)\".*?<tspan.*?>(.*?)</tspan>");
         string::const_iterator begin, end;
@@ -173,6 +177,7 @@ App::DocumentObjectExecReturn *FeatureSVGTemplate::execute(void)
     outfinal.close();
 
     PageResult.setValue(tempName.c_str());
+    this->touch();
 
     //const char* text = "lskdfjlsd";
     //const char* regex = "lskdflds";

@@ -307,7 +307,7 @@ void CanvasView::setPageFeature(Drawing::FeaturePage *page)
     m_backgroundItem->setGraphicsEffect(shadow);
 
     QRectF myRect = paperRect;
-    myRect.adjust(20,20,20,20);
+    myRect.adjust(-20,-20,20,20);
     this->setSceneRect(myRect);
 }
 
