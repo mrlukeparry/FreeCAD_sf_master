@@ -46,6 +46,10 @@ typedef boost::signals::connection Connection;
 
 /**
   * ToolFeature is the document object to store details of a single CAM Tool
+  * The ToolFeature class holds 'settings' (member variables) necessary for
+  * all possible types of tools.  Most of these settings are stored as
+  * private member variables while a set of methods read-only versions
+  * of these settings available to other classes.
   */
 namespace Cam
 {
@@ -105,9 +109,13 @@ public:
 		eEngravingTool,
 		eBoringHead,
 		eDragKnife,
-		eUndefinedToolType
+		eUndefinedToolType	// NOTE: Insert new tool types BEFORE this eUndefinedToolType delimiter.
 	} eToolType;
 
+	/**
+		To store details for a single tapping (thread-cutting) tool.  We have lists of these
+		objects contained as static data for standard tap sizes.
+	 */
 	typedef struct
     {
         QString description;
@@ -115,6 +123,15 @@ public:
         double  pitch;
     } tap_sizes_t;
 
+	typedef enum {
+		eRightHandThread = 0,
+		eLeftHandThread
+	} eTappingDirection_t;
+
+	/**
+		To store details for a single centre-drill tool.  We have a list of these
+		objects contained as static data for standard centre-drill sizes.
+	 */
 	typedef struct
 	{
 		QString size;
@@ -124,12 +141,21 @@ public:
 		double overall_length;
 	} centre_drill_t;
 
+	/**
+		The material type defines the type of metal used in the tool's construction.
+		We need this when we calculate feeds and speeds.
+	 */
 	typedef enum {
 		eHighSpeedSteel = 0,
 		eCarbide,
 		eUndefinedMaterialType
 	} eMaterial_t;
 
+	/**
+		Used to define types of plastics running through a 3D printing extrusion
+		head.  These will eventually be used to set temperatures and/or
+		feeds and speeds for 3D printing tool paths.
+	 */
 	typedef enum {
 		eABS = 0,
 		ePLA,
@@ -137,11 +163,9 @@ public:
 		eUndefinedExtrusionMaterialType
 	} eExtrusionMaterial_t;
 
-	typedef enum {
-		eRightHandThread = 0,
-		eLeftHandThread
-	} eTappingDirection_t;
-
+	/**
+		Used to describe the orientation of a turning tool in the tool post.
+	 */
 	typedef enum {
 		eUnused = 0,
 		eTurningBackFacing,
@@ -155,13 +179,31 @@ public:
 	} eOrientation_t;
 	
 private:
-	Settings::Text *setup_instructions;	// Note to add to GCode file to make sure the operator sets up the tool correctly at the start.
-	Settings::Text *title;					// This reflects the object's Label (in fact we should really use the Label instead).  It can be automatically or manually generated.
+	/// Note to add to GCode file to make sure the operator sets up the tool correctly at the start.
+	Settings::Text *setup_instructions;	
 
+	/**
+		This reflects the object's Label (in fact we should really use the Label instead).
+		It can be automatically or manually generated.
+	 */
+	Settings::Text *title;
+
+	/**
+		For most tools the diameter is self-explanatary.  For a chamfering or engraving tool
+		this represents the largest possible diameter of the tool.  The CuttingRadius() method
+		is used to retrieve this value so that the type of tool and cutting depth can be
+		used when returning the diameter for each tool path.
+	 */
 	Settings::Length	*diameter;
+
+	/// The overall length of the tool.  This is only used when rendering a solid representing the tool.
 	Settings::Length	*tool_length_offset;
-	Settings::Enumeration *material;			// eMaterial_t
-	Settings::Enumeration *tool_type;			// eToolType
+
+	/// The type of metal that makes up this tool.  This is the setting for the eMaterial_t enumeration.
+	Settings::Enumeration *material;
+
+	/// This is the type of tool.  It is the setting for the eToolType enumeration.
+	Settings::Enumeration *tool_type;
 
 	// The following  properties relate to the extrusions created by a reprap style 3D printer.
 	// using temperature, speed, and the height of the nozzle, and the nozzle size it's possible to create
@@ -201,44 +243,51 @@ private:
 	Settings::Double	*cutting_edge_angle;	// Angle (in degrees) between the tool's centreline and the cutting edge.
 	Settings::Length	*cutting_edge_height;	// How far, from the bottom of the cutter, do the flutes extend?
 
-	Settings::Length	*max_advance_per_revolution;	// This is the maximum distance a tool should advance during a single
-						// revolution.  This value is often defined by the manufacturer in
-						// terms of an advance no a per-tooth basis.  This value, however,
-						// must be expressed on a per-revolution basis.  i.e. we don't want
-						// to maintain the number of cutting teeth so a per-revolution
-						// value is easier to use.
+	/** This is the maximum distance a tool should advance during a single
+		revolution.  This value is often defined by the manufacturer in
+		terms of an advance no a per-tooth basis.  This value, however,
+		must be expressed on a per-revolution basis.  i.e. we don't want
+		to maintain the number of cutting teeth so a per-revolution
+		value is easier to use.
+	 */
+	Settings::Length	*max_advance_per_revolution;
 
-	Settings::Enumeration *automatically_generate_title;	// Set to true by default but reset to false when the user edits the title. - True/False
+	/// Set to true by default but reset to false when the user edits the title. - True/False
+	Settings::Enumeration *automatically_generate_title;	
 
-	// The following coordinates relate ONLY to touch probe tools.  They describe
-	// the error the probe tool has in locating an X,Y point.  These values are
-	// added to a probed point's location to find the actual point.  The values
-	// should come from calibrating the touch probe.  i.e. set machine position
-	// to (0,0,0), drill a hole and then probe for the centre of the hole.  The
-	// coordinates found by the centre finding operation should be entered into
-	// these values verbatim.  These will represent how far off concentric the
-	// touch probe's tip is with respect to the quil.  Of course, these only
-	// make sense if the probe's body is aligned consistently each time.  I will
-	// ASSUME this is correct.
-
+	/**
+		The following settings relate ONLY to touch probe tools.  They describe
+		the error the probe tool has in locating an X,Y point.  These values are
+		added to a probed point's location to find the actual location.  The values
+		should come from calibrating the touch probe.  i.e. set machine position
+		to (0,0,0), drill a hole and then probe for the centre of the hole.  The
+		coordinates found by the centre finding operation should be entered into
+		these values verbatim.  These will represent how far off concentric the
+		touch probe's tip is with respect to the quil.  Of course, these only
+		make sense if the probe's body is aligned consistently each time.  I will
+		ASSUME this is correct.
+	 */
 	Settings::Length	*probe_offset_x;
 	Settings::Length	*probe_offset_y;
 
-	// The gradient is the steepest angle at which this tool can plunge into the material.  Many
-	// tools behave better if they are slowly ramped down into the material.  This gradient
-	// specifies the steepest angle of decsent.  This is expected to be a negative number indicating
-	// the 'rise / run' ratio.  Since the 'rise' will be downward, it will be negative.
-	// By this measurement, a drill bit's straight plunge would have an infinite gradient (all rise, no run).
-	// To cater for this, a value of zero will indicate a straight plunge.
-
+	/**
+		The gradient is the steepest angle at which this tool can plunge into the material.  Many
+		tools behave better if they are slowly ramped down into the material.  This gradient
+		specifies the steepest angle of decsent.  This is expected to be a negative number indicating
+		the 'rise / run' ratio.  Since the 'rise' will be downward, it will be negative.
+		By this measurement, a drill bit's straight plunge would have an infinite gradient (all rise, no run).
+		To cater for this, a value of zero will indicate a straight plunge.
+	 */
 	Settings::Length	*gradient;
 
 	// properties for tapping tools
+
 	Settings::Enumeration *direction;    // eTappingDirection_t
 	Settings::Length *pitch;     // in units/rev
 	Settings::Enumeration *standard_tap_sizes;	// Generated from the static tapping size objects (metric_tap_sizes, unified_thread_standard_tap_sizes and british_standard_whitworth_tap_sizes)
     
-	Settings::Enumeration *centre_drill_size;	// Generated from static tapping sizes held in centre_drill_sizes
+	/// This holds the set of description values from the static centre-drill data.  Once selected the other data is used to set diameters etc.
+	Settings::Enumeration *centre_drill_size;
 
 	// The following are all for lathe tools.  They become relevant when the tool_type = eTurningTool
 	Settings::Length *x_offset;
@@ -247,8 +296,26 @@ private:
 	Settings::Double *back_angle;
 	Settings::Enumeration *orientation;	// eOrientation_t
 
-	Settings::Length *drag_knife_blade_offset;	// Only relevant if the tool's type is eDragKnife.
-	Settings::Double *drag_knife_initial_cutting_direction;	// At program start, the drag knife will be pointing ready to cut in this direction (degrees from positive X axis)
+	// Drag-knife tools.
+
+	/**
+		This is the distance from the tip of the blade to the centreline of the tool.  i.e. how much it
+		drags behind the machine's position.  When the tool needs to make a severe direction change, this becomes
+		the radius of the arc movement required to move the tool's pivot point around the tool's cutting tip.
+	 */
+	Settings::Length *drag_knife_blade_offset;
+
+	/**
+		At program start, the drag knife will be pointing ready to cut in this direction (degrees from positive X axis)
+
+		When the drag knife makes a severe direction change, we need to move up to the 'blade reorientation depth'
+		before adding an arc movement.  This allows the tip of the blade to remain in the material (but only just)
+		and the pivot point of the machine to move about the tip's location until it's pointing in the new
+		cutting direction.  When we start the GCode program, we need to know what direction the drag knife
+		is pointing in.  If our first cutting tool path is in a different direction then an arc movement will
+		be necessary before we begin real cutting.
+	 */
+	Settings::Double *drag_knife_initial_cutting_direction;
 
 private:
 	void ResetSettingsToReasonableValues(const bool suppress_warnings = false );
@@ -257,16 +324,25 @@ private:
 private:
 	Settings::TPGSettings *settings;	// Pointer to container within which all settings are stored for this object.
 
-	void ResetTitle();
+	void ResetTitle();	// Regenerate a title value based on the other settings.
 
 public:
+	/**
+		Some tools are more easily described using either a fractional representation (eg: "1/8 inch"), a
+		PCB representation (eg: 50 thou) or a guage number representation (eg: #7 drill bit).
+		These methods take the various settings and attempt to generate a meaningful name.  If they
+		cannot then they return a QString::null value.
+	 */
 	static QString FractionalRepresentation( const Cam::Settings::Length *original_value, const int max_denominator = 64 );
 	static QString PrintedCircuitBoardRepresentation( const Cam::Settings::Length *pDiameter );
 	static QString GuageNumberRepresentation( const Cam::Settings::Length *pDiameter );
 
+	/**
+		Retrieve a pointer into our static centre-drill size array based on the description text.
+	 */
 	ToolFeature::centre_drill_t *ToolFeature::CentreDrillDefinition( const QString size ) const;
 
-	// Preferred settings access...
+	// The following methods should be used for read-only access to this object's settings.
 	double CuttingRadius( const Cam::Settings::Length::Units_t units, const Cam::Settings::Length length = Cam::Settings::Length(-1, Cam::Settings::Length::Metric) ) const;
 	const eToolType ToolType() const;
 	double Pitch( const Cam::Settings::Length::Units_t units ) const { return(this->pitch->get( units )); }
@@ -297,6 +373,14 @@ public:
 	bool SettingsInitialized() const;	// Have we created all the individual settings objects yet?
 
 public:
+	/**
+		These methods generate either TopoDS_Solid or TopoDS_CompoundSolid objects (both encoded
+		within a TopoDS_Shape object) representing the shape of the tool.  Such solid objects are
+		generated based on the various settings for this tool.  The intent here is both to show
+		the user the affect a setting has on a tool's shape and to allow the user to manually move
+		a tool around a model in order to get a feel for clearances and to think through the
+		machining of the model prior to generating GCode.
+	 */
 	static TopoDS_Shape StanleyKnifeBlade_MountingPlate(const double blade_angle_degrees, const double blade_thickness);
 	static TopoDS_Shape StanleyKnifeBlade(const double blade_angle_degrees, const double blade_thickness);
 	TopoDS_Shape Shape() const;

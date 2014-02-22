@@ -362,6 +362,9 @@ void ToolFeature::onSettingChanged(const std::string key, const std::string prev
 				if ((this->flat_radius->get(units) * 2.0) >= this->diameter->get(units))
 				{
 					// Can't have the flat radius that is larger than the radius of the tool.
+					// TODO Figure out how to alert the operator to this flaw and reject
+					// the change.  It should be in the validation of the setting but our
+					// current validation is only done on data type (float, int etc.)
 				}
 				else
 				{
@@ -393,7 +396,7 @@ void ToolFeature::onSettingChanged(const std::string key, const std::string prev
 
 						Cam::Settings::Length::Units_t units = Cam::Settings::Length::Metric;
 						double opposite = this->diameter->get(units) - this->flat_radius->get(units);
-						double angle = this->cutting_edge_angle->get() / 360.0 * 2 * M_PI;
+						double angle = this->degrees_to_radians(this->cutting_edge_angle->get());
 
 						this->cutting_edge_height->set( opposite / tan(angle), units );
 					}
@@ -437,6 +440,7 @@ void ToolFeature::onSettingChanged(const std::string key, const std::string prev
 			}
 			else if (definition == this->title)
 			{
+				// It would be nice if the title appeared in the objects tree.
 				this->Label.setValue(new_value.c_str());
 			}
 			else if (definition == standard_tap_sizes)
@@ -798,7 +802,7 @@ void ToolFeature::initialise()
 
 /**
 	This method is called when a tool's type is changed.  This is considered quite a
-	significant change and so this method adjust many of the other settings to 
+	significant change and so this method adjusts many of the other settings to 
 	values that 'make sense' for this new type of tool.  It provides a 'starting point'
 	for the user to adjust settings.
  */
