@@ -25,7 +25,6 @@
 # include <QGraphicsScene>
 #endif
 
-#include <App/Document.h>
 #include <Base/Console.h>
 #include <Base/Exception.h>
 
@@ -36,9 +35,8 @@
 using namespace DrawingGui;
 
 QGraphicsItemTemplate::QGraphicsItemTemplate(QGraphicsScene *scene) : QGraphicsItemGroup(),
-                                                                                    pageTemplate(0)
+                                                                      pageTemplate(0)
 {
-
     setHandlesChildEvents(false);
     setCacheMode(QGraphicsItem::DeviceCoordinateCache);
     setZValue(-1000); //Template is situated in background

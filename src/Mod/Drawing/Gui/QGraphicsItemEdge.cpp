@@ -55,12 +55,16 @@ QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : referen
     strokeWidth = 1.;
     sf = 1.;
 
-    showHidden = false;
-    highlighted = false;
+    isCosmetic    = true;
+    showHidden    = false;
+    isHighlighted = false;
+
     hPen.setStyle(Qt::DashLine);
     vPen.setStyle(Qt::SolidLine);
-    vPen.setCosmetic(true);
-    hPen.setCosmetic(true);
+
+    // In edit mode these should be set cosmetic
+    vPen.setCosmetic(isCosmetic);
+    hPen.setCosmetic(isCosmetic);
     hPen.setColor(Qt::gray);
 }
 
@@ -103,8 +107,8 @@ QPainterPath QGraphicsItemEdge::shape() const
 
 void QGraphicsItemEdge::setHighlighted(bool state)
 {
-    highlighted = state;
-    if(highlighted) {
+    isHighlighted = state;
+    if(isHighlighted) {
         vPen.setColor(Qt::blue);
         hPen.setColor(Qt::blue);
     } else {
@@ -143,11 +147,19 @@ void QGraphicsItemEdge::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
     QGraphicsItemView *view = dynamic_cast<QGraphicsItemView *> (this->parentItem());
     assert(view != 0);
 
-    if(!isSelected() && !highlighted) {
+    if(!isSelected() && !isHighlighted) {
         vPen.setColor(Qt::black);
         hPen.setColor(Qt::gray);
         update();
     }
+}
+
+void QGraphicsItemEdge::setCosmetic(bool state)
+{
+    isCosmetic = state;
+    vPen.setCosmetic(isCosmetic);
+    hPen.setCosmetic(isCosmetic);
+    update();
 }
 
 void QGraphicsItemEdge::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)

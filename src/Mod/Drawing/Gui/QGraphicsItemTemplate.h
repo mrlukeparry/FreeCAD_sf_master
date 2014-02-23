@@ -51,6 +51,7 @@ public:
     void clearContents();
 
     void setTemplate(Drawing::FeatureTemplate *obj);
+    Drawing::FeatureTemplate * getTemplate() { return pageTemplate; }
 
     inline qreal getY() { return this->y() * -1; }
 

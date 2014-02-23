@@ -44,8 +44,24 @@ using namespace std;
 
 PROPERTY_SOURCE(Drawing::FeatureTemplate, App::DocumentObject)
 
+
+const char* FeatureTemplate::OrientationEnums[]= {"Portrait",
+                                                  "Landscape",
+                                                  NULL};
+
+
+
 FeatureTemplate::FeatureTemplate(void)
 {
+    const char *group = "Page Properties";
+
+    Orientation.setEnums(OrientationEnums);
+    ADD_PROPERTY(Orientation,((long)0));
+
+    // Physical Properties inherent to every template class
+    ADD_PROPERTY_TYPE(Width,(0)      ,group,(App::PropertyType)(App::Prop_None),"Width ()");
+    ADD_PROPERTY_TYPE(Height,(0)     ,group,(App::PropertyType)(App::Prop_None),"Height()");
+    ADD_PROPERTY_TYPE(PaperSize,("") ,group,(App::PropertyType)(App::Prop_None),"Paper Format");
 }
 
 FeatureTemplate::~FeatureTemplate()
@@ -65,6 +81,16 @@ PyObject *FeatureTemplate::getPyObject(void)
 unsigned int FeatureTemplate::getMemSize(void) const
 {
     return 0;
+}
+
+double FeatureTemplate::getWidth() const
+{
+    return Width.getValue();
+}
+
+double FeatureTemplate::getHeight() const
+{
+    return Height.getValue();
 }
 
 short FeatureTemplate::mustExecute() const

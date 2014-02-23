@@ -820,7 +820,7 @@ void DrawingView::print()
 {
     QPrinter printer(QPrinter::HighResolution);
     printer.setFullPage(true);
-    printer.setOrientation(QPrinter::Landscape);
+//     printer.setOrientation(QPrinter::Landscape);
     QPrintDialog dlg(&printer, this);
     if (dlg.exec() == QDialog::Accepted) {
         print(&printer);
@@ -831,7 +831,9 @@ void DrawingView::printPreview()
 {
     QPrinter printer(QPrinter::HighResolution);
     printer.setFullPage(true);
-    printer.setOrientation(QPrinter::Landscape);
+
+
+//     printer.setOrientation(QPrinter::Landscape);
 
     QPrintPreviewDialog dlg(&printer, this);
     connect(&dlg, SIGNAL(paintRequested (QPrinter *)),
@@ -846,10 +848,15 @@ void DrawingView::print(QPrinter* printer)
 #if 1
     Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
 
+//     if(strcmp(page->getPageOrientation(), "Landscape") == 0) {
+//         printer->setOrientation(QPrinter::Landscape);
+//     } else {
+//         printer->setOrientation(QPrinter::Portrait);
+//     }
 
-    printer->setPaperSize(QSizeF(page->Width.getValue(), page->Height.getValue()), QPrinter::Millimeter);
+    printer->setPaperSize(QSizeF(page->getPageWidth(), page->getPageHeight()), QPrinter::Millimeter);
 
-    QPainter *p = new QPainter();
+    QPainter p(printer);
 
     bool block = this->blockConnection(true); // avoid to be notified by itself
     Gui::Selection().clearSelection();
@@ -857,11 +864,11 @@ void DrawingView::print(QPrinter* printer)
     this->m_view->toggleEdit(false);
 
     Gui::Selection().clearSelection();
-    p->begin(printer);
+    p.begin(printer);
 
-    this->m_view->scene()->render(p);
+    this->m_view->scene()->render(&p);
 
-    p->end();
+    p.end();
     // Reset
     this->m_view->toggleEdit(true);
 

@@ -61,7 +61,7 @@ Q_SIGNALS:
 protected:
   void openFile(const QFile &file);
   void load (const QString & fileName);
-  
+
 protected:
   Drawing::FeatureSVGTemplate * getSVGTemplate();
   QGraphicsSvgItem *m_svgItem;

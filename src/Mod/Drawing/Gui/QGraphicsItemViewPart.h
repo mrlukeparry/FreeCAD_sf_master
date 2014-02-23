@@ -57,8 +57,10 @@ public:
 
     void setViewPartFeature(Drawing::FeatureViewPart *obj);
 
+    void toggleCosmeticLines(bool state);
     void toggleVertices(bool state);
     void toggleBorder(bool state = true) { this->borderVisible = state; }
+    
     virtual void updateView(bool update = false);
     virtual void draw();
 

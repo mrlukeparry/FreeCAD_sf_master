@@ -34,7 +34,6 @@
 # include <QMouseEvent>
 # include <QPainter>
 # include <QPaintEvent>
-# include <QPrinter>
 # include <QSvgRenderer>
 # include <QSvgWidget>
 # include <QWheelEvent>
@@ -290,8 +289,8 @@ void CanvasView::setPageFeature(Drawing::FeaturePage *page)
     // TODO verify if the pointer should even be used. Not really safe
     this->pageFeat = page;
 
-    float pageWidth  = this->pageFeat->Width.getValue();
-    float pageHeight = this->pageFeat->Height.getValue();
+    float pageWidth  = this->pageFeat->getPageWidth();
+    float pageHeight = this->pageFeat->getPageHeight();
 
     QRectF paperRect(0, -pageHeight, pageWidth, pageHeight);
 
@@ -392,6 +391,7 @@ void CanvasView::toggleEdit(bool enable)
             QGraphicsItemViewPart *viewPart = dynamic_cast<QGraphicsItemViewPart *>(*it);
             itemView->setSelected(false);
             if(viewPart) {
+                viewPart->toggleCosmeticLines(enable);
                 viewPart->toggleVertices(enable);
                 viewPart->toggleBorder(enable);
                 setViewBackground(enable);

@@ -25,8 +25,6 @@
 
 #include <App/DocumentObjectGroup.h>
 #include <App/PropertyStandard.h>
-#include <App/PropertyUnits.h>
-#include <App/PropertyFile.h>
 
 namespace Drawing
 {
@@ -44,13 +42,9 @@ public:
     App::PropertyLinkList Views;
     App::PropertyLink Template;
 
-    // Page Physical Properties
-    App::PropertyLength Width;
-    App::PropertyLength Height;
     App::PropertyFloat Scale;
     App::PropertyEnumeration OrthoProjectionType; // First or Third Angle
-    App::PropertyEnumeration Orientation;
-    App::PropertyString PaperSize;
+
 
     /** @name methods overide Feature */
     //@{
@@ -66,12 +60,16 @@ public:
     virtual const char* getViewProviderName(void) const {
         return "DrawingGui::ViewProviderDrawingPage";
     }
+public:
+
+    double getPageWidth() const;
+    double getPageHeight() const;
+    const char* getPageOrientation() const;
 
 protected:
     void onChanged(const App::Property* prop);
 
 private:
-    static const char* OrientationEnums[];
     static const char* OrthoProjectionTypeEnums[];
 };
 

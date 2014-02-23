@@ -54,8 +54,6 @@ public:
     virtual App::DocumentObjectExecReturn *execute(void);
     //@}
 
-    // Template Drawing Methods
-    int drawLine(double x1, double y1, double x2, double y2);
 
     short mustExecute() const;
 
@@ -68,14 +66,24 @@ public:
     virtual PyObject *getPyObject(void);
     virtual unsigned int getMemSize(void) const;
 
+public:
     std::vector<DrawingGeometry::BaseGeom *> getGeometry() { return geom; }
     int clearGeometry();
+
+    // Template Drawing Methods
+    int drawLine(double x1, double y1, double x2, double y2);
+
+    double getHeight() const;
+    double getWidth() const;
 
 protected:
     void onChanged(const App::Property* prop);
 
 protected:
     std::vector<DrawingGeometry::BaseGeom *> geom;
+
+private:
+    static const char* OrientationEnums[];
 };
 
 typedef App::FeaturePythonT<FeatureParametricTemplate> FeatureParametricTemplatePython;

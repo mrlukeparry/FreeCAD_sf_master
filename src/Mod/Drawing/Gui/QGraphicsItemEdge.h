@@ -50,6 +50,8 @@ public:
     void setHighlighted(bool state);
     void setShowHidden(bool state) {showHidden = state; update(); }
 
+    void setCosmetic(bool state);
+
     int getReference() const { return reference; }
     QPainterPath getHiddenPath() { return hPath; }
     QPainterPath getVisiblePath() { return vPath; }
@@ -81,7 +83,8 @@ protected:
   QPen   hPen;
 
   float sf;
-  bool highlighted;
+  bool isHighlighted;
+  bool isCosmetic;
   bool showHidden;
 
 private:

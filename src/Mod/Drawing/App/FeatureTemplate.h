@@ -27,7 +27,7 @@
 
 #include <App/PropertyLinks.h>
 #include <App/PropertyStandard.h>
-#include <App/PropertyFile.h>
+#include <App/PropertyUnits.h>
 #include <App/FeaturePython.h>
 
 namespace DrawingGeometry
@@ -47,6 +47,18 @@ class DrawingExport FeatureTemplate: public App::DocumentObject
 public:
     FeatureTemplate(); /// Constructor
     ~FeatureTemplate();
+
+    // Page Physical Properties
+    App::PropertyLength Width;
+    App::PropertyLength Height;
+    App::PropertyEnumeration Orientation;
+    App::PropertyString PaperSize;
+
+public:
+
+    // irtual functions must be redefined by base class
+    virtual double getWidth() const;
+    virtual double getHeight() const;
 
     /** @name methods overide Feature */
     //@{
@@ -68,6 +80,9 @@ public:
 
 protected:
     void onChanged(const App::Property* prop);
+
+private:
+    static const char* OrientationEnums[];
 
 };
 

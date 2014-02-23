@@ -620,6 +620,17 @@ QGraphicsItemVertex * QGraphicsItemViewPart::findRefVertex(int idx)
     return 0;
 }
 
+void QGraphicsItemViewPart::toggleCosmeticLines(bool state)
+{
+  QList<QGraphicsItem *> items = this->childItems();
+    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); it++) {
+        QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+        if(edge) {
+            edge->setCosmetic(state);
+        }
+    }
+}
+
 void QGraphicsItemViewPart::toggleVertices(bool state)
 {
     QList<QGraphicsItem *> items = this->childItems();

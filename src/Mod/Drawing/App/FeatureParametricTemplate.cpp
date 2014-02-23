@@ -73,6 +73,16 @@ unsigned int FeatureParametricTemplate::getMemSize(void) const
     return 0;
 }
 
+double FeatureParametricTemplate::getWidth() const {
+  throw Base::Exception("Need to Implement");
+}
+
+
+double FeatureParametricTemplate::getHeight() const {
+  throw Base::Exception("Need to Implement");
+}
+
+
 short FeatureParametricTemplate::mustExecute() const
 {
     return App::DocumentObject::mustExecute();

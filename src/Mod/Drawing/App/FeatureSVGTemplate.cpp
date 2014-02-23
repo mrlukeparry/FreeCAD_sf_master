@@ -24,13 +24,16 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
-# include <sstream>
+  #include <sstream>
+  #include <QDomDocument>
+  #include <QFile>
 #endif
 
 #include <Base/Exception.h>
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
 #include <Base/FileInfo.h>
+#include <Base/Quantity.h>
 
 #include <App/Application.h>
 
@@ -52,9 +55,14 @@ FeatureSVGTemplate::FeatureSVGTemplate()
 {
     static const char *group = "Drawing view";
 
-    ADD_PROPERTY_TYPE(PageResult ,(0),group,App::Prop_Output,"Resulting SVG document of that page");
-    ADD_PROPERTY_TYPE(Template   ,(""),group,App::Prop_None  ,"Template for the page");
-    ADD_PROPERTY_TYPE(EditableTexts,(""),group,App::Prop_None,"Substitution values for the editable strings in the template");
+    ADD_PROPERTY_TYPE(PageResult   ,(0)   ,group,App::Prop_Output,"Resulting SVG document of that page");
+    ADD_PROPERTY_TYPE(Template     ,("")  ,group,App::Prop_None  ,"Template for the page");
+    ADD_PROPERTY_TYPE(EditableTexts,("")  ,group,App::Prop_None  ,"Substitution values for the editable strings in the template");
+
+    // Width and Height properties shouldn't be set by the user
+    Height.StatusBits.set(2);       // Read Only
+    Width.StatusBits.set(2);       // Read Only
+    Orientation.StatusBits.set(2); // Read Only
 }
 
 FeatureSVGTemplate::~FeatureSVGTemplate()
@@ -177,6 +185,47 @@ App::DocumentObjectExecReturn *FeatureSVGTemplate::execute(void)
     outfinal.close();
 
     PageResult.setValue(tempName.c_str());
+
+    // Calculate the dimensions of the page and store for retrieval
+
+    QFile resultFile(QString::fromAscii(PageResult.getValue()));
+    if (!resultFile.exists()) {
+        throw Base::Exception("Couldn't load document from PageResult");
+    }
+
+    QDomDocument doc(QString::fromAscii("mydocument"));
+
+    if (!doc.setContent(&resultFile)) {
+        resultFile.close();
+        throw Base::Exception("Couldn't parse template SVG contents");
+    }
+
+    // Parse the document XML
+    QDomElement docElem = doc.documentElement();
+
+        // Obtain the size of the SVG document by reading the document attirbutes
+    Base::Quantity quantity;
+
+    // Obtain the width
+    QString str = docElem.attribute(QString::fromAscii("width"));
+    quantity = Base::Quantity::parse(str);
+    quantity.setUnit(Base::Unit::Length);
+
+    this->Width.setValue(quantity.getValue());
+
+    str = docElem.attribute(QString::fromAscii("height"));
+    quantity = Base::Quantity::parse(str);
+    quantity.setUnit(Base::Unit::Length);
+
+    this->Height.setValue(quantity.getValue());
+
+    bool isLandscape = getWidth() / getHeight() >= 1.;
+
+    this->Orientation.setValue(isLandscape ? 1 : 0);
+
+    // Housekeeping close the file
+    resultFile.close();
+
     this->touch();
 
     //const char* text = "lskdfjlsd";
@@ -188,6 +237,18 @@ App::DocumentObjectExecReturn *FeatureSVGTemplate::execute(void)
     //}
     return App::DocumentObject::StdReturn;
 }
+
+
+double FeatureSVGTemplate::getWidth() const
+{
+    return Width.getValue();
+}
+
+double FeatureSVGTemplate::getHeight() const
+{
+    return Height.getValue();
+}
+
 
 std::vector<std::string> FeatureSVGTemplate::getEditableTextsFromTemplate() const {
     //getting editable texts from "freecad:editable" attributes in SVG template

@@ -64,15 +64,18 @@ public:
     //virtual PyObject *getPyObject(void);
     virtual unsigned int getMemSize(void) const;
 
+public:
+    double getWidth() const;
+    double getHeight() const;
+
 protected:
     void onChanged(const App::Property* prop);
     std::vector<std::string> getEditableTextsFromTemplate() const;
+
 };
 
 //typedef App::FeaturePythonT<FeatureSVGTemplate> FeatureSVGTemplatePython;
 
 } //namespace Drawing
-
-
 
 #endif //_DRAWING_FeatureSVGTemplate_h_

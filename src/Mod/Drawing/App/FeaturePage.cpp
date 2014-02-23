@@ -36,6 +36,7 @@
 #include <iterator>
 
 #include "FeaturePage.h"
+#include "FeatureTemplate.h"
 #include "FeatureView.h"
 #include "FeatureViewCollection.h"
 #include "FeatureClip.h"
@@ -52,15 +53,11 @@ PROPERTY_SOURCE(Drawing::FeaturePage, App::DocumentObjectGroup)
 
 const char *group = "Drawing view";
 
-const char* FeaturePage::OrientationEnums[]= {"Portrait",
-                                              "Landscape",
-                                              NULL};
-
 const char* FeaturePage::OrthoProjectionTypeEnums[]= {"First Angle",
-                                                  "Third Angle",
-                                                  NULL};
+                                                      "Third Angle",
+                                                      NULL};
 
-FeaturePage::FeaturePage(void)
+FeaturePage::FeaturePage()
 {
     static const char *group = "Page";
     ADD_PROPERTY_TYPE(Views    ,(0), group, (App::PropertyType)(App::Prop_None),"Attached Views");
@@ -71,18 +68,11 @@ FeaturePage::FeaturePage(void)
     ADD_PROPERTY(OrthoProjectionType,((long)0));
     ADD_PROPERTY_TYPE(Scale ,(1.0)     ,group,App::Prop_None,"Scale factor for Document Views");
 
-    // Physical Properties
-    ADD_PROPERTY_TYPE(Width,(2)        ,group,(App::PropertyType)(App::Prop_None),"Width (mm)");
-    ADD_PROPERTY_TYPE(Height,(7)       ,group,(App::PropertyType)(App::Prop_None),"Height(mm");
-    ADD_PROPERTY_TYPE(PaperSize,("A3") ,group,(App::PropertyType)(App::Prop_None),"Paper Format");
-    Orientation.setEnums(OrientationEnums);
-    ADD_PROPERTY(Orientation,((long)0));
 }
 
 FeaturePage::~FeaturePage()
 {
 }
-
 
 short FeaturePage::mustExecute() const
 {
@@ -105,6 +95,43 @@ short FeaturePage::mustExecute() const
     }
 
     return (ViewsTouched) ? 1 : App::DocumentObjectGroup::mustExecute();
+}
+
+
+double FeaturePage::getPageWidth() const
+{
+    App::DocumentObject *obj = Template.getValue();
+
+    if(!obj || !obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId()))
+        throw Base::Exception("Template not set for Page");
+
+    Drawing::FeatureTemplate *templ = static_cast<Drawing::FeatureTemplate *>(obj);
+
+    return templ->getWidth();
+}
+
+double FeaturePage::getPageHeight() const
+{
+    App::DocumentObject *obj = Template.getValue();
+
+    if(!obj || !obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId()))
+        throw Base::Exception("Template not set for Page");
+
+    Drawing::FeatureTemplate *templ = static_cast<Drawing::FeatureTemplate *>(obj);
+
+    return templ->getHeight();
+}
+
+const char * FeaturePage::getPageOrientation() const
+{
+    App::DocumentObject *obj = Template.getValue();
+
+    if(!obj || !obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId()))
+        throw Base::Exception("Template not set for Page");
+
+    Drawing::FeatureTemplate *templ = static_cast<Drawing::FeatureTemplate *>(obj);
+
+    return templ->Orientation.getValueAsString();
 }
 
 /// get called by the container when a Property was changed

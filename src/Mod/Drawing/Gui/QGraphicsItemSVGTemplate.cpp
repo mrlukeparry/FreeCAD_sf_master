@@ -22,25 +22,13 @@
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
-#include <QAction>
-#include <QContextMenuEvent>
-#include <QDomDocument>
-#include <QGraphicsScene>
-#include <QGraphicsSceneMouseEvent>
-#include <QMenu>
-#include <QMessageBox>
-#include <QMouseEvent>
+#include <QFile>
 #include <QSvgRenderer>
 #include <QGraphicsSvgItem>
 # include <strstream>
 #endif
 
-#include <App/Document.h>
-#include <Base/Console.h>
 #include <Base/Exception.h>
-#include <Base/Quantity.h>
-#include <Base/Tools2D.h>
-#include <Gui/Selection.h>
 #include <Gui/Command.h>
 
 #include <Mod/Drawing/App/Geometry.h>
@@ -57,9 +45,9 @@ QGraphicsItemSVGTemplate::QGraphicsItemSVGTemplate(QGraphicsScene *scene) : QGra
 
     m_svgItem = new QGraphicsSvgItem();
     m_svgItem->setSharedRenderer(m_svgRender);
+
     m_svgItem->setFlags(QGraphicsItem::ItemClipsToShape);
-    m_svgItem->setCacheMode(QGraphicsItem::NoCache);
-    m_svgItem->setZValue(0);
+    m_svgItem->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
     this->addToGroup(m_svgItem);
 }
@@ -70,7 +58,6 @@ QGraphicsItemSVGTemplate::~QGraphicsItemSVGTemplate()
   delete m_svgItem;
   m_svgRender = 0;
   m_svgItem   = 0;
-
 }
 
 QVariant QGraphicsItemSVGTemplate::itemChange(GraphicsItemChange change, const QVariant &value)
@@ -91,67 +78,31 @@ void QGraphicsItemSVGTemplate::openFile(const QFile &file)
 
 void QGraphicsItemSVGTemplate::load (const QString & fileName)
 {
-    if (!fileName.isEmpty()) {
-        QFile file(fileName);
-        if (!file.exists()) {
-            return;
-        }
-
-        if (!file.exists())
+    if (fileName.isEmpty()){
         return;
-
-        m_svgRender->load(file.fileName());
-
-        QDomDocument doc(QString::fromAscii("mydocument"));
-
-        if (!doc.setContent(&file)) {
-            file.close();
-            return;
-        }
-//         file.close();
-
-        // print out the element names of all elements that are direct children
-        // of the outermost element.
-        QDomElement docElem = doc.documentElement();
-
-        QString str = docElem.attribute(QString::fromAscii("width"));
-
-        Base::Quantity quantity;
-
-        quantity = Base::Quantity::parse(str);
-        quantity.setUnit(Base::Unit::Length);
-        double svgWidth = quantity.getValue();
-
-
-        str = docElem.attribute(QString::fromAscii("height"));
-
-        quantity = Base::Quantity::parse(str);
-        quantity.setUnit(Base::Unit::Length);
-        double svgHeight = quantity.getValue();
-
-        QSize size = m_svgRender->defaultSize();
-        //Base::Console().Log("size of svg document <%i,%i>", size.width(), size.height());
-        m_svgItem->setSharedRenderer(m_svgRender);
-
-        double xaspect, yaspect;
-        xaspect = svgWidth / (double) size.width();
-        yaspect = svgHeight / (double) size.height();
-
-        QTransform qtrans;
-        qtrans.scale(xaspect , yaspect);
-
-        m_svgItem->setTransform(qtrans);
-        m_svgItem->moveBy(0.f, -svgHeight);
-
-
-
-//         this->openFile(file);
-
-//         if (!fileName.startsWith(QLatin1String(":/"))) {
-//             m_currentPath = fileName;
-//             //setWindowTitle(tr("%1 - SVG Viewer").arg(m_currentPath));
-//         }
     }
+
+    QFile file(fileName);
+    if (!file.exists()) {
+        return;
+    }
+    m_svgRender->load(file.fileName());
+
+    QSize size = m_svgRender->defaultSize();
+    //Base::Console().Log("size of svg document <%i,%i>", size.width(), size.height());
+    m_svgItem->setSharedRenderer(m_svgRender);
+
+    Drawing::FeatureSVGTemplate *tmplte = getSVGTemplate();
+
+    double xaspect, yaspect;
+    xaspect = tmplte->getWidth() / (double) size.width();
+    yaspect = tmplte->getHeight() / (double) size.height();
+
+    QTransform qtrans;
+    qtrans.translate(0.f, -tmplte->getHeight());
+    qtrans.scale(xaspect , yaspect);
+    m_svgItem->setTransform(qtrans);
+
 }
 Drawing::FeatureSVGTemplate * QGraphicsItemSVGTemplate::getSVGTemplate()
 {
