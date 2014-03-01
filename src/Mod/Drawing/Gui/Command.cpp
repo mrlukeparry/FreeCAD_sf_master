@@ -840,30 +840,7 @@ CmdDrawingExportPage::CmdDrawingExportPage()
 
 void CmdDrawingExportPage::activated(int iMsg)
 {
-    unsigned int n = getSelection().countObjectsOfType(Drawing::FeaturePage::getClassTypeId());
-    if (n != 1) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("Select one Page object."));
-        return;
-    }
-
-    QStringList filter;
-    filter << QObject::tr("SVG(*.svg)");
-    filter << QObject::tr("All Files (*.*)");
-
-    QString fn = Gui::FileDialog::getSaveFileName(Gui::getMainWindow(), QObject::tr("Export page"), QString(), filter.join(QLatin1String(";;")));
-    if (!fn.isEmpty()) {
-        std::vector<Gui::SelectionSingleton::SelObj> Sel = getSelection().getSelection();
-        openCommand("Drawing export page");
-
-        doCommand(Doc,"PageFile = open(App.activeDocument().%s.PageResult,'r')",Sel[0].FeatName);
-        std::string fname = (const char*)fn.toAscii();
-        doCommand(Doc,"OutFile = open('%s','w')",fname.c_str());
-        doCommand(Doc,"OutFile.write(PageFile.read())");
-        doCommand(Doc,"del OutFile,PageFile");
-
-        commitCommand();
-    }
+    Base::Console().Error("Need to implemenet");
 }
 
 bool CmdDrawingExportPage::isActive(void)

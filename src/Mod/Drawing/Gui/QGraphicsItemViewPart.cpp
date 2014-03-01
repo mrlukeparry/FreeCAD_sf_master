@@ -620,6 +620,16 @@ QGraphicsItemVertex * QGraphicsItemViewPart::findRefVertex(int idx)
     return 0;
 }
 
+void QGraphicsItemViewPart::toggleCache(bool state)
+{
+  QList<QGraphicsItem *> items = this->childItems();
+    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); it++) {
+        (*it)->setCacheMode((state)? DeviceCoordinateCache : NoCache);
+        (*it)->update();
+    }
+}
+
+
 void QGraphicsItemViewPart::toggleCosmeticLines(bool state)
 {
   QList<QGraphicsItem *> items = this->childItems();

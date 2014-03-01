@@ -69,6 +69,9 @@ public:
     Drawing::FeaturePage* getPageObject() const;
     void unsetEdit(int ModNum);
 
+    // Temporary option
+    DrawingView* getDrawingView() { return showDrawingView(); }
+
 protected:
     bool setEdit(int ModNum);
     bool onDelete(const std::vector<std::string> &subList);

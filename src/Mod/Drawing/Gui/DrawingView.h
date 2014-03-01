@@ -65,6 +65,7 @@ public Q_SLOTS:
     void attachTemplate(Drawing::FeatureTemplate *obj);
     void setRenderer(QAction *action);
     void viewAll();
+    void saveSVG(); // TEMPORARY
     void selectionChanged();
     void preSelectionChanged(const QPoint &pos);
     void updateDrawing();
@@ -79,6 +80,7 @@ public:
     void print();
     void printPdf();
     void printPreview();
+
     void print(QPrinter* printer);
     PyObject* getPyObject();
 
@@ -95,6 +97,7 @@ protected:
 private:
     QAction *m_nativeAction;
     QAction *m_glAction;
+    QAction *m_exportSVGAction;
     QAction *m_imageAction;
     QAction *m_highQualityAntialiasingAction;
     QAction *m_backgroundAction;

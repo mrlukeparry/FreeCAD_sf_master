@@ -36,7 +36,7 @@ set(DrawingGui_MOC_HDRS
     QGraphicsItemViewOrthographic.h
     QGraphicsItemViewPart.h
     QGraphicsItemViewSection.h
-    #TaskOrthoViews.h
+    ##TaskOrthoViews.h
     TaskDialog.h
 )
 

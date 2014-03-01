@@ -65,9 +65,9 @@ Gui::MenuItem* Workbench::setupMenuBar() const
           << "Drawing_NewDimension"
           << "Drawing_OrthoViews"
           << "Drawing_NewViewSection";
+          //<< "Drawing_ExportPage";
 
 #if 0
-
     *part << "Drawing_OpenBrowserView";
     *part << "Drawing_Annotation";
     *part << "Drawing_Clip";

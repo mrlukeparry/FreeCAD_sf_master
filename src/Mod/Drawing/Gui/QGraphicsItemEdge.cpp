@@ -166,6 +166,7 @@ void QGraphicsItemEdge::paint(QPainter *painter, const QStyleOptionGraphicsItem 
 {
     QStyleOptionGraphicsItem myOption(*option);
     myOption.state &= ~QStyle::State_Selected;
+
     painter->setPen(vPen);
     painter->setBrush(vBrush);
     painter->drawPath(vPath);

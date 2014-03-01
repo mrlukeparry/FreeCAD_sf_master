@@ -391,19 +391,24 @@ void CanvasView::toggleEdit(bool enable)
             QGraphicsItemViewPart *viewPart = dynamic_cast<QGraphicsItemViewPart *>(*it);
             itemView->setSelected(false);
             if(viewPart) {
+                viewPart->toggleCache(enable);
                 viewPart->toggleCosmeticLines(enable);
                 viewPart->toggleVertices(enable);
                 viewPart->toggleBorder(enable);
                 setViewBackground(enable);
             }
-            itemView->updateView(true);
+            //itemView->updateView(true);
         }
 
         QGraphicsItem *item = dynamic_cast<QGraphicsItem *>(*it);
         if(item) {
             item->setCacheMode((enable) ? QGraphicsItem::DeviceCoordinateCache : QGraphicsItem::NoCache);
+            item->update();
         }
     }
+    this->scene()->update();
+    this->update();
+    this->viewport()->repaint();
 }
 
 void CanvasView::paintEvent(QPaintEvent *event)

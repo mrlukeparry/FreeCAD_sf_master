@@ -199,7 +199,7 @@ bool Document::setEdit(Gui::ViewProvider* p, int ModNum)
         Gui::TaskView::TaskDialog* dlg = Gui::Control().activeDialog();
         if (dlg)
             dlg->setDocumentName(this->getDocument()->getName());
-        if (d->_pcInEdit->isDerivedFrom(ViewProviderDocumentObject::getClassTypeId())) 
+        if (d->_pcInEdit->isDerivedFrom(ViewProviderDocumentObject::getClassTypeId()))
             signalInEdit(*(static_cast<ViewProviderDocumentObject*>(d->_pcInEdit)));
     }
     else
@@ -217,7 +217,7 @@ void Document::resetEdit(void)
                 activeView->getViewer()->resetEditingViewProvider();
         }
 
-        if (d->_pcInEdit->isDerivedFrom(ViewProviderDocumentObject::getClassTypeId())) 
+        if (d->_pcInEdit->isDerivedFrom(ViewProviderDocumentObject::getClassTypeId()))
             signalResetEdit(*(static_cast<ViewProviderDocumentObject*>(d->_pcInEdit)));
         d->_pcInEdit = 0;
     }
@@ -244,7 +244,7 @@ void Document::setAnnotationViewProvider(const char* name, ViewProvider *pcProvi
     if (it != d->_ViewProviderMapAnnotation.end())
         removeAnnotationViewProvider(name);
 
-    // add 
+    // add
     d->_ViewProviderMapAnnotation[name] = pcProvider;
 
     // cycling to all views of the document
@@ -274,7 +274,7 @@ void Document::removeAnnotationViewProvider(const char* name)
     }
 
     delete it->second;
-    d->_ViewProviderMapAnnotation.erase(it); 
+    d->_ViewProviderMapAnnotation.erase(it);
 }
 
 
@@ -288,7 +288,7 @@ ViewProvider* Document::getViewProvider(const App::DocumentObject* Feat) const
 std::vector<ViewProvider*> Document::getViewProvidersOfType(const Base::Type& typeId) const
 {
     std::vector<ViewProvider*> Objects;
-    for (std::map<const App::DocumentObject*,ViewProviderDocumentObject*>::const_iterator it = 
+    for (std::map<const App::DocumentObject*,ViewProviderDocumentObject*>::const_iterator it =
          d->_ViewProviderMap.begin(); it != d->_ViewProviderMap.end(); ++it ) {
         if (it->second->getTypeId().isDerivedFrom(typeId))
             Objects.push_back(it->second);
@@ -366,7 +366,7 @@ void Document::slotNewObject(const App::DocumentObject& Obj)
         Base::Console().Log("%s has no view provider specified\n", Obj.getTypeId().getName());
         return;
     }
-  
+
     setModified(true);
     Base::BaseClass* base = static_cast<Base::BaseClass*>(Base::Type::createInstanceByName(cName.c_str(),true));
     if (base) {
@@ -401,7 +401,7 @@ void Document::slotNewObject(const App::DocumentObject& Obj)
             if (activeView)
                 activeView->getViewer()->addViewProvider(pcProvider);
         }
-    
+
         // adding to the tree
         signalNewObject(*pcProvider);
     }
@@ -415,7 +415,7 @@ void Document::slotDeletedObject(const App::DocumentObject& Obj)
     std::list<Gui::BaseView*>::iterator vIt;
     setModified(true);
     //Base::Console().Log("Document::slotDeleteObject() called\n");
-  
+
     // cycling to all views of the document
     ViewProvider* viewProvider = getViewProvider(&Obj);
 #if 0 // With this we can show child objects again if this method was called by undo
@@ -456,7 +456,7 @@ void Document::slotChangedObject(const App::DocumentObject& Obj, const App::Prop
             Base::Console().Error("Cannot update representation for '%s'.\n", Obj.getNameInDocument());
         }
 
-        // check for children 
+        // check for children
         if(viewProvider->getChildRoot()) {
             std::vector<App::DocumentObject*> children = viewProvider->claimChildren3D();
             SoGroup* childGroup =  viewProvider->getChildRoot();
@@ -465,7 +465,7 @@ void Document::slotChangedObject(const App::DocumentObject& Obj, const App::Prop
             if(childGroup->getNumChildren() != children.size()){
 
                 childGroup->removeAllChildren();
-            
+
                 for(std::vector<App::DocumentObject*>::iterator it=children.begin();it!=children.end();++it){
                     ViewProvider* ChildViewProvider = getViewProvider(*it);
                     if(ChildViewProvider) {
@@ -513,7 +513,7 @@ void Document::slotActivatedObject(const App::DocumentObject& Obj)
 void Document::setModified(bool b)
 {
     d->_isModified = b;
-    
+
     std::list<MDIView*> mdis = getMDIViews();
     for (std::list<MDIView*>::iterator it = mdis.begin(); it != mdis.end(); ++it) {
         (*it)->setWindowModified(b);
@@ -536,7 +536,7 @@ ViewProvider* Document::getViewProviderByPathFromTail(SoPath * path) const
             for(;it!= d->_ViewProviderMap.end();++it)
                 if (node == it->second->getRoot())
                     return it->second;
-            
+
          }
     }
 
@@ -571,7 +571,7 @@ bool Document::saveAs(void)
     getMainWindow()->showMessage(QObject::tr("Save document under new filename..."));
 
     QString exe = qApp->applicationName();
-    QString fn = FileDialog::getSaveFileName(getMainWindow(), QObject::tr("Save %1 Document").arg(exe), 
+    QString fn = FileDialog::getSaveFileName(getMainWindow(), QObject::tr("Save %1 Document").arg(exe),
                                              QString(), QObject::tr("%1 document (*.FCStd)").arg(exe));
     if (!fn.isEmpty()) {
         QFileInfo fi;
@@ -605,7 +605,7 @@ unsigned int Document::getMemSize (void) const
     return size;
 }
 
-/** 
+/**
  * Adds a separate XML file to the projects file that contains information about the view providers.
  */
 void Document::Save (Base::Writer &writer) const
@@ -631,7 +631,7 @@ void Document::Save (Base::Writer &writer) const
     }
 }
 
-/** 
+/**
  * Loads a separate XML file from the projects file with information about the view providers.
  */
 void Document::Restore(Base::XMLReader &reader)
@@ -761,7 +761,7 @@ void Document::SaveDocFile (Base::Writer &writer) const
 
     // writing the view provider names itself
     writer.incInd(); // indentation for 'ViewProviderData Count'
-    writer.Stream() << writer.ind() << "<ViewProviderData Count=\"" 
+    writer.Stream() << writer.ind() << "<ViewProviderData Count=\""
                     << d->_ViewProviderMap.size() <<"\">" << std::endl;
 
     bool xml = writer.isForceXML();
@@ -788,7 +788,7 @@ void Document::SaveDocFile (Base::Writer &writer) const
     if (d->_pcAppWnd->sendHasMsgToActiveView("GetCamera")) {
         const char* ppReturn=0;
         d->_pcAppWnd->sendMsgToActiveView("GetCamera",&ppReturn);
-  
+
         // remove the first line because it's a comment like '#Inventor V2.1 ascii'
         QStringList lines = QString(QString::fromAscii(ppReturn)).split(QLatin1String("\n"));
         if (lines.size() > 1) {
@@ -798,7 +798,7 @@ void Document::SaveDocFile (Base::Writer &writer) const
     }
 
     writer.incInd(); // indentation for camera settings
-    writer.Stream() << writer.ind() << "<Camera settings=\"" 
+    writer.Stream() << writer.ind() << "<Camera settings=\""
                     << (const char*)viewPos.toAscii() <<"\"/>" << std::endl;
     writer.decInd(); // indentation for camera settings
     writer.Stream() << "</Document>" << std::endl;
@@ -820,7 +820,7 @@ void Document::exportObjects(const std::vector<App::DocumentObject*>& obj, Base:
 
     // writing the view provider names itself
     writer.incInd(); // indentation for 'ViewProviderData Count'
-    writer.Stream() << writer.ind() << "<ViewProviderData Count=\"" 
+    writer.Stream() << writer.ind() << "<ViewProviderData Count=\""
                     << views.size() <<"\">" << std::endl;
 
     bool xml = writer.isForceXML();
@@ -889,7 +889,7 @@ void Document::importObjects(const std::vector<App::DocumentObject*>& obj, Base:
     xmlReader.readEndElement("Document");
 }
 
-void Document::createView(const char* sType) 
+void Document::createView(const char* sType)
 {
     View3DInventor* view3D = new View3DInventor(this, getMainWindow());
 
@@ -1003,7 +1003,7 @@ bool Document::isLastView(void)
     return false;
 }
 
-/** 
+/**
  *  This method checks if the document can be closed. It checks on
  *  the save state of the document and is able to abort the closing.
  */
@@ -1102,7 +1102,7 @@ bool Document::sendMsgToViews(const char* pMsg)
 /// Getter for the active view
 MDIView* Document::getActiveView(void) const
 {
-    // get the main window's active view 
+    // get the main window's active view
     MDIView* active = getMainWindow()->activeWindow();
 
     // get all MDI views of the document
@@ -1139,13 +1139,13 @@ Gui::MDIView* Document::getViewOfViewProvider(Gui::ViewProvider* vp) const
 }
 
 //--------------------------------------------------------------------------
-// UNDO REDO transaction handling  
+// UNDO REDO transaction handling
 //--------------------------------------------------------------------------
 /** Open a new Undo transaction on the active document
  *  This method opens a new UNDO transaction on the active document. This transaction
- *  will later appear in the UNDO/REDO dialog with the name of the command. If the user 
- *  recall the transaction everything changed on the document between OpenCommand() and 
- *  CommitCommand will be undone (or redone). You can use an alternetive name for the 
+ *  will later appear in the UNDO/REDO dialog with the name of the command. If the user
+ *  recall the transaction everything changed on the document between OpenCommand() and
+ *  CommitCommand will be undone (or redone). You can use an alternetive name for the
  *  operation default is the command name.
  *  @see CommitCommand(),AbortCommand()
  */
@@ -1156,7 +1156,7 @@ void Document::openCommand(const char* sName)
 
 void Document::commitCommand(void)
 {
-    getDocument()->commitTransaction();	
+    getDocument()->commitTransaction();
 }
 
 void Document::abortCommand(void)

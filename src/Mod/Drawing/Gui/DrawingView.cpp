@@ -48,13 +48,17 @@
 # include <QSlider>
 # include <QStatusBar>
 # include <QSvgRenderer>
+# include <QSvgGenerator>
 # include <QSvgWidget>
 # include <QWheelEvent>
 # include <strstream>
 # include <cmath>
 #endif
 
+#include <Gui/Application.h>
 #include <Gui/Document.h>
+#include <Gui/Window.h>
+#include <Gui/MainWindow.h>
 #include <Gui/Selection.h>
 #include <App/DocumentObject.h>
 #include <Base/Console.h>
@@ -229,6 +233,9 @@ DrawingView::DrawingView(Gui::Document* doc, QWidget* parent)
     m_backgroundAction->setCheckable(true);
     m_backgroundAction->setChecked(true);
     connect(m_backgroundAction, SIGNAL(toggled(bool)), m_view, SLOT(setViewBackground(bool)));
+
+    m_exportSVGAction = new QAction(tr("&Export SVG"), this);
+    connect(m_exportSVGAction, SIGNAL(triggered()), this, SLOT(saveSVG()));
 
     m_outlineAction = new QAction(tr("&Outline"), this);
     m_outlineAction->setEnabled(false);
@@ -689,6 +696,7 @@ void DrawingView::contextMenuEvent(QContextMenuEvent *event)
     QMenu menu;
     menu.addAction(this->m_backgroundAction);
     menu.addAction(this->m_outlineAction);
+    menu.addAction(this->m_exportSVGAction);
     QMenu* submenu = menu.addMenu(tr("&Renderer"));
     submenu->addAction(this->m_nativeAction);
     submenu->addAction(this->m_glAction);
@@ -842,10 +850,46 @@ void DrawingView::printPreview()
 }
 
 
+// This SHOULD only be temporary
+void DrawingView::saveSVG()
+{
+    Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
+
+    QSvgGenerator svgGen;
+
+    QStringList filter;
+    filter << QObject::tr("SVG(*.svg)");
+    filter << QObject::tr("All Files (*.*)");
+
+    QString fn = Gui::FileDialog::getSaveFileName(Gui::getMainWindow(), QObject::tr("Export page"), QString(), filter.join(QLatin1String(";;")));
+    if (fn.isEmpty()) {
+      Base::Console().Error("Cannot export SVG");
+      return;
+    }
+
+    svgGen.setFileName(fn);
+    svgGen.setSize(QSize((int) page->getPageWidth(), (int)page->getPageHeight()));
+    svgGen.setViewBox(QRect(0, 0, page->getPageWidth(), page->getPageHeight()));
+
+    bool block = this->blockConnection(true); // avoid to be notified by itself
+    Gui::Selection().clearSelection();
+
+    this->m_view->toggleEdit(false);
+    this->m_view->scene()->update();
+
+    Gui::Selection().clearSelection();
+    QPainter p;
+
+    p.begin(&svgGen);
+    this->m_view->scene()->render(&p);
+    p.end();
+    // Reset
+    this->m_view->toggleEdit(true);
+}
+
 
 void DrawingView::print(QPrinter* printer)
 {
-#if 1
     Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
 
 //     if(strcmp(page->getPageOrientation(), "Landscape") == 0) {
@@ -871,21 +915,6 @@ void DrawingView::print(QPrinter* printer)
     p.end();
     // Reset
     this->m_view->toggleEdit(true);
-
-#else
-
-
-    // print, fitting the viewport contents into a full page
-    m_view->render(&painter);
-
-    // print the upper half of the viewport into the lower.
-    // half of the page.
-    QRect viewport = m_view->viewport()->rect();
-    m_view->render(&painter,
-                   QRectF(0, printer->height() / 2,
-                             printer->width(), printer->height() / 2),
-                   viewport.adjusted(0, 0, 0, -viewport.height() / 2));
-#endif
 }
 
 void DrawingView::viewAll()
