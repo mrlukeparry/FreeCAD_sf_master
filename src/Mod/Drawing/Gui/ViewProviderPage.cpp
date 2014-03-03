@@ -214,17 +214,34 @@ void ViewProviderDrawingPage::onSelectionChanged(const Gui::SelectionChanges& ms
         for (std::vector<Gui::SelectionSingleton::SelObj>::iterator it = objs.begin(); it != objs.end(); ++it) {
             Gui::SelectionSingleton::SelObj selObj = *it;
 
-            if(selObj.pObject ==  getPageObject())
+            if(selObj.pObject == getPageObject())
                 continue;
-            getDrawingView()->selectFeature(selObj.pObject, true);
+
+            std::string str = msg.pSubName;
+            // If it's a subfeature, dont select feature
+            if(strcmp(str.substr(0,4).c_str(), "Edge") == 0||
+               strcmp(str.substr(0,6).c_str(), "Vertex") == 0){
+                // TODO implement me
+            } else {
+                getDrawingView()->selectFeature(selObj.pObject, true);
+            }
 
         }
     } else {
        bool selectState = (msg.Type == Gui::SelectionChanges::AddSelection) ? true : false;
        Gui::Document* doc = Gui::Application::Instance->getDocument(this->pcObject->getDocument());
        App::DocumentObject *obj = doc->getDocument()->getObject(msg.pObjectName);
-       if(obj)
-          getDrawingView()->selectFeature(obj, selectState);
+       if(obj) {
+         
+          std::string str = msg.pSubName;
+          // If it's a subfeature, dont select feature
+          if(strcmp(str.substr(0,4).c_str(), "Edge") == 0||
+             strcmp(str.substr(0,6).c_str(), "Vertex") == 0){
+              // TODO implement me
+          } else {
+              getDrawingView()->selectFeature(obj, selectState);
+          }
+       }
     }
 
 }

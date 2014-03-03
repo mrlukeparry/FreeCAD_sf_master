@@ -262,6 +262,8 @@ DrawingView::DrawingView(Gui::Document* doc, QWidget* parent)
             m_view, SLOT(setHighQualityAntialiasing(bool)));
 #endif
 
+    isSlectionBlocked = false;
+
     QActionGroup *rendererGroup = new QActionGroup(this);
     rendererGroup->addAction(m_nativeAction);
 #ifndef QT_NO_OPENGL
@@ -417,6 +419,7 @@ void DrawingView::selectFeature(App::DocumentObject *obj, const bool isSelected)
   this->blockSelection(true);
   if(view) {
       view->setSelected(isSelected);
+      view->updateView();
   }
   this->blockSelection(false);
 }
@@ -453,9 +456,9 @@ void DrawingView::selectionChanged()
                 std::stringstream ss;
                 ss << "Edge" << edge->getReference();
                 bool accepted =
-                Gui::Selection().addSelection(viewObj->getDocument()->getName()
-                                            ,viewObj->getNameInDocument()
-                                            ,ss.str().c_str());
+                Gui::Selection().addSelection(viewObj->getDocument()->getName(),
+                                              viewObj->getNameInDocument(),
+                                              ss.str().c_str());
             }
 
             QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
@@ -474,9 +477,9 @@ void DrawingView::selectionChanged()
                 std::stringstream ss;
                 ss << "Vertex" << vert->getReference();
                 bool accepted =
-                Gui::Selection().addSelection(viewObj->getDocument()->getName()
-                                            ,viewObj->getNameInDocument()
-                                            ,ss.str().c_str());
+                Gui::Selection().addSelection(viewObj->getDocument()->getName(),
+                                              viewObj->getNameInDocument(),
+                                              ss.str().c_str());
 
             }
 
@@ -510,13 +513,11 @@ void DrawingView::selectionChanged()
             std::string obj_name = viewObj->getNameInDocument();
 
             Gui::Selection().addSelection(doc_name.c_str(), obj_name.c_str());
-
         }
-    }
-    this->blockConnection(block);
 
-    QList<QGraphicsItem *> addSelection;
-    QList<QGraphicsItem *> remSelection;
+    }
+
+    this->blockConnection(block);
 }
 
 void DrawingView::updateTemplate()

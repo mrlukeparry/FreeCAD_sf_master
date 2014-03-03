@@ -52,6 +52,11 @@ public:
     virtual App::DocumentObjectExecReturn *execute(void);
     //@}
 
+    /// returns the type name of the ViewProvider
+    virtual const char* getViewProviderName(void) const {
+        return "DrawingGui::ViewProviderViewPart";
+    }
+
 protected:
     void onChanged(const App::Property* prop);
 private:

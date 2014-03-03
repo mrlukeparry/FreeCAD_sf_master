@@ -263,7 +263,6 @@ void QGraphicsItemViewDimension::updateDim()
 
     QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
 
-
     // TODO eventually dimension should be individually customisable with placeholders, this should later be modularised
     const char *dimType = dim->Type.getValueAsString();
 
@@ -1021,6 +1020,16 @@ void QGraphicsItemViewDimension::draw()
 
 QVariant QGraphicsItemViewDimension::itemChange(GraphicsItemChange change, const QVariant &value)
 {
+   if (change == ItemSelectedHasChanged && scene()) {
+        QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
+        
+        if(isSelected()) {
+            dLabel->setSelected(true);
+        } else {
+            dLabel->setSelected(false);
+        }
+        draw();
+    }
     return QGraphicsItemView::itemChange(change, value);
 }
 
