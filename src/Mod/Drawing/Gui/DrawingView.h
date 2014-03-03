@@ -81,6 +81,9 @@ public:
     void printPdf();
     void printPreview();
 
+    void selectFeature(App::DocumentObject *obj, bool state);
+    void blockSelection(bool isBlocked);
+
     void print(QPrinter* printer);
     PyObject* getPyObject();
 
@@ -103,6 +106,7 @@ private:
     QAction *m_backgroundAction;
     QAction *m_outlineAction;
 
+    bool isSlectionBlocked;
     CanvasView *m_view;
 
     QString m_currentPath;

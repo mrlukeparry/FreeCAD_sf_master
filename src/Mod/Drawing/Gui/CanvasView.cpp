@@ -97,14 +97,6 @@ CanvasView::CanvasView(QWidget *parent)
     gradient.setColorAt(0., QColor(72, 72, 72));
     gradient.setColorAt(1., QColor(150, 150, 150));
     bkgBrush = new QBrush(QColor::fromRgb(70,70,70));
-/*
-    QPixmap tilePixmap(64, 64);
-    tilePixmap.fill(Qt::white);
-    QPainter tilePainter(&tilePixmap);
-    QColor color(220, 220, 220);
-    tilePainter.fillRect(0, 0, 32, 32, color);
-    tilePainter.fillRect(32, 32, 32, 32, color);
-//    tilePainter.end();*/
 
     resetCachedContent();
 }
@@ -230,10 +222,9 @@ QGraphicsItemView * CanvasView::findView(App::DocumentObject *obj) const
 {
    const std::vector<QGraphicsItemView *> qviews = this->views;
    for(std::vector<QGraphicsItemView *>::const_iterator it = qviews.begin(); it != qviews.end(); ++it) {
-        Drawing::FeatureView *fview = 0;
-        fview = (*it)->getViewObject();
-        if(strcmp(obj->getNameInDocument(), fview->getNameInDocument()))
-              return *it;
+        Drawing::FeatureView *fview = (*it)->getViewObject();
+        if(fview && strcmp(obj->getNameInDocument(), fview->getNameInDocument()) == 0)
+            return *it;
     }
     return 0;
 }
@@ -327,10 +318,9 @@ void CanvasView::setPageTemplate(Drawing::FeatureTemplate *obj)
         qTempItem->setTemplate(dwgTemplate);
         this->pageTemplate = qTempItem;
     }
-
 }
 
-QGraphicsItemTemplate* CanvasView::getTemplate()
+QGraphicsItemTemplate* CanvasView::getTemplate() const
 {
     return pageTemplate;
 }
@@ -410,6 +400,7 @@ void CanvasView::toggleEdit(bool enable)
     this->update();
     this->viewport()->repaint();
 }
+
 
 void CanvasView::paintEvent(QPaintEvent *event)
 {

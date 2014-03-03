@@ -26,6 +26,7 @@
 
 #include <Gui/ViewProviderFeature.h>
 #include <Gui/ViewProviderDocumentObjectGroup.h>
+#include <Gui/Selection.h>
 
 #include <QPointer>
 
@@ -33,30 +34,30 @@ namespace Drawing{
     class FeaturePage;
 }
 
+namespace Gui {
+    class SoFCSelection;
+}
+
 namespace DrawingGui {
 
 class DrawingView;
 
-class DrawingGuiExport ViewProviderDrawingPage : public Gui::ViewProviderDocumentObjectGroup
+class DrawingGuiExport ViewProviderDrawingPage : public Gui::ViewProviderDocumentObjectGroup, public Gui::SelectionObserver
 {
     PROPERTY_HEADER(DrawingGui::ViewProviderDrawingPage);
 
 public:
 
-    ViewProviderDrawingPage();  /// constructor
-    ~ViewProviderDrawingPage(); /// destructor
-
-    App::PropertyFloat         HintScale;
-    App::PropertyFloat         HintOffsetX;
-    App::PropertyFloat         HintOffsetY;
-
-
+    ViewProviderDrawingPage();
+    ~ViewProviderDrawingPage();
 
     virtual void attach(App::DocumentObject *);
     virtual void setDisplayMode(const char* ModeName);
     virtual bool useNewSelectionModel(void) const {return false;}
     /// returns a list of all possible modes
     virtual std::vector<std::string> getDisplayModes(void) const;
+
+    void onSelectionChanged(const Gui::SelectionChanges& msg);
 
     /// Claim all the views for the page
     std::vector<App::DocumentObject*> claimChildren(void) const;

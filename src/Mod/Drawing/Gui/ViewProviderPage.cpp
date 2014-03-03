@@ -68,13 +68,9 @@ PROPERTY_SOURCE(DrawingGui::ViewProviderDrawingPage, Gui::ViewProviderDocumentOb
 //**************************************************************************
 // Construction/Destruction
 
-ViewProviderDrawingPage::ViewProviderDrawingPage()
-  : view(0)
+ViewProviderDrawingPage::ViewProviderDrawingPage() : view(0)
 {
     sPixmap = "Page";
-    ADD_PROPERTY(HintScale,(10.0));
-    ADD_PROPERTY(HintOffsetX,(10.0));
-    ADD_PROPERTY(HintOffsetY,(10.0));
 }
 
 ViewProviderDrawingPage::~ViewProviderDrawingPage()
@@ -205,6 +201,32 @@ DrawingView* ViewProviderDrawingPage::showDrawingView()
 
     // Update the drawing
     return view;
+}
+
+void ViewProviderDrawingPage::onSelectionChanged(const Gui::SelectionChanges& msg)
+{
+
+
+    if(msg.Type == Gui::SelectionChanges::SetSelection) {
+
+        std::vector<Gui::SelectionSingleton::SelObj> objs = Gui::Selection().getSelection(msg.pDocName);
+
+        for (std::vector<Gui::SelectionSingleton::SelObj>::iterator it = objs.begin(); it != objs.end(); ++it) {
+            Gui::SelectionSingleton::SelObj selObj = *it;
+
+            if(selObj.pObject ==  getPageObject())
+                continue;
+            getDrawingView()->selectFeature(selObj.pObject, true);
+
+        }
+    } else {
+       bool selectState = (msg.Type == Gui::SelectionChanges::AddSelection) ? true : false;
+       Gui::Document* doc = Gui::Application::Instance->getDocument(this->pcObject->getDocument());
+       App::DocumentObject *obj = doc->getDocument()->getObject(msg.pObjectName);
+       if(obj)
+          getDrawingView()->selectFeature(obj, selectState);
+    }
+
 }
 
 bool ViewProviderDrawingPage::onDelete(const std::vector<std::string> &subList)

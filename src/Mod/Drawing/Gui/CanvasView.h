@@ -67,10 +67,11 @@ public:
     void setPageFeature(Drawing::FeaturePage *page);
     void setPageTemplate(Drawing::FeatureTemplate *pageTemplate);
 
-    QGraphicsItemTemplate * getTemplate();
+    QGraphicsItemTemplate * getTemplate() const;
     void removeTemplate();
 
     void toggleEdit(bool enable);
+
 
 public Q_SLOTS:
     void setHighQualityAntialiasing(bool highQualityAntialiasing);
@@ -89,6 +90,7 @@ protected:
 
     QGraphicsItemTemplate *pageTemplate;
     std::vector<QGraphicsItemView *> views;
+
 private:
     RendererType m_renderer;
 

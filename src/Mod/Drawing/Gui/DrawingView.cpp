@@ -404,11 +404,32 @@ void DrawingView::preSelectionChanged(const QPoint &pos)
     }
 }
 
+void DrawingView::blockSelection(const bool state)
+{
+  this->isSlectionBlocked = state;
+}
+
+void DrawingView::selectFeature(App::DocumentObject *obj, const bool isSelected)
+{
+    // Update CanvasView's selection based on Selection made outside Drawing Interace
+  QGraphicsItemView *view = m_view->findView(obj);
+
+  this->blockSelection(true);
+  if(view) {
+      view->setSelected(isSelected);
+  }
+  this->blockSelection(false);
+}
+
 void DrawingView::selectionChanged()
 {
+    if(isSlectionBlocked)
+      return;
+
     QList<QGraphicsItem *> selection = m_view->scene()->selectedItems();
 
     bool block = this->blockConnection(true); // avoid to be notified by itself
+
     Gui::Selection().clearSelection();
     for (QList<QGraphicsItem *>::iterator it = selection.begin(); it != selection.end(); ++it) {
         // All selectable items must be of QGraphicsItemView type
@@ -481,58 +502,21 @@ void DrawingView::selectionChanged()
             }
             continue;
 
+        } else {
+
+            Drawing::FeatureView *viewObj = itemView->getViewObject();
+
+            std::string doc_name = viewObj->getDocument()->getName();
+            std::string obj_name = viewObj->getNameInDocument();
+
+            Gui::Selection().addSelection(doc_name.c_str(), obj_name.c_str());
+
         }
-
-        Drawing::FeatureView *viewObj = itemView->getViewObject();
-
-        std::string doc_name = viewObj->getDocument()->getName();
-        std::string obj_name = viewObj->getNameInDocument();
-
-        Gui::Selection().addSelection(doc_name.c_str(), obj_name.c_str());
     }
     this->blockConnection(block);
 
     QList<QGraphicsItem *> addSelection;
     QList<QGraphicsItem *> remSelection;
-#if 0
-    for(QList<QGraphicsItem *>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
-        bool found = false;
-        for(QList<QGraphicsItem *>::const_iterator pit = prevSelection.begin(); pit != prevSelection.end(); ++pit) {
-            if((*it) == (*pit)) {
-                found = true;
-                prevSelection.removeOne(*pit);
-                break;
-            }
-        }
-        if(!found)
-            addSelection.push_back(*it);
-
-    }
-
-    // Any remaining entries must have be removed
-    remSelection = prevSelection;
-
-
-    QGraphicsItemGroup *group = qgraphicsitem_cast<QGraphicsItemGroup *>(items.at(0));
-    if(group == NULL)
-        return;
-    bool selected = group->isSelected();
-
-    QList<QGraphicsItem *> children = group->children();
-    for(QList<QGraphicsItem *>::const_iterator it = children.begin(); it != children.end(); ++it) {
-      QAbstractGraphicsShapeItem *item = qgraphicsitem_cast<QAbstractGraphicsShapeItem *>(*it);
-      QPen pen = item->pen();
-      if(selected)
-          pen.setColor(SelectColor);
-      else
-          pen.setColor(QColor(0, 0,0));
-      item->setPen(pen);
-    }
-
-    // Cache the selection
-    prevSelection.clear();
-    prevSelection = scene()->selectedItems();
-#endif
 }
 
 void DrawingView::updateTemplate()
