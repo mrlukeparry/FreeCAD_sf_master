@@ -50,7 +50,7 @@ QGraphicsItemViewCollection::QGraphicsItemViewCollection(const QPoint &pos, QGra
 
     setHandlesChildEvents(false);
 
-    setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    //setCacheMode(QGraphicsItem::DeviceCoordinateCache);
     setAcceptHoverEvents(true);
     setFlag(QGraphicsItem::ItemIsMovable, true);
 }
@@ -62,6 +62,7 @@ QGraphicsItemViewCollection::~QGraphicsItemViewCollection()
 
 QVariant QGraphicsItemViewCollection::itemChange(GraphicsItemChange change, const QVariant &value)
 {
+
     return QGraphicsItemGroup::itemChange(change, value);
 }
 

@@ -79,6 +79,8 @@ CanvasView::CanvasView(QWidget *parent)
     , pageTemplate(0)
 {
     setScene(new QGraphicsScene(this));
+    //setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    setCacheMode(QGraphicsView::CacheBackground);
     setTransformationAnchor(AnchorUnderMouse);
 
     setDragMode(ScrollHandDrag);
@@ -86,9 +88,9 @@ CanvasView::CanvasView(QWidget *parent)
     setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
 
     m_backgroundItem = new QGraphicsRectItem();
-    m_backgroundItem->setCacheMode(QGraphicsItem::NoCache);
+    m_backgroundItem->setCacheMode(QGraphicsItem::ItemCoordinateCache);
     m_backgroundItem->setZValue(-999999);
-    this->scene()->addItem(m_backgroundItem);
+//     this->scene()->addItem(m_backgroundItem); // TODO IF SEGFAULTS WITH DRAW ENABLE THIS (REDRAWS ARE SLOWER :s)
 
     // Prepare background check-board pattern
     QLinearGradient gradient;
@@ -113,8 +115,24 @@ void CanvasView::drawBackground(QPainter *p, const QRectF &)
 
     p->save();
     p->resetTransform();
+
+
     p->setBrush(*bkgBrush);
     p->drawRect(viewport()->rect());
+
+    if(this->pageFeat) {
+        float pageWidth  = this->pageFeat->getPageWidth();
+        float pageHeight = this->pageFeat->getPageHeight();
+        // Draw the white page
+        QRectF paperRect(0, -pageHeight, pageWidth, pageHeight);
+        QPolygon poly = this->mapFromScene(paperRect);
+
+        QBrush pageBrush(Qt::white);
+        p->setBrush(pageBrush);
+
+        p->drawRect(poly.boundingRect());
+    }
+
     p->restore();
 
 }

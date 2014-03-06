@@ -51,6 +51,11 @@ QGraphicsItemViewOrthographic::QGraphicsItemViewOrthographic(const QPoint &pos, 
     this->setPos(pos);
     origin = new QGraphicsItemGroup();
     origin->setParentItem(this);
+
+
+    m_backgroundItem = new QGraphicsRectItem();
+    m_backgroundItem->setPen(QPen(QColor(Qt::black)));
+    this->addToGroup(m_backgroundItem);
 }
 
 QGraphicsItemViewOrthographic::~QGraphicsItemViewOrthographic()
@@ -88,7 +93,10 @@ QVariant QGraphicsItemViewOrthographic::itemChange(GraphicsItemChange change, co
             }
 
          }
+
+
     }
+
     return QGraphicsItemView::itemChange(change, value);
 }
 
@@ -102,6 +110,7 @@ QGraphicsItemViewOrthographic::mousePressEvent ( QGraphicsSceneMouseEvent * even
 
 void QGraphicsItemViewOrthographic::updateView(bool update)
 {
+             m_backgroundItem->setRect(this->boundingRect());
     return QGraphicsItemViewCollection::updateView(update);
 }
 

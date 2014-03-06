@@ -63,6 +63,7 @@ protected:
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
 private:
+  QGraphicsRectItem * m_backgroundItem;
   QGraphicsItem *origin;
 };
 
