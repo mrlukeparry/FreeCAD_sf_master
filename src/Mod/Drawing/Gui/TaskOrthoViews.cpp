@@ -135,8 +135,6 @@ Orthoview::Orthoview(App::DocumentObject *part, App::DocumentObject *page, Base:
     static_cast<App::DocumentObjectGroup *>(page)->addObject(this->view);
     this->view->Source.setValue(part);
 
-    pageX = 0;
-    pageY = 0;
     scale = 1;
 
     rel_x = 0;
@@ -171,16 +169,16 @@ void Orthoview::remove()
 
 void Orthoview::setPos(const float &px, const float &py)
 {
-    if (px != 0 && py !=0){
-        pageX = px;
-        pageY = py;
-    }
+//     if (px != 0 && py !=0){
+//         pageX = px;
+//         pageY = py;
+//     }
 
     float x, y;
     calcCentre(x,y);
 
-    float ox = pageX - scale * x;
-    float oy = pageY + scale * y;
+    float ox = px - scale * x,
+          oy = py + scale * y;
 
     this->view->X.setValue(ox);
     this->view->Y.setValue(oy);
@@ -216,7 +214,7 @@ void Orthoview::showSmooth(bool state)
     this->view->ShowSmoothLines.setValue(state);
 }
 
-void Orthoview::setProjection(gp_Ax2 cs)
+void Orthoview::setProjection(const gp_Ax2 &cs)
 {
     gp_Ax2  actual_cs;
     gp_Dir  actual_X;
@@ -227,18 +225,18 @@ void Orthoview::setProjection(gp_Ax2 cs)
     Z_dir = cs.Direction();
 
     // coord system of created view - same code as used in projection algos
-    actual_cs = gp_Ax2(gp_Pnt(0,0,0), gp_Dir(Z_dir.X(),Z_dir.Y(),Z_dir.Z()));
-    actual_X = actual_cs.XDirection();
+    actual_cs = gp_Ax2(gp_Pnt(0.,0.,0.), gp_Dir(Z_dir.X(),Z_dir.Y(),Z_dir.Z()));
+    actual_X  = actual_cs.XDirection();
 
     // angle between desired projection and actual projection
     float rotation = X_dir.Angle(actual_X);
 
-    if (rotation != 0 && abs(M_PI - rotation) > 0.05)
+    if (rotation != 0 && std::abs(M_PI - rotation) > 0.05)
         if (!Z_dir.IsEqual(actual_X.Crossed(X_dir), 0.05))
             rotation = -rotation;
 
     this->view->Direction.setValue(Z_dir.X(), Z_dir.Y(), Z_dir.Z());
-    this->view->Rotation.setValue(180 * rotation / M_PI);
+    this->view->Rotation.setValue(rotation * 180 / M_PI);
 }
 
 
@@ -246,7 +244,7 @@ void Orthoview::setProjection(gp_Ax2 cs)
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-OrthoViews::OrthoViews(const char * pagename, const char * partname)
+OrthoViews::OrthoViews(const char *pagename, const char *partname)
 {
     page_name = pagename;
     part_name = partname;
@@ -840,30 +838,30 @@ TaskOrthoViews::TaskOrthoViews(QWidget *parent) : ui(new Ui_TaskOrthoViews)
 
     for (int i=0; i < 5; i++)
     {
-        connect(inputs[i], SIGNAL(textEdited(const QString &)), this, SLOT(data_entered(const QString &)));
-        connect(inputs[i], SIGNAL(returnPressed()), this, SLOT(text_return()));
+        connect(inputs[i],  SIGNAL(textEdited(const QString &)), this, SLOT(data_entered(const QString &)));
+        connect(inputs[i],  SIGNAL(returnPressed()), this, SLOT(text_return()));
     }
 
     connect(ui->projection, SIGNAL(currentIndexChanged(int)), this, SLOT(projectionChanged(int)));
-    connect(ui->smooth, SIGNAL(stateChanged(int)), this, SLOT(smooth(int)));
-    connect(ui->hidden, SIGNAL(stateChanged(int)), this, SLOT(hidden(int)));
-    connect(ui->auto_tog, SIGNAL(stateChanged(int)), this, SLOT(toggle_auto(int)));
+    connect(ui->smooth,     SIGNAL(stateChanged(int)), this, SLOT(smooth(int)));
+    connect(ui->hidden,     SIGNAL(stateChanged(int)), this, SLOT(hidden(int)));
+    connect(ui->auto_tog,   SIGNAL(stateChanged(int)), this, SLOT(toggle_auto(int)));
 
-    connect(ui->view_from, SIGNAL(currentIndexChanged(int)), this, SLOT(setPrimary(int)));
+    connect(ui->view_from,  SIGNAL(currentIndexChanged(int)), this, SLOT(setPrimary(int)));
     connect(ui->axis_right, SIGNAL(currentIndexChanged(int)), this, SLOT(setPrimary(int)));
 
-    connect(ui->axoProj, SIGNAL(activated(int)), this, SLOT(change_axo(int)));
-    connect(ui->axoUp, SIGNAL(activated(int)), this, SLOT(change_axo(int)));
-    connect(ui->axoRight, SIGNAL(activated(int)), this, SLOT(change_axo(int)));
-    connect(ui->vert_flip, SIGNAL(clicked()), this, SLOT(axo_button()));
-    connect(ui->tri_flip, SIGNAL(clicked()), this, SLOT(axo_button()));
-    connect(ui->axoScale, SIGNAL(textEdited(const QString &)), this, SLOT(axo_scale(const QString &)));
-    connect(ui->axoScale, SIGNAL(returnPressed()), this, SLOT(text_return()));
+    connect(ui->axoProj,    SIGNAL(activated(int)), this, SLOT(change_axo(int)));
+    connect(ui->axoUp,      SIGNAL(activated(int)), this, SLOT(change_axo(int)));
+    connect(ui->axoRight,   SIGNAL(activated(int)), this, SLOT(change_axo(int)));
+    connect(ui->vert_flip,  SIGNAL(clicked()),      this, SLOT(axo_button()));
+    connect(ui->tri_flip,   SIGNAL(clicked()),      this, SLOT(axo_button()));
+    connect(ui->axoScale,   SIGNAL(textEdited(const QString &)), this, SLOT(axo_scale(const QString &)));
+    connect(ui->axoScale,   SIGNAL(returnPressed()), this, SLOT(text_return()));
 
     ui->tabWidget->setTabEnabled(1,false);
 
-    gp_Dir facing = gp_Dir(1, 0, 0);
-    gp_Dir right = gp_Dir(0, 1, 0);
+    gp_Dir facing = gp_Dir(1., 0., 0.);
+    gp_Dir right  = gp_Dir(0., 1., 0.);
     orthos = new OrthoViews(page, part);
     orthos->set_primary(facing, right);
 
@@ -1010,7 +1008,7 @@ void TaskOrthoViews::setPrimary(int dir)
     r_vec[r[r_sel]] = pos;
 
     gp_Dir facing = gp_Dir(p_vec[0], p_vec[1], p_vec[2]);
-    gp_Dir right = gp_Dir(r_vec[0], r_vec[1], r_vec[2]);
+    gp_Dir right  = gp_Dir(r_vec[0], r_vec[1], r_vec[2]);
 
     orthos->set_primary(facing, right);
 
@@ -1255,8 +1253,7 @@ void TaskDlgOrthoViews::clicked(int)
 
 bool TaskDlgOrthoViews::accept()
 {
-    bool check = widget->user_input();
-    return !check;
+    return !widget->user_input();
 }
 
 bool TaskDlgOrthoViews::reject()

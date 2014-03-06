@@ -54,14 +54,13 @@ enum AxoMode{
 class Orthoview
 {
 public:
-    Orthoview(App::DocumentObject * part, App::DocumentObject * page, Base::BoundBox3d * partbox);
+    Orthoview(App::DocumentObject *part, App::DocumentObject *page, Base::BoundBox3d *partbox);
     ~Orthoview();
 
 public:
-
     void    remove();
     void    setData(const int &r_x, const int &r_y);
-    void    setProjection(gp_Ax2 cs);
+    void    setProjection(const gp_Ax2 &cs);
     void    setPos(const float &px, const float &py);
     void    setScale(const float &newScale);
     float   getScale() const;
@@ -80,12 +79,11 @@ public:     // these aren't used by orthoView, but just informational, hence pub
     gp_Dir  up, right;      // directions prior to rotations (ie, what was used to orientate the projection)
 
 private:
-    App::Document *             parent_doc;
-    Drawing::FeatureViewPart *  view;
+    App::Document            *parent_doc;
+    Drawing::FeatureViewPart *view;
 
     Base::Vector3f centerCoord;    // coords of bbox centre in 3D space
 
-    float   pageX, pageY;           // required coords of centre of bbox projection on page
     float   scale;                  // scale of projection
     gp_Dir  X_dir, Y_dir, Z_dir;    // directions of projection, X_dir makes x on page, Y_dir is y on page, Z_dir is out of page
 };
