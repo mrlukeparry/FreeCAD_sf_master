@@ -61,6 +61,9 @@ Q_SIGNALS:
 
 protected:
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+  virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
+  virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
+  QGraphicsItemView * getAnchorQItem() const;
 
 private:
   QGraphicsRectItem * m_backgroundItem;

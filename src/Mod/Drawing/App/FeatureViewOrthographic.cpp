@@ -46,6 +46,9 @@ PROPERTY_SOURCE(Drawing::FeatureViewOrthographic, Drawing::FeatureViewCollection
 FeatureViewOrthographic::FeatureViewOrthographic(void)
 {
     static const char *group = "Drawing view";
+
+    ADD_PROPERTY_TYPE(Anchor    ,(0), group, App::Prop_None,"The root view to align projections with");
+
     Type.setEnums(TypeEnums);
     ADD_PROPERTY(Type,((long)0));
 }
@@ -106,7 +109,7 @@ int FeatureViewOrthographic::addView(const char *viewProjType)
        strcmp(viewProjType, "Right")  == 0 ||
        strcmp(viewProjType, "Top")    == 0 ||
        strcmp(viewProjType, "Bottom") == 0 ||
-       strcmp(viewProjType, "Rear")  == 0 ) {
+       strcmp(viewProjType, "Rear")   == 0 ) {
 
         if(hasView(viewProjType)) {
             throw Base::Exception("The Projection is already used in this group");
@@ -148,7 +151,7 @@ int FeatureViewOrthographic::removeView(const char *viewProjType)
        strcmp(viewProjType, "Right")  == 0 ||
        strcmp(viewProjType, "Top")    == 0 ||
        strcmp(viewProjType, "Bottom") == 0 ||
-       strcmp(viewProjType, "Rear")  == 0 ) {
+       strcmp(viewProjType, "Rear")   == 0 ) {
 
         if(!hasView(viewProjType)) {
             throw Base::Exception("The orthographic projection doesn't exist in the group");
@@ -168,6 +171,11 @@ int FeatureViewOrthographic::removeView(const char *viewProjType)
                     return views.size();
             }
         }
+    } else if(strcmp(viewProjType, "Top Right")  == 0 ||
+              strcmp(viewProjType, "Top Left")  == 0 ||
+              strcmp(viewProjType, "Bottom Right")  == 0 ||
+              strcmp(viewProjType, "Bottom Left")  == 0) {
+        // Remove an isometric view of the part
     }
     return -1;
 }

@@ -68,7 +68,10 @@ Q_SIGNALS:
 
 protected:
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+  virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event );
+  void mousePressEvent(QGraphicsSceneMouseEvent * event);
   Drawing::FeatureView *viewObj;
+
   std::string viewName;
 
   QHash<QString, QGraphicsItem *> alignHash;

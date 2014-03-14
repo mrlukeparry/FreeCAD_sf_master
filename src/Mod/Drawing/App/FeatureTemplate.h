@@ -56,9 +56,11 @@ public:
 
 public:
 
-    // irtual functions must be redefined by base class
+    // virtual functions must be redefined by base class
     virtual double getWidth() const;
     virtual double getHeight() const;
+
+    virtual void getBlockDimensions(double &x, double &y, double &width, double &height) const;
 
     /** @name methods overide Feature */
     //@{

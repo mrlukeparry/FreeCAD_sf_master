@@ -27,7 +27,7 @@
 #include <App/PropertyStandard.h>
 #include <App/PropertyFile.h>
 #include <App/FeaturePython.h>
-
+#include <QRectF>
 #include "FeatureTemplate.h"
 
 namespace Drawing
@@ -67,11 +67,12 @@ public:
 public:
     double getWidth() const;
     double getHeight() const;
+    void getBlockDimensions(double &x, double &y, double &width, double &height) const;
 
 protected:
     void onChanged(const App::Property* prop);
     std::vector<std::string> getEditableTextsFromTemplate() const;
-
+    QRectF blockDimensions;
 };
 
 //typedef App::FeaturePythonT<FeatureSVGTemplate> FeatureSVGTemplatePython;

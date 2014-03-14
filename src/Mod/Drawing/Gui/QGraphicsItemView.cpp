@@ -70,6 +70,7 @@ QVariant QGraphicsItemView::itemChange(GraphicsItemChange change, const QVariant
 {
     if(change == ItemPositionChange && scene()) {
         // value is the new position.
+
         QPointF newPos = value.toPointF();
 
         if(this->locked){
@@ -80,7 +81,7 @@ QVariant QGraphicsItemView::itemChange(GraphicsItemChange change, const QVariant
         // TODO  find a better data structure for this
         if(alignHash.size() == 1) {
             QGraphicsItem *item = alignHash.begin().value();
-            QString alignMode = alignHash.begin().key();
+            QString alignMode   = alignHash.begin().key();
 
             if(alignMode == QString::fromAscii("Vertical")) {
                 newPos.setX(item->pos().x());
@@ -88,10 +89,23 @@ QVariant QGraphicsItemView::itemChange(GraphicsItemChange change, const QVariant
                 newPos.setY(item->pos().y());
             }
         }
-
         return newPos;
     }
     return QGraphicsItemGroup::itemChange(change, value);
+}
+
+void QGraphicsItemView::mousePressEvent(QGraphicsSceneMouseEvent * event)
+{
+  if(this->locked) {
+      event->ignore();
+  } else {
+      QGraphicsItem::mousePressEvent(event);
+  }
+}
+
+void QGraphicsItemView::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
+{
+    QGraphicsItem::mouseMoveEvent(event);
 }
 
 void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)

@@ -44,7 +44,7 @@
 
 # include "DrawingView.h"
 # include "TaskDialog.h"
-//# include "TaskOrthoViews.h"
+# include "TaskOrthoViews.h"
 # include "ViewProviderPage.h"
 
 using namespace DrawingGui;
@@ -640,6 +640,8 @@ void CmdDrawingOrthoViews::activated(int iMsg)
     }
     updateActive();
     commitCommand();
+
+    Gui::Control().showDialog(new TaskDlgOrthoViews());
 }
 
 

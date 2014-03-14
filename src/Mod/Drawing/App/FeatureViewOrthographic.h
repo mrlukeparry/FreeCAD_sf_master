@@ -46,6 +46,7 @@ public:
     ~FeatureViewOrthographic();
 
     App::PropertyEnumeration Type;
+    App::PropertyLink Anchor; /// Anchor Element to align views to
 
     // Check if container has a view of a specific type
     bool hasView(const char *viewProjType);

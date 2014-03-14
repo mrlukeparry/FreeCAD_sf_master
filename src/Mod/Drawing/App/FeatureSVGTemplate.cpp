@@ -146,11 +146,19 @@ App::DocumentObjectExecReturn *FeatureSVGTemplate::execute(void)
 
     while (!file.eof())
     {
-        getline (file,line);
+        getline(file,line);
         // check if the marker in the template is found
-        if(line.find("<!-- DrawingContent -->") == string::npos)
+        if(line.find("<!-- DrawingContent -->") == string::npos) {
             // if not -  write through
             ofile << line << tempendl;
+        }
+
+        double t0, t1,t2,t3;
+        if(line.find("<!-- Title block") != std::string::npos) {
+            sscanf(line.c_str(), "%*s %*s %*s %d %d %d %d", &t0, &t1, &t2, &t3);    //eg "    <!-- Working space 10 10 410 287 -->"
+            blockDimensions = QRectF(t0, t1, t2 - t0, t3 - t1);
+        }
+
     }
     file.close();
 
@@ -175,6 +183,7 @@ App::DocumentObjectExecReturn *FeatureSVGTemplate::execute(void)
             begin = what[0].second;
         }
     }
+
 
     // restoring linebreaks and saving the file
     boost::regex e3 ("--endOfLine--");
@@ -238,6 +247,13 @@ App::DocumentObjectExecReturn *FeatureSVGTemplate::execute(void)
     return App::DocumentObject::StdReturn;
 }
 
+void FeatureSVGTemplate::getBlockDimensions(double &x, double &y, double &width, double &height) const
+{
+    x      = blockDimensions.left();
+    y      = blockDimensions.bottom();
+    width  = blockDimensions.width();
+    height = blockDimensions.height();
+}
 
 double FeatureSVGTemplate::getWidth() const
 {

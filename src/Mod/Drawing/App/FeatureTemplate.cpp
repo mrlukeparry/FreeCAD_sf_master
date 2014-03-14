@@ -109,6 +109,11 @@ App::DocumentObjectExecReturn *FeatureTemplate::execute(void)
     return App::DocumentObject::StdReturn;
 }
 
+void FeatureTemplate::getBlockDimensions(double &x, double &y, double &width, double &height) const
+{
+    throw Base::Exception("implement in virtual function");
+}
+
 // Python Template feature ---------------------------------------------------------
 
 namespace App {

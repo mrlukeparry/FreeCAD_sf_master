@@ -124,6 +124,9 @@ private:
     void    process_views();
     int     index(int rel_x, int rel_y) const;
 
+    void getPageSize(double &width, double &height) const;
+    void getMarginSize(double &marginX, double &marginY) const;
+
 private:
     std::vector<Orthoview *>     views;
     Base::BoundBox3d             bbox;

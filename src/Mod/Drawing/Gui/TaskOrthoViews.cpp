@@ -27,6 +27,7 @@
 #include <Gui/Command.h>
 #include <Mod/Drawing/App/FeaturePage.h>
 #include <Mod/Drawing/App/FeatureViewPart.h>
+#include <Mod/Drawing/App/FeatureTemplate.h>
 #include <Mod/Part/App/PartFeature.h>
 
 #include "TaskOrthoViews.h"
@@ -211,7 +212,7 @@ void Orthoview::showHidden(bool state)
 
 void Orthoview::showSmooth(bool state)
 {
-    this->view->ShowSmoothLines.setValue(state);
+    //throw Base::Exception("Redundant method");
 }
 
 void Orthoview::setProjection(const gp_Ax2 &cs)
@@ -281,42 +282,63 @@ OrthoViews::~OrthoViews()
     page->recompute();
 }
 
+void OrthoViews::getPageSize(double &width, double &height) const
+{
+    Drawing::FeaturePage *featPage = static_cast<Drawing::FeaturePage*>(page);
+    Drawing::FeatureTemplate *templ = dynamic_cast<Drawing::FeatureTemplate *>(featPage->Template.getValue());
+    height = templ->getHeight();
+    width  = templ->getWidth();
+}
+
+void OrthoViews::getMarginSize(double &marginX, double &marginY) const
+{
+    // TODO implement margin method for template
+    marginX = 10;
+    marginY = 10;
+}
 
 void OrthoViews::load_page()
 {
-    std::string template_name = static_cast<Drawing::FeaturePage*>(page)->Template.getValue();
-    pagesize(template_name, large, block);
+
+
+    //pagesize(template_name, large, block);
     page_dims = large;
 
-    // process page dims for title block data
-    if (block[0] != 0) {
-        title = true;
+    double pgWidth, pgHeight;
+    getPageSize(pgWidth, pgHeight);
 
-        // max vertical space avoiding title block
-        small_v[1] = large[1];                  // y margin same as large page
-        small_v[3] = large[3];                  // y size same as large page
-        small_v[2] = large[2] - block[2];       // x width same as large width - block width
-        if (block[0] == -1) {
-            small_v[0] = large[0] + block[2];   // x margin same as large + block width
-            horiz = &min_r_x;
-        } else  {
-            small_v[0] = large[0];              // x margin same as large
-            horiz = &max_r_x;
-        }
+    double marginWidth, marginHeight;
+    getMarginSize(marginWidth, marginHeight);
 
-        // max horizontal space avoiding title block
-        small_h[0] = large[0];
-        small_h[2] = large[2];
-        small_h[3] = large[3] - block[3];
-        if (block[1] == 1) {
-            small_h[1] = large[1] + block[3];
-            vert = &max_r_y;
-        } else {
-            small_h[1] = large[1];
-            vert = &min_r_y;
-        }
-    } else
-        title = false;
+//     // process page dims for title block data
+//     if (block[0] != 0) {
+//         title = true;
+//
+//         // max vertical space avoiding title block
+//         small_v[1] = large[1];                  // y margin same as large page
+//         small_v[3] = large[3];                  // y size same as large page
+//         small_v[2] = large[2] - block[2];       // x width same as large width - block width
+//         if (block[0] == -1) {
+//             small_v[0] = large[0] + block[2];   // x margin same as large + block width
+//             horiz = &min_r_x;
+//         } else  {
+//             small_v[0] = large[0];              // x margin same as large
+//             horiz = &max_r_x;
+//         }
+//
+//         // max horizontal space avoiding title block
+//         small_h[0] = large[0];
+//         small_h[2] = large[2];
+//         small_h[3] = large[3] - block[3];
+//         if (block[1] == 1) {
+//             small_h[1] = large[1] + block[3];
+//             vert = &max_r_y;
+//         } else {
+//             small_h[1] = large[1];
+//             vert = &min_r_y;
+//         }
+//     } else
+//         title = false;
 }
 
 
@@ -372,11 +394,15 @@ void OrthoViews::choose_page()                              // chooses which bit
     }
 }
 
-
+// Keep
 void OrthoViews::calc_scale()                               // compute scale required to meet minimum space requirements
 {
-    float scale_x = ((float)page_dims[2] - (float) num_gaps_x * min_space) / layout_width;
-    float scale_y = ((float)page_dims[3] - (float) num_gaps_y * min_space) / layout_height;
+
+    double pgWidth, pgHeight;
+    this->getPageSize(pgWidth, pgHeight);
+
+    float scale_x = ((float)pgWidth - (float) num_gaps_x * min_space) / layout_width;
+    float scale_y = ((float)pgHeight- (float) num_gaps_y * min_space) / layout_height;
 
     float working_scale = std::min(scale_x, scale_y);
 
@@ -402,21 +428,27 @@ void OrthoViews::calc_offsets()                             // calcs SVG coords 
     // space_x is the emptry clear white space between views
     // gap_x is the centre - centre distance between views
 
-    float space_x = ((float)page_dims[2] - scale * layout_width)  / (float) num_gaps_x;
-    float space_y = ((float)page_dims[3] - scale * layout_height) / (float) num_gaps_y;
+    double pgWidth, pgHeight;
+    this->getPageSize(pgWidth, pgHeight);
+
+    double marginWidth, marginHeight;
+    this->getMarginSize(marginWidth, marginHeight);
+
+    float space_x = ((float) pgWidth - scale * layout_width)  / (float) num_gaps_x;
+    float space_y = ((float) pgHeight - scale * layout_height) / (float) num_gaps_y;
 
     gap_x = space_x + scale * (width + depth) * 0.5;
     gap_y = space_y + scale * (height + depth) * 0.5;
 
     if (min_r_x % 2 == 0)
-        offset_x = page_dims[0] + space_x + 0.5 * scale * width;
+        offset_x = marginWidth + space_x + 0.5 * scale * width;
     else
-        offset_x = page_dims[0] + space_x + 0.5 * scale * depth;
+        offset_x = marginWidth + space_x + 0.5 * scale * depth;
 
     if (max_r_y % 2 == 0)
-        offset_y = page_dims[1] + space_y + 0.5 * scale * height;
+        offset_y = marginHeight + space_y + 0.5 * scale * height;
     else
-        offset_y = page_dims[1] + space_y + 0.5 * scale * depth;
+        offset_y = marginHeight + space_y + 0.5 * scale * depth;
 }
 
 
@@ -453,7 +485,7 @@ void OrthoViews::process_views()                            // update scale and 
     App::GetApplication().getActiveDocument()->recompute();
 }
 
-
+// keep
 void OrthoViews::set_hidden(bool state)
 {
     hidden = state;
@@ -464,7 +496,7 @@ void OrthoViews::set_hidden(bool state)
     App::GetApplication().getActiveDocument()->recompute();
 }
 
-
+// redundant
 void OrthoViews::set_smooth(bool state)
 {
     smooth = state;

@@ -26,6 +26,7 @@
 # include <QContextMenuEvent>
 # include <QGraphicsScene>
 # include <QGraphicsSceneMouseEvent>
+# include <QList>
 # include <QMenu>
 # include <QMessageBox>
 # include <QMouseEvent>
@@ -38,7 +39,8 @@
 #include <Gui/Selection.h>
 #include <Gui/Command.h>
 
-#include "../App/FeatureOrthoView.h"
+#include <Mod/Drawing/App/FeatureOrthoView.h>
+#include <Mod/Drawing/App/FeatureViewOrthographic.h>
 
 #include "QGraphicsItemViewOrthographic.h"
 
@@ -47,15 +49,16 @@ using namespace DrawingGui;
 QGraphicsItemViewOrthographic::QGraphicsItemViewOrthographic(const QPoint &pos, QGraphicsScene *scene)
     :QGraphicsItemViewCollection(pos, scene)
 {
-    this->setFlags(QGraphicsItem::ItemIsSelectable);
     this->setPos(pos);
     origin = new QGraphicsItemGroup();
     origin->setParentItem(this);
 
-
+    // In place to ensure correct drawing and bounding box calculations
     m_backgroundItem = new QGraphicsRectItem();
-    m_backgroundItem->setPen(QPen(QColor(Qt::black)));
-    this->addToGroup(m_backgroundItem);
+    //m_backgroundItem->setPen(QPen(QColor(Qt::black)));
+    //this->addToGroup(m_backgroundItem);
+    setFlag(ItemIsSelectable, false);
+    setFlag(ItemIsMovable, true);
 }
 
 QGraphicsItemViewOrthographic::~QGraphicsItemViewOrthographic()
@@ -87,30 +90,60 @@ QVariant QGraphicsItemViewOrthographic::itemChange(GraphicsItemChange change, co
                     view->alignTo(origin, QString::fromAscii("Vertical"));
                 } else if(type == QString::fromAscii("Front")) {
                     view->setLocked(true);
+                    // Get FeatureViewOrthohraphic object
+                    App::DocumentObject *obj = this->getViewObject();
+                    Drawing::FeatureViewOrthographic *viewOrthographic = dynamic_cast<Drawing::FeatureViewOrthographic *>(obj);
+
+                    viewOrthographic->Anchor.setValue(fView);
+                    updateView();
                 } else {
                     view->alignTo(origin, QString::fromAscii("Horizontal"));
                 }
             }
 
          }
-
-
     }
 
     return QGraphicsItemView::itemChange(change, value);
 }
 
-#if 0
-QGraphicsItemViewOrthographic::mousePressEvent ( QGraphicsSceneMouseEvent * event )
+
+void QGraphicsItemViewOrthographic::mousePressEvent(QGraphicsSceneMouseEvent * event)
 {
-    QGraphicsItem::mousePressEvent(event);
-    event->ignore();
+  QGraphicsItem::mousePressEvent(event);
 }
-#endif
+
+void QGraphicsItemViewOrthographic::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
+{
+
+    QGraphicsItem::mouseMoveEvent(event);
+}
+
+QGraphicsItemView * QGraphicsItemViewOrthographic::getAnchorQItem() const
+{
+        // Get FeatureViewOrthohraphic object
+    App::DocumentObject *obj = this->getViewObject();
+    Drawing::FeatureViewOrthographic *viewOrthographic = dynamic_cast<Drawing::FeatureViewOrthographic *>(obj);
+
+      // Get the currently assigned anchor view
+    App::DocumentObject *anchorObj = viewOrthographic->Anchor.getValue();
+    Drawing::FeatureView *anchorView = dynamic_cast<Drawing::FeatureView *>(anchorObj);
+
+    // Locate the anchor view's qgraphicsitemview
+    QList<QGraphicsItem *> list =  this->childItems();
+
+    for (QList<QGraphicsItem *>::iterator it = list.begin(); it != list.end(); ++it) {
+        QGraphicsItemView *view = dynamic_cast<QGraphicsItemView *>(*it);
+        if(view && strcmp(view->getViewName(), anchorView->getNameInDocument()) == 0) {
+              return view;
+        }
+    }
+    return 0;
+}
 
 void QGraphicsItemViewOrthographic::updateView(bool update)
 {
-             m_backgroundItem->setRect(this->boundingRect());
+    m_backgroundItem->setRect(this->boundingRect());
     return QGraphicsItemViewCollection::updateView(update);
 }
 
