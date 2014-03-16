@@ -1325,10 +1325,10 @@ void ToolFeature::ResetTitle()
 	for the corresponding depth (from the bottom-most tip of the tool).  This is
 	only relevant for chamfering (angled) bits.
  */
-double ToolFeature::CuttingRadius( const Cam::Settings::Length::Units_t units, const Cam::Settings::Length depth /* = -1 */ ) const
+double ToolFeature::CuttingRadius( const Cam::Settings::Length::Units_t units, const double depth /* = -1 */ ) const
 {
 	double radius;
-	double _depth = fabs(depth.get(units));
+	double _depth = fabs(depth);
 	switch (eToolType(this->tool_type->get().first))
 	{
 		case eChamfer:
@@ -1505,7 +1505,7 @@ const ToolFeature::eToolType ToolFeature::ToolType() const
 
 double ToolFeature::degrees_to_radians( const double degrees ) const
 {
-	return((degrees / 360.0) * (PI * 2.0));
+	return((degrees / 360.0) * (M_PI * 2.0));
 }
 
 /**

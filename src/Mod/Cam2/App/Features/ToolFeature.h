@@ -340,10 +340,10 @@ public:
 	/**
 		Retrieve a pointer into our static centre-drill size array based on the description text.
 	 */
-	ToolFeature::centre_drill_t *ToolFeature::CentreDrillDefinition( const QString size ) const;
+	centre_drill_t *CentreDrillDefinition( const QString size ) const;
 
 	// The following methods should be used for read-only access to this object's settings.
-	double CuttingRadius( const Cam::Settings::Length::Units_t units, const Cam::Settings::Length length = Cam::Settings::Length(-1, Cam::Settings::Length::Metric) ) const;
+	double CuttingRadius( const Cam::Settings::Length::Units_t units, const double depth = -1) const;
 	const eToolType ToolType() const;
 	double Pitch( const Cam::Settings::Length::Units_t units ) const { return(this->pitch->get( units )); }
 	eTappingDirection_t TappingDirection() const { return(eTappingDirection_t(direction->get().first)); }
