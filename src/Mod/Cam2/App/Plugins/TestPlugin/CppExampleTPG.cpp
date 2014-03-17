@@ -138,7 +138,8 @@ CppExampleTPG::~CppExampleTPG() {
 	if (retract_mode) retract_mode->release();
 	if (clearance_height) clearance_height->release();
 	if (spindle_speed) spindle_speed->release();
-	if (feed_rate) feed_rate->release();    
+	if (feed_rate) feed_rate->release();
+	if (sometimes_hidden) sometimes_hidden->release();
 }
 
 

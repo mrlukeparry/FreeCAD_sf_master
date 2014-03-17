@@ -354,7 +354,12 @@ void ToolFeature::onSettingChanged(const std::string key, const std::string prev
 			else if (definition == this->gradient)
 			{
 				// Make sure the gradient is negative.
-				this->gradient->set( -1.0 * fabs(this->gradient->get(this->gradient->getUnits())), this->gradient->getUnits() );
+				Cam::Settings::Length::Units_t units = this->gradient->getUnits();
+				double value = this->gradient->get(units);
+				if (value > 0)
+				{
+					this->gradient->set( -1.0 * fabs(value), units );
+				}
 			}
 			else if (definition == this->flat_radius)
 			{
@@ -977,6 +982,11 @@ void ToolFeature::ResetSettingsToReasonableValues(const bool suppress_warnings /
  */
 /* static */ QString ToolFeature::FractionalRepresentation( const Cam::Settings::Length *original_value, const int max_denominator /* = 64 */ )
 {
+	if (original_value == NULL)
+	{
+		// We've got no hope without an actual value to look at.
+		return(QString::null);
+	}
 
 	std::ostringstream result;
 	double _value(original_value->get(Cam::Settings::Length::Imperial));

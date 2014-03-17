@@ -48,8 +48,8 @@ typedef boost::signals::connection Connection;
   * ToolFeature is the document object to store details of a single CAM Tool
   * The ToolFeature class holds 'settings' (member variables) necessary for
   * all possible types of tools.  Most of these settings are stored as
-  * private member variables while a set of methods read-only versions
-  * of these settings available to other classes.
+  * private member variables while a set of methods provide read-only versions
+  * of these settings to other classes.
   */
 namespace Cam
 {
@@ -109,7 +109,7 @@ public:
 		eEngravingTool,
 		eBoringHead,
 		eDragKnife,
-		eUndefinedToolType	// NOTE: Insert new tool types BEFORE this eUndefinedToolType delimiter.
+		eUndefinedToolType	// NOTE: Insert new tool types IMMEDIATELY BEFORE this eUndefinedToolType delimiter.
 	} eToolType;
 
 	/**
