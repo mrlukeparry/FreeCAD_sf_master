@@ -341,6 +341,11 @@ void ToolFeature::onSettingChanged(const std::string key, const std::string prev
 			{
 				ResetSettingsToReasonableValues(true);
 			}
+			else if (definition == this->title)
+			{
+				// It would be nice if the title appeared in the objects tree.
+				this->Label.setValue(new_value.c_str());
+			}
 			else if (definition == this->drag_knife_initial_cutting_direction)
 			{
 				if (ToolType() == eDragKnife)
@@ -442,11 +447,6 @@ void ToolFeature::onSettingChanged(const std::string key, const std::string prev
 				default:
 					break;
 				} // End switch
-			}
-			else if (definition == this->title)
-			{
-				// It would be nice if the title appeared in the objects tree.
-				this->Label.setValue(new_value.c_str());
 			}
 			else if (definition == standard_tap_sizes)
 			{
