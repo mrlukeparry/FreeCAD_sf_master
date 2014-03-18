@@ -359,11 +359,10 @@ void ToolFeature::onSettingChanged(const std::string key, const std::string prev
 			else if (definition == this->gradient)
 			{
 				// Make sure the gradient is negative.
-				Cam::Settings::Length::Units_t units = this->gradient->getUnits();
-				double value = this->gradient->get(units);
+				double value = this->gradient->get();
 				if (value > 0)
 				{
-					this->gradient->set( -1.0 * fabs(value), units );
+					this->gradient->set( -1.0 * fabs(value) );
 				}
 			}
 			else if (definition == this->flat_radius)
@@ -668,7 +667,7 @@ void ToolFeature::initialise()
 
 
 
-		this->gradient = new Settings::Length(	"Ramp entry gradient", 
+		this->gradient = new Settings::Double(	"Ramp entry gradient", 
 											 "Ramp entry gradient",
 											 "The gradient is the steepest angle at which this tool can plunge into the material.  Many "
 											 "tools behave better if they are slowly ramped down into the material.  This gradient "
@@ -676,8 +675,8 @@ void ToolFeature::initialise()
 											 "the 'rise / run' ratio.  Since the 'rise' will be downward, it will be negative. "
 											 "By this measurement, a drill bit's straight plunge would have an infinite gradient (all rise, no run). "
 											 "To cater for this, a value of zero will indicate a straight plunge.",
-											 0.0,
-											 Settings::Definition::Metric );	
+											 -5.0 / 360.0,
+											 "Ratio" );	
 		settings->addSettingDefinition(qaction, this->gradient);
 
 		

@@ -278,7 +278,7 @@ private:
 		By this measurement, a drill bit's straight plunge would have an infinite gradient (all rise, no run).
 		To cater for this, a value of zero will indicate a straight plunge.
 	 */
-	Settings::Length	*gradient;
+	Settings::Double	*gradient;
 
 	// properties for tapping tools
 
@@ -357,7 +357,7 @@ public:
 	bool AutomaticallyGenerateTitle() const { return(automatically_generate_title->get().first != 0); }
 	double ProbeOffsetX( const Cam::Settings::Length::Units_t units) const { return(probe_offset_x->get(units)); }
 	double ProbeOffsetY( const Cam::Settings::Length::Units_t units) const { return(probe_offset_y->get(units)); }
-	double Gradient( const Cam::Settings::Length::Units_t units ) const { return(gradient->get(units)); }
+	double Gradient() const { return(gradient->get()); }
 	double ToolLengthOffset( const Cam::Settings::Length::Units_t units ) const { return(tool_length_offset->get(units)); }
 	eMaterial_t Material() const { return(eMaterial_t(material->get().first)); }
 	eExtrusionMaterial_t ExtrusionMaterial() const { return(eExtrusionMaterial_t(extrusion_material->get().first)); }
