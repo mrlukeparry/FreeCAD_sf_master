@@ -878,14 +878,17 @@ namespace Cam
  */
 Standard_Real Cam::Path::Proportion( const double proportion ) const
 {
-    if (StartParameter() < EndParameter())
-    {
-        return(((EndParameter() - StartParameter()) * proportion) + StartParameter());
-    }
-    else
-    {
-        return(((StartParameter() - EndParameter()) * proportion) + EndParameter());
-    }
+	if (this->IsForwards())
+	{
+		Standard_Real result = ((Curve().LastParameter() - Curve().FirstParameter()) * proportion) + Curve().FirstParameter();
+		return(result);
+	}
+	else
+	{
+		Standard_Real u = ((Curve().LastParameter() - Curve().FirstParameter()) * proportion) + Curve().FirstParameter();
+		Standard_Real result = Curve().LastParameter() - u;
+		return(result);
+	}
 }
 
 
@@ -1221,6 +1224,7 @@ bool Cam::ContiguousPath::Add(Cam::Path path)
 {
 	m_plane.reset(NULL);
 	m_pBoundingBox.reset(NULL);
+	m_wire.reset(NULL);
 
 	if (m_paths.size() == 0)
 	{
@@ -2064,6 +2068,12 @@ std::set<Cam::Point> Cam::ContiguousPath::Intersect( const Cam::ContiguousPath &
  */
 TopoDS_Wire Cam::ContiguousPath::Wire() const
 {
+	if (m_wire.get() != NULL)
+	{
+		// We've already generated a wire.  Just return that one.
+		return(*m_wire);
+	}
+
 	BRepBuilderAPI_MakeWire wire_maker;
 	for (std::vector<Path>::const_iterator itPath = m_paths.begin(); itPath != m_paths.end(); itPath++)
 	{
@@ -2086,18 +2096,21 @@ TopoDS_Wire Cam::ContiguousPath::Wire() const
 			fix.FixConnected();
 			fix.FixClosed();
 
-			return(fix.Wire());
+			m_wire = std::auto_ptr<TopoDS_Wire>(new TopoDS_Wire(fix.Wire()));
+			return(*m_wire);
 		}
 		else
 		{
 			TopoDS_Wire empty;
-			return(empty);
+			m_wire = std::auto_ptr<TopoDS_Wire>(new TopoDS_Wire(empty));
+			return(*m_wire);
 		}
 	}
 	else
 	{
 		TopoDS_Wire empty;
-		return(empty);
+		m_wire = std::auto_ptr<TopoDS_Wire>(new TopoDS_Wire(empty));
+		return(*m_wire);
 	}
 }
 
@@ -2207,27 +2220,68 @@ void Cam::ContiguousPath::D1(const Standard_Real DistanceAlong, gp_Pnt &P, gp_Ve
 
 std::pair<gp_Pnt, gp_Vec> Cam::Path::Nearest(const gp_Pnt reference_location, Standard_Real *pParameter /* = NULL */, const bool snap_to_nearest_curve_endpoint /* = true */ ) const
 {
-	std::pair<gp_Pnt, gp_Vec> nearest = std::make_pair( StartPoint().Location(), gp_Vec() );
-	if (pParameter) *pParameter = this->StartParameter();
-	// gp_Pnt nearest = StartPoint().Location();
+	std::pair<gp_Pnt, gp_Vec> nearest = std::make_pair( EndPoint().Location(), EndVector() );
+	if (pParameter) *pParameter = this->EndParameter();
 
-    Standard_Real start_u, end_u;
-	Handle(Geom_Curve) curve = BRep_Tool::Curve(m_edge, start_u, end_u);
+	TopoDS_Edge edge(Edge());
+	Standard_Real start_u(Curve().FirstParameter());
+	Standard_Real end_u(Curve().LastParameter());
+	Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, start_u, end_u );
 	GeomAPI_ProjectPointOnCurve projection(reference_location, curve);
+	
+	Bnd_Box occ_box;
+	BRepBndLib::Add(edge, occ_box);
 
 	Extrema_ExtPC extrema(reference_location, GeomAdaptor_Curve(curve));
 	if (extrema.IsDone())
 	{
 		for (int i=1; i<=extrema.NbExt(); i++)
 		{
-			gp_Pnt n = extrema.Point(i).Value();
+			if (! occ_box.IsOut(extrema.Point(i).Value()))
+			{
+				gp_Pnt n = extrema.Point(i).Value();
+				if (nearest.first.Distance(reference_location) > n.Distance(reference_location))
+				{
+					gp_Pnt a;
+					gp_Vec vec;
+					curve->D1(extrema.Point(i).Parameter(), a, vec);
+					nearest = std::make_pair( a, vec );
+					if (pParameter) *pParameter = extrema.Point(i).Parameter();
+				}
+			}
+		}
+	}
+
+	for (int i=1; i<=projection.NbPoints(); i++)
+	{
+		gp_Pnt n;
+		gp_Vec v;
+		Standard_Real u;
+		projection.Parameter(i,u);
+		curve->D1( u, n, v );
+		if (! occ_box.IsOut(n))
+		{
 			if (nearest.first.Distance(reference_location) > n.Distance(reference_location))
 			{
-				gp_Pnt a;
-				gp_Vec vec;
-				curve->D1(extrema.Point(i).Parameter(), a, vec);
-				nearest = std::make_pair( a, vec );
-				if (pParameter) *pParameter = extrema.Point(i).Parameter();
+				nearest = std::make_pair( n, v );
+				if (pParameter) *pParameter = u;
+			}
+		}
+	}
+
+	if (projection.NbPoints() > 0)
+	{
+		gp_Pnt n;
+		gp_Vec v;
+		Standard_Real u;
+		u = projection.LowerDistanceParameter();
+		curve->D1( u, n, v );
+		if (! occ_box.IsOut(n))
+		{
+			if (nearest.first.Distance(reference_location) > n.Distance(reference_location))
+			{
+				nearest = std::make_pair( n, v );
+				if (pParameter) *pParameter = u;
 			}
 		}
 	}
@@ -2255,26 +2309,77 @@ std::pair<gp_Pnt, gp_Vec> Cam::Path::Nearest(const gp_Pnt reference_location, St
 	return(nearest);
 }
 
-std::pair<gp_Pnt, gp_Vec> Cam::ContiguousPath::Nearest(const gp_Pnt reference_location) const
+std::pair<gp_Pnt, gp_Vec> Cam::ContiguousPath::Nearest(const gp_Pnt reference_location, Standard_Real *pDistanceAlong /* = NULL */)
 {
+	ContiguousPath cpath(*this);	// Duplicate so that we don't affect ourselves.
+
+	std::vector<Path>::iterator itBestSoFar = cpath.m_paths.begin();
+	Standard_Real best_u_value;
 	std::pair<gp_Pnt, gp_Vec> nearest;
-	for (std::vector<Path>::const_iterator itPath = m_paths.begin(); itPath != m_paths.end(); itPath++)
+
+	for (std::vector<Path>::iterator itPath = cpath.m_paths.begin(); itPath != cpath.m_paths.end(); itPath++)
 	{
-		if (itPath == m_paths.begin())
+		if (itPath == cpath.m_paths.begin())
 		{
-			nearest = itPath->Nearest(reference_location);
+			nearest = itPath->Nearest(reference_location, &best_u_value, false);
+			itBestSoFar = itPath;
 		}
 		else
 		{
-			std::pair<gp_Pnt, gp_Vec> next_nearest = itPath->Nearest(reference_location);
+			Standard_Real this_u;
+			std::pair<gp_Pnt, gp_Vec> next_nearest = itPath->Nearest(reference_location, &this_u, false);
 			if (nearest.first.Distance(reference_location) > next_nearest.first.Distance(reference_location))
 			{
 				nearest = next_nearest;
+				best_u_value = this_u;
+				itBestSoFar = itPath;
 			}
 		}
 	}
 
+	if (pDistanceAlong)
+	{
+		// Calculate the distance with the best location found so far.
+		double distance_along = 0.0;
+		for (std::vector<Path>::iterator itPath = cpath.m_paths.begin(); (itPath != itBestSoFar) && (itPath != cpath.m_paths.end()); itPath++)
+		{
+			distance_along += itPath->Length();
+		}
+
+		// Figure out how far along the path this 'u' value is.
+		Standard_Real distance = itBestSoFar->DistanceAlong(best_u_value);
+		distance_along += distance;
+
+		*pDistanceAlong = distance_along;
+	}
+
+	/*
+	#ifdef HEEKSCAD
+		double p[3];
+		Cam::Point( nearest.first ).ToDoubleArray(p);
+		heekscad_interface.Add( heekscad_interface.NewPoint(p), NULL );
+	#endif
+	*/
+
 	return(nearest);
+}
+
+/**
+	Returns the distance from the start to the 'u' parameter passed in.  The 'start' needs
+	to take into account whether this Path has been reversed or not.
+ */
+double Cam::Path::DistanceAlong( const Standard_Real u ) const
+{
+	if (this->IsForwards())
+	{
+		double proportion = (u - Curve().FirstParameter()) / (Curve().LastParameter() - Curve().FirstParameter());
+		return(proportion * Length());
+	}
+	else
+	{
+		double proportion = (u - Curve().FirstParameter()) / (Curve().LastParameter() - Curve().FirstParameter());
+		return(Length() - (proportion * Length()));
+	}
 }
 
 
@@ -2293,6 +2398,7 @@ Cam::ContiguousPath & Cam::ContiguousPath::operator =(const Cam::ContiguousPath 
 		std::copy( rhs.m_paths_that_surround_us.begin(), rhs.m_paths_that_surround_us.end(), std::inserter(m_paths_that_surround_us, m_paths_that_surround_us.begin()) );
 		m_plane.reset(NULL);
 		m_pBoundingBox.reset(NULL);
+		m_wire.reset(NULL);
 	}
 
 	return(*this);
@@ -2623,6 +2729,7 @@ void ContiguousPath::Align( CFixture fixture )
 	} // End for
 	m_plane.reset(NULL);
 	m_pBoundingBox.reset(NULL);
+	m_wire.reset(NULL);
 }
 
 void Path::Align( CFixture fixture )
@@ -2638,7 +2745,14 @@ Path Path::Section( const Standard_Real start_distance, const Standard_Real end_
 	Standard_Real start_u = Proportion(start_distance / Length());
 	Standard_Real end_u   = Proportion(end_distance / Length());
 	
-	return(Path(Cam::Edge( Edge(), start_u, end_u )));
+	if (start_u < end_u)
+	{
+		return(Path(Cam::Edge( Edge(), start_u, end_u )));
+	}
+	else
+	{
+		return(Path(Cam::Edge( Edge(), end_u, start_u )));
+	}
 }
 
 TopoDS_Edge Edge( const TopoDS_Edge original_edge, const Standard_Real start_u, const Standard_Real end_u )
@@ -2714,12 +2828,28 @@ TopoDS_Edge Edge( const TopoDS_Edge original_edge, const Standard_Real start_u, 
 	} // End catch
 }
 
-ContiguousPath ContiguousPath::Section( const Standard_Real start_distance, const Standard_Real end_distance )
+Cam::ContiguousPath ContiguousPath::Section( const Standard_Real requested_start_distance, const Standard_Real requested_end_distance ) const
 {
+	ContiguousPath copy(*this);	// We need to keep ourselves constant so take a copy to play with.
 	ContiguousPath new_contiguous_path;
 
+	Standard_Real start_distance(requested_start_distance);
+	Standard_Real end_distance(requested_end_distance);
+	while ((start_distance > end_distance) && copy.Periodic())
+	{
+		end_distance += copy.Length();
+	}
+
+	if (start_distance > end_distance)
+	{
+		// It must not be periodic.  In this case swap the distances.
+		Standard_Real temp = start_distance;
+		start_distance = end_distance;
+		end_distance = temp;
+	}
+
 	Standard_Real distance = 0.0;
-	std::vector<Path>::iterator itPath = m_paths.begin();
+	std::vector<Path>::iterator itPath = copy.m_paths.begin();
 	while (distance < start_distance)
 	{
 		if ((distance + itPath->Length()) > start_distance)
@@ -2739,7 +2869,7 @@ ContiguousPath ContiguousPath::Section( const Standard_Real start_distance, cons
 		{
 			distance += itPath->Length();
 		}
-		itPath = Next(itPath);
+		itPath = copy.Next(itPath);
 	}
 
 	while (distance < end_distance)
@@ -2754,7 +2884,7 @@ ContiguousPath ContiguousPath::Section( const Standard_Real start_distance, cons
 			new_contiguous_path.Add(itPath->Section(0.0, itPath->Length()));
 			distance += itPath->Length();
 		}
-		itPath = Next(itPath);
+		itPath = copy.Next(itPath);
 	}
 
 	return(new_contiguous_path);
@@ -3172,6 +3302,7 @@ void Cam::ContiguousPath::Transform( const gp_Trsf transformation )
 	}
 	m_plane.reset(NULL);
 	m_pBoundingBox.reset(NULL);
+	m_wire.reset(NULL);
 }
 
 void Cam::Path::Transform( const gp_Trsf transformation )
@@ -3190,117 +3321,121 @@ void Cam::Path::Transform( const gp_Trsf transformation )
 	Add the portions of the ContiguousPath children from 'this' object into either the inside or outside
 	Paths objects based on whether they are within the 'areas' paths passed in.
  */
-void Cam::Paths::Split( const Cam::Paths &areas, Cam::Paths *pInside, Cam::Paths *pOutside ) const
+void Paths::Split( const Cam::Paths &areas, Cam::Paths *pInside, Cam::Paths *pOutside ) const
 {
-	for (std::vector<ContiguousPath>::const_iterator itContiguousPath = m_contiguous_paths.begin(); itContiguousPath != m_contiguous_paths.end(); itContiguousPath++)
+	std::list<ContiguousPath> sections = Split( areas );
+	for (std::list<ContiguousPath>::iterator itSection = sections.begin(); itSection != sections.end(); itSection++)
 	{
-		itContiguousPath->Split( areas, pInside, pOutside );
-	} // End for
+		bool found = false;
+		for (::size_t i=0; (found == false) && (i<areas.size()); i++)
+		{
+			if (areas[i].Surrounds(*itSection))
+			{
+				found = true;
+				if (pInside) 
+				{
+					std::vector<Path> paths = itSection->Paths();
+					for (std::vector<Path>::iterator itPath = paths.begin(); itPath != paths.end(); itPath++)
+					{
+						pInside->Add( *itPath );
+					}
+				}
+			}
+		}		
+		if (! found)
+		{
+			// This section is not inside any of the areas.
+			if (pOutside) 
+			{
+				std::vector<Path> paths = itSection->Paths();
+				for (std::vector<Path>::iterator itPath = paths.begin(); itPath != paths.end(); itPath++)
+				{
+					pOutside->Add( *itPath );
+				}
+			}
+		}
+	}
 }
 
-void Cam::ContiguousPath::Split( const Cam::Paths &area, Cam::Paths *pInside, Cam::Paths *pOutside ) const
+
+std::list<ContiguousPath> Paths::Split( const Cam::Paths &areas ) const
 {
-	Cam::ContiguousPath copy(*this);
-	bool handled = false;
+	std::list<ContiguousPath> sections;
+	for (::size_t i=0; i<this->size(); i++)
+	{
+		std::list<ContiguousPath> these = (*this)[i].Split( areas );
+		std::copy( these.begin(), these.end(), std::inserter( sections, sections.end() ) );
+	}
+
+	return(sections);
+}
+
+std::list<ContiguousPath> ContiguousPath::Split( const Cam::Paths &area )
+{
+	std::list<ContiguousPath> sections;
 	for (::size_t i=0; i<area.size(); i++)
 	{
 		ContiguousPath cpath(area[i]);
 
-		if (! cpath.Periodic()) continue;
+		/*
+		#ifdef HEEKSCAD
+			double p[3];
+			StartPoint().ToDoubleArray(p);
+			heekscad_interface.Add( heekscad_interface.NewPoint(p), NULL );
+		#endif
+		*/
 
-		if ((! handled) && (cpath.Surrounds( *this )))
+		std::set<Point> points = this->Intersect(cpath, false);
+		if (points.size() > 0)
 		{
-			std::vector<Cam::Path> paths = copy.Paths();
-			for (std::vector<Cam::Path>::iterator itPath = paths.begin(); itPath != paths.end(); itPath++)
+			// They do intersect.  Get a list of distance values representing the various start/end sections
+			typedef Standard_Real Distance_t;
+			std::map< Distance_t, Point > sub_sections;
+			std::set< Distance_t > distances;
+
+			if (Periodic() == false)
 			{
-				pInside->Add( *itPath );
+				sub_sections.insert( std::make_pair(0.0, StartPoint()) );
+				sub_sections.insert( std::make_pair(Length(), EndPoint()) );
 			}
-			handled = true;
+
+			for (std::set<Point>::const_iterator itPoint = points.begin(); itPoint != points.end(); itPoint++)
+			{
+				Standard_Real distance;
+				std::pair<gp_Pnt, gp_Vec> where = Nearest( itPoint->Location(), &distance );
+				if (Cam::Point(where.first) == *itPoint)
+				{
+					sub_sections.insert( std::make_pair( distance, where.first ) );
+				}
+			}
+
+			for (std::map< Distance_t, Point >::const_iterator itLocation = sub_sections.begin(); itLocation != sub_sections.end(); itLocation++)
+			{
+				distances.insert( itLocation->first );
+			}
+
+			for (std::set<Distance_t>::const_iterator itDistance = distances.begin(); itDistance != distances.end(); itDistance++)
+			{
+				std::set<Distance_t>::const_iterator itNextDistance = itDistance;
+				itNextDistance++;
+				if (itNextDistance != distances.end())
+				{
+					sections.push_back( Section( *itDistance, *itNextDistance ) );
+				}
+			}
+
+			if (Periodic())
+			{
+				// Add the wrap around section as well.
+				sections.push_back( Section( *(distances.rbegin()), *(distances.begin()) ));
+			}
 		}
 	}
-
-	if (! handled)
-	{
-		// It's possible that this contiguous path cross one or more of the areas passed in.  Look for that now.
-		std::vector<Cam::Path> paths = copy.Paths();
-		for (std::vector<Cam::Path>::iterator itPath = paths.begin(); itPath != paths.end(); itPath++)
-		{
-			itPath->Split( area, pInside, pOutside );
-		}			
-	}
+	
+	return(sections);
 }
 
 
-void Cam::Path::Split( const Cam::Paths &area, Cam::Paths *pInside, Cam::Paths *pOutside ) const
-{
-	for (::size_t i=0; i<area.size(); i++)
-	{
-		ContiguousPath cpath = area[i];
-
-		if (! cpath.Periodic()) continue;
-
-		Cam::ContiguousPath test_path;
-		test_path.Add(*this);
-		if (cpath.Surrounds( test_path ))
-		{
-			pInside->Add( *this );
-		}
-		else
-		{
-			std::set<Point> points = cpath.Intersect(test_path, false);
-			if (points.size() > 0)
-			{
-				// Add the start and end points so we're sure to have a complete
-				// set for use when breaking it up.
-				points.insert( StartPoint() );
-				points.insert( EndPoint() );
-
-				// We now need to get a list of start/end U pairs between these
-				// points.
-				std::map< Standard_Real, Cam::Point > sections;
-				for (std::set<Point>::iterator itPoint = points.begin(); itPoint != points.end(); itPoint++)
-				{
-					Standard_Real u = -1;
-					Nearest( itPoint->Location(), &u, false );
-					sections.insert( std::make_pair( u, *itPoint ) );
-				}
-
-				std::vector< Standard_Real > u_values;
-				for (std::map< Standard_Real, Cam::Point >::iterator itSection = sections.begin(); itSection != sections.end(); itSection++)
-				{
-					u_values.push_back( itSection->first );
-				}
-				
-				// Now we have an ordered list of U/Point pairs that define the sections of the
-				// path.  We now need to assign those sections to the 'inside' and 'outside' paths
-				// as appropriate.
-
-				for (std::vector<Standard_Real>::size_type i=0; i<u_values.size()-1; i++)
-				{
-					if (u_values[i] == u_values[i+1]) continue;
-					TopoDS_Edge edge = Cam::Edge( Edge(), u_values[i], u_values[i+1] );
-					if (Cam::IsValid(edge))
-					{
-						Path section = Path(edge);
-						if (cpath.Surrounds( section.MidPoint() ))
-						{
-							pInside->Add( section );
-						}
-						else
-						{
-							pOutside->Add( section );
-						}
-					}
-				}
-			}
-			else
-			{
-				// It's not inside and it doesn't intersect.
-				pOutside->Add( *this );
-			}
-		}
-	}
-}
 
 
 void Cam::ContiguousPath::PathsThatSurroundUs(const Cam::ContiguousPath::Id_t id) const

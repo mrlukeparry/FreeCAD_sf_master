@@ -45,6 +45,11 @@ ToolPathFeature::ToolPathFeature() {
 
 ToolPathFeature::~ToolPathFeature()
 {
+	if (this->toolPath != NULL)
+	{
+        this->toolPath->release();
+		this->toolPath = NULL;
+	}
 }
 
 App::DocumentObjectExecReturn *ToolPathFeature::execute(void)
@@ -60,7 +65,9 @@ void ToolPathFeature::Save(Base::Writer &writer) const
 
 void ToolPathFeature::setToolPath(ToolPath *toolpath) {
     if (this->toolPath != NULL)
+	{
         this->toolPath->release();
+	}
     this->toolPath = toolpath->grab();
 
     // copy the commands out of toolpath and save in internal storage
@@ -75,10 +82,13 @@ void ToolPathFeature::setToolPath(ToolPath *toolpath) {
  * Get the toolpath object.  Returned reference is owned by caller
  */
 ToolPath* ToolPathFeature::getToolPath() {
-    if (toolPath == NULL) {
-        toolPath = new ToolPath(TPCommands.getValues());
+    if (this->toolPath == NULL) {
+        return(NULL);
     }
-    return toolPath->grab();
+	else
+	{
+		return toolPath->grab();
+	}
 }
 
 void ToolPathFeature::onDocumentRestored()

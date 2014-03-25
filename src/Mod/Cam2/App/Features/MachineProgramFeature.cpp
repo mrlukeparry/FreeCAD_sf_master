@@ -44,6 +44,11 @@ MachineProgramFeature::MachineProgramFeature() {
 
 MachineProgramFeature::~MachineProgramFeature()
 {
+	if (this->machineProgram)
+	{
+		this->machineProgram->release();
+		this->machineProgram = NULL;
+	}
 }
 
 App::DocumentObjectExecReturn *MachineProgramFeature::execute(void)
@@ -72,9 +77,12 @@ void MachineProgramFeature::setMachineProgram(MachineProgram *machineProgram) {
 }
 MachineProgram* MachineProgramFeature::getMachineProgram() {
     if (machineProgram == NULL) {
-        machineProgram = new MachineProgram(MPCommands.getValues(), NULL);
+        return(NULL);
     }
-    return machineProgram;
+	else
+	{
+		return machineProgram->grab();
+	}
 }
 
 void MachineProgramFeature::onDocumentRestored()

@@ -675,7 +675,7 @@ void ToolFeature::initialise()
 											 "the 'rise / run' ratio.  Since the 'rise' will be downward, it will be negative. "
 											 "By this measurement, a drill bit's straight plunge would have an infinite gradient (all rise, no run). "
 											 "To cater for this, a value of zero will indicate a straight plunge.",
-											 -5.0 / 360.0,
+											 -5.0 / 360.0,	// 5 degrees downwards.
 											 "Ratio" );	
 		settings->addSettingDefinition(qaction, this->gradient);
 

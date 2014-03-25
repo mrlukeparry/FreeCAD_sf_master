@@ -289,7 +289,8 @@ void TPGFeature::setMachineProgram(Cam::MachineProgram *machineProgram) {
     std::string mpFeatName = doc->getUniqueObjectName(toolpathName.c_str());
 
     // create the feature (for Document Tree)
-    App::DocumentObject *machineProgramFeat =  doc->addObject("Cam::MachineProgramFeature", mpFeatName.c_str());
+    // App::DocumentObject *machineProgramFeat =  doc->addObject("Cam::MachineProgramFeature", mpFeatName.c_str());
+	App::DocumentObject *machineProgramFeat =  doc->addObject(Cam::MachineProgramFeature::getClassTypeId().getName(), mpFeatName.c_str());
     if(machineProgramFeat && machineProgramFeat->isDerivedFrom(Cam::MachineProgramFeature::getClassTypeId())) {
         Cam::MachineProgramFeature *machineProgramFeature = dynamic_cast<Cam::MachineProgramFeature *>(machineProgramFeat);
 

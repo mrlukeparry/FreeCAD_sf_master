@@ -38,6 +38,7 @@ MachineProgramDockWindow::MachineProgramDockWindow(Gui::Document*  pcDocument, Q
 	setWindowTitle(QString::fromUtf8("Machine program"));
 
     ui->setupUi(this);
+	this->machine_program = NULL;
 
     clearSelection();
 
@@ -51,17 +52,38 @@ MachineProgramDockWindow::MachineProgramDockWindow(Gui::Document*  pcDocument, Q
 
 }
 
-MachineProgramDockWindow::~MachineProgramDockWindow() {
+MachineProgramDockWindow::~MachineProgramDockWindow()
+{
+	if (this->machine_program)
+	{
+		this->machine_program->release();
+		this->machine_program = NULL;
+	}
 }
 
 /**
  * Set the Toolpath to be displayed.  It expects the toolpath to be in HTML
  * format already.
  */
-void MachineProgramDockWindow::setToolPath(const QString &toolpath)
+void MachineProgramDockWindow::setMachineProgram(Cam::MachineProgram *machine_program)
 {
-//  textedit->setHtml(toolpath);
-    ui->MachineProgram->setSelectionMode(QAbstractItemView::MultiSelection);
+	if (this->machine_program)
+	{
+		this->machine_program->release();
+		this->machine_program = NULL;
+	}
+
+	if (machine_program)
+	{
+		this->machine_program = machine_program->grab();
+		QStringList *gcode = this->machine_program->getMachineProgram();
+		if (gcode)
+		{
+			ui->MachineProgram->clear();
+			ui->MachineProgram->addItems( *(this->machine_program->getMachineProgram()) );
+			ui->MachineProgram->setSelectionMode(QAbstractItemView::MultiSelection);
+		}
+	}
 }
 
 /**
@@ -78,6 +100,7 @@ void MachineProgramDockWindow::clearSelection() {
  * Receive messages to update the toolpath display
  */
 void MachineProgramDockWindow::updatedToolPathSelection(Cam::ToolPathFeature* toolpath) {
+	/*
     if (toolpath != NULL) {
 
         const std::vector<std::string> tpcmds = toolpath->TPCommands.getValues();
@@ -101,12 +124,14 @@ void MachineProgramDockWindow::updatedToolPathSelection(Cam::ToolPathFeature* to
     }
     else
         clearSelection();
+	*/
 }
 
 /**
  * Receive messages to update the machineProgram display
  */
 void MachineProgramDockWindow::updatedMachineProgramSelection(Cam::MachineProgramFeature* machineProgram) {
+	/*
     if (machineProgram != NULL) {
 
         const std::vector<std::string> mpcmds = machineProgram->MPCommands.getValues();
@@ -130,6 +155,7 @@ void MachineProgramDockWindow::updatedMachineProgramSelection(Cam::MachineProgra
     }
     else
         clearSelection();
+	*/
 }
 
 #include "moc_MachineProgramDockWindow.cpp"
