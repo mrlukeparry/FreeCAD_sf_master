@@ -40,7 +40,7 @@
 
 using namespace DrawingGui;
 
-QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene  ) : reference(ref)
+QGraphicsItemEdge::QGraphicsItemEdge(int ref, QGraphicsScene *scene) : reference(ref)
 {
     if(scene) {
         scene->addItem(this);
@@ -85,7 +85,7 @@ QRectF QGraphicsItemEdge::boundingRect() const
     return shape().controlPointRect();
 }
 
-bool QGraphicsItemEdge::contains(const QPointF &point)
+bool QGraphicsItemEdge::contains(const QPointF &point) const
 {
     return shape().contains(point);
 }

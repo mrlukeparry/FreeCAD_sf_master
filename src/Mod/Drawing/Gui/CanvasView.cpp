@@ -56,6 +56,8 @@
 #include <Mod/Drawing/App/FeatureViewOrthographic.h>
 #include <Mod/Drawing/App/FeatureViewPart.h>
 
+#include "ViewProviderPage.h"
+
 #include "QGraphicsItemDrawingTemplate.h"
 #include "QGraphicsItemSVGTemplate.h"
 #include "QGraphicsItemViewCollection.h"
@@ -70,14 +72,18 @@ using namespace DrawingGui;
 QColor CanvasView::PreselectColor   =    QColor(0.88f,0.88f,0.0f);   // #E1E100 -> (225,225,  0)
 QColor CanvasView::SelectColor      =    QColor(0.11f,0.68f,0.11f);  // #1CAD1C -> ( 28,173, 28)
 
-CanvasView::CanvasView(QWidget *parent)
-    : QGraphicsView(parent)
+CanvasView::CanvasView(ViewProviderDrawingPage *vp, QWidget *parent)
+    : pageGui(0)
+    , QGraphicsView(parent)
     , m_renderer(Native)
     , m_backgroundItem(0)
     , m_outlineItem(0)
     , drawBkg(true)
     , pageTemplate(0)
 {
+    assert(vp);
+    pageGui = vp;
+
     setScene(new QGraphicsScene(this));
     //setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     setCacheMode(QGraphicsView::CacheBackground);
@@ -120,18 +126,21 @@ void CanvasView::drawBackground(QPainter *p, const QRectF &)
     p->setBrush(*bkgBrush);
     p->drawRect(viewport()->rect());
 
-    if(this->pageFeat) {
-        float pageWidth  = this->pageFeat->getPageWidth();
-        float pageHeight = this->pageFeat->getPageHeight();
-        // Draw the white page
-        QRectF paperRect(0, -pageHeight, pageWidth, pageHeight);
-        QPolygon poly = this->mapFromScene(paperRect);
-
-        QBrush pageBrush(Qt::white);
-        p->setBrush(pageBrush);
-
-        p->drawRect(poly.boundingRect());
+    if(!pageGui) {
+        return;
     }
+
+    float pageWidth  = pageGui->getPageObject()->getPageWidth();
+    float pageHeight = pageGui->getPageObject()->getPageHeight();
+
+    // Draw the white page
+    QRectF paperRect(0, -pageHeight, pageWidth, pageHeight);
+    QPolygon poly = this->mapFromScene(paperRect);
+
+    QBrush pageBrush(Qt::white);
+    p->setBrush(pageBrush);
+
+    p->drawRect(poly.boundingRect());
 
     p->restore();
 
@@ -295,11 +304,13 @@ QGraphicsItemView * CanvasView::findParent(QGraphicsItemView *view) const
 
 void CanvasView::setPageFeature(Drawing::FeaturePage *page)
 {
+    //redundant
+#if 0
     // TODO verify if the pointer should even be used. Not really safe
     this->pageFeat = page;
 
-    float pageWidth  = this->pageFeat->getPageWidth();
-    float pageHeight = this->pageFeat->getPageHeight();
+    float pageWidth  = pageGui->getPageObject()->getPageWidth();
+    float pageHeight = pageGui->getPageObject()->getPageHeight();
 
     QRectF paperRect(0, -pageHeight, pageWidth, pageHeight);
 
@@ -317,6 +328,7 @@ void CanvasView::setPageFeature(Drawing::FeaturePage *page)
     QRectF myRect = paperRect;
     myRect.adjust(-20,-20,20,20);
     this->setSceneRect(myRect);
+#endif
 }
 
 void CanvasView::setPageTemplate(Drawing::FeatureTemplate *obj)

@@ -66,6 +66,7 @@ FeatureTemplate::FeatureTemplate(void)
 
 FeatureTemplate::~FeatureTemplate()
 {
+  Base::Console().Log("template destroyed");
 }
 
 

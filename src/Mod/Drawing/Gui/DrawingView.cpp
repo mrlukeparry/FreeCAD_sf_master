@@ -80,154 +80,22 @@
 #include "QGraphicsItemView.h"
 #include "QGraphicsItemViewPart.h"
 #include "QGraphicsItemViewDimension.h"
-
+#include "ViewProviderPage.h"
 #include "CanvasView.h"
 #include "DrawingView.h"
 
+
 using namespace DrawingGui;
-
-#if 0
-SvgView::SvgView(QWidget *parent)
-    : QGraphicsView(parent)
-    , m_renderer(Native)
-    , m_svgItem(0)
-    , m_backgroundItem(0)
-    , m_outlineItem(0)
-{
-    setScene(new QGraphicsScene(this));
-    setTransformationAnchor(AnchorUnderMouse);
-    setDragMode(ScrollHandDrag);
-
-    // Prepare background check-board pattern
-    QPixmap tilePixmap(64, 64);
-    tilePixmap.fill(Qt::white);
-    QPainter tilePainter(&tilePixmap);
-    QColor color(220, 220, 220);
-    tilePainter.fillRect(0, 0, 32, 32, color);
-    tilePainter.fillRect(32, 32, 32, 32, color);
-    tilePainter.end();
-
-    setBackgroundBrush(tilePixmap);
-}
-
-void SvgView::drawBackground(QPainter *p, const QRectF &)
-{
-    p->save();
-    p->resetTransform();
-    p->drawTiledPixmap(viewport()->rect(), backgroundBrush().texture());
-    p->restore();
-}
-
-void SvgView::openFile(const QFile &file)
-{
-    if (!file.exists())
-        return;
-
-    QGraphicsScene *s = scene();
-
-    bool drawBackground = (m_backgroundItem ? m_backgroundItem->isVisible() : true);
-    bool drawOutline = (m_outlineItem ? m_outlineItem->isVisible() : false);
-
-    s->clear();
-    resetTransform();
-
-    m_svgItem = new QGraphicsSvgItem(file.fileName());
-    m_svgItem->setFlags(QGraphicsItem::ItemClipsToShape);
-    m_svgItem->setCacheMode(QGraphicsItem::NoCache);
-    m_svgItem->setZValue(0);
-
-    m_backgroundItem = new QGraphicsRectItem(m_svgItem->boundingRect());
-    m_backgroundItem->setBrush(Qt::white);
-    m_backgroundItem->setPen(Qt::NoPen);
-    m_backgroundItem->setVisible(drawBackground);
-    m_backgroundItem->setZValue(-1);
-
-    m_outlineItem = new QGraphicsRectItem(m_svgItem->boundingRect());
-    QPen outline(Qt::black, 2, Qt::DashLine);
-    outline.setCosmetic(true);
-    m_outlineItem->setPen(outline);
-    m_outlineItem->setBrush(Qt::NoBrush);
-    m_outlineItem->setVisible(drawOutline);
-    m_outlineItem->setZValue(1);
-
-    s->addItem(m_backgroundItem);
-    s->addItem(m_svgItem);
-    s->addItem(m_outlineItem);
-
-    s->setSceneRect(m_outlineItem->boundingRect().adjusted(-10, -10, 10, 10));
-}
-
-void SvgView::setRenderer(RendererType type)
-{
-    m_renderer = type;
-
-    if (m_renderer == OpenGL) {
-#ifndef QT_NO_OPENGL
-        setViewport(new QGLWidget(QGLFormat(QGL::SampleBuffers)));
-#endif
-    } else {
-        setViewport(new QWidget);
-    }
-}
-
-void SvgView::setHighQualityAntialiasing(bool highQualityAntialiasing)
-{
-#ifndef QT_NO_OPENGL
-    setRenderHint(QPainter::HighQualityAntialiasing, highQualityAntialiasing);
-#else
-    Q_UNUSED(highQualityAntialiasing);
-#endif
-}
-
-void SvgView::setViewBackground(bool enable)
-{
-    if (!m_backgroundItem)
-        return;
-
-    m_backgroundItem->setVisible(enable);
-}
-
-void SvgView::setViewOutline(bool enable)
-{
-    if (!m_outlineItem)
-        return;
-
-    m_outlineItem->setVisible(enable);
-}
-
-void SvgView::paintEvent(QPaintEvent *event)
-{
-    if (m_renderer == Image) {
-        if (m_image.size() != viewport()->size()) {
-            m_image = QImage(viewport()->size(), QImage::Format_ARGB32_Premultiplied);
-        }
-
-        QPainter imagePainter(&m_image);
-        QGraphicsView::render(&imagePainter);
-        imagePainter.end();
-
-        QPainter p(viewport());
-        p.drawImage(0, 0, m_image);
-
-    } else {
-        QGraphicsView::paintEvent(event);
-    }
-}
-
-void SvgView::wheelEvent(QWheelEvent *event)
-{
-    qreal factor = std::pow(1.2, -event->delta() / 240.0);
-    scale(factor, factor);
-    event->accept();
-}
-#endif
-// ----------------------------------------------------------------------------
 
 /* TRANSLATOR DrawingGui::DrawingView */
 
-DrawingView::DrawingView(Gui::Document* doc, QWidget* parent)
-  : Gui::MDIView(doc, parent), m_view(new CanvasView)
+DrawingView::DrawingView(ViewProviderDrawingPage *pageVp, Gui::Document* doc, QWidget* parent)
+  : Gui::MDIView(doc, parent), pageGui(pageVp)
 {
+
+  // Setup the Canvas View
+    m_view = new CanvasView(pageVp);
+
     m_backgroundAction = new QAction(tr("&Background"), this);
     m_backgroundAction->setEnabled(false);
     m_backgroundAction->setCheckable(true);
@@ -276,27 +144,47 @@ DrawingView::DrawingView(Gui::Document* doc, QWidget* parent)
     setCentralWidget(m_view);
     //setWindowTitle(tr("SVG Viewer"));
 
+
     // Connect Signals and Slots
     QObject::connect(
         m_view->scene(), SIGNAL(selectionChanged()),
         this           , SLOT  (selectionChanged())
        );
+
+
+     // A fresh page is added and we iterate through its collected children and add these to Canvas View
+    const std::vector<App::DocumentObject*> &grp = pageGui->getPageObject()->Views.getValues();
+    for (std::vector<App::DocumentObject*>::const_iterator it = grp.begin();it != grp.end(); ++it) {
+        attachView(*it);
+    }
+
+    App::DocumentObject *obj = pageGui->getPageObject()->Template.getValue();
+    if(obj && obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) {
+        Drawing::FeatureTemplate *pageTemplate = dynamic_cast<Drawing::FeatureTemplate *>(obj);
+        this->attachTemplate(pageTemplate);
+    }
+
 }
 
 DrawingView::~DrawingView()
 {
-
+  delete m_view;
+  m_view = 0;
 }
 
 void DrawingView::attachPageObject(Drawing::FeaturePage *pageFeature)
 {
+    return;
+
+    // redundant;
+
+#if 0
     // A fresh page is added and we iterate through its collected children and add these to Canvas View
     const std::vector<App::DocumentObject*> &grp = pageFeature->Views.getValues();
     for (std::vector<App::DocumentObject*>::const_iterator it = grp.begin();it != grp.end(); ++it) {
         attachView(*it);
     }
 
-    m_view->setPageFeature(pageFeature);
     // Save a link to the page feature - exclusivly one page per drawing view
     pageFeat.setValue(dynamic_cast<App::DocumentObject*>(pageFeature));
 
@@ -305,6 +193,7 @@ void DrawingView::attachPageObject(Drawing::FeaturePage *pageFeature)
         Drawing::FeatureTemplate *pageTemplate = dynamic_cast<Drawing::FeatureTemplate *>(obj);
         this->attachTemplate(pageTemplate);
     }
+#endif
 }
 
 void DrawingView::attachTemplate(Drawing::FeatureTemplate *obj)
@@ -522,14 +411,13 @@ void DrawingView::selectionChanged()
 
 void DrawingView::updateTemplate()
 {
-
-    Drawing::FeaturePage *pageFeature = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
-
-    App::DocumentObject *templObj = pageFeature->Template.getValue();
-    if(pageFeature->Template.isTouched() || (templObj && templObj->isTouched())) {
+    App::DocumentObject *templObj = pageGui->getPageObject()->Template.getValue();
+    if(pageGui->getPageObject()->Template.isTouched() || templObj->isTouched()) {
         // Template is touched so update
 
-        if(templObj && templObj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) {
+
+
+        if(templObj && templObj->isTouched() && templObj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) {
 
             QGraphicsItemTemplate *qItemTemplate = m_view->getTemplate();
 
@@ -541,17 +429,17 @@ void DrawingView::updateTemplate()
         }
     }
 
-    m_view->setPageFeature(pageFeature);
+    // m_view->setPageFeature(pageFeature); redundant
 }
 
 void DrawingView::updateDrawing()
 {
     // We cannot guarantee if the number of views have changed so check the number
     const std::vector<QGraphicsItemView *> &views = m_view->getViews();
-    Drawing::FeaturePage *pageFeature = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
-    const std::vector<App::DocumentObject*> &grp = pageFeature->Views.getValues();
 
-    m_view->setPageFeature(pageFeature);
+    const std::vector<App::DocumentObject*> &grp = pageGui->getPageObject()->Views.getValues();
+
+    //m_view->setPageFeature(pageFeature); redundant
 
     // Count total number of children
     int groupCount = 0;

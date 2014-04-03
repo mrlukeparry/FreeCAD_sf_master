@@ -49,7 +49,6 @@ public:
 
     void setHighlighted(bool state);
     void setShowHidden(bool state) {showHidden = state; update(); }
-
     void setCosmetic(bool state);
 
     int getReference() const { return reference; }
@@ -61,7 +60,7 @@ public:
     void setVisiblePath(const QPainterPath &path);
 
 public:
-    bool contains(const QPointF &point);
+    bool contains(const QPointF &point) const;
     QPainterPath shape() const;
     QRectF boundingRect() const;
     virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );

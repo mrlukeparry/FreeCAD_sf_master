@@ -23,9 +23,11 @@
 #include "PreCompiled.h"
 #ifndef _PreComp_
 #include <QFile>
+#include <QFont>
 #include <QSvgRenderer>
 #include <QGraphicsSvgItem>
 # include <strstream>
+#include <boost/regex.hpp>
 #endif
 
 #include <Base/Exception.h>
@@ -93,6 +95,66 @@ void QGraphicsItemSVGTemplate::load (const QString & fileName)
     m_svgItem->setSharedRenderer(m_svgRender);
 
     Drawing::FeatureSVGTemplate *tmplte = getSVGTemplate();
+
+
+    std::string temp = tmplte->Template.getValue();
+    if (temp.empty())
+        return;
+
+    Base::FileInfo fi(temp);
+
+    // make a temp file for FileIncluded Property
+    std::string tempName = tmplte->PageResult.getExchangeTempFile();
+    std::ostringstream ofile;
+    std::string tempendl = "--endOfLine--";
+    std::string line;
+
+    std::ifstream ifile (fi.filePath().c_str());
+    while (!ifile.eof())
+    {
+        std::getline(ifile,line);
+        // check if the marker in the template is found
+        if(line.find("<!-- DrawingContent -->") == std::string::npos) {
+            // if not -  write through
+            ofile << line << tempendl;
+        }
+    }
+
+
+    std::string outfragment(ofile.str());
+
+    boost::regex e1 ("<text.*?font-size:(.*?)px.*?x=\"(.*?)\".*?y=\"(.*?)\".*?freecad:editable=\"(.*?)\".*?<tspan.*?></tspan>");
+    std::string::const_iterator begin, end;
+    begin = outfragment.begin();
+    end = outfragment.end();
+    boost::match_results<std::string::const_iterator> what;
+    int count = 0;
+
+
+    while (boost::regex_search(begin, end, what, e1)) {
+        QString fStr =  QString::fromStdString(what[1].str());
+        QString xStr = QString::fromStdString(what[2].str());
+        QString yStr =  QString::fromStdString(what[3].str());
+        QString content =  QString::fromStdString(what[5].str());
+        double x = xStr.toDouble();
+        double y = yStr.toDouble();
+        int fontSize = fStr.toInt();
+
+        QFont font;
+        font.setFamily(QString::fromAscii("osifont"));
+        font.setPixelSize(fontSize);
+
+        QGraphicsTextItem *item = new QGraphicsTextItem();
+        item->setFont(font);
+        item->setPos(x, -tmplte->getHeight() + y -4);
+
+        item->setZValue(100);
+        item->setPlainText(content);
+        item->setTextInteractionFlags(Qt::TextEditorInteraction);
+        this->addToGroup(item);
+
+        begin = what[0].second;
+    }
 
     double xaspect, yaspect;
     xaspect = tmplte->getWidth() / (double) size.width();

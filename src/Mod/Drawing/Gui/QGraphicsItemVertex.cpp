@@ -87,9 +87,9 @@ void QGraphicsItemVertex::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
     assert(view != 0);
 
     if(!isSelected() && !view->isSelected()) {
-          QBrush brush = this->brush();
-          brush.setColor(Qt::black);
-          this->setBrush(brush);
+        QBrush brush = this->brush();
+        brush.setColor(Qt::black);
+        this->setBrush(brush);
         update();
     }
 }

@@ -173,15 +173,15 @@ App::DocumentObjectExecReturn *FeatureSVGTemplate::execute(void)
         boost::match_results<std::string::const_iterator> what;
         int count = 0;
 
-        while (boost::regex_search(begin, end, what, e1)) {
-            if (count < EditableTexts.getSize()) {
-                // change values of editable texts
-                boost::regex e2 ("(<text.*?freecad:editable=\""+what[1].str()+"\".*?<tspan.*?)>(.*?)(</tspan>)");
-                outfragment = boost::regex_replace(outfragment, e2, "$1>"+EditableTexts.getValues()[count]+"$3");
-            }
-            count ++;
-            begin = what[0].second;
-        }
+//         while (boost::regex_search(begin, end, what, e1)) {
+//             if (count < EditableTexts.getSize()) {
+//                 // change values of editable texts
+//                 boost::regex e2 ("(<text.*?freecad:editable=\""+what[1].str()+"\".*?<tspan.*?)>(.*?)(</tspan>)");
+//                 //outfragment = boost::regex_replace(outfragment, e2, "$1>"+EditableTexts.getValues()[count]+"$3");
+//             }
+//             count ++;
+//             begin = what[0].second;
+//         }
     }
 
 

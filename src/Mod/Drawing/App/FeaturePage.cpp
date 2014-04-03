@@ -100,38 +100,48 @@ short FeaturePage::mustExecute() const
 
 double FeaturePage::getPageWidth() const
 {
-    App::DocumentObject *obj = Template.getValue();
+    App::DocumentObject *obj = 0;
+    obj = Template.getValue();
 
-    if(!obj || !obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId()))
-        throw Base::Exception("Template not set for Page");
+    if(obj) {
+        if(obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId()) ) {
+        Drawing::FeatureTemplate *templ = static_cast<Drawing::FeatureTemplate *>(obj);
+        return templ->getWidth();
+        }
+    }
 
-    Drawing::FeatureTemplate *templ = static_cast<Drawing::FeatureTemplate *>(obj);
+    throw Base::Exception("Template not set for Page");
 
-    return templ->getWidth();
 }
 
 double FeaturePage::getPageHeight() const
 {
-    App::DocumentObject *obj = Template.getValue();
+    App::DocumentObject *obj = 0;
+    obj = Template.getValue();
 
-    if(!obj || !obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId()))
-        throw Base::Exception("Template not set for Page");
+    if(obj) {
+        if(obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) {
+            Drawing::FeatureTemplate *templ = static_cast<Drawing::FeatureTemplate *>(obj);
+            return templ->getHeight();
+        }
+    }
 
-    Drawing::FeatureTemplate *templ = static_cast<Drawing::FeatureTemplate *>(obj);
-
-    return templ->getHeight();
+    throw Base::Exception("Template not set for Page");
 }
 
 const char * FeaturePage::getPageOrientation() const
 {
-    App::DocumentObject *obj = Template.getValue();
+    App::DocumentObject *obj;
+    obj = Template.getValue();
 
-    if(!obj || !obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId()))
-        throw Base::Exception("Template not set for Page");
+    if(obj) {
+      if(obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) {
+        Drawing::FeatureTemplate *templ = static_cast<Drawing::FeatureTemplate *>(obj);
 
-    Drawing::FeatureTemplate *templ = static_cast<Drawing::FeatureTemplate *>(obj);
-
-    return templ->Orientation.getValueAsString();
+        return templ->Orientation.getValueAsString();
+      }
+    }
+    throw Base::Exception("Template not set for Page");
 }
 
 /// get called by the container when a Property was changed

@@ -46,24 +46,26 @@ using namespace DrawingGui;
 
 
 /* module functions */
-static PyObject * 
-open(PyObject *self, PyObject *args) 
+static PyObject *
+open(PyObject *self, PyObject *args)
 {
     const char* Name;
     if (!PyArg_ParseTuple(args, "s",&Name))
-        return NULL; 
-    
+        return NULL;
+
     PY_TRY {
         Base::FileInfo file(Name);
         if (file.hasExtension("svg") || file.hasExtension("svgz")) {
             QString fileName = QString::fromUtf8(Name);
             // Displaying the image in a view
+#if 0
             DrawingView* view = new DrawingView(0, Gui::getMainWindow());
 //             view->load(fileName);
             view->setWindowIcon(Gui::BitmapFactory().pixmap("actions/drawing-landscape"));
             view->setWindowTitle(QObject::tr("Drawing viewer"));
             view->resize( 400, 300 );
             Gui::getMainWindow()->addWindow(view);
+#endif
         }
         else {
             PyErr_SetString(PyExc_Exception, "unknown filetype");
@@ -71,7 +73,7 @@ open(PyObject *self, PyObject *args)
         }
     } PY_CATCH;
 
-    Py_Return; 
+    Py_Return;
 }
 
 /* module functions */
@@ -81,26 +83,28 @@ importer(PyObject *self, PyObject *args)
     const char* Name;
     const char* dummy;
     if (!PyArg_ParseTuple(args, "s|s",&Name,&dummy))
-        return NULL; 
-    
+        return NULL;
+
     PY_TRY {
         Base::FileInfo file(Name);
         if (file.hasExtension("svg") || file.hasExtension("svgz")) {
             QString fileName = QString::fromUtf8(Name);
             // Displaying the image in a view
+#if 0
             DrawingView* view = new DrawingView(0, Gui::getMainWindow());
 //             view->load(fileName);
             view->setWindowIcon(Gui::BitmapFactory().pixmap("actions/drawing-landscape"));
             view->setWindowTitle(QObject::tr("Drawing viewer"));
             view->resize( 400, 300 );
             Gui::getMainWindow()->addWindow(view);
+#endif
         } else {
             PyErr_SetString(PyExc_Exception, "unknown filetype");
             return NULL;
         }
     } PY_CATCH;
 
-    Py_Return; 
+    Py_Return;
 }
 
 

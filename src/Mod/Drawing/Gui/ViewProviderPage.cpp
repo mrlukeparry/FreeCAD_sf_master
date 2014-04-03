@@ -147,7 +147,7 @@ bool ViewProviderDrawingPage::doubleClicked(void)
 {
     if (!this->view) {
         showDrawingView();
-        view->attachPageObject(getPageObject());
+        //view->attachPageObject(getPageObject());
         view->updateDrawing();
         view->viewAll();
     }
@@ -193,7 +193,7 @@ DrawingView* ViewProviderDrawingPage::showDrawingView()
 {
     if (!view){
         Gui::Document* doc = Gui::Application::Instance->getDocument(this->pcObject->getDocument());
-        view = new DrawingView(doc, Gui::getMainWindow());
+        view = new DrawingView(this, doc, Gui::getMainWindow());
         view->setWindowIcon(Gui::BitmapFactory().pixmap("actions/drawing-landscape"));
         view->setWindowTitle(QObject::tr("Drawing viewer") + QString::fromAscii("[*]"));
         Gui::getMainWindow()->addWindow(view);
@@ -232,7 +232,7 @@ void ViewProviderDrawingPage::onSelectionChanged(const Gui::SelectionChanges& ms
        Gui::Document* doc = Gui::Application::Instance->getDocument(this->pcObject->getDocument());
        App::DocumentObject *obj = doc->getDocument()->getObject(msg.pObjectName);
        if(obj) {
-         
+
           std::string str = msg.pSubName;
           // If it's a subfeature, dont select feature
           if(strcmp(str.substr(0,4).c_str(), "Edge") == 0||

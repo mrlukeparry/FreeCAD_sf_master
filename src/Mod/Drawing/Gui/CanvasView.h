@@ -37,6 +37,7 @@ namespace DrawingGui
 {
 class QGraphicsItemView;
 class QGraphicsItemTemplate;
+class ViewProviderDrawingPage;
 
 class DrawingGuiExport CanvasView : public QGraphicsView
 {
@@ -45,7 +46,7 @@ class DrawingGuiExport CanvasView : public QGraphicsView
 public:
     enum RendererType { Native, OpenGL, Image };
 
-    CanvasView(QWidget *parent = 0);
+    CanvasView(ViewProviderDrawingPage *vp, QWidget *parent = 0);
     ~CanvasView();
 
     void setRenderer(RendererType type = Native);
@@ -100,6 +101,7 @@ private:
     QGraphicsRectItem *m_outlineItem;
     QBrush *bkgBrush;
     QImage m_image;
+    ViewProviderDrawingPage *pageGui;
 };
 
 } // namespace DrawingViewGui

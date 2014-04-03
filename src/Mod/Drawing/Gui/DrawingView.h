@@ -26,7 +26,6 @@
 
 #include <Gui/MDIView.h>
 #include <Gui/Selection.h>
-#include <QGraphicsView>
 
 #include <App/PropertyLinks.h>
 
@@ -50,6 +49,7 @@ class FeatureTemplate;
 namespace DrawingGui
 {
 
+class ViewProviderDrawingPage;
 class CanvasView;
 
 class DrawingGuiExport DrawingView : public Gui::MDIView, public Gui::SelectionObserver
@@ -57,7 +57,7 @@ class DrawingGuiExport DrawingView : public Gui::MDIView, public Gui::SelectionO
     Q_OBJECT
 
 public:
-    DrawingView(Gui::Document* doc, QWidget* parent = 0);
+    DrawingView(ViewProviderDrawingPage *page, Gui::Document* doc, QWidget* parent = 0);
     ~DrawingView();
 
 public Q_SLOTS:
@@ -110,6 +110,7 @@ private:
     CanvasView *m_view;
 
     QString m_currentPath;
+    ViewProviderDrawingPage *pageGui;
 };
 
 } // namespace DrawingViewGui
