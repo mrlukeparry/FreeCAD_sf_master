@@ -151,7 +151,8 @@ std::string  FeatureViewDimension::getContent() const
 
         s.prepend(QString::fromAscii("%"));
         if(*it == QString::fromAscii("value")){
-            str.replace(s, QString::number(getValue(), 'f', Precision.getValue()) );
+            double val = std::abs(getValue()); // Return only the absolute value of the dimension
+            str.replace(s, QString::number(val, 'f', Precision.getValue()) );
         } else {
             str.replace(s, QString::fromAscii("")); // Replace with empty statement
         }

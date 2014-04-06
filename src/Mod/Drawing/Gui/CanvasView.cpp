@@ -247,12 +247,14 @@ QGraphicsItemView * CanvasView::addViewDimension(Drawing::FeatureViewDimension *
 
 QGraphicsItemView * CanvasView::findView(App::DocumentObject *obj) const
 {
-   const std::vector<QGraphicsItemView *> qviews = this->views;
-   for(std::vector<QGraphicsItemView *>::const_iterator it = qviews.begin(); it != qviews.end(); ++it) {
-        Drawing::FeatureView *fview = (*it)->getViewObject();
-        if(fview && strcmp(obj->getNameInDocument(), fview->getNameInDocument()) == 0)
-            return *it;
-    }
+  if(scene()) {
+    const std::vector<QGraphicsItemView *> qviews = this->views;
+    for(std::vector<QGraphicsItemView *>::const_iterator it = qviews.begin(); it != qviews.end(); ++it) {
+          Drawing::FeatureView *fview = (*it)->getViewObject();
+          if(fview && strcmp(obj->getNameInDocument(), fview->getNameInDocument()) == 0)
+              return *it;
+      }
+  }
     return 0;
 }
 
