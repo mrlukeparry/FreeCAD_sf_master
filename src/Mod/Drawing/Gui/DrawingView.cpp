@@ -726,7 +726,8 @@ void DrawingView::printPreview()
 // This SHOULD only be temporary
 void DrawingView::saveSVG()
 {
-    Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
+
+    Drawing::FeaturePage *page = pageGui->getPageObject();
 
     QSvgGenerator svgGen;
 
@@ -763,7 +764,7 @@ void DrawingView::saveSVG()
 
 void DrawingView::print(QPrinter* printer)
 {
-    Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pageFeat.getValue());
+    Drawing::FeaturePage *page = pageGui->getPageObject();
 
 //     if(strcmp(page->getPageOrientation(), "Landscape") == 0) {
 //         printer->setOrientation(QPrinter::Landscape);
