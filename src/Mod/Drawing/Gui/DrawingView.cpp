@@ -409,15 +409,14 @@ void DrawingView::selectionChanged()
     this->blockConnection(block);
 }
 
-void DrawingView::updateTemplate()
+void DrawingView::updateTemplate(bool forceUpdate)
 {
     App::DocumentObject *templObj = pageGui->getPageObject()->Template.getValue();
     if(pageGui->getPageObject()->Template.isTouched() || templObj->isTouched()) {
         // Template is touched so update
 
-
-
-        if(templObj && templObj->isTouched() && templObj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) {
+        if(forceUpdate ||
+           (templObj && templObj->isTouched() && templObj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) ) {
 
             QGraphicsItemTemplate *qItemTemplate = m_view->getTemplate();
 

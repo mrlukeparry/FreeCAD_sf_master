@@ -149,7 +149,11 @@ bool ViewProviderDrawingPage::doubleClicked(void)
         showDrawingView();
         //view->attachPageObject(getPageObject());
         view->updateDrawing();
+        view->updateTemplate(true);
         view->viewAll();
+    } else {
+        view->updateDrawing();
+        view->updateTemplate(true);
     }
     Gui::getMainWindow()->setActiveWindow(this->view);
     Gui::Application::Instance->activeDocument()->setEdit(this);
