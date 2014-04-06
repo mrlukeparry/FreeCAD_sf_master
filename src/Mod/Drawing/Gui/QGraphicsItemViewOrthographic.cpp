@@ -59,6 +59,7 @@ QGraphicsItemViewOrthographic::QGraphicsItemViewOrthographic(const QPoint &pos, 
     //this->addToGroup(m_backgroundItem);
     setFlag(ItemIsSelectable, false);
     setFlag(ItemIsMovable, true);
+    //setFiltersChildEvents(true);
 }
 
 QGraphicsItemViewOrthographic::~QGraphicsItemViewOrthographic()
@@ -66,6 +67,17 @@ QGraphicsItemViewOrthographic::~QGraphicsItemViewOrthographic()
 
 }
 
+bool QGraphicsItemViewOrthographic::sceneEventFilter(QGraphicsItem * watched, QEvent *event)
+{
+    if(event->type() == QEvent::GraphicsSceneMousePress) {
+      QGraphicsItemView *qAnchor = this->getAnchorQItem();
+      if(qAnchor && watched == qAnchor) {
+          this->mousePressEvent(dynamic_cast<QGraphicsSceneMouseEvent*>(event));
+      }
+    } else {
+      return false;
+    }
+}
 QVariant QGraphicsItemViewOrthographic::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     if(change == ItemChildAddedChange && scene()) {
@@ -90,6 +102,7 @@ QVariant QGraphicsItemViewOrthographic::itemChange(GraphicsItemChange change, co
                     view->alignTo(origin, QString::fromAscii("Vertical"));
                 } else if(type == QString::fromAscii("Front")) {
                     view->setLocked(true);
+                    this->installSceneEventFilter(view); // Install an event filter
                     // Get FeatureViewOrthohraphic object
                     App::DocumentObject *obj = this->getViewObject();
                     Drawing::FeatureViewOrthographic *viewOrthographic = dynamic_cast<Drawing::FeatureViewOrthographic *>(obj);
@@ -110,7 +123,7 @@ QVariant QGraphicsItemViewOrthographic::itemChange(GraphicsItemChange change, co
 
 void QGraphicsItemViewOrthographic::mousePressEvent(QGraphicsSceneMouseEvent * event)
 {
-  QGraphicsItem::mousePressEvent(event);
+    QGraphicsItem::mousePressEvent(event);
 }
 
 void QGraphicsItemViewOrthographic::mouseMoveEvent(QGraphicsSceneMouseEvent * event)

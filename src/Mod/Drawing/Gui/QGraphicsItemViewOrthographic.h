@@ -32,6 +32,7 @@
 QT_BEGIN_NAMESPACE
 class QGraphicsScene;
 class QGraphicsSceneMouseEvent;
+class QEvent;
 QT_END_NAMESPACE
 
 namespace Drawing {
@@ -60,6 +61,7 @@ Q_SIGNALS:
   void dirty();
 
 protected:
+  virtual bool sceneEventFilter(QGraphicsItem * watched, QEvent *event);
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
   virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
   virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
