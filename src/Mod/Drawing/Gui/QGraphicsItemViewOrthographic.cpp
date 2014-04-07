@@ -59,7 +59,7 @@ QGraphicsItemViewOrthographic::QGraphicsItemViewOrthographic(const QPoint &pos, 
     //this->addToGroup(m_backgroundItem);
     setFlag(ItemIsSelectable, false);
     setFlag(ItemIsMovable, true);
-    //setFiltersChildEvents(true);
+    setFiltersChildEvents(true);
 }
 
 QGraphicsItemViewOrthographic::~QGraphicsItemViewOrthographic()
@@ -69,14 +69,24 @@ QGraphicsItemViewOrthographic::~QGraphicsItemViewOrthographic()
 
 bool QGraphicsItemViewOrthographic::sceneEventFilter(QGraphicsItem * watched, QEvent *event)
 {
-    if(event->type() == QEvent::GraphicsSceneMousePress) {
-      QGraphicsItemView *qAnchor = this->getAnchorQItem();
-      if(qAnchor && watched == qAnchor) {
-          this->mousePressEvent(dynamic_cast<QGraphicsSceneMouseEvent*>(event));
-      }
-    } else {
-      return false;
+    if(event->type() == QEvent::GraphicsSceneMousePress ||
+       event->type() == QEvent::GraphicsSceneMouseMove  ||
+       event->type() == QEvent::GraphicsSceneMouseRelease) {
+
+        QGraphicsItemView *qAnchor = this->getAnchorQItem();
+        if(qAnchor && watched == qAnchor) {
+            QGraphicsSceneMouseEvent *mEvent = dynamic_cast<QGraphicsSceneMouseEvent*>(event);
+            switch(event->type()) {
+              case QEvent::GraphicsSceneMousePress:    this->mousePressEvent(mEvent); break;
+              case QEvent::GraphicsSceneMouseMove:     this->mouseMoveEvent(mEvent); break;
+              case QEvent::GraphicsSceneMouseRelease:  this->mouseReleaseEvent(mEvent); break;
+              default: break;
+            }
+            return true;
+        }
     }
+
+    return false;
 }
 QVariant QGraphicsItemViewOrthographic::itemChange(GraphicsItemChange change, const QVariant &value)
 {

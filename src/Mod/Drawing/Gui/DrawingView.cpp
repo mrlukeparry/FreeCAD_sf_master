@@ -435,10 +435,8 @@ void DrawingView::updateDrawing()
 {
     // We cannot guarantee if the number of views have changed so check the number
     const std::vector<QGraphicsItemView *> &views = m_view->getViews();
+    const std::vector<App::DocumentObject*> &grp  = pageGui->getPageObject()->Views.getValues();
 
-    const std::vector<App::DocumentObject*> &grp = pageGui->getPageObject()->Views.getValues();
-
-    //m_view->setPageFeature(pageFeature); redundant
 
     // Count total number of children
     int groupCount = 0;

@@ -96,6 +96,9 @@ QVariant QGraphicsItemView::itemChange(GraphicsItemChange change, const QVariant
 
 void QGraphicsItemView::mousePressEvent(QGraphicsSceneMouseEvent * event)
 {
+  QGraphicsItem *item = this->parentItem();
+
+
   if(this->locked) {
       event->ignore();
   } else {
