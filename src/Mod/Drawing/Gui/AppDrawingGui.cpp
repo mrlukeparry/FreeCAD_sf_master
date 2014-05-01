@@ -43,6 +43,7 @@
 
 // use a different name to CreateCommand()
 void CreateDrawingCommands(void);
+void CreateDrawingCommandsDims(void);
 
 void loadDrawingResource()
 {
@@ -69,6 +70,8 @@ void DrawingGuiExport initDrawingGui()
 
     // instantiating the commands
     CreateDrawingCommands();
+    CreateDrawingCommandsDims();
+    
     DrawingGui::Workbench::init();
 
     //Load the osifont for Drawing View

@@ -56,6 +56,7 @@ SET(DrawingGui_SRCS
     AppDrawingGui.cpp
     AppDrawingGuiPy.cpp
     Command.cpp
+    CommandCreateDims.cpp
     Resources/Drawing.qrc
     PreCompiled.cpp
     PreCompiled.h

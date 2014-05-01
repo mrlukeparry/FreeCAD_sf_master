@@ -94,7 +94,14 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
 
     Gui::ToolBarItem *dims = new Gui::ToolBarItem(root);
     dims->setCommand("Drawing Dimensions");
-    *dims << "Drawing_NewDimension";
+    *dims << "Drawing_NewDimension"
+          << "Drawing_NewLengthDimension"
+          << "Drawing_NewDistanceXDimension"
+          << "Drawing_NewDistanceYDimension"
+          << "Drawing_NewRadiusDimension"
+          << "Drawing_NewDiameterDimension"
+          << "Drawing_NewAngleDimension";
+
 
 //     *img << "Drawing_OpenBrowserView";
 //     *img << "Drawing_Annotation";
@@ -127,6 +134,12 @@ Gui::ToolBarItem* Workbench::setupCommandBars() const
     Gui::ToolBarItem *dims = new Gui::ToolBarItem(root);
     dims->setCommand("Drawing Dimensions");
     *dims << "Drawing_NewDimension";
+//           << "Drawing_NewLengthDimension"
+//           << "Drawing_NewDistanceXDimension"
+//           << "Drawing_NewDistanceYDimension"
+//           << "Drawing_NewRadiusDimension"
+//           << "Drawing_NewDiameterDimension"
+//           << "Drawing_NewAngleDimension";
 
 //     *img << "Drawing_OpenBrowserView";
 //     *img << "Drawing_Annotation";
