@@ -254,6 +254,9 @@ bool ViewProviderDrawingPage::onDelete(const std::vector<std::string> &subList)
 {
     std::vector<Gui::SelectionObject> selection = Gui::Selection().getSelectionEx();
     const std::vector<std::string> &SubNames = selection[0].getSubNames();
+    Gui::getMainWindow()->removeWindow(getDrawingView());
+    Gui::getMainWindow()->activatePreviousWindow();
+    getDrawingView()->deleteLater(); // Delete the drawing view;
 }
 
 Drawing::FeaturePage* ViewProviderDrawingPage::getPageObject() const

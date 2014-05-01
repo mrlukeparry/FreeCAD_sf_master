@@ -133,14 +133,25 @@ QVariant QGraphicsItemViewOrthographic::itemChange(GraphicsItemChange change, co
 
 void QGraphicsItemViewOrthographic::mousePressEvent(QGraphicsSceneMouseEvent * event)
 {
-    QGraphicsItem::mousePressEvent(event);
+    QGraphicsItemViewCollection::mousePressEvent(event);
 }
 
 void QGraphicsItemViewOrthographic::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 {
-
-    QGraphicsItem::mouseMoveEvent(event);
+    QGraphicsItemViewCollection::mouseMoveEvent(event);
 }
+
+void QGraphicsItemViewOrthographic::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
+{
+     if(scene()) {
+        Gui::Command::openCommand("Drag View");
+        Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", this->getViewObject()->getNameInDocument(), this->x());
+        Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", this->getViewObject()->getNameInDocument(), this->getY());
+        Gui::Command::commitCommand();
+        Gui::Command::updateActive();
+    }
+}
+
 
 QGraphicsItemView * QGraphicsItemViewOrthographic::getAnchorQItem() const
 {
