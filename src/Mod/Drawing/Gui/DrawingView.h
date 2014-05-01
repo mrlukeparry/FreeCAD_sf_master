@@ -82,6 +82,8 @@ public:
     void printPreview();
 
     void selectFeature(App::DocumentObject *obj, bool state);
+    void clearSelection();
+
     void blockSelection(bool isBlocked);
 
     void print(QPrinter* printer);

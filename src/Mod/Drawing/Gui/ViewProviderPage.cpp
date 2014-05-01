@@ -213,6 +213,7 @@ void ViewProviderDrawingPage::onSelectionChanged(const Gui::SelectionChanges& ms
 
     if(msg.Type == Gui::SelectionChanges::SetSelection) {
 
+        getDrawingView()->clearSelection();
         std::vector<Gui::SelectionSingleton::SelObj> objs = Gui::Selection().getSelection(msg.pDocName);
 
         for (std::vector<Gui::SelectionSingleton::SelObj>::iterator it = objs.begin(); it != objs.end(); ++it) {
@@ -252,7 +253,7 @@ void ViewProviderDrawingPage::onSelectionChanged(const Gui::SelectionChanges& ms
 
 bool ViewProviderDrawingPage::onDelete(const std::vector<std::string> &subList)
 {
-    
+
     Gui::getMainWindow()->removeWindow(getDrawingView());
     Gui::getMainWindow()->activatePreviousWindow();
 

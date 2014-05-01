@@ -300,6 +300,21 @@ void DrawingView::blockSelection(const bool state)
   this->isSlectionBlocked = state;
 }
 
+void DrawingView::clearSelection()
+{
+  this->blockSelection(true);
+  std::vector<QGraphicsItemView *> views = m_view->getViews();
+
+  // Iterate through all views and unselect all
+  for (std::vector<QGraphicsItemView *>::iterator it = views.begin(); it != views.end(); ++it) {
+      QGraphicsItemView *item = *it;
+      item->setSelected(false);
+      item->updateView();
+  }
+
+  this->blockSelection(false);
+}
+
 void DrawingView::selectFeature(App::DocumentObject *obj, const bool isSelected)
 {
     // Update CanvasView's selection based on Selection made outside Drawing Interace
