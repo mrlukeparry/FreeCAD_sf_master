@@ -1,7 +1,13 @@
 <RCC>
-    <qresource> 
+    <qresource>
         <file>icons/Page.svg</file>
         <file>icons/Pages.svg</file>
+        <file>icons/Dimension_Angle.svg</file>
+        <file>icons/Dimension_Diameter.svg</file>
+        <file>icons/Dimension_Horizontal.svg</file>
+        <file>icons/Dimension_Length.svg</file>
+        <file>icons/Dimension_Radius.svg</file>
+        <file>icons/Dimension_Vertical.svg</file>
         <file>icons/View.svg</file>
         <file>fonts/osifont.ttf</file>
         <file>icons/actions/document-new.png</file>
@@ -44,4 +50,4 @@
         <file>translations/Drawing_hu.qm</file>
         <file>translations/Drawing_pt-PT.qm</file>
     </qresource>
-</RCC> 
+</RCC>
