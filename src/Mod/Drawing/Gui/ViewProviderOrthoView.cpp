@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2014 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2014 Luke Parry    <l.parry@warwick.ac.uk>              *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -20,13 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
-
 #ifndef _PreComp_
-# ifdef FC_OS_WIN32
-#  include <windows.h>
-# endif
 #endif
 
 /// Here the FreeCAD includes sorted by Base,App,Gui......
@@ -34,56 +29,109 @@
 #include <Base/Parameter.h>
 #include <Base/Exception.h>
 #include <Base/Sequencer.h>
+
 #include <App/Application.h>
 #include <App/Document.h>
 #include <App/DocumentObject.h>
-#include <Gui/SoFCSelection.h>
-#include <Gui/Selection.h>
 
-#include <Mod/Drawing/App/FeatureTemplate.h>
-#include "ViewProviderTemplate.h"
+#include <Gui/Application.h>
+#include <Gui/BitmapFactory.h>
+#include <Gui/Control.h>
+#include <Gui/Document.h>
+#include <Gui/MainWindow.h>
+#include <Gui/Selection.h>
+#include <Gui/SoFCSelection.h>
+
+
+#include <Mod/Drawing/App/FeatureOrthoView.h>
+
+#include "ViewProviderOrthoView.h"
 
 using namespace DrawingGui;
 
-PROPERTY_SOURCE(DrawingGui::ViewProviderTemplate, Gui::ViewProviderDocumentObject)
+PROPERTY_SOURCE(DrawingGui::ViewProviderOrthoView, DrawingGui::ViewProviderViewPart)
 
 //**************************************************************************
 // Construction/Destruction
 
-ViewProviderTemplate::ViewProviderTemplate()
+ViewProviderOrthoView::ViewProviderOrthoView()
 {
-    sPixmap = "PageTemplate";
+
 }
 
-ViewProviderTemplate::~ViewProviderTemplate()
+ViewProviderOrthoView::~ViewProviderOrthoView()
 {
 }
 
-void ViewProviderTemplate::attach(App::DocumentObject *pcFeat)
+void ViewProviderOrthoView::attach(App::DocumentObject *pcFeat)
 {
     // call parent attach method
     ViewProviderDocumentObject::attach(pcFeat);
 }
 
-void ViewProviderTemplate::setDisplayMode(const char* ModeName)
+void ViewProviderOrthoView::setDisplayMode(const char* ModeName)
 {
     ViewProviderDocumentObject::setDisplayMode(ModeName);
 }
 
-std::vector<std::string> ViewProviderTemplate::getDisplayModes(void) const
+std::vector<std::string> ViewProviderOrthoView::getDisplayModes(void) const
 {
     // get the modes of the father
     std::vector<std::string> StrList = ViewProviderDocumentObject::getDisplayModes();
-
+    StrList.push_back("Drawing");
     return StrList;
 }
 
-void ViewProviderTemplate::updateData(const App::Property*)
+void ViewProviderOrthoView::updateData(const App::Property* prop)
 {
-    Base::Console().Log("Update View");
+    Gui::ViewProviderDocumentObject::updateData(prop);
+    Drawing::FeatureOrthoView* ortho = getObject();
+
+    if(ortho) {
+        // Set the icon pixmap depending on the orientation
+        std::string projType = ortho->Type.getValueAsString();
+
+        if(strcmp(projType.c_str(), "Front") == 0) {
+            sPixmap = "OrthoFront";
+        } else if(strcmp(projType.c_str(), "Back") == 0) {
+            sPixmap = "OrthoRear";
+        } else if(strcmp(projType.c_str(), "Right") == 0) {
+            sPixmap = "OrthoRight";
+        } else if(strcmp(projType.c_str(), "Left") == 0) {
+           sPixmap = "OrthoLeft";
+        } else if(strcmp(projType.c_str(), "Top") == 0) {
+            sPixmap = "OrthoTop";
+        } else if(strcmp(projType.c_str(), "Bottom") == 0) {
+           sPixmap = "OrthoBottom";
+        }
+    }
+ }
+
+
+void ViewProviderOrthoView::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
+{
+    QAction* act;
+    act = menu->addAction(QObject::tr("Show drawing"), receiver, member);
 }
 
-Drawing::FeatureTemplate* ViewProviderTemplate::getTemplate() const
+bool ViewProviderOrthoView::setEdit(int ModNum)
 {
-    return dynamic_cast<Drawing::FeatureTemplate*>(pcObject);
+    doubleClicked();
+    return true;
+}
+
+void ViewProviderOrthoView::unsetEdit(int ModNum)
+{
+    Gui::Control().closeDialog();
+}
+
+bool ViewProviderOrthoView::doubleClicked(void)
+{
+    return true;
+}
+
+
+Drawing::FeatureOrthoView* ViewProviderOrthoView::getObject() const
+{
+    return dynamic_cast<Drawing::FeatureOrthoView*>(pcObject);
 }

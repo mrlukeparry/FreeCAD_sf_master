@@ -1,7 +1,8 @@
 /***************************************************************************
- *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2004 Jürgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
- *   This file is part of the FreeCAD CAx development system.              *
+ *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
  *   This library is free software; you can redistribute it and/or         *
  *   modify it under the terms of the GNU Library General Public           *
@@ -10,7 +11,7 @@
  *                                                                         *
  *   This library  is distributed in the hope that it will be useful,      *
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   MERCHANTABILITY or FITNESS FOR A DrawingICULAR PURPOSE.  See the      *
  *   GNU Library General Public License for more details.                  *
  *                                                                         *
  *   You should have received a copy of the GNU Library General Public     *
@@ -20,49 +21,41 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _FeatureOrthoView_h_
-#define _FeatureOrthoView_h_
 
-#include <App/DocumentObject.h>
-#include <App/PropertyStandard.h>
-#include <App/FeaturePython.h>
-#include "FeatureViewPart.h"
+#ifndef DRAWINGGUI_VIEWPROVIDERDIMENSION_H
+#define DRAWINGGUI_VIEWPROVIDERDIMENSION_H
 
-namespace Drawing
+#include <Gui/ViewProviderFeature.h>
+
+namespace Drawing{
+    class FeatureViewDimension;
+}
+
+namespace DrawingGui {
+
+
+class DrawingGuiExport ViewProviderDimension : public Gui::ViewProviderDocumentObject
 {
-
-/** Base class of all View Features in the drawing module
- */
-class DrawingExport FeatureOrthoView : public Drawing::FeatureViewPart
-{
-    PROPERTY_HEADER(Drawing::FeatureOrthoView);
+    PROPERTY_HEADER(DrawingGui::ViewProviderDimension);
 
 public:
-    /// Constructor
-    FeatureOrthoView();
-    ~FeatureOrthoView();
+    /// constructor
+    ViewProviderDimension();
+    /// destructor
+    virtual ~ViewProviderDimension();
 
-    App::PropertyEnumeration Type;
 
-    short mustExecute() const;
-    /** @name methods overide Feature */
-    //@{
-    /// recalculate the Feature
-    virtual void onDocumentRestored();
-    virtual App::DocumentObjectExecReturn *execute(void);
-    //@}
+    virtual void attach(App::DocumentObject *);
+    virtual void setDisplayMode(const char* ModeName);
+    virtual bool useNewSelectionModel(void) const {return false;}
+    /// returns a list of all possible modes
+    virtual std::vector<std::string> getDisplayModes(void) const;
+    virtual void updateData(const App::Property*);
 
-    /// returns the type name of the ViewProvider
-    virtual const char* getViewProviderName(void) const {
-        return "DrawingGui::ViewProviderOrthoView";
-    }
-
-protected:
-    void onChanged(const App::Property* prop);
-private:
-    static const char* TypeEnums[];
+    Drawing::FeatureViewDimension* getViewObject() const;
 };
 
-} //namespace Drawing
+} // namespace DrawingGui
 
-#endif
+
+#endif // DRAWINGGUI_VIEWPROVIDERDIMENSION_H

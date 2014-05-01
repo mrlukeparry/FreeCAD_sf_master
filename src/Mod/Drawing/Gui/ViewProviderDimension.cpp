@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (c) 2014 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2004 Jürgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2012 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
  *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
@@ -24,9 +25,6 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
-# ifdef FC_OS_WIN32
-#  include <windows.h>
-# endif
 #endif
 
 /// Here the FreeCAD includes sorted by Base,App,Gui......
@@ -40,37 +38,37 @@
 #include <Gui/SoFCSelection.h>
 #include <Gui/Selection.h>
 
-#include <Mod/Drawing/App/FeatureTemplate.h>
-#include "ViewProviderTemplate.h"
+#include <Mod/Drawing/App/FeatureViewDimension.h>
+#include "ViewProviderDimension.h"
 
 using namespace DrawingGui;
 
-PROPERTY_SOURCE(DrawingGui::ViewProviderTemplate, Gui::ViewProviderDocumentObject)
+PROPERTY_SOURCE(DrawingGui::ViewProviderDimension, Gui::ViewProviderDocumentObject)
 
 //**************************************************************************
 // Construction/Destruction
 
-ViewProviderTemplate::ViewProviderTemplate()
+ViewProviderDimension::ViewProviderDimension()
 {
-    sPixmap = "PageTemplate";
+    sPixmap = "Dimension";
 }
 
-ViewProviderTemplate::~ViewProviderTemplate()
+ViewProviderDimension::~ViewProviderDimension()
 {
 }
 
-void ViewProviderTemplate::attach(App::DocumentObject *pcFeat)
+void ViewProviderDimension::attach(App::DocumentObject *pcFeat)
 {
     // call parent attach method
     ViewProviderDocumentObject::attach(pcFeat);
 }
 
-void ViewProviderTemplate::setDisplayMode(const char* ModeName)
+void ViewProviderDimension::setDisplayMode(const char* ModeName)
 {
     ViewProviderDocumentObject::setDisplayMode(ModeName);
 }
 
-std::vector<std::string> ViewProviderTemplate::getDisplayModes(void) const
+std::vector<std::string> ViewProviderDimension::getDisplayModes(void) const
 {
     // get the modes of the father
     std::vector<std::string> StrList = ViewProviderDocumentObject::getDisplayModes();
@@ -78,12 +76,11 @@ std::vector<std::string> ViewProviderTemplate::getDisplayModes(void) const
     return StrList;
 }
 
-void ViewProviderTemplate::updateData(const App::Property*)
+void ViewProviderDimension::updateData(const App::Property*)
 {
-    Base::Console().Log("Update View");
 }
 
-Drawing::FeatureTemplate* ViewProviderTemplate::getTemplate() const
+Drawing::FeatureViewDimension* ViewProviderDimension::getViewObject() const
 {
-    return dynamic_cast<Drawing::FeatureTemplate*>(pcObject);
+    return dynamic_cast<Drawing::FeatureViewDimension*>(pcObject);
 }

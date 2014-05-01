@@ -68,7 +68,7 @@ public:
 
     /// returns the type name of the ViewProvider
     virtual const char* getViewProviderName(void) const {
-        return "DrawingGui::ViewProviderDrawingView";
+        return "DrawingGui::ViewProviderDimension";
     }
 
     virtual std::string getContent() const;

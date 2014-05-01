@@ -61,7 +61,7 @@ PROPERTY_SOURCE(DrawingGui::ViewProviderViewOrthographic, Gui::ViewProviderDocum
 
 ViewProviderViewOrthographic::ViewProviderViewOrthographic()
 {
-    sPixmap = "Page";
+    sPixmap = "OrthoCollection";
 }
 
 ViewProviderViewOrthographic::~ViewProviderViewOrthographic()

@@ -102,12 +102,16 @@ SET(DrawingGuiView_SRCS
     QGraphicsItemViewSection.h
 )
 SET(DrawingGuiViewProvider_SRCS
+    ViewProviderOrthoView.cpp
+    ViewProviderOrthoView.h
     ViewProviderPage.cpp
     ViewProviderPage.h
     ViewProviderTemplate.cpp
     ViewProviderTemplate.h
     ViewProviderView.cpp
     ViewProviderView.h
+    ViewProviderDimension.cpp
+    ViewProviderDimension.h
     ViewProviderViewPart.cpp
     ViewProviderViewPart.h
     ViewProviderViewOrthographic.cpp

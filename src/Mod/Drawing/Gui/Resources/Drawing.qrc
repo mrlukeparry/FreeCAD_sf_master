@@ -1,7 +1,16 @@
 <RCC>
     <qresource>
+        <file>icons/Dimension.svg</file>
         <file>icons/Page.svg</file>
+        <file>icons/PageTemplate.svg</file>
         <file>icons/Pages.svg</file>
+        <file>icons/OrthoCollection.svg</file>
+        <file>icons/OrthoBottom.svg</file>
+        <file>icons/OrthoTop.svg</file>
+        <file>icons/OrthoLeft.svg</file>
+        <file>icons/OrthoRight.svg</file>
+        <file>icons/OrthoRear.svg</file>
+        <file>icons/OrthoFront.svg</file>
         <file>icons/Dimension_Angle.svg</file>
         <file>icons/Dimension_Diameter.svg</file>
         <file>icons/Dimension_Horizontal.svg</file>

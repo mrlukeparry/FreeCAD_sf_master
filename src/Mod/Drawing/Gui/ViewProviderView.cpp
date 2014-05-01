@@ -81,7 +81,6 @@ std::vector<std::string> ViewProviderDrawingView::getDisplayModes(void) const
 
 void ViewProviderDrawingView::updateData(const App::Property*)
 {
-    Base::Console().Log("Update View");
 }
 
 Drawing::FeatureView* ViewProviderDrawingView::getViewObject() const

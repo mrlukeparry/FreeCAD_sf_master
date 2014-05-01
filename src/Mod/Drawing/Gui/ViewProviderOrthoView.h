@@ -1,7 +1,7 @@
 /***************************************************************************
- *   Copyright (c) 2013 Luke Parry <l.parry@warwick.ac.uk>                 *
+ *   Copyright (c) 2014 Luke Parry <l.parry@warwick.ac.uk>                 *
  *                                                                         *
- *   This file is part of the FreeCAD CAx development system.              *
+ *   This file is Drawing of the FreeCAD CAx development system.           *
  *                                                                         *
  *   This library is free software; you can redistribute it and/or         *
  *   modify it under the terms of the GNU Library General Public           *
@@ -10,7 +10,7 @@
  *                                                                         *
  *   This library  is distributed in the hope that it will be useful,      *
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   MERCHANTABILITY or FITNESS FOR A DrawingICULAR PURPOSE.  See the      *
  *   GNU Library General Public License for more details.                  *
  *                                                                         *
  *   You should have received a copy of the GNU Library General Public     *
@@ -20,49 +20,46 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _FeatureOrthoView_h_
-#define _FeatureOrthoView_h_
+#ifndef DRAWINGGUI_VIEWPROVIDERORTHOVIEW_H
+#define DRAWINGGUI_VIEWPROVIDERORTHOVIEW_H
 
-#include <App/DocumentObject.h>
-#include <App/PropertyStandard.h>
-#include <App/FeaturePython.h>
-#include "FeatureViewPart.h"
+#include "ViewProviderViewPart.h"
 
-namespace Drawing
+namespace Drawing{
+    class FeatureOrthoView;
+}
+
+namespace DrawingGui {
+
+
+class DrawingGuiExport ViewProviderOrthoView: public ViewProviderViewPart
 {
-
-/** Base class of all View Features in the drawing module
- */
-class DrawingExport FeatureOrthoView : public Drawing::FeatureViewPart
-{
-    PROPERTY_HEADER(Drawing::FeatureOrthoView);
+    PROPERTY_HEADER(DrawingGui::ViewProviderOrthoView);
 
 public:
-    /// Constructor
-    FeatureOrthoView();
-    ~FeatureOrthoView();
 
-    App::PropertyEnumeration Type;
+     ViewProviderOrthoView();
+     ~ViewProviderOrthoView();
 
-    short mustExecute() const;
-    /** @name methods overide Feature */
-    //@{
-    /// recalculate the Feature
-    virtual void onDocumentRestored();
-    virtual App::DocumentObjectExecReturn *execute(void);
-    //@}
+    virtual void attach(App::DocumentObject *);
+    virtual void setDisplayMode(const char* ModeName);
+    virtual bool useNewSelectionModel(void) const {return false;}
+    /// returns a list of all possible modes
+    virtual std::vector<std::string> getDisplayModes(void) const;
 
-    /// returns the type name of the ViewProvider
-    virtual const char* getViewProviderName(void) const {
-        return "DrawingGui::ViewProviderOrthoView";
-    }
+    /// Is called by the tree if the user double click on the object
+    virtual bool doubleClicked(void);
+    void setupContextMenu(QMenu*, QObject*, const char*);
+    virtual void updateData(const App::Property*);
+
+    Drawing::FeatureOrthoView* getObject() const;
+    void unsetEdit(int ModNum);
 
 protected:
-    void onChanged(const App::Property* prop);
-private:
-    static const char* TypeEnums[];
+    bool setEdit(int ModNum);
+
 };
 
-} //namespace Drawing
+} // namespace DrawingGui
 
-#endif
+#endif // DRAWINGGUI_VIEWPROVIDERORTHOVIEW_H
