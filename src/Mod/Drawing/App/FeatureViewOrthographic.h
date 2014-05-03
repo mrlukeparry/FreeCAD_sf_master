@@ -49,9 +49,9 @@ public:
     App::PropertyLink Anchor; /// Anchor Element to align views to
 
     // Check if container has a view of a specific type
-    bool hasView(const char *viewProjType);
-    int  addView(const char *viewProjType);
-    int  removeView(const char *viewProjType);
+    bool hasOrthoView(const char *viewProjType) const;
+    int  addOrthoView(const char *viewProjType);
+    int  removeOrthoView(const char *viewProjType);
 
     short mustExecute() const;
     /** @name methods overide Feature */

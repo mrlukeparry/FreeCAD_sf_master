@@ -431,9 +431,9 @@ void CmdDrawingOrthoViews::activated(int iMsg)
         App::DocumentObject *docObj = getDocument()->getObject(FeatName.c_str());
         Drawing::FeatureViewOrthographic *viewOrtho = dynamic_cast<Drawing::FeatureViewOrthographic *>(docObj);
 
-        viewOrtho->addView("Front");
-        viewOrtho->addView("Top");
-        viewOrtho->addView("Left");
+        viewOrtho->addOrthoView("Front");
+        viewOrtho->addOrthoView("Top");
+        viewOrtho->addOrthoView("Left");
 
 
         Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());

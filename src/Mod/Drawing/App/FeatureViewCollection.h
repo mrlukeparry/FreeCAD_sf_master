@@ -47,6 +47,8 @@ public:
     virtual ~FeatureViewCollection();
     short mustExecute() const;
 
+    int addView(FeatureView *view);
+
     int countChildren();
     /** @name methods overide Feature */
     //@{

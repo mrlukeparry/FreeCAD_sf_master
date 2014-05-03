@@ -32,6 +32,7 @@
 #include <Base/Console.h>
 #include <Base/Exception.h>
 
+#include "FeaturePage.h"
 #include "FeatureOrthoView.h"
 #include "FeatureViewOrthographic.h"
 
@@ -57,8 +58,8 @@ short FeatureViewOrthographic::mustExecute() const
 {
     if(Views.isTouched() ||
        Source.isTouched()) {
+        Base::Console().Log("FeatureViewOrthographic:: Views or Source touched");
         return 1;
-        Base::Console().Log("view touched");
      }
 
     if (Type.isTouched())
@@ -84,14 +85,14 @@ FeatureViewOrthographic::~FeatureViewOrthographic()
 {
 }
 
-bool FeatureViewOrthographic::hasView(const char *viewProjType)
+bool FeatureViewOrthographic::hasOrthoView(const char *viewProjType) const
 {
     const std::vector<App::DocumentObject *> &views = Views.getValues();
 
     for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
 
         Drawing::FeatureView *view = dynamic_cast<Drawing::FeatureView *>(*it);
-        if(view->getClassTypeId() == Drawing::FeatureOrthoView::getClassTypeId()) {
+        if(view->getTypeId() == Drawing::FeatureOrthoView::getClassTypeId()) {
             Drawing::FeatureOrthoView *orthoView = dynamic_cast<Drawing::FeatureOrthoView *>(*it);
 
             if(strcmp(viewProjType, orthoView->Type.getValueAsString()) == 0)
@@ -101,7 +102,7 @@ bool FeatureViewOrthographic::hasView(const char *viewProjType)
     return false;
 }
 
-int FeatureViewOrthographic::addView(const char *viewProjType)
+int FeatureViewOrthographic::addOrthoView(const char *viewProjType)
 {
     // Find a more elegant way of validating the type
     if(strcmp(viewProjType, "Front")  == 0 ||
@@ -111,7 +112,7 @@ int FeatureViewOrthographic::addView(const char *viewProjType)
        strcmp(viewProjType, "Bottom") == 0 ||
        strcmp(viewProjType, "Rear")   == 0 ) {
 
-        if(hasView(viewProjType)) {
+        if(hasOrthoView(viewProjType)) {
             throw Base::Exception("The Projection is already used in this group");
         }
 
@@ -126,13 +127,13 @@ int FeatureViewOrthographic::addView(const char *viewProjType)
         std::string label = viewProjType;
         view->Label.setValue(label);
 
-        // Add the new view to the collection
-        std::vector<App::DocumentObject *> newViews(Views.getValues());
-        newViews.push_back(docObj);
-        Views.setValues(newViews);
+        this->addView(view);
+        std::vector<App::DocumentObject *> objs = this->getInList();
 
-        this->touch();
-        return 1;
+
+        // Add this to the page
+
+        return Views.getSize();
     } else if(strcmp(viewProjType, "Top Right")  == 0 ||
               strcmp(viewProjType, "Top Left")  == 0 ||
               strcmp(viewProjType, "Bottom Right")  == 0 ||
@@ -143,7 +144,7 @@ int FeatureViewOrthographic::addView(const char *viewProjType)
 }
 
 
-int FeatureViewOrthographic::removeView(const char *viewProjType)
+int FeatureViewOrthographic::removeOrthoView(const char *viewProjType)
 {
     // Find a more elegant way of validating the type
     if(strcmp(viewProjType, "Front")  == 0 ||
@@ -153,7 +154,7 @@ int FeatureViewOrthographic::removeView(const char *viewProjType)
        strcmp(viewProjType, "Bottom") == 0 ||
        strcmp(viewProjType, "Rear")   == 0 ) {
 
-        if(!hasView(viewProjType)) {
+        if(!hasOrthoView(viewProjType)) {
             throw Base::Exception("The orthographic projection doesn't exist in the group");
         }
 
@@ -162,13 +163,14 @@ int FeatureViewOrthographic::removeView(const char *viewProjType)
         for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
 
             Drawing::FeatureView *view = dynamic_cast<Drawing::FeatureView *>(*it);
-            if(view->getClassTypeId() == Drawing::FeatureOrthoView::getClassTypeId()) {
+            if(view->getTypeId() == Drawing::FeatureOrthoView::getClassTypeId()) {
                 Drawing::FeatureOrthoView *orthoView = dynamic_cast<Drawing::FeatureOrthoView *>(*it);
 
-                if(strcmp(viewProjType, orthoView->Type.getValueAsString()) == 0)
+                if(strcmp(viewProjType, orthoView->Type.getValueAsString()) == 0) {
                     // Remove from the document
                     this->getDocument()->remObject((*it)->getNameInDocument());
                     return views.size();
+                }
             }
         }
     } else if(strcmp(viewProjType, "Top Right")  == 0 ||
@@ -187,6 +189,7 @@ void FeatureViewOrthographic::onDocumentRestored()
 
 App::DocumentObjectExecReturn *FeatureViewOrthographic::execute(void)
 {
+    this->touch();
     return Drawing::FeatureViewCollection::execute();
 }
 

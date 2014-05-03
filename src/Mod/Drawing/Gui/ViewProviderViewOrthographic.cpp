@@ -50,6 +50,7 @@
 
 #include <Mod/Drawing/App/FeatureViewOrthographic.h>
 
+#include "TaskOrthographicViews.h"
 #include "ViewProviderViewOrthographic.h"
 
 using namespace DrawingGui;
@@ -101,7 +102,24 @@ void ViewProviderViewOrthographic::setupContextMenu(QMenu* menu, QObject* receiv
 
 bool ViewProviderViewOrthographic::setEdit(int ModNum)
 {
-    doubleClicked();
+
+    // When double-clicking on the item for this sketch the
+    // object unsets and sets its edit mode without closing
+    // the task panel
+    Gui::TaskView::TaskDialog *dlg = Gui::Control().activeDialog();
+    TaskDlgOrthographicViews *orthoDlg = qobject_cast<TaskDlgOrthographicViews *>(dlg);
+    if (orthoDlg && orthoDlg->getOrthographicView() != this)
+        orthoDlg = 0; // another sketch left open its task panel
+
+    // clear the selection (convenience)
+    Gui::Selection().clearSelection();
+
+    // start the edit dialog
+    if (orthoDlg)
+        Gui::Control().showDialog(orthoDlg);
+    else
+        Gui::Control().showDialog(new TaskDlgOrthographicViews(this));
+
     return true;
 }
 
@@ -112,6 +130,7 @@ void ViewProviderViewOrthographic::unsetEdit(int ModNum)
 
 bool ViewProviderViewOrthographic::doubleClicked(void)
 {
+    setEdit(0);
     return true;
 }
 

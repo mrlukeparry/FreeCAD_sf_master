@@ -51,6 +51,18 @@ FeatureViewCollection::~FeatureViewCollection()
 {
 }
 
+int FeatureViewCollection::addView(FeatureView *view)
+{
+      // Add the new view to the collection
+    std::vector<App::DocumentObject *> newViews(Views.getValues());
+    newViews.push_back(view);
+    Views.setValues(newViews);
+
+    this->touch();
+
+    return Views.getSize();
+}
+
 short FeatureViewCollection::mustExecute() const
 {
     // If Tolerance Property is touched
