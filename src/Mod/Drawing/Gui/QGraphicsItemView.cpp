@@ -118,7 +118,7 @@ void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
         Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", this->getViewObject()->getNameInDocument(), this->x());
         Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", this->getViewObject()->getNameInDocument(), this->getY());
         Gui::Command::commitCommand();
-        //Gui::Command::updateActive();
+        Gui::Command::updateActive();
     }
     QGraphicsItem::mouseReleaseEvent(event);
 }

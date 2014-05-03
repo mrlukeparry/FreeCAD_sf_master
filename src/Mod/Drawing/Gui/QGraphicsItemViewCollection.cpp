@@ -69,7 +69,7 @@ QVariant QGraphicsItemViewCollection::itemChange(GraphicsItemChange change, cons
 void QGraphicsItemViewCollection::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 {
     if(scene() && this == scene()->mouseGrabberItem()) {
-        Gui::Command::openCommand("Drag View");
+        Gui::Command::openCommand("Drag Orthographic Collection");
         Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", this->getViewObject()->getNameInDocument(), this->x());
         Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", this->getViewObject()->getNameInDocument(), this->getY());
         Gui::Command::commitCommand();

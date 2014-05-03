@@ -71,6 +71,7 @@ protected:
 private:
   QGraphicsRectItem * m_backgroundItem;
   QGraphicsItem *origin;
+  QPoint mousePos;
 };
 
 } // namespace DrawingViewGui
