@@ -155,11 +155,17 @@ void TaskOrthographicViews::viewToggled(bool toggle)
 
     Drawing::FeatureViewOrthographic *orthoFeat = orthographicView->getObject();
 
+    Gui::Command::openCommand("Toggle orthographic view");
+
     if (toggle && !orthoFeat->hasOrthoView(viewName.toLatin1())) {
         orthoFeat->addOrthoView(viewName.toLatin1());
     } else if(!toggle){
         orthoFeat->removeOrthoView(viewName.toLatin1());
     }
+
+    Gui::Command::commitCommand();
+    Gui::Command::updateActive();
+
 }
 
 

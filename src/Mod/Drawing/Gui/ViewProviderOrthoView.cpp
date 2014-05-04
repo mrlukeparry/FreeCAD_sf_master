@@ -36,6 +36,7 @@
 
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
+#include <Gui/Command.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
 #include <Gui/MainWindow.h>
@@ -130,6 +131,16 @@ bool ViewProviderOrthoView::doubleClicked(void)
     return true;
 }
 
+bool ViewProviderOrthoView::onDelete(const std::vector<std::string> &subList)
+{
+
+    Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.removeObject(\"%s\")"
+                                             ,getObject()->getNameInDocument());
+    Gui::Command::commitCommand();
+    Gui::Command::updateActive();
+    return false;
+
+}
 
 Drawing::FeatureOrthoView* ViewProviderOrthoView::getObject() const
 {

@@ -52,6 +52,8 @@ public:
     void setupContextMenu(QMenu*, QObject*, const char*);
     virtual void updateData(const App::Property*);
 
+    bool onDelete(const std::vector<std::string> &subList);
+
     Drawing::FeatureOrthoView* getObject() const;
     void unsetEdit(int ModNum);
 

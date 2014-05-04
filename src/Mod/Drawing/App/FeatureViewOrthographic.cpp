@@ -58,7 +58,6 @@ short FeatureViewOrthographic::mustExecute() const
 {
     if(Views.isTouched() ||
        Source.isTouched()) {
-        Base::Console().Log("FeatureViewOrthographic:: Views or Source touched");
         return 1;
      }
 
