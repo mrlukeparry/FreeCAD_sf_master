@@ -77,7 +77,7 @@ bool QGraphicsItemViewOrthographic::sceneEventFilter(QGraphicsItem * watched, QE
         QGraphicsItemView *qAnchor = this->getAnchorQItem();
         if(qAnchor && watched == qAnchor) {
             QGraphicsSceneMouseEvent *mEvent = dynamic_cast<QGraphicsSceneMouseEvent*>(event);
-            event->accept();
+
             switch(event->type()) {
               case QEvent::GraphicsSceneMousePress:    this->mousePressEvent(mEvent);break;
               case QEvent::GraphicsSceneMouseMove:     this->mouseMoveEvent(mEvent); break;
@@ -161,12 +161,12 @@ void QGraphicsItemViewOrthographic::mouseMoveEvent(QGraphicsSceneMouseEvent * ev
 void QGraphicsItemViewOrthographic::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 {
      if(scene()) {
+       QGraphicsItemView *qAnchor = this->getAnchorQItem();
         if((mousePos-event->screenPos()).manhattanLength() < 5) {
-            QGraphicsItemView *qAnchor = this->getAnchorQItem();
             if(qAnchor && qAnchor->shape().contains(event->pos())) {
-              qAnchor->setSelected(true);
+              qAnchor->mouseReleaseEvent(event);
             }
-        } else {
+        } else if(scene() && qAnchor && (qAnchor == scene()->mouseGrabberItem())) {
             // End of Drag
             Gui::Command::openCommand("Drag Orthographic Collection");
             Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", this->getViewObject()->getNameInDocument(), this->x());
