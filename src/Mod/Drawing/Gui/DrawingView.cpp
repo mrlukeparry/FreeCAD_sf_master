@@ -521,6 +521,8 @@ void DrawingView::findMissingViews(const std::vector<App::DocumentObject*> &list
 {
     for(std::vector<App::DocumentObject*>::const_iterator it = list.begin(); it != list.end(); ++it) {
 
+        if(!this->hasQView(*it))
+             missing.push_back(*it);
 
         if((*it)->getTypeId().isDerivedFrom(Drawing::FeatureViewCollection::getClassTypeId())) {
             std::vector<App::DocumentObject*> missingChildViews;
@@ -533,9 +535,6 @@ void DrawingView::findMissingViews(const std::vector<App::DocumentObject*> &list
                 missing.push_back(*it);
             }
         }
-
-        if(!this->hasQView(*it))
-             missing.push_back(*it);
     }
 }
 

@@ -55,7 +55,7 @@
 
 # include "DrawingView.h"
 # include "TaskDialog.h"
-# include "TaskOrthoViews.h"
+# include "TaskOrthographicViews.h"
 # include "ViewProviderPage.h"
 
 using namespace DrawingGui;
@@ -418,31 +418,33 @@ void CmdDrawingOrthoViews::activated(int iMsg)
 
     std::string PageName = pages.front()->getNameInDocument();
 
+    Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
+
     openCommand("Create Orthographic View");
     for (std::vector<App::DocumentObject*>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
         std::string FeatName = getUniqueObjectName("cView");
         doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureViewOrthographic','%s')",FeatName.c_str());
         doCommand(Doc,"App.activeDocument().%s.Source = App.activeDocument().%s",FeatName.c_str(),(*it)->getNameInDocument());
-        doCommand(Doc,"App.activeDocument().%s.X = 0.0",    FeatName.c_str());
-        doCommand(Doc,"App.activeDocument().%s.Y = 0.0",    FeatName.c_str());
+        doCommand(Doc,"App.activeDocument().%s.X = %f",     FeatName.c_str(), page->getPageWidth() / 2);
+        doCommand(Doc,"App.activeDocument().%s.Y = %f",     FeatName.c_str(), page->getPageHeight() / 2);
         doCommand(Doc,"App.activeDocument().%s.Scale = 1.0",FeatName.c_str());
-//         doCommand(Doc,"App.activeDocument().%s.addObject(App.activeDocument().%s)",PageName.c_str(),);
+
+
 
         App::DocumentObject *docObj = getDocument()->getObject(FeatName.c_str());
         Drawing::FeatureViewOrthographic *viewOrtho = dynamic_cast<Drawing::FeatureViewOrthographic *>(docObj);
 
         viewOrtho->addOrthoView("Front");
-        viewOrtho->addOrthoView("Top");
-        viewOrtho->addOrthoView("Left");
+        page->addView(getDocument()->getObject(FeatName.c_str()));
 
 
-        Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
-        page->addView(page->getDocument()->getObject(FeatName.c_str()));
+
+        //doCommand(Gui,"Gui.activeDocument().setEdit('%s')", FeatName.c_str());
     }
     updateActive();
     commitCommand();
 
-    //Gui::Control().showDialog(new TaskDlgOrthoViews());
+
 }
 
 
