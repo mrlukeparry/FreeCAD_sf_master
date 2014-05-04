@@ -49,6 +49,8 @@ public:
     void updatePos();
     enum {Type = QGraphicsItem::UserType + 107};
     int type() const { return Type;}
+
+    void setPosition(const double &x, const double &y);
     double X() const { return posX; }
     double Y() const { return posY; }
 

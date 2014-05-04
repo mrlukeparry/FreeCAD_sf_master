@@ -95,6 +95,12 @@ QVariant QGraphicsItemDatumLabel::itemChange(GraphicsItemChange change, const QV
     return QGraphicsItem::itemChange(change, value);
 }
 
+void QGraphicsItemDatumLabel::setPosition(const double &x, const double &y)
+{
+    // Set the actual QT Coordinates by setting at qt origin rathern than bbox center
+    this->setPos(x -  this->boundingRect().width() / 2., y - this->boundingRect().height() / 2.);
+}
+
 void QGraphicsItemDatumLabel::updatePos()
 {
     this->posX = this->x() + this->boundingRect().width() / 2.;
@@ -193,7 +199,6 @@ void QGraphicsItemViewDimension::setViewPartFeature(Drawing::FeatureViewDimensio
     this->draw();
     Q_EMIT dirty();
 }
-
 void QGraphicsItemViewDimension::clearProjectionCache()
 {
     for(std::vector<DrawingGeometry::BaseGeom *>::iterator it = projGeom.begin(); it != projGeom.end(); ++it) {
@@ -238,6 +243,18 @@ void QGraphicsItemViewDimension::updateView(bool update)
         dLabel->setFont(font);
         dLabel->updatePos();
 
+        draw();
+
+    } else if(dim->X.isTouched() ||
+              dim->Y.isTouched()) {
+
+        float x = dim->X.getValue();
+        float y = dim->Y.getValue();
+
+        QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
+        dLabel->setPosition(x, y);
+
+        updateDim();
         draw();
 
     } else {
@@ -286,8 +303,6 @@ void QGraphicsItemViewDimension::datumLabelDragged()
 
 void QGraphicsItemViewDimension::datumLabelDragFinished()
 {
-//     int x = this->datumLabel->posX;
-//     int y = this->datumLabel->posY;
 
     if(this->getViewObject() == 0 || !this->getViewObject()->isDerivedFrom(Drawing::FeatureViewDimension::getClassTypeId()))
         return;
@@ -1022,7 +1037,7 @@ QVariant QGraphicsItemViewDimension::itemChange(GraphicsItemChange change, const
 {
    if (change == ItemSelectedHasChanged && scene()) {
         QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
-        
+
         if(isSelected()) {
             dLabel->setSelected(true);
         } else {
