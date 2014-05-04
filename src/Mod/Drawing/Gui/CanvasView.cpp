@@ -195,7 +195,19 @@ QGraphicsItemView * CanvasView::addViewOrthographic(Drawing::FeatureViewOrthogra
     qview->setViewFeature(view);
 
     this->addView(qview);
+
+    // Add child views
+    std::vector<App::DocumentObject *> childViews = view->Views.getValues();
+
+    for(std::vector<App::DocumentObject *>::iterator it = childViews.begin(); it != childViews.end(); ++it) {
+        App::DocumentObject *obj = *it;
+        if(obj->isDerivedFrom(Drawing::FeatureViewPart::getClassTypeId())) {
+            this->addViewPart(static_cast<Drawing::FeatureViewPart *>(*it));
+        }
+    }
+
     return qview;
+
 }
 
 QGraphicsItemView * CanvasView::addFeatureView(Drawing::FeatureView *view)
@@ -272,10 +284,11 @@ QGraphicsItemView * CanvasView::findParent(QGraphicsItemView *view) const
         std::vector<App::DocumentObject *> objs = dim->References.getValues();
 
         if(objs.size() > 0) {
+            std::vector<App::DocumentObject *> objs = dim->References.getValues();
             // Attach the dimension to the first object's group
             for(std::vector<QGraphicsItemView *>::const_iterator it = qviews.begin(); it != qviews.end(); ++it) {
                 Drawing::FeatureView *viewObj = (*it)->getViewObject();
-                if(viewObj == objs.at(0)) {
+                if(strcmp(viewObj->getNameInDocument(), objs.at(0)->getNameInDocument()) == 0) {
                     return *it;
                 }
             }

@@ -456,18 +456,18 @@ void DrawingView::updateDrawing()
     // Count total number of children
     int groupCount = 0;
 
-    /*
+
     for(std::vector<App::DocumentObject*>::const_iterator it = grp.begin(); it != grp.end(); ++it) {
         App::DocumentObject *docObj = *it;
         if(docObj->getTypeId().isDerivedFrom(Drawing::FeatureViewCollection::getClassTypeId())) {
             Drawing::FeatureViewCollection *collection = dynamic_cast<Drawing::FeatureViewCollection *>(docObj);
-            groupCount += collection->countChildren() + 1; // Include self
-        } else {
-            groupCount += 1;
+            groupCount += collection->countChildren(); // Include self
         }
-    }*/
 
-    if(views.size() < grp.size()) {
+        groupCount += 1;
+    }
+
+    if(views.size() < groupCount) {
         // An  view object has been added so update graphicsviews
         std::vector<App::DocumentObject*> notFnd;
         // Iterate through to find any views that are missing
@@ -482,7 +482,7 @@ void DrawingView::updateDrawing()
             attachView(*it);
         }
 
-    } else if(views.size() > grp.size()) {
+    } else if(views.size() > groupCount) {
         // A View Object has been removed
         std::vector<QGraphicsItemView *>::const_iterator qview = views.begin();
         bool fnd = false;
@@ -521,7 +521,7 @@ void DrawingView::findMissingViews(const std::vector<App::DocumentObject*> &list
 {
     for(std::vector<App::DocumentObject*>::const_iterator it = list.begin(); it != list.end(); ++it) {
 
-        /*
+
         if((*it)->getTypeId().isDerivedFrom(Drawing::FeatureViewCollection::getClassTypeId())) {
             std::vector<App::DocumentObject*> missingChildViews;
             Drawing::FeatureViewCollection *collection = dynamic_cast<Drawing::FeatureViewCollection *>(*it);
@@ -532,7 +532,7 @@ void DrawingView::findMissingViews(const std::vector<App::DocumentObject*> &list
             for(std::vector<App::DocumentObject*>::const_iterator it = missingChildViews.begin(); it != missingChildViews.end(); ++it) {
                 missing.push_back(*it);
             }
-        }*/
+        }
 
         if(!this->hasQView(*it))
              missing.push_back(*it);
@@ -561,12 +561,12 @@ bool DrawingView::orphanExists(const char *viewName, const std::vector<App::Docu
 {
     for(std::vector<App::DocumentObject*>::const_iterator it = list.begin(); it != list.end(); ++it) {
 
-        // Check child objects too recursively
-        /*if((*it)->getTypeId().isDerivedFrom(Drawing::FeatureViewCollection::getClassTypeId())) {
+        //Check child objects too recursively
+        if((*it)->isDerivedFrom(Drawing::FeatureViewCollection::getClassTypeId())) {
             Drawing::FeatureViewCollection *collection = dynamic_cast<Drawing::FeatureViewCollection *>(*it);
             if(orphanExists(viewName, collection->Views.getValues()))
                 return true;
-        }*/
+        }
 
         // Unsure if we can compare pointers so rely on name
         if(strcmp(viewName, (*it)->getNameInDocument()) == 0) {
@@ -643,9 +643,9 @@ bool DrawingView::onHasMsg(const char* pMsg) const
     if (strcmp("ViewFit",pMsg) == 0)
         return true;
     else if(strcmp("Redo", pMsg) == 0 && getAppDocument()->getAvailableRedos() > 0)
-        return true;
+        return false;
     else if(strcmp("Undo", pMsg) == 0 && getAppDocument()->getAvailableUndos() > 0)
-        return true;
+        return false;
     else if (strcmp("Print",pMsg) == 0)
         return true;
     else if (strcmp("PrintPreview",pMsg) == 0)

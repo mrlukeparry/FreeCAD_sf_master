@@ -96,9 +96,23 @@ std::vector<std::string> ViewProviderDrawingPage::getDisplayModes(void) const
     return StrList;
 }
 
+void ViewProviderDrawingPage::onChanged(const App::Property *prop)
+{
+  if (prop == &(getPageObject()->Views)) {
+        if(this->view) {
+            view->updateDrawing();
+        }
+    } else if (prop == &(getPageObject()->Template)) {
+       if(this->view) {
+            view->updateTemplate();
+        }
+    }
+
+    Gui::ViewProviderDocumentObjectGroup::onChanged(prop);
+}
+
 void ViewProviderDrawingPage::updateData(const App::Property* prop)
 {
-
     if (prop == &(getPageObject()->Views)) {
         if(this->view) {
             view->updateDrawing();

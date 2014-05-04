@@ -31,6 +31,7 @@
 #include <Base/Console.h>
 #include <Base/FileInfo.h>
 #include <App/Application.h>
+#include <App/Document.h>
 
 #include <iostream>
 #include <iterator>
@@ -89,8 +90,8 @@ short FeaturePage::mustExecute() const
     bool ViewsTouched = false;
     const std::vector<App::DocumentObject*> &vals = Views.getValues();
     for(std::vector<App::DocumentObject *>::const_iterator it = vals.begin(); it < vals.end(); ++it) {
-        if((*it)->isTouched()) {
-            ViewsTouched = true;
+       if((*it)->isTouched()) {
+            return 1;
         }
     }
 
@@ -135,11 +136,11 @@ const char * FeaturePage::getPageOrientation() const
     obj = Template.getValue();
 
     if(obj) {
-      if(obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) {
-        Drawing::FeatureTemplate *templ = static_cast<Drawing::FeatureTemplate *>(obj);
+        if(obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) {
+          Drawing::FeatureTemplate *templ = static_cast<Drawing::FeatureTemplate *>(obj);
 
-        return templ->Orientation.getValueAsString();
-      }
+          return templ->Orientation.getValueAsString();
+        }
     }
     throw Base::Exception("Template not set for Page");
 }
@@ -147,7 +148,7 @@ const char * FeaturePage::getPageOrientation() const
 /// get called by the container when a Property was changed
 void FeaturePage::onChanged(const App::Property* prop)
 {
-    App::DocumentObjectGroup::onChanged(prop);
+    App::DocumentObject::onChanged(prop);
 }
 
 int FeaturePage::addView(App::DocumentObject *docObj)
@@ -165,13 +166,14 @@ int FeaturePage::addView(App::DocumentObject *docObj)
         Drawing::FeatureViewCollection *collection = dynamic_cast<Drawing::FeatureViewCollection *>(docObj);
         const std::vector<App::DocumentObject *> & views = collection->Views.getValues();
         for(std::vector<App::DocumentObject*>::const_iterator it = views.begin(); it != views.end(); ++it) {
-            this->addView(*it); // Recursively add child views
+            //this->addView(*it); // Recursively add child views
         }
     }
 
     Views.touch();
     return Views.getSize();
 }
+
 
 App::DocumentObjectExecReturn *FeaturePage::execute(void)
 {

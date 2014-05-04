@@ -65,7 +65,9 @@ public:
     /// Is called by the tree if the user double click on the object
     virtual bool doubleClicked(void);
     void setupContextMenu(QMenu*, QObject*, const char*);
-    virtual void updateData(const App::Property*);
+
+    virtual void onChanged(const App::Property *prop);
+    virtual void updateData(const App::Property* prop);
 
     Drawing::FeaturePage* getPageObject() const;
     void unsetEdit(int ModNum);

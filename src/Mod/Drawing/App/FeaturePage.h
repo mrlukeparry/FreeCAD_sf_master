@@ -51,6 +51,7 @@ public:
     /// recalculate the Feature
     virtual App::DocumentObjectExecReturn *execute(void);
     //@}
+    //App::DocumentObjectExecReturn * recompute(void);
 
     int addView(App::DocumentObject *docObj);
 
