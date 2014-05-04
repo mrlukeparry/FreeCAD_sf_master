@@ -56,6 +56,7 @@
 #endif
 
 #include <Gui/Application.h>
+#include <Gui/Command.h>
 #include <Gui/Document.h>
 #include <Gui/Window.h>
 #include <Gui/MainWindow.h>
@@ -631,8 +632,20 @@ bool DrawingView::onMsg(const char* pMsg, const char** ppReturn)
         return true;
     } else if (strcmp("Redo", pMsg) == 0 ) {
         getAppDocument()->redo();
+        Gui::Command::updateActive();
+        return true;
+    } else if (strcmp("Save", pMsg) == 0 ) {
+        getAppDocument()->save();
+        Gui::Command::updateActive();
+        return true;
+    } else if (strcmp("SaveAs", pMsg) == 0 ) {
+        getAppDocument()->saveAs("");
+        Gui::Command::updateActive();
+        return true;
     } else if (strcmp("Undo", pMsg) == 0 ) {
         getAppDocument()->undo();
+        Gui::Command::updateActive();
+        return true;
     }
     return false;
 }
@@ -642,10 +655,14 @@ bool DrawingView::onHasMsg(const char* pMsg) const
     if (strcmp("ViewFit",pMsg) == 0)
         return true;
     else if(strcmp("Redo", pMsg) == 0 && getAppDocument()->getAvailableRedos() > 0)
-        return false;
+        return true;
     else if(strcmp("Undo", pMsg) == 0 && getAppDocument()->getAvailableUndos() > 0)
-        return false;
+        return true;
     else if (strcmp("Print",pMsg) == 0)
+        return true;
+    else if (strcmp("Save",pMsg) == 0)
+        return true;
+    else if (strcmp("SaveAs",pMsg) == 0)
         return true;
     else if (strcmp("PrintPreview",pMsg) == 0)
         return true;
