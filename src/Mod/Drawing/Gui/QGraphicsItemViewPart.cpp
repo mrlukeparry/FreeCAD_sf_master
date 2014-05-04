@@ -222,6 +222,8 @@ void QGraphicsItemViewPart::updateView(bool update)
         }
     }
 
+    QGraphicsItemView::updateView(update);
+
 }
 
 void QGraphicsItemViewPart::draw() {
