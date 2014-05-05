@@ -131,30 +131,36 @@ void QGraphicsItemSVGTemplate::load (const QString & fileName)
     int count = 0;
 
 
-    while (boost::regex_search(begin, end, what, e1)) {
-        QString fStr =  QString::fromStdString(what[1].str());
-        QString xStr = QString::fromStdString(what[2].str());
-        QString yStr =  QString::fromStdString(what[3].str());
-        QString content =  QString::fromStdString(what[5].str());
-        double x = xStr.toDouble();
-        double y = yStr.toDouble();
-        int fontSize = fStr.toInt();
+    try {
+        // and update the sketch
+        while (boost::regex_search(begin, end, what, e1)) {
+            QString fStr =  QString::fromStdString(what[1].str());
+            QString xStr = QString::fromStdString(what[2].str());
+            QString yStr =  QString::fromStdString(what[3].str());
+            QString content =  QString::fromStdString(what[5].str());
+            double x = xStr.toDouble();
+            double y = yStr.toDouble();
+            int fontSize = fStr.toInt();
 
-        QFont font;
-        font.setFamily(QString::fromAscii("osifont"));
-        font.setPixelSize(fontSize);
+            QFont font;
+            font.setFamily(QString::fromAscii("osifont"));
+            font.setPixelSize(fontSize);
 
-        QGraphicsTextItem *item = new QGraphicsTextItem();
-        item->setFont(font);
-        item->setPos(x, -tmplte->getHeight() + y -4);
+            QGraphicsTextItem *item = new QGraphicsTextItem();
+            item->setFont(font);
+            item->setPos(x, -tmplte->getHeight() + y -4);
 
-        item->setZValue(100);
-        item->setPlainText(content);
-        item->setTextInteractionFlags(Qt::TextEditorInteraction);
-        this->addToGroup(item);
+            item->setZValue(100);
+            item->setPlainText(content);
+            item->setTextInteractionFlags(Qt::TextEditorInteraction);
+            this->addToGroup(item);
 
-        begin = what[0].second;
+            begin = what[0].second;
+        }
     }
+    catch (...) {
+    }
+
 
     double xaspect, yaspect;
     xaspect = tmplte->getWidth() / (double) size.width();

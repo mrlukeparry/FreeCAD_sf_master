@@ -29,6 +29,7 @@
 #include <Base/Console.h>
 #include <Base/Exception.h>
 
+#include "FeaturePage.h"
 #include "FeatureViewCollection.h"
 
 using namespace Drawing;
@@ -100,13 +101,20 @@ void FeatureViewCollection::onDocumentRestored()
 /// get called by the container when a Property was changed
 void FeatureViewCollection::onChanged(const App::Property* prop)
 {
+    Drawing::FeatureView::onChanged(prop);
     if (prop == &Source ||
         prop == &Views){
         if (!this->isRestoring()) {
-            Base::Console().Log("Views touched");
+            std::vector<App::DocumentObject*> parent = getInList();
+            for (std::vector<App::DocumentObject*>::iterator it = parent.begin(); it != parent.end(); ++it) {
+                if ((*it)->getTypeId().isDerivedFrom(FeaturePage::getClassTypeId())) {
+                    Drawing::FeaturePage *page = static_cast<Drawing::FeaturePage *>(*it);
+                    page->Views.touch();
+                }
+            }
         }
     }
-    Drawing::FeatureView::onChanged(prop);
+
 }
 App::DocumentObjectExecReturn *FeatureViewCollection::execute(void)
 {
