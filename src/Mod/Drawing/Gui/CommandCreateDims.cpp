@@ -788,7 +788,16 @@ void CmdDrawingNewDistanceXDimension::activated(int iMsg)
                     return;
                 }
 
-                dimType = "DistanceX";
+                Base::Vector2D lin1 = gen1->points.at(1) - gen1->points.at(0);
+
+                if(fabs(lin1.fX) > FLT_EPSILON ) {
+                    dimType = "DistanceX";
+                } else {
+                    QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Invalid Selection"),
+                                                               QObject::tr("Please select a non-vertical line"));
+                    return;
+                }
+
                 doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str()
                                                                   ,dimType.c_str());
 
@@ -1001,11 +1010,21 @@ void CmdDrawingNewDistanceYDimension::activated(int iMsg)
                 if(gen1->points.size() > 2) {
                     // Only support straight line edges
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
-                                                              QObject::tr("Please select only one straight line edge"));
+                                                               QObject::tr("Please select only one straight line edge"));
                     return;
                 }
 
-                dimType = "DistanceY";
+                // Construct edges
+                Base::Vector2D lin1 = gen1->points.at(1) - gen1->points.at(0);
+
+                if(fabs(lin1.fY) > FLT_EPSILON) {
+                    dimType = "DistanceY";
+                } else {
+                    QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Invalid Selection"),
+                                                               QObject::tr("Please select a non-horizontal line"));
+                    return;
+                }
+
                 doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str()
                                                                   ,dimType.c_str());
 
