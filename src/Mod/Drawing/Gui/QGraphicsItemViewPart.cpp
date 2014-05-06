@@ -45,6 +45,8 @@
 
 using namespace DrawingGui;
 
+const float lineScaleFactor = 3.;
+
 QGraphicsItemViewPart::QGraphicsItemViewPart(const QPoint &pos, QGraphicsScene *scene)
                 :QGraphicsItemView(pos, scene),
                  borderVisible(true)
@@ -217,8 +219,10 @@ void QGraphicsItemViewPart::updateView(bool update)
         QList<QGraphicsItem *> items = this->childItems();
         for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
             QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+
+            float lineWidth = viewPart->LineWidth.getValue() * lineScaleFactor;
             if(edge)
-                edge->setStrokeWidth(viewPart->LineWidth.getValue());
+                edge->setStrokeWidth(lineWidth);
         }
     }
 
@@ -238,7 +242,7 @@ void QGraphicsItemViewPart::drawViewPart()
 
     Drawing::FeatureViewPart *part = dynamic_cast<Drawing::FeatureViewPart *>(this->getViewObject());
 
-    float lineWidth = part->LineWidth.getValue();
+    float lineWidth = part->LineWidth.getValue() * lineScaleFactor;
 
     QRectF box;
     QGraphicsItem *graphicsItem = 0;
@@ -438,8 +442,6 @@ void QGraphicsItemViewPart::drawViewPart()
           prepareGeometryChange();
 
           bbox = box;
-          //Base::Console().Log("parent<ac> offset < %f, %f> \n", this->parentItem()->pos().x(), this->parentItem()->pos().y());
-          //Base::Console().Log("parent offset < %f, %f> \n", this->parentOffset().x(), this->parentOffset().y());
 
           this->addToGroup(graphicsItem);
           // Don't allow selection for any edges with no references
@@ -470,7 +472,6 @@ void QGraphicsItemViewPart::drawViewPart()
 
           QPointF posRef(0.,0.);
           QPointF mapPos = item->mapToItem(this, posRef);
-
 
           item->setPath(path);
           item->setPos(myVertex->pnt.fX, myVertex->pnt.fY);
