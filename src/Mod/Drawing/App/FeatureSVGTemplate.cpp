@@ -42,6 +42,7 @@
 #include <iostream>
 #include <iterator>
 
+#include "FeaturePage.h"
 #include "FeatureSVGTemplate.h"
 
 //#include "FeatureSVGTemplatePy.h"
@@ -108,8 +109,18 @@ void FeatureSVGTemplate::onChanged(const App::Property* prop)
         if (!this->isRestoring()) {
             EditableTexts.setValues(getEditableTextsFromTemplate());
             this->touch();
+
+            // Update the parent page if exists
+            std::vector<App::DocumentObject*> parent = getInList();
+            for (std::vector<App::DocumentObject*>::iterator it = parent.begin(); it != parent.end(); ++it) {
+                if ((*it)->getTypeId().isDerivedFrom(FeaturePage::getClassTypeId())) {
+                    Drawing::FeaturePage *page = static_cast<Drawing::FeaturePage *>(*it);
+                    page->touch();
+                }
+            }
         }
     }
+
 
     Drawing::FeatureTemplate::onChanged(prop);
 }
