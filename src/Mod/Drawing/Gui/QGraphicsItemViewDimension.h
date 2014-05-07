@@ -116,6 +116,7 @@ protected:
   bool hasHover;
   QGraphicsItem *datumLabel;
   QGraphicsItem *arrows;
+  QGraphicsItem *centreLines;
 
   std::vector<QGraphicsItem *> arw;
   std::vector<DrawingGeometry::BaseGeom *> projGeom;

@@ -56,6 +56,7 @@ public:
     /// Properties for Visualisation
     App::PropertyInteger Precision;
     App::PropertyFloat   Fontsize;
+    App::PropertyBool    CentreLines;
     App::PropertyString  Content;
 
     short mustExecute() const;

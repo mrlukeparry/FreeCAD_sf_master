@@ -148,38 +148,46 @@ QGraphicsItemViewDimension::QGraphicsItemViewDimension(const QPoint &pos, QGraph
     this->setFlag(QGraphicsItem::ItemIsMovable, false);
     this->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
-    QGraphicsItemDatumLabel *dLabel = new QGraphicsItemDatumLabel();
-    QGraphicsPathItem *arrws = new QGraphicsPathItem();
+    QGraphicsItemDatumLabel *dlabel = new QGraphicsItemDatumLabel();
+    QGraphicsPathItem *arrws        = new QGraphicsPathItem();
+    QGraphicsPathItem *clines       = new QGraphicsPathItem();
 
-         // connecting the needed signals
-    QObject::connect(
-        dLabel  , SIGNAL(dragging()),
-        this    , SLOT  (datumLabelDragged()));
+    this->datumLabel  = dlabel;
+    this->arrows      = arrws;
+    this->centreLines = clines;
 
+    // connecting the needed slots and signals
     QObject::connect(
-        dLabel  , SIGNAL(dragFinished()),
-        this    , SLOT  (datumLabelDragFinished()));
-
-    QObject::connect(
-        dLabel  , SIGNAL(selected(bool)),
-        this    , SLOT  (select(bool)));
+        dlabel, SIGNAL(dragging()),
+        this  , SLOT  (datumLabelDragged()));
 
     QObject::connect(
-        dLabel  , SIGNAL(hover(bool)),
-        this    , SLOT  (hover(bool)));
+        dlabel, SIGNAL(dragFinished()),
+        this  , SLOT  (datumLabelDragFinished()));
 
-    this->arrows  = arrws;
-    this->datumLabel = dLabel;
+    QObject::connect(
+        dlabel, SIGNAL(selected(bool)),
+        this  , SLOT  (select(bool)));
+
+    QObject::connect(
+        dlabel, SIGNAL(hover(bool)),
+        this  , SLOT  (hover(bool)));
 
     this->pen.setCosmetic(true);
     this->pen.setWidthF(1.);
 
+
+
     this->addToGroup(arrows);
     this->addToGroup(datumLabel);
+    this->addToGroup(centreLines);
 }
 
 QGraphicsItemViewDimension::~QGraphicsItemViewDimension()
 {
+    QGraphicsItemDatumLabel *item = static_cast<QGraphicsItemDatumLabel *>(datumLabel);
+    item->deleteLater();
+
     clearProjectionCache();
 }
 
@@ -210,8 +218,8 @@ void QGraphicsItemViewDimension::clearProjectionCache()
 
 void QGraphicsItemViewDimension::select(bool state)
 {
-   this->setSelected(state);
-   draw();
+    this->setSelected(state);
+    draw();
 }
 
 void QGraphicsItemViewDimension::hover(bool state)
@@ -243,8 +251,6 @@ void QGraphicsItemViewDimension::updateView(bool update)
         dLabel->setFont(font);
         dLabel->updatePos();
 
-        draw();
-
     } else if(dim->X.isTouched() ||
               dim->Y.isTouched()) {
 
@@ -255,13 +261,12 @@ void QGraphicsItemViewDimension::updateView(bool update)
         dLabel->setPosition(x, y);
 
         updateDim();
-        draw();
 
     } else {
         updateDim();
-        draw();
-
     }
+
+    draw();
 
     Q_EMIT dirty();
 }
@@ -295,9 +300,6 @@ void QGraphicsItemViewDimension::updateDim()
 
 void QGraphicsItemViewDimension::datumLabelDragged()
 {
-//     int x = this->datumLabel->posX;
-//     int y = this->datumLabel->posY;
-
     draw();
 }
 
@@ -605,6 +607,309 @@ void QGraphicsItemViewDimension::draw()
         ar1->setHighlighted(isSelected() || this->hasHover);
         ar2->setHighlighted(isSelected() || this->hasHover);
 
+    } else if(strcmp(dimType, "Diameter") == 0) {
+        // Not sure whether to treat radius and diameter as the same
+
+        Base::Vector3d p1, p2, dir, centre;
+        QGraphicsItemDatumLabel *lbl = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
+        Base::Vector3d labelPos(lbl->X(), lbl->Y(), 0);
+
+        double radius;
+
+        if(dim->References.getValues().size() == 1 && SubNames[0].substr(0,4) == "Edge") {
+            // Assuming currently just edge
+
+            const Drawing::FeatureViewPart *refObj = static_cast<const Drawing::FeatureViewPart*>(objects[0]);
+            int idx = std::atoi(SubNames[0].substr(4,4000).c_str());
+
+            // Use the cached value if available otherwise load this
+            if(projGeom.size() != 1) {
+                clearProjectionCache();
+                DrawingGeometry::BaseGeom *geom = refObj->getCompleteEdge(idx);
+
+                if(!geom)
+                    throw Base::Exception("Edge couldn't be found for radius / diameter dimension");
+
+                projGeom.push_back(geom);
+            }
+
+            if(projGeom.at(0) &&
+               (projGeom.at(0)->geomType == DrawingGeometry::CIRCLE || projGeom.at(0)->geomType == DrawingGeometry::ARCOFCIRCLE)) {
+                  DrawingGeometry::Circle *circ = static_cast<DrawingGeometry::Circle *>(projGeom.at(0));
+                  Base::Vector2D pnt1 = circ->center;
+                  radius = circ->radius;
+                  centre = Base::Vector3d (pnt1.fX, pnt1.fY, 0); // Center point
+            } else {
+                clearProjectionCache();
+                throw Base::Exception("Original edge not found or is invalid type");
+            }
+        } else {
+            throw Base::Exception("Invalid reference for dimension type");
+        }
+
+        // Note Bounding Box size is not the same width or height as text (only used for finding center)
+        float bbX  = lbl->boundingRect().width();
+        float bbY = lbl->boundingRect().height();
+
+        // TODO consider modifying behaviour of SoDatumLabel so position is at center
+        // Orientate Position to be at the center of the datumLabel
+//         labelPos += 0.5 * Base::Vector3d(bbX, bbY, 0.f);
+        dir = (labelPos - centre).Normalize();
+
+        // Get magnitude of angle between horizontal
+        float angle = atan2f(dir[1],dir[0]);
+        bool flip=false;
+        if (angle > M_PI_2+M_PI/12) {
+            angle -= (float)M_PI;
+            flip = true;
+        } else if (angle <= -M_PI_2+M_PI/12) {
+            angle += (float)M_PI;
+            flip = true;
+        }
+
+        float s = sin(angle);
+        float c = cos(angle);
+        /*
+
+        Base::Console().Log("angle (%f, %f), bbx %f, bby %f", s,c,bbX, bbY);*/
+        // Note QGraphicsTextItem takes coordinate system from TOP LEFT - transfer to center
+        // Create new coordinate system based around x,y
+//         labelPos += 0.5 * Base::Vector3d(bbX * c - bbY * s, bbX * s + bbY * c, 0.f);
+//         dir = (labelPos - p1).Normalize();
+//
+//         angle = atan2f(dir[1],dir[0]);
+//
+        p2 = centre + dir * radius;
+        p1 = centre - dir * radius;
+
+        QFontMetrics fm(lbl->font());
+
+        int w = fm.width(str);
+        int h = fm.height();
+
+        float margin = 5.f;
+
+        // Calculate the points
+        Base::Vector3d pnt1 = labelPos - dir * (margin + w / 2);
+        Base::Vector3d pnt2 = labelPos + dir * (margin + w / 2);
+
+        bool outerPlacement = false;
+        if ((labelPos-centre).Length() > radius) {
+            outerPlacement = true;
+        }
+
+        // Reset transformation origin for datum label
+        lbl->setTransformOriginPoint(bbX / 2, bbY /2);
+
+        int posMode = 0; // 0 - Position freely
+                         // 1 - Snap Vertically
+                         // 2 - Snap
+        QPainterPath path;
+
+        if(outerPlacement) {
+
+            // Select whether to snap vertically or hoziontally given tolerance
+            Base::Vector3d v = (labelPos-p1);
+
+            double angle = atan2(v.y, v.x);
+            double tolerance = 15.0; //deg
+
+            tolerance *= M_PI / 180;
+            if( (angle > -tolerance && angle < tolerance) ||
+                (angle > (M_PI - tolerance) || angle < (-M_PI + tolerance)) ) {
+                // Snap horizontally
+                  posMode = 2;
+            } else if( (angle < ( M_PI / 2. + tolerance) && angle > ( M_PI / 2. - tolerance)) ||
+                       (angle < (-M_PI / 2. + tolerance) && angle > (-M_PI / 2. - tolerance)) ) {
+                // Snap vertically
+                posMode = 1;
+            }
+
+            if(posMode == 1) {
+
+                // Snapped Vertically
+                float tip = (labelPos.y > centre.y) ? margin: -margin;
+                tip *= 0.5;
+
+                p1.x = centre.x - radius;
+                p1.y = labelPos.y;
+
+                p2.x = centre.x + radius;
+                p2.y = labelPos.y;
+
+                pnt1 = labelPos;
+                pnt1.x -= (margin + w / 2);
+
+                pnt2 = labelPos;
+                pnt2.x += (margin + w / 2);
+
+                // Extension lines
+                path.moveTo(centre.x - radius, centre.y);
+                path.lineTo(p1[0], p1[1] + tip);
+
+                // Left Arrow
+                path.moveTo(p1[0], p1[1]);
+                path.lineTo(pnt1[0], pnt1[1]);
+
+                // Extension lines
+                path.moveTo(centre.x + radius, centre.y);
+                path.lineTo(p2[0], p2[1] + tip);
+
+                // Right arrow
+                path.moveTo(pnt2[0], pnt2[1]);
+                path.lineTo(p2[0], p2[1]);
+
+                lbl->setRotation(0.);
+
+            } else if(posMode == 2) {
+                // Snapped Horizontally
+
+                float tip = (labelPos.x > centre.x) ? margin: -margin;
+                tip *= 0.5;
+
+                p1.y = centre.y - radius;
+                p1.x = labelPos.x;
+
+                p2.y = centre.y + radius;
+                p2.x = labelPos.x;
+
+                pnt1 = labelPos;
+                pnt1.y -= (margin + w / 2);
+
+                pnt2 = labelPos;
+                pnt2.y += (margin + w / 2);
+
+                // Extension lines
+                path.moveTo(centre.x, centre.y  - radius);
+                path.lineTo(p1[0] + tip, p1[1]);
+
+                path.moveTo(p1[0], p1[1]);
+                path.lineTo(pnt1[0], pnt1[1]);
+
+                // Extension lines
+                path.moveTo(centre.x, centre.y  + radius);
+                path.lineTo(p2[0] + tip, p2[1]);
+
+                path.moveTo(pnt2[0], pnt2[1]);
+                path.lineTo(p2[0], p2[1]);
+
+                lbl->setRotation(90.);
+
+            } else {
+                float tip = (margin + w / 2);
+                tip = (labelPos.x < centre.x) ? tip : -tip;
+
+                p1 = labelPos;
+                p1.x += tip;
+
+
+                Base::Vector3d p3 = p1;
+                p3.x += (labelPos.x < centre.x) ? margin : - margin;
+
+                p2 = centre + (p3 - centre).Normalize() * radius;
+
+                path.moveTo(p1[0], p1[1]);
+                path.lineTo(p3[0], p3[1]);
+
+                path.lineTo(p2[0], p2[1]);
+
+                lbl->setRotation(0.);
+            }
+        } else {
+            lbl->setRotation(angle * 180 / M_PI);
+
+            path.moveTo(p1[0], p1[1]);
+            path.lineTo(pnt1[0], pnt1[1]);
+
+            path.moveTo(pnt2[0], pnt2[1]);
+            path.lineTo(p2[0], p2[1]);
+        }
+
+        QGraphicsPathItem *arrw = dynamic_cast<QGraphicsPathItem *> (this->arrows);
+        arrw->setPath(path);
+        arrw->setPen(pen);
+
+        // Add or remove centre lines
+        QGraphicsPathItem *clines = dynamic_cast<QGraphicsPathItem *> (this->centreLines);
+        QPainterPath clpath;
+
+        if(dim->CentreLines.getValue()) {
+            // Add centre lines to the circle
+
+            double clDist = margin; // Centre Line Size
+            if( margin / radius  > 0.2) {
+                // Tolerance if centre line is greater than 0.3x radius then set to limit
+                clDist = radius * 0.2;
+            }
+            // Vertical Line
+            clpath.moveTo(centre.x, centre.y + clDist);
+            clpath.lineTo(centre.x, centre.y - clDist);
+
+            // Vertical Line
+            clpath.moveTo(centre.x - clDist, centre.y);
+            clpath.lineTo(centre.x + clDist, centre.y);
+
+            QPen clPen(QColor(128,128,128));
+            clines->setPen(clPen);
+        }
+
+        clines->setPath(clpath);
+
+        // Create Two Arrows always
+        if(arw.size() != 2) {
+            prepareGeometryChange();
+            for(std::vector<QGraphicsItem *>::iterator it = arw.begin(); it != arw.end(); ++it) {
+                this->removeFromGroup(*it);
+                delete (*it);
+            }
+            arw.clear();
+
+            // These items are added to the scene-graph so should be handled by the canvas
+            QGraphicsItemArrow *ar1 = new QGraphicsItemArrow();
+            QGraphicsItemArrow *ar2 = new QGraphicsItemArrow();
+            arw.push_back(ar1);
+            arw.push_back(ar2);
+
+            ar1->draw();
+            ar2->flip(true);
+            ar2->draw();
+            this->addToGroup(arw.at(0));
+            this->addToGroup(arw.at(1));
+        }
+
+        QGraphicsItemArrow *ar1 = dynamic_cast<QGraphicsItemArrow *>(arw.at(0));
+        QGraphicsItemArrow *ar2 = dynamic_cast<QGraphicsItemArrow *>(arw.at(1));
+
+        Base::Vector3d ar1Pos = p1 + dir * radius;
+        float arAngle = atan2(dir.y, dir.x) * 180 / M_PI;
+
+        ar1->setHighlighted(isSelected() || this->hasHover);
+        ar2->setHighlighted(isSelected() || this->hasHover);
+        ar2->show();
+
+        if(outerPlacement) {
+            if(posMode > 0) {
+                  ar1->setPos(p2.x, p2.y);
+                  ar2->setPos(p1.x, p1.y);
+                  ar1->setRotation((posMode == 2) ? 90 : 0);
+                  ar2->setRotation((posMode == 2) ? 90 : 0);
+            } else {
+                Base::Vector3d vec = (p2 - centre).Normalize();
+                float arAngle = atan2(-vec.y, -vec.x) * 180 / M_PI;
+                ar1->setPos(p2.x, p2.y);
+                ar1->setRotation(arAngle);
+                ar2->hide();
+            }
+        } else {
+            ar1->setRotation(arAngle);
+            ar2->setRotation(arAngle);
+
+            ar1->setPos(p2.x, p2.y);
+            ar2->show();
+            ar2->setPos(p1.x, p1.y);
+        }
+
+
     } else if(strcmp(dimType, "Radius") == 0) {
         // Not sure whether to treat radius and diameter as the same
 
@@ -755,6 +1060,33 @@ void QGraphicsItemViewDimension::draw()
                 this->addToGroup(arw.at(1));
             }
         }
+
+
+        // Add or remove centre lines
+        QGraphicsPathItem *clines = dynamic_cast<QGraphicsPathItem *> (this->centreLines);
+        QPainterPath clpath;
+
+        if(dim->CentreLines.getValue()) {
+            // Add centre lines to the circle
+
+            double clDist = margin; // Centre Line Size
+            if( margin / radius  > 0.2) {
+                // Tolerance if centre line is greater than 0.3x radius then set to limit
+                clDist = radius * 0.2;
+            }
+            // Vertical Line
+            clpath.moveTo(p1.x, p1.y + clDist);
+            clpath.lineTo(p1.x, p1.y - clDist);
+
+            // Vertical Line
+            clpath.moveTo(p1.x - clDist, p1.y);
+            clpath.lineTo(p1.x + clDist, p1.y);
+
+            QPen clPen(QColor(128,128,128));
+            clines->setPen(clPen);
+        }
+
+        clines->setPath(clpath);
 
         QGraphicsItemArrow *ar1 = dynamic_cast<QGraphicsItemArrow *>(arw.at(0));
 

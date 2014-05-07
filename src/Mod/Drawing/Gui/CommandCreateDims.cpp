@@ -128,6 +128,12 @@ void CmdDrawingNewDimension::activated(int iMsg)
                geom->geomType == DrawingGeometry::ARCOFCIRCLE ||
                geom->geomType == DrawingGeometry::ELLIPSE ||
                geom->geomType == DrawingGeometry::ARCOFELLIPSE ) {
+
+                if(geom->geomType == DrawingGeometry::CIRCLE ) {
+                    // Add center lines automatically for full circles
+                    doCommand(Doc,"App.activeDocument().%s.CentreLines = True", FeatName.c_str());
+                }
+
                 // Radius Constraint
                 dimType = "Radius";
             }
@@ -237,7 +243,7 @@ void CmdDrawingNewDimension::activated(int iMsg)
     } else if(strcmp(dimType.c_str(), "Radius") == 0) {
         contentStr.prepend(QString::fromAscii("r"));
     } else if(strcmp(dimType.c_str(), "Diameter") == 0) {
-        contentStr += QString(QChar(0x00d8));
+        contentStr += QString::fromAscii("D");
     }
 
 
@@ -343,6 +349,12 @@ void CmdDrawingNewRadiusDimension::activated(int iMsg)
                geom->geomType == DrawingGeometry::ARCOFELLIPSE ) {
                 // Radius Constraint
                 dimType = "Radius";
+            }
+
+            if(geom->geomType == DrawingGeometry::CIRCLE ||
+               geom->geomType == DrawingGeometry::ELLIPSE ) {
+                // Add center lines automatically for full circles
+                doCommand(Doc,"App.activeDocument().%s.CentreLines = True", FeatName.c_str());
             }
 
             doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str()
@@ -469,6 +481,12 @@ void CmdDrawingNewDiameterDimension::activated(int iMsg)
                 dimType = "Diameter";
             }
 
+            if(geom->geomType == DrawingGeometry::CIRCLE ||
+               geom->geomType == DrawingGeometry::ELLIPSE ) {
+                // Add center lines automatically for full circles
+                doCommand(Doc,"App.activeDocument().%s.CentreLines = True", FeatName.c_str());
+            }
+
             doCommand(Doc,"App.activeDocument().%s.Type = '%s'",FeatName.c_str()
                                                                ,dimType.c_str());
 
@@ -484,9 +502,7 @@ void CmdDrawingNewDiameterDimension::activated(int iMsg)
         return;
     }
 
-    QString contentStr = QString::fromAscii("%value");
-
-    contentStr += QString(QChar(0x00d8));
+    QString contentStr = QString::fromAscii("D%value");
 
     doCommand(Doc,"App.activeDocument().%s.Content = '%s'",FeatName.c_str()
                                                           ,contentStr.toStdString().c_str());
