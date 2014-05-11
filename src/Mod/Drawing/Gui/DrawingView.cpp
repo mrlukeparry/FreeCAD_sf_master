@@ -505,6 +505,7 @@ void DrawingView::updateDrawing()
                 m_view->scene()->sceneRect().adjusted(1,1,1,1);
                 m_view->scene()->sceneRect().adjusted(-1,-1,-1,-1);
                 m_view->scene()->setItemIndexMethod(QGraphicsScene::BspTreeIndex);
+                (*qview)->deleteLater();
 
 //                 QGraphicsItemViewPart *part = 0;
 //                 part = dynamic_cast<QGraphicsItemViewPart *>(*qview);

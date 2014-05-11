@@ -91,6 +91,8 @@ void QGraphicsItemVertex::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
         brush.setColor(Qt::black);
         this->setBrush(brush);
         update();
+    } else {
+
     }
 }
 

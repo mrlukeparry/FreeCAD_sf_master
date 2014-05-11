@@ -62,6 +62,19 @@ QGraphicsItemViewPart::QGraphicsItemViewPart(const QPoint &pos, QGraphicsScene *
 QGraphicsItemViewPart::~QGraphicsItemViewPart()
 {
 
+    // Identify what changed to prevent complete redraw
+    QList<QGraphicsItem *> items = this->childItems();
+    QList<QGraphicsItem *> bboxItems = items;
+
+    //bbox.setSize(QSizeF(0.,0.));
+
+    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
+        if(*it) {
+            (*it)->setParentItem(0);
+            this->removeFromGroup(*it);
+            delete *it;
+        }
+    }
 }
 
 
@@ -99,7 +112,7 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
 
             // NOTE:  Temporary solution to prevent segfaulting in PaintDraw event
            borderVisible = false;
-          // this->tidy();
+           this->tidy();
 //         prepareGeometryChange();
 //         bbox.setHeight(0.);
 //         bbox.setWidth(0.);
@@ -109,30 +122,6 @@ QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVar
 
 void QGraphicsItemViewPart::tidy()
 {
-
-    // Identify what changed to prevent complete redraw
-    QList<QGraphicsItem *> items = this->childItems();
-    QList<QGraphicsItem *> bboxItems = items;
-
-    //bbox.setSize(QSizeF(0.,0.));
-
-    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
-            (*it)->setParentItem(0);
-            this->removeFromGroup(*it);
-            delete *it;
-
-            // Rebuild bounding box on every deletion - unfortunatly necessary
-            QRectF tmpBox;
-            for(QList<QGraphicsItem *>::iterator qit = bboxItems.begin(); qit!= bboxItems.end(); ++qit) {
-                if(*qit)
-                    tmpBox |=  this->transform().mapRect((*qit)->boundingRect());
-            }
-
-            // Declare the bounding box will change and set to new one without element
-            prepareGeometryChange();
-            bbox = tmpBox;
-    }
-
     //Delete any leftover items
     for(QList<QGraphicsItem *>::iterator it = deleteItems.begin(); it != deleteItems.end(); ++it) {
           delete *it;
@@ -530,9 +519,10 @@ void QGraphicsItemViewPart::drawViewPart()
     }
 
     graphicsItem = 0;
+
     // Draw Vertexs:
     const std::vector<DrawingGeometry::Vertex *> &verts = part->getVertexGeometry();
-    const std::vector<int> &vertRefs = part->getVertexReferences();
+    const std::vector<int> &vertRefs                    = part->getVertexReferences();
 
     std::vector<DrawingGeometry::Vertex *>::const_iterator vert = verts.begin();
 
@@ -546,7 +536,6 @@ void QGraphicsItemViewPart::drawViewPart()
           item->setBrush(vertBrush);
           path.addEllipse(-2 ,-2, 4, 4);
 
-
           QPointF posRef(0.,0.);
           QPointF mapPos = item->mapToItem(this, posRef);
 
@@ -555,7 +544,6 @@ void QGraphicsItemViewPart::drawViewPart()
           item->moveBy(-mapPos.x(), -mapPos.y());
           if(vertRefs.at(i) > 0)
               item->setFlag(QGraphicsItem::ItemIsSelectable, true);
-
 
           // Edges and Vertexs must be transformed to the ViewPart's coordinate system
           //item->moveBy(this->x(), this->y());
@@ -763,7 +751,7 @@ QPainterPath QGraphicsItemViewPart::shape() const {
 
 QRectF QGraphicsItemViewPart::boundingRect() const
 {
-    return bbox.adjusted(-5.,-5.,5.,5.);
+    return QGraphicsItemView::boundingRect().adjusted(-5.,-5.,5.,5.);
 }
 
 void QGraphicsItemViewPart::drawBorder(QPainter *painter)
