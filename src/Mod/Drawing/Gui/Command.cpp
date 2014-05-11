@@ -134,6 +134,10 @@ void CmdDrawingNewPage::activated(int iMsg)
 
         // Create the Template Object to attach to the page
         doCommand(Doc,"App.activeDocument().addObject('Drawing::FeatureSVGTemplate','%s')",TemplateName.c_str());
+
+        QString templateFile = a->property("Template").toString();
+        doCommand(Doc,"App.activeDocument().%s.Template = '%s'",TemplateName.c_str(), templateFile.toStdString().c_str());
+
         doCommand(Doc,"App.activeDocument().%s.Template = App.activeDocument().%s",PageName.c_str(),TemplateName.c_str());
 
         commitCommand();
@@ -164,6 +168,9 @@ Gui::Action * CmdDrawingNewPage::createAction(void)
             int id = rx.cap(2).toInt();
             QString orientation = rx.cap(3);
             QFile file(QString::fromAscii(":/icons/actions/drawing-landscape-A0.svg"));
+
+            // Create an action
+
             QAction* a = pcAction->addAction(QString());
             if (file.open(QFile::ReadOnly)) {
                 QString s = QString::fromAscii("style=\"font-size:22px\">%1%2</tspan></text>").arg(paper).arg(id);

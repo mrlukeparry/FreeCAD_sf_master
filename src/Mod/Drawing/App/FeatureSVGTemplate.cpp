@@ -107,8 +107,8 @@ void FeatureSVGTemplate::onChanged(const App::Property* prop)
 
     if (prop == &Template) {
         if (!this->isRestoring()) {
-            EditableTexts.setValues(getEditableTextsFromTemplate());
-            this->touch();
+            //EditableTexts.setValues(getEditableTextsFromTemplate());
+            this->execute();
 
             // Update the parent page if exists
             std::vector<App::DocumentObject*> parent = getInList();
@@ -142,6 +142,9 @@ App::DocumentObjectExecReturn *FeatureSVGTemplate::execute(void)
             return new App::DocumentObjectExecReturn(error);
         }
     }
+
+//     if (std::string(PageResult.getValue()).empty())
+        PageResult.setValue(fi.filePath().c_str());
 
 #if 0
     if (std::string(PageResult.getValue()).empty())
