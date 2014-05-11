@@ -499,7 +499,19 @@ void DrawingView::updateDrawing()
             if(fnd) {
                 myViews.push_back(*qview);
             } else {
+                Base::Console().Log("number of items before %i\n", m_view->scene()->items().size());
                 m_view->scene()->removeItem(*qview);
+                Base::Console().Log("number of items after %i\n", m_view->scene()->items().size());
+                m_view->scene()->sceneRect().adjusted(1,1,1,1);
+                m_view->scene()->sceneRect().adjusted(-1,-1,-1,-1);
+                m_view->scene()->setItemIndexMethod(QGraphicsScene::BspTreeIndex);
+
+//                 QGraphicsItemViewPart *part = 0;
+//                 part = dynamic_cast<QGraphicsItemViewPart *>(*qview);
+//                 if(part) {
+//                   part->tidy();
+//                 }
+                //*qview = 0;
             }
             qview++;
         }

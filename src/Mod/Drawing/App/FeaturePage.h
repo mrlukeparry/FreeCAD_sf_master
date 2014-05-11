@@ -62,7 +62,7 @@ public:
         return "DrawingGui::ViewProviderDrawingPage";
     }
 public:
-
+    bool hasValidTemplate() const;
     double getPageWidth() const;
     double getPageHeight() const;
     const char* getPageOrientation() const;

@@ -114,11 +114,15 @@ void QGraphicsItemView::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 void QGraphicsItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 {
     if(scene() && this == scene()->mouseGrabberItem() && !this->locked) {
+
+        double x = this->x(),
+               y = this->getY();
+
         Gui::Command::openCommand("Drag View");
-        Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", this->getViewObject()->getNameInDocument(), this->x());
-        Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", this->getViewObject()->getNameInDocument(), this->getY());
+        Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", this->getViewObject()->getNameInDocument(), x);
+        Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", this->getViewObject()->getNameInDocument(), y);
         Gui::Command::commitCommand();
-        Gui::Command::updateActive();
+        //Gui::Command::updateActive();
     }
     QGraphicsItem::mouseReleaseEvent(event);
 }

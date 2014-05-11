@@ -171,8 +171,15 @@ public:
     TaskOrthographicViews(ViewProviderViewOrthographic  *orthographicView);
     ~TaskOrthographicViews();
 
+public:
+     void updateTask();
+     void nearestFraction(const double &val, int &a, int &b, const long &maxDenom) const;
+
 protected Q_SLOTS:
     void viewToggled(bool toggle);
+    void scaleTypeChanged(int index);
+    void scaleChanged(const QString & text);
+
 #if 0
 public:
     bool user_input();
@@ -206,6 +213,7 @@ private:
 private:
     //class Private;
     Ui_TaskOrthographicViews * ui;
+    bool blockUpdate;
 
 protected:
   ViewProviderViewOrthographic *orthographicView;
@@ -235,6 +243,8 @@ public:
     virtual void helpRequested() { return;}
     virtual bool isAllowedAlterDocument(void) const
     { return false; }
+
+    void update();
 
 protected:
     ViewProviderViewOrthographic *orthographicView;

@@ -143,6 +143,7 @@ App::DocumentObjectExecReturn *FeatureSVGTemplate::execute(void)
         }
     }
 
+#if 0
     if (std::string(PageResult.getValue()).empty())
         PageResult.setValue(fi.filePath().c_str());
 
@@ -172,7 +173,9 @@ App::DocumentObjectExecReturn *FeatureSVGTemplate::execute(void)
 
     }
     file.close();
+#endif
 
+#if 0
     // checking for freecad editable texts
     string outfragment(ofile.str());
 
@@ -205,6 +208,8 @@ App::DocumentObjectExecReturn *FeatureSVGTemplate::execute(void)
     outfinal.close();
 
     PageResult.setValue(tempName.c_str());
+
+#endif
 
     // Calculate the dimensions of the page and store for retrieval
 
@@ -281,7 +286,7 @@ std::vector<std::string> FeatureSVGTemplate::getEditableTextsFromTemplate() cons
     //getting editable texts from "freecad:editable" attributes in SVG template
 
     std::vector<string> eds;
-
+#if 0
     std::string temp = Template.getValue();
     if (!temp.empty()) {
         Base::FileInfo tfi(temp);
@@ -312,6 +317,7 @@ std::vector<std::string> FeatureSVGTemplate::getEditableTextsFromTemplate() cons
         }
     }
     return eds;
+#endif
 }
 
 // Python Template feature ---------------------------------------------------------

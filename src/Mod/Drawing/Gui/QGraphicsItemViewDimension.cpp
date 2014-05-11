@@ -202,7 +202,10 @@ void QGraphicsItemViewDimension::setViewPartFeature(Drawing::FeatureViewDimensio
     float x = obj->X.getValue();
     float y = obj->Y.getValue();
 
-    this->datumLabel->setPos(x, y);
+    QGraphicsItemDatumLabel *dLabel = static_cast<QGraphicsItemDatumLabel *>(datumLabel);
+
+    dLabel->setPosition(x, y);
+
     updateDim();
     this->draw();
     Q_EMIT dirty();
@@ -235,14 +238,28 @@ void QGraphicsItemViewDimension::updateView(bool update)
         return;
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension*>(this->getViewObject());
 
-    // Reset the cache;
-    clearProjectionCache();
+    std::vector<App::DocumentObject *> refs = dim->References.getValues();
+
+    if(update ||
+       dim->References.isTouched() ||
+       dim->ProjDirection.isTouched()) {
+        // Reset the cache;
+        clearProjectionCache();
+    }
+
+    for(std::vector<App::DocumentObject *>::iterator it = refs.begin(); it != refs.end(); ++it) {
+      if((*it)->isTouched()) {
+          clearProjectionCache();
+          break;
+      }
+    }
+
+    QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
 
     // Identify what changed to prevent complete redraw
     if(dim->Fontsize.isTouched() ||
-       dim->Font.isTouched())
-    {
-        QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
+       dim->Font.isTouched()) {
+
 
         QFont font = dLabel->font();
         font.setPointSizeF(dim->Fontsize.getValue());
@@ -254,12 +271,7 @@ void QGraphicsItemViewDimension::updateView(bool update)
     } else if(dim->X.isTouched() ||
               dim->Y.isTouched()) {
 
-        float x = dim->X.getValue();
-        float y = dim->Y.getValue();
-
-        QGraphicsItemDatumLabel *dLabel = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
-        dLabel->setPosition(x, y);
-
+        dLabel->setPosition(dim->X.getValue(), dim->Y.getValue());
         updateDim();
 
     } else {
@@ -312,9 +324,11 @@ void QGraphicsItemViewDimension::datumLabelDragFinished()
     Drawing::FeatureViewDimension *dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getViewObject());
     QGraphicsItemDatumLabel *datumLbl = dynamic_cast<QGraphicsItemDatumLabel *>(this->datumLabel);
 
+    double x = datumLbl->X(),
+           y = datumLbl->Y();
     Gui::Command::openCommand("Drag Dimension");
-    Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", dim->getNameInDocument(), datumLbl->X());
-    Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", dim->getNameInDocument(), datumLbl->Y());
+    Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", dim->getNameInDocument(), x);
+    Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", dim->getNameInDocument(), y);
     Gui::Command::commitCommand();
     Gui::Command::updateActive();
 }

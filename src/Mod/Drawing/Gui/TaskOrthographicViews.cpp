@@ -23,13 +23,17 @@
 
 #include "PreCompiled.h"
 
+#include <Base/Console.h>
+
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
 
+#include <Mod/Part/App/PartFeature.h>
 #include <Mod/Drawing/App/FeaturePage.h>
 #include <Mod/Drawing/App/FeatureViewPart.h>
 
+#include <Mod/Drawing/App/FeatureOrthoView.h>
 #include <Mod/Drawing/App/FeatureViewOrthographic.h>
 
 #include "TaskOrthographicViews.h"
@@ -50,15 +54,25 @@ TaskOrthographicViews::TaskOrthographicViews(ViewProviderViewOrthographic *vp) :
 {
     ui->setupUi(this);
 
-    // Connect the checkboxes to their views
-    connect(ui->chkOrthoLeft,   SIGNAL(toggled(bool)), this, SLOT(viewToggled(bool)));    // Left View
-    connect(ui->chkOrthoRight,  SIGNAL(toggled(bool)), this, SLOT(viewToggled(bool)));    // Right View
-    connect(ui->chkOrthoTop,    SIGNAL(toggled(bool)), this, SLOT(viewToggled(bool)));    // Top View
-    connect(ui->chkOrthoBottom, SIGNAL(toggled(bool)), this, SLOT(viewToggled(bool)));    // Bottom View
-    connect(ui->chkOrthoFront,  SIGNAL(toggled(bool)), this, SLOT(viewToggled(bool)));    // Front View
-    connect(ui->chkOrthoRear,   SIGNAL(toggled(bool)), this, SLOT(viewToggled(bool)));    // Rear View
+    blockUpdate = true;
 
     Drawing::FeatureViewOrthographic *orthoFeat = orthographicView->getObject();
+
+    int a,b;
+    double scale = orthoFeat->Scale.getValue();
+
+    nearestFraction(scale, a,b,10);
+
+    //nearestFraction(scale, a, b, 10);
+    ui->scaleNum->setText(QString::number(a));
+    ui->scaleDenom->setText(QString::number(b));
+
+
+    if(strcmp(orthoFeat->ScaleType.getValueAsString(), "Automatic") == 0 ||
+       strcmp(orthoFeat->ScaleType.getValueAsString(), "Document") == 0) {
+        ui->scaleNum->setDisabled(true);
+        ui->scaleDenom->setDisabled(true);
+    }
 
     // Initially toggle checkboxes if needed
     if(orthoFeat->hasOrthoView("Left")) {
@@ -84,6 +98,21 @@ TaskOrthographicViews::TaskOrthographicViews(ViewProviderViewOrthographic *vp) :
     if(orthoFeat->hasOrthoView("Bottom")) {
         ui->chkOrthoBottom->setCheckState(Qt::Checked);
     }
+
+    blockUpdate = false;
+
+        // Connect the checkboxes to their views
+    connect(ui->chkOrthoLeft,   SIGNAL(toggled(bool)), this, SLOT(viewToggled(bool)));    // Left View
+    connect(ui->chkOrthoRight,  SIGNAL(toggled(bool)), this, SLOT(viewToggled(bool)));    // Right View
+    connect(ui->chkOrthoTop,    SIGNAL(toggled(bool)), this, SLOT(viewToggled(bool)));    // Top View
+    connect(ui->chkOrthoBottom, SIGNAL(toggled(bool)), this, SLOT(viewToggled(bool)));    // Bottom View
+    connect(ui->chkOrthoFront,  SIGNAL(toggled(bool)), this, SLOT(viewToggled(bool)));    // Front View
+    connect(ui->chkOrthoRear,   SIGNAL(toggled(bool)), this, SLOT(viewToggled(bool)));    // Rear View
+
+    // Slot for Scale Type
+    connect(ui->cmbScaleType, SIGNAL(currentIndexChanged(int)), this, SLOT(scaleTypeChanged(int)));
+    connect(ui->scaleNum,     SIGNAL(textEdited(const QString &)), this, SLOT(scaleChanged(const QString &)));
+    connect(ui->scaleDenom,   SIGNAL(textEdited(const QString &)), this, SLOT(scaleChanged(const QString &)));
 
 #if 0
     // **********************************************************************
@@ -157,8 +186,42 @@ void TaskOrthographicViews::viewToggled(bool toggle)
 
     Gui::Command::openCommand("Toggle orthographic view");
 
+    double spacing = 25.; // stick with defualt 10 mm
+
     if (toggle && !orthoFeat->hasOrthoView(viewName.toLatin1())) {
-        orthoFeat->addOrthoView(viewName.toLatin1());
+        Drawing::FeatureOrthoView *view = dynamic_cast<Drawing::FeatureOrthoView *>(orthoFeat->addOrthoView(viewName.toLatin1()));
+        Drawing::FeatureOrthoView *anchorView =  dynamic_cast<Drawing::FeatureOrthoView *>(orthoFeat->Anchor.getValue());
+
+        view->execute();
+
+        if(view && anchorView) {
+            Base::BoundBox3d abbox = anchorView->getBoundingBox();
+            Base::BoundBox3d vbbox = view->getBoundingBox();
+
+            // Position the new view
+            if(strcmp(view->Type.getValueAsString(), "Left") == 0) {
+                view->X.setValue((vbbox.LengthX() + abbox.LengthX()) / -2. - spacing);
+            } else if(strcmp(view->Type.getValueAsString(), "Right") == 0) {
+                view->X.setValue((vbbox.LengthX() + abbox.LengthX()) /  2. + spacing);
+            } else if(strcmp(view->Type.getValueAsString(), "Top") == 0) {
+                view->Y.setValue((vbbox.LengthY() + abbox.LengthY()) /  2. + spacing);
+            } else if(strcmp(view->Type.getValueAsString(), "Bottom") == 0) {
+                view->Y.setValue((vbbox.LengthY() + abbox.LengthY()) / -2. - spacing);
+            } else if(strcmp(view->Type.getValueAsString(), "Rear") == 0) {
+                if(orthoFeat->hasOrthoView("Top")) {
+                    Drawing::FeatureOrthoView *topView =  dynamic_cast<Drawing::FeatureOrthoView *>(orthoFeat->getOrthoView("Top"));
+                    Base::BoundBox3d tbbox = topView->getBoundingBox();
+                    view->Y.setValue((vbbox.LengthY() + tbbox.LengthY() + abbox.LengthY()) / 2. + 2. * spacing);
+                } else {
+                  view->Y.setValue((vbbox.LengthY() + abbox.LengthY()) / -2. - spacing); // Set in top position for now
+                }
+
+            }
+        } else {
+            Base::Console().Error("Couldn't add orthographic view");
+        }
+
+
     } else if(!toggle){
         orthoFeat->removeOrthoView(viewName.toLatin1());
     }
@@ -168,6 +231,155 @@ void TaskOrthographicViews::viewToggled(bool toggle)
 
 }
 
+void TaskOrthographicViews::scaleTypeChanged(int index)
+{
+
+    if(blockUpdate)
+        return;
+
+    Drawing::FeatureViewOrthographic *orthoFeat = orthographicView->getObject();
+    Gui::Command::openCommand("Update orthographic scale type");
+    if(index == 0) {
+        //Automatic Scale Type
+        ui->scaleDenom->setDisabled(true);
+        ui->scaleNum->setDisabled(true);
+
+        Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.ScaleType = '%s'", orthoFeat->getNameInDocument()
+                                                                                             , "Document");
+
+
+
+    } else if(index == 1) {
+        // Document Scale Type
+        Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.ScaleType = '%s'", orthoFeat->getNameInDocument()
+                                                                                             , "Automatic");
+
+        ui->scaleDenom->setDisabled(true);
+        ui->scaleNum->setDisabled(true);
+
+    } else if(index == 2) {
+
+        // Custom Scale Type
+        Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.ScaleType = '%s'", orthoFeat->getNameInDocument()
+                                                                                             , "Custom");
+
+        ui->scaleDenom->setDisabled(false);
+        ui->scaleNum->setDisabled(false);
+    } else {
+        Gui::Command::abortCommand();
+        return;
+    }
+
+    Gui::Command::commitCommand();
+    Gui::Command::updateActive();
+}
+
+// ** David Eppstein / UC Irvine / 8 Aug 1993
+void TaskOrthographicViews::nearestFraction(const double &val, int &n, int &d, const long &maxDenom) const
+{
+//     long m[2][2];
+//     double x, startx;
+//     long ai;
+//
+//     startx = x = val;
+//
+//     /* initialize matrix */
+//     m[0][0] = m[1][1] = 1;
+//     m[0][1] = m[1][0] = 0;
+//
+//     /* loop finding terms until denom gets too big */
+//     while (m[1][0] *  ( ai = (long)x ) + m[1][1] <= maxDenom) {
+//         long t;
+//         t = m[0][0] * ai + m[0][1];
+//         m[0][1] = m[0][0];
+//         m[0][0] = t;
+//         t = m[1][0] * ai + m[1][1];
+//         m[1][1] = m[1][0];
+//         m[1][0] = t;
+//         if(x==(double)ai) break;     // AF: division by zero
+//         x = 1/(x - (double) ai);
+//         if(x>(double)0x7FFFFFFF) break;  // AF: representation failure
+//     }
+//
+//     /* now remaining x is between 0 and 1/ai */
+//     /* approx as either 0 or 1/m where m is max that will fit in maxden */
+//     /* first try zero */
+// //     printf("%ld/%ld, error = %e\n", m[0][0], m[1][0],
+// //            startx - ((double) m[0][0] / (double) m[1][0]));
+//
+//     /* now try other possibility */
+//     ai = (maxDenom - m[1][1]) / m[1][0];
+//     a = m[0][0] * ai + m[0][1];
+//     b = m[1][0] * ai + m[1][1];
+
+        n = 1;  // numerator
+        d = 1;  // denominator
+        double fraction = n / d;
+        double m = std::abs(fraction - val);
+        while (std::abs(fraction - val) > 0.001)
+        {
+            if (fraction < val)
+            {
+                n++;
+            }
+            else
+            {
+                d++;
+                n = (int) round(val * d);
+            }
+
+            fraction = n / (double) d;
+        }
+
+
+}
+
+void TaskOrthographicViews::updateTask()
+{
+
+    Drawing::FeatureViewOrthographic *orthoFeat = orthographicView->getObject();
+
+    // Update the scale type
+    this->blockUpdate = true;
+    ui->cmbScaleType->setCurrentIndex(orthoFeat->ScaleType.getValue());
+
+    int a, b;
+    // Update the scale value
+    double scale = orthoFeat->Scale.getValue();
+
+    nearestFraction(scale, a,b,10);
+
+    //nearestFraction(scale, a, b, 10);
+    ui->scaleNum->setText(QString::number(a));
+    ui->scaleDenom->setText(QString::number(b));
+
+    this->blockUpdate = false;
+
+}
+
+void TaskOrthographicViews::scaleChanged(const QString & text)
+{
+
+    if(blockUpdate)
+        return;
+
+    bool ok1, ok2;
+
+    int a = ui->scaleNum->text().toInt(&ok1);
+    int b = ui->scaleDenom->text().toInt(&ok2);
+
+    double scale = (double) a / (double) b;
+    if (ok1 && ok2) {
+        Drawing::FeatureViewOrthographic *orthoFeat = orthographicView->getObject();
+        Gui::Command::openCommand("Update custom scale");
+        Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Scale = %f", orthoFeat->getNameInDocument()
+                                                                                         , scale);
+        Gui::Command::commitCommand();
+        Gui::Command::updateActive();
+    }
+
+
+}
 
 TaskOrthographicViews::~TaskOrthographicViews()
 {
@@ -193,6 +405,11 @@ TaskDlgOrthographicViews::TaskDlgOrthographicViews(ViewProviderViewOrthographic 
 
 TaskDlgOrthographicViews::~TaskDlgOrthographicViews()
 {
+}
+
+void TaskDlgOrthographicViews::update()
+{
+    widget->updateTask();
 }
 
 //==== calls from the TaskView ===============================================================

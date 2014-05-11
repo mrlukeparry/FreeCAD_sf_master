@@ -82,6 +82,14 @@ FeatureViewDimension::~FeatureViewDimension()
     measurement = 0;
 }
 
+void FeatureViewDimension::onChanged(const App::Property* prop)
+{
+    // If Tolerance Property is touched
+    if(prop == &References) {
+        this->touch();
+    }
+}
+
 short FeatureViewDimension::mustExecute() const
 {
     // If Tolerance Property is touched

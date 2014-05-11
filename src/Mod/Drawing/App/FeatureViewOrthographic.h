@@ -27,6 +27,7 @@
 #include <App/PropertyStandard.h>
 #include <App/FeaturePython.h>
 
+#include <Base/BoundBox.h>
 #include "FeatureViewCollection.h"
 
 namespace Drawing
@@ -45,12 +46,18 @@ public:
     FeatureViewOrthographic();
     ~FeatureViewOrthographic();
 
-    App::PropertyEnumeration Type;
+    App::PropertyEnumeration ProjectionType;
     App::PropertyLink Anchor; /// Anchor Element to align views to
+
+public:
+    Base::BoundBox3d getBoundingBox() const;
+    double calculateAutomaticScale() const;
 
     // Check if container has a view of a specific type
     bool hasOrthoView(const char *viewProjType) const;
-    int  addOrthoView(const char *viewProjType);
+    App::DocumentObject * getOrthoView(const char *viewProjType) const;
+
+    App::DocumentObject * addOrthoView(const char *viewProjType);
     int  removeOrthoView(const char *viewProjType);
 
     short mustExecute() const;
@@ -69,7 +76,8 @@ public:
 protected:
     void onChanged(const App::Property* prop);
 private:
-    static const char* TypeEnums[];
+    static const char* ProjectionTypeEnums[];
+
 };
 
 } //namespace Drawing

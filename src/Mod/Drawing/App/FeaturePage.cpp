@@ -98,6 +98,21 @@ short FeaturePage::mustExecute() const
     return (ViewsTouched) ? 1 : App::DocumentObjectGroup::mustExecute();
 }
 
+bool FeaturePage::hasValidTemplate() const
+{
+    App::DocumentObject *obj = 0;
+    obj = Template.getValue();
+
+    if(obj && obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) {
+        Drawing::FeatureTemplate *templ = static_cast<Drawing::FeatureTemplate *>(obj);
+        if(templ->getWidth() > 0. &&
+           templ->getHeight() > 0.) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 double FeaturePage::getPageWidth() const
 {
@@ -148,6 +163,16 @@ const char * FeaturePage::getPageOrientation() const
 /// get called by the container when a Property was changed
 void FeaturePage::onChanged(const App::Property* prop)
 {
+    if(prop == &Scale) {
+        // touch all views in the document as they may be dependent on this scale
+      const std::vector<App::DocumentObject*> &vals = Views.getValues();
+      for(std::vector<App::DocumentObject *>::const_iterator it = vals.begin(); it < vals.end(); ++it) {
+          Drawing::FeatureView *view = dynamic_cast<Drawing::FeatureView *>(*it);
+          if(strcmp(view->ScaleType.getValueAsString(), "Document") == 0) {
+              view->Scale.touch();
+          }
+      }
+    }
     App::DocumentObject::onChanged(prop);
 }
 

@@ -27,9 +27,10 @@
 #include <App/DocumentObject.h>
 #include <App/PropertyLinks.h>
 #include <App/FeaturePython.h>
-
+#include <Base/BoundBox.h>
 #include "FeatureView.h"
 #include "GeometryObject.h"
+
 
 namespace Drawing
 {
@@ -53,6 +54,7 @@ public:
     App::PropertyFloat  HiddenWidth;
     App::PropertyFloatConstraint  Tolerance;
 
+public:
     const std::vector<DrawingGeometry::Vertex *> & getVertexGeometry() const;
     const std::vector<DrawingGeometry::BaseGeom  *> & getEdgeGeometry() const;
     const std::vector<DrawingGeometry::Face *> & getFaceGeometry() const;
@@ -64,6 +66,8 @@ public:
     const std::vector<int> & getVertexReferences() const;
     const std::vector<int> & getEdgeReferences() const;
     const std::vector<int> & getFaceReferences() const;
+
+    virtual Base::BoundBox3d getBoundingBox() const;
 
     short mustExecute() const;
 
@@ -80,7 +84,12 @@ public:
     }
 
 protected:
+    void calcBoundingBox();
+    void onChanged(const App::Property* prop);
+
+protected:
     DrawingGeometry::GeometryObject *geometryObject;
+    Base::BoundBox3d bbox;
 private:
     static App::PropertyFloatConstraint::Constraints floatRange;
 };

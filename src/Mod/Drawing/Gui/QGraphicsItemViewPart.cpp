@@ -64,6 +64,81 @@ QGraphicsItemViewPart::~QGraphicsItemViewPart()
 
 }
 
+
+
+QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+    if (change == ItemSelectedHasChanged && scene()) {
+        // value is the new position.
+        QColor color;
+        if(isSelected()) {
+            color.setRgb(0,0,255);
+            pen.setColor(color);
+
+        } else {
+            color.setRgb(0,0,0);
+            pen.setColor(QColor(150,150,150)); // Drawing Border
+        }
+
+        QList<QGraphicsItem *> items = this->childItems();
+        for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
+
+            QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
+            QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
+            if(edge) {
+                edge->setHighlighted(isSelected());
+            } else if(vert){
+                QBrush brush = vert->brush();
+                brush.setColor(color);
+                vert->setBrush(brush);
+            }
+        }
+        update();
+    } else if(change == ItemSceneChange && scene()) {
+        // if item has been removed from scene we need to update bounding box to not draw anything
+
+            // NOTE:  Temporary solution to prevent segfaulting in PaintDraw event
+           borderVisible = false;
+          // this->tidy();
+//         prepareGeometryChange();
+//         bbox.setHeight(0.);
+//         bbox.setWidth(0.);
+    }
+    return QGraphicsItemView::itemChange(change, value);
+}
+
+void QGraphicsItemViewPart::tidy()
+{
+
+    // Identify what changed to prevent complete redraw
+    QList<QGraphicsItem *> items = this->childItems();
+    QList<QGraphicsItem *> bboxItems = items;
+
+    //bbox.setSize(QSizeF(0.,0.));
+
+    for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
+            (*it)->setParentItem(0);
+            this->removeFromGroup(*it);
+            delete *it;
+
+            // Rebuild bounding box on every deletion - unfortunatly necessary
+            QRectF tmpBox;
+            for(QList<QGraphicsItem *>::iterator qit = bboxItems.begin(); qit!= bboxItems.end(); ++qit) {
+                if(*qit)
+                    tmpBox |=  this->transform().mapRect((*qit)->boundingRect());
+            }
+
+            // Declare the bounding box will change and set to new one without element
+            prepareGeometryChange();
+            bbox = tmpBox;
+    }
+
+    //Delete any leftover items
+    for(QList<QGraphicsItem *>::iterator it = deleteItems.begin(); it != deleteItems.end(); ++it) {
+          delete *it;
+    }
+}
+
 void QGraphicsItemViewPart::setViewPartFeature(Drawing::FeatureViewPart *obj)
 {
     if(obj == 0)
@@ -187,6 +262,7 @@ void QGraphicsItemViewPart::updateView(bool update)
         QList<QGraphicsItem *> items = this->childItems();
         QList<QGraphicsItem *> bboxItems = items;
 
+        bbox.setSize(QSizeF(0,0));
         for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
             // Rebuild bounding box on every deletion - unfortunatly necessary
             QRectF tmpBox;
@@ -194,6 +270,7 @@ void QGraphicsItemViewPart::updateView(bool update)
                 if(*qit)
                     tmpBox |=  this->transform().mapRect((*qit)->boundingRect());
             }
+
 
             // Declare the bounding box will change and set to new one without element
             prepareGeometryChange();
@@ -206,7 +283,7 @@ void QGraphicsItemViewPart::updateView(bool update)
                 (*it)->setParentItem(0);
                 this->removeFromGroup(*it);
                 this->scene()->removeItem(*it);
-                delete *it;
+                deleteItems.append(*it); // We store these and delete till later to prevent rendering crash ISSUE
             }
 
             bboxItems.removeFirst();
@@ -656,39 +733,6 @@ void QGraphicsItemViewPart::toggleVertices(bool state)
                 vert->hide();
         }
     }
-}
-
-
-QVariant QGraphicsItemViewPart::itemChange(GraphicsItemChange change, const QVariant &value)
-{
-    if (change == ItemSelectedHasChanged && scene()) {
-        // value is the new position.
-        QColor color;
-        if(isSelected()) {
-            color.setRgb(0,0,255);
-            pen.setColor(color);
-
-        } else {
-            color.setRgb(0,0,0);
-            pen.setColor(QColor(150,150,150)); // Drawing Border
-        }
-
-        QList<QGraphicsItem *> items = this->childItems();
-        for(QList<QGraphicsItem *>::iterator it = items.begin(); it != items.end(); ++it) {
-
-            QGraphicsItemEdge *edge = dynamic_cast<QGraphicsItemEdge *>(*it);
-            QGraphicsItemVertex *vert = dynamic_cast<QGraphicsItemVertex *>(*it);
-            if(edge) {
-                edge->setHighlighted(isSelected());
-            } else if(vert){
-                QBrush brush = vert->brush();
-                brush.setColor(color);
-                vert->setBrush(brush);
-            }
-        }
-        update();
-    }
-    return QGraphicsItemView::itemChange(change, value);
 }
 
 void QGraphicsItemViewPart::hoverEnterEvent(QGraphicsSceneHoverEvent *event)

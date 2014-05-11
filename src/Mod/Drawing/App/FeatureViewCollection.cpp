@@ -102,6 +102,7 @@ void FeatureViewCollection::onDocumentRestored()
 void FeatureViewCollection::onChanged(const App::Property* prop)
 {
     Drawing::FeatureView::onChanged(prop);
+
     if (prop == &Source ||
         prop == &Views){
         if (!this->isRestoring()) {
@@ -118,17 +119,40 @@ void FeatureViewCollection::onChanged(const App::Property* prop)
 }
 App::DocumentObjectExecReturn *FeatureViewCollection::execute(void)
 {
-    // Rebuild the view
-    const std::vector<App::DocumentObject *> &views = Views.getValues();
-    for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
-        App::DocumentObject *docObj = *it;
-        if(docObj->getTypeId().isDerivedFrom(Drawing::FeatureView::getClassTypeId())) {
-            Drawing::FeatureView *view = dynamic_cast<Drawing::FeatureView *>(*it);
+    if(strcmp(ScaleType.getValueAsString(), "Document") == 0) {
+        // Recalculate scale
 
-            // Set scale factor of each view
-            view->Scale.setValue(this->Scale.getValue());
+        this->Scale.StatusBits.set(2);
+
+        const std::vector<App::DocumentObject *> &views = Views.getValues();
+        for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
+            App::DocumentObject *docObj = *it;
+            if(docObj->getTypeId().isDerivedFrom(Drawing::FeatureView::getClassTypeId())) {
+                Drawing::FeatureView *view = dynamic_cast<Drawing::FeatureView *>(*it);
+
+                // Set scale factor of each view
+                view->ScaleType.setValue("Document");
+                view->touch();
+            }
         }
+    } else if(strcmp(ScaleType.getValueAsString(), "Custom") == 0) {
+        // Rebuild the view
+        this->Scale.StatusBits.set(2, false);
+
+        const std::vector<App::DocumentObject *> &views = Views.getValues();
+        for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
+            App::DocumentObject *docObj = *it;
+            if(docObj->getTypeId().isDerivedFrom(Drawing::FeatureView::getClassTypeId())) {
+                Drawing::FeatureView *view = dynamic_cast<Drawing::FeatureView *>(*it);
+
+                view->ScaleType.setValue("Custom");
+                // Set scale factor of each view
+                view->Scale.setValue(this->Scale.getValue());
+                view->touch();
+            }
+        }
+
     }
 
-    return Drawing::FeatureView::execute();
+    return FeatureView::execute();
 }

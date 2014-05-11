@@ -76,6 +76,9 @@ public:
     virtual double getValue() const;
 
 protected:
+    void onChanged(const App::Property* prop);
+    
+protected:
     Measure::Measurement *measurement;
 
 private:

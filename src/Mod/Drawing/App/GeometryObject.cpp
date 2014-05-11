@@ -368,7 +368,7 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
     Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
     bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
     mat.SetMirror(gp_Ax2(gp_Pnt((xMin+xMax)/2,(yMin+yMax)/2,(zMin+zMax)/2), gp_Dir(0.f,1.f,0.f)));
-    
+
     gp_Trsf matScale;
     matScale.SetScaleFactor(Scale);
 
@@ -390,7 +390,7 @@ DrawingGeometry::BaseGeom * GeometryObject::projectEdge(const TopoDS_Shape &edge
     HLRAlgo_Projector projector = HLRAlgo_Projector(transform);
     projector.Scaled(true);
 
-    HLRBRep_Curve curve;    
+    HLRBRep_Curve curve;
     curve.Curve(refEdge);
     curve.Projector(&projector);
 
@@ -708,7 +708,7 @@ void GeometryObject::extractEdges(HLRBRep_Algo *myAlgo, const TopoDS_Shape &S, i
 
             HLRBRep_EdgeData& ed = DS->EDataArray().ChangeValue(ie);
             if(!ed.Used()) {
-                if(shouldDraw(false, type, ed)) {
+                if(true) {
 
                     TopoDS_Shape result;
                     B.MakeCompound(TopoDS::Compound(result));

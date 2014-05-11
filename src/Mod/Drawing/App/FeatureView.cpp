@@ -25,6 +25,8 @@
 #ifndef _PreComp_
 #endif
 
+#include "FeaturePage.h"
+#include "FeatureViewCollection.h"
 #include "FeatureView.h"
 
 using namespace Drawing;
@@ -32,6 +34,11 @@ using namespace Drawing;
 //===========================================================================
 // FeatureView
 //===========================================================================
+
+const char* FeatureView::ScaleTypeEnums[]= {"Document",
+                                            "Automatic",
+                                            "Custom",
+                                             NULL};
 
 PROPERTY_SOURCE(Drawing::FeatureView, App::DocumentObject)
 
@@ -43,8 +50,8 @@ FeatureView::FeatureView(void)
     ADD_PROPERTY_TYPE(Scale ,(1.0) ,group,App::Prop_None,"Scale factor of the view");
     ADD_PROPERTY_TYPE(Rotation ,(0),group,App::Prop_None,"Rotation of the view in degrees counterclockwise");
 
-
-    App::PropertyType type = (App::PropertyType)(App::Prop_Hidden);
+    ScaleType.setEnums(ScaleTypeEnums);
+    ADD_PROPERTY_TYPE(ScaleType,((long)0),group, App::Prop_None, "Scale Type");
 }
 
 /// get called by the container when a Property was changed
@@ -52,12 +59,13 @@ void FeatureView::onChanged(const App::Property* prop)
 {
     if (prop == &X ||
         prop == &Y ||
-        prop == &Scale ||
+        prop == &ScaleType ||
         prop == &Rotation) {
           if (!this->isRestoring()) {
-              this->touch();
+              FeatureView::execute();
           }
     }
+
     App::DocumentObject::onChanged(prop);
 }
 
@@ -71,8 +79,44 @@ void FeatureView::onDocumentRestored()
     this->execute();
 }
 
+FeaturePage* FeatureView::findParentPage()
+{
+    // Get Feature Page
+    FeaturePage *page = 0;
+    FeatureViewCollection *collection = 0;
+    std::vector<App::DocumentObject*> parent = getInList();
+    for (std::vector<App::DocumentObject*>::iterator it = parent.begin(); it != parent.end(); ++it) {
+        if ((*it)->getTypeId().isDerivedFrom(FeaturePage::getClassTypeId())) {
+            page = dynamic_cast<Drawing::FeaturePage *>(*it);
+        }
+
+        if ((*it)->getTypeId().isDerivedFrom(FeatureViewCollection::getClassTypeId())) {
+            collection = dynamic_cast<Drawing::FeatureViewCollection *>(*it);
+            page = collection->findParentPage();
+        }
+
+        if(page)
+          break; // Found page so leave
+    }
+
+    return page;
+}
+
 App::DocumentObjectExecReturn *FeatureView::execute(void)
 {
+
+    if(strcmp(ScaleType.getValueAsString(), "Document") == 0) {
+        Scale.StatusBits.set(2, true);
+
+        Drawing::FeaturePage *page = findParentPage();
+        if(page) {
+            if(std::abs(page->Scale.getValue() - Scale.getValue()) > FLT_EPSILON) {
+                Scale.setValue(page->Scale.getValue()); // Recalculate scale from page
+                Scale.touch();
+            }
+        }
+    }
+
     return App::DocumentObject::StdReturn;
 }
 

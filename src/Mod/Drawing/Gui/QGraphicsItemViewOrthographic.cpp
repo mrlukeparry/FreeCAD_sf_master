@@ -53,7 +53,6 @@ QGraphicsItemViewOrthographic::QGraphicsItemViewOrthographic(const QPoint &pos, 
     origin = new QGraphicsItemGroup();
     origin->setParentItem(this);
 
-
     // In place to ensure correct drawing and bounding box calculations
     m_backgroundItem = new QGraphicsRectItem();
     m_backgroundItem->setPen(QPen(QColor(Qt::black)));
@@ -103,16 +102,21 @@ QVariant QGraphicsItemViewOrthographic::itemChange(GraphicsItemChange change, co
          view = dynamic_cast<QGraphicsItemView *>(item);
 
          if(view) {
+
             Drawing::FeatureView *fView = view->getViewObject();
             if(fView->getTypeId().isDerivedFrom(Drawing::FeatureOrthoView::getClassTypeId())) {
 
                 Drawing::FeatureOrthoView *orthoView = static_cast<Drawing::FeatureOrthoView *>(fView);
                 QString type = QString::fromAscii(orthoView->Type.getValueAsString());
+
                 if(type == QString::fromAscii("Top") ||
                    type == QString::fromAscii("Bottom") ||
-                   type == QString::fromAscii("Back")) {
+                   type == QString::fromAscii("Rear")) {
+
                     view->alignTo(origin, QString::fromAscii("Vertical"));
+                    
                 } else if(type == QString::fromAscii("Front")) {
+
                     view->setLocked(true);
                     this->installSceneEventFilter(view); // Install an event filter
                     // Get FeatureViewOrthohraphic object
@@ -121,6 +125,7 @@ QVariant QGraphicsItemViewOrthographic::itemChange(GraphicsItemChange change, co
 
                     viewOrthographic->Anchor.setValue(fView);
                     updateView();
+
                 } else {
                     view->alignTo(origin, QString::fromAscii("Horizontal"));
                 }
@@ -162,17 +167,19 @@ void QGraphicsItemViewOrthographic::mouseReleaseEvent(QGraphicsSceneMouseEvent *
 {
      if(scene()) {
        QGraphicsItemView *qAnchor = this->getAnchorQItem();
-        if((mousePos-event->screenPos()).manhattanLength() < 5) {
+        if((mousePos - event->screenPos()).manhattanLength() < 5) {
             if(qAnchor && qAnchor->shape().contains(event->pos())) {
               qAnchor->mouseReleaseEvent(event);
             }
         } else if(scene() && qAnchor && (qAnchor == scene()->mouseGrabberItem())) {
             // End of Drag
+            double x = this->x();
+            double y = this->getY();
             Gui::Command::openCommand("Drag Orthographic Collection");
-            Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", this->getViewObject()->getNameInDocument(), this->x());
-            Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", this->getViewObject()->getNameInDocument(), this->getY());
+            Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", this->getViewObject()->getNameInDocument(), x);
+            Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", this->getViewObject()->getNameInDocument(), y);
             Gui::Command::commitCommand();
-            Gui::Command::updateActive();
+            //Gui::Command::updateActive();
         }
     }
     QGraphicsItemViewCollection::mouseReleaseEvent(event);

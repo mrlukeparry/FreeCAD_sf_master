@@ -30,6 +30,7 @@
 #include <TopoDS.hxx>
 #include <TopExp_Explorer.hxx>
 
+#include <Base/BoundBox.h>
 #include <Base/Console.h>
 #include <Base/Exception.h>
 #include <Base/FileInfo.h>
@@ -72,10 +73,27 @@ short FeatureViewPart::mustExecute() const
     if(Direction.isTouched() ||
        XAxisDirection.isTouched() ||
        Source.isTouched() ||
-       Scale.isTouched())
-          return 1;
-    else
-        return Drawing::FeatureView::mustExecute();
+       Scale.isTouched() ||
+       ShowHiddenLines.isTouched())
+        return 1;
+
+}
+
+void FeatureViewPart::onChanged(const App::Property* prop)
+{
+    FeatureView::onChanged(prop);
+
+    if (prop == &Direction ||
+        prop == &XAxisDirection ||
+        prop == &Source ||
+        prop == &Scale ||
+        prop == &ShowHiddenLines) {
+          if (!this->isRestoring()) {
+              if(prop->isTouched()) {
+                  FeatureViewPart::execute();
+              }
+          }
+    }
 }
 
 FeatureViewPart::~FeatureViewPart()
@@ -147,8 +165,47 @@ DrawingGeometry::Vertex * FeatureViewPart::getVertex(int idx) const
 
     const TopoDS_Shape &support = static_cast<Part::Feature*>(link)->Shape.getValue();
     DrawingGeometry::Vertex *prjShape = geometryObject->projectVertex(shape, support, Direction.getValue());
-    Base::Console().Log("vert %f, %f \n", prjShape->pnt.fX,  prjShape->pnt.fY);
+    //Base::Console().Log("vert %f, %f \n", prjShape->pnt.fX,  prjShape->pnt.fY);
     return prjShape;
+}
+
+void FeatureViewPart::calcBoundingBox()
+{
+    bbox = Base::BoundBox3d(0., 0., 0.);
+
+    const std::vector<DrawingGeometry::Vertex *> verts = geometryObject->getVertexGeometry();
+    const std::vector<DrawingGeometry::BaseGeom *> edges = geometryObject->getEdgeGeometry();
+
+    for(std::vector<DrawingGeometry::Vertex *>::const_iterator it = verts.begin(); it != verts.end(); ++it) {
+        DrawingGeometry::Vertex *v = *it;
+        bbox.Add(Base::Vector3d(v->pnt.fX, v->pnt.fY, 0.));
+    }
+
+
+    for(std::vector<DrawingGeometry::BaseGeom *>::const_iterator it = edges.begin(); it != edges.end(); ++it) {
+        Base::BoundBox3d bb;
+        switch ((*it)->geomType) {
+          case DrawingGeometry::CIRCLE: {
+              DrawingGeometry::Circle *circ = static_cast<DrawingGeometry::Circle *>(*it);
+              bb = Base::BoundBox3d(0., 0., 0, circ->radius*2., circ->radius*2, 0.);
+              bb.MoveX(circ->center.fX);
+              bb.MoveY(circ->center.fY);
+
+          } break;
+          case DrawingGeometry::ELLIPSE: {
+              DrawingGeometry::Ellipse *circ = static_cast<DrawingGeometry::Ellipse *>(*it);
+              bb = Base::BoundBox3d(0., 0., 0, circ->minor*2., circ->major*2, 0.);
+          } break;
+          default: break;
+        }
+
+        bbox.Add(bb);
+    }
+}
+
+Base::BoundBox3d FeatureViewPart::getBoundingBox() const
+{
+    return this->bbox;
 }
 
 App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
@@ -156,7 +213,7 @@ App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
     //## Get the Part Link ##/
     App::DocumentObject* link = Source.getValue();
 
-    Base::Console().Log("execute view feat");
+    //Base::Console().Log("execute view feat");
     if (!link)
         return new App::DocumentObjectExecReturn("No object linked");
 
@@ -172,13 +229,27 @@ App::DocumentObjectExecReturn *FeatureViewPart::execute(void)
         geometryObject->setScale(Scale.getValue());
         geometryObject->extractGeometry(shape, Direction.getValue(), ShowHiddenLines.getValue(), XAxisDirection.getValue());
 
+        this->calcBoundingBox();
         this->touch();
-        return App::DocumentObject::StdReturn;
+
     }
     catch (Standard_Failure) {
         Handle_Standard_Failure e = Standard_Failure::Caught();
         return new App::DocumentObjectExecReturn(e->GetMessageString());
     }
+
+
+    // There is a guaranteed change so check any references linked to this and touch
+    // We need to update all annotations referencing this
+    std::vector<App::DocumentObject*> parent = getInList();
+    for (std::vector<App::DocumentObject*>::iterator it = parent.begin(); it != parent.end(); ++it) {
+        if ((*it)->getTypeId().isDerivedFrom(FeatureView::getClassTypeId())) {
+            Drawing::FeatureView *view = static_cast<Drawing::FeatureView *>(*it);
+            view->touch();
+        }
+    }
+
+    return FeatureView::execute();
 }
 
 // Python Drawing feature ---------------------------------------------------------

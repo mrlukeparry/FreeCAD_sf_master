@@ -86,15 +86,19 @@ std::vector<std::string> ViewProviderOrthoView::getDisplayModes(void) const
 void ViewProviderOrthoView::updateData(const App::Property* prop)
 {
     Gui::ViewProviderDocumentObject::updateData(prop);
+
+
     Drawing::FeatureOrthoView* ortho = getObject();
 
     if(ortho) {
+
+
         // Set the icon pixmap depending on the orientation
         std::string projType = ortho->Type.getValueAsString();
 
         if(strcmp(projType.c_str(), "Front") == 0) {
             sPixmap = "OrthoFront";
-        } else if(strcmp(projType.c_str(), "Back") == 0) {
+        } else if(strcmp(projType.c_str(), "Rear") == 0) {
             sPixmap = "OrthoRear";
         } else if(strcmp(projType.c_str(), "Right") == 0) {
             sPixmap = "OrthoRight";

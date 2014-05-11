@@ -92,6 +92,23 @@ std::vector<std::string> ViewProviderViewOrthographic::getDisplayModes(void) con
 void ViewProviderViewOrthographic::updateData(const App::Property* prop)
 {
     Gui::ViewProviderDocumentObject::updateData(prop);
+
+    if(prop == &(getObject()->Scale) ||
+       prop == &(getObject()->ScaleType) ||
+       prop == &(getObject()->Views) ||
+       prop == &(getObject()->ProjectionType)) {
+
+        Gui::TaskView::TaskDialog *dlg = Gui::Control().activeDialog();
+        TaskDlgOrthographicViews *orthoDlg = qobject_cast<TaskDlgOrthographicViews *>(dlg);
+
+        if (orthoDlg && orthoDlg->getOrthographicView() != this)
+            orthoDlg = 0;
+
+        if(orthoDlg) {
+            orthoDlg->update();
+        }
+    } 
+
  }
 
 

@@ -52,6 +52,8 @@ public:
     explicit QGraphicsItemViewPart(const QPoint &position, QGraphicsScene *scene);
     ~QGraphicsItemViewPart();
 
+    void tidy();
+
     enum {Type = QGraphicsItem::UserType + 102};
     int type() const { return Type;}
 
@@ -100,6 +102,8 @@ protected:
   QPen pen;
   QRectF bbox;
   bool borderVisible;
+private:
+  QList<QGraphicsItem *> deleteItems;
 };
 
 } // namespace DrawingViewGui

@@ -37,7 +37,7 @@ using namespace Drawing;
 const char* FeatureOrthoView::TypeEnums[]= {"Front",
                                             "Left",
                                             "Right",
-                                            "Back",
+                                            "Rear",
                                             "Top",
                                             "Bottom",
                                             NULL};
@@ -55,8 +55,9 @@ FeatureOrthoView::FeatureOrthoView(void)
     // Set Hidden
     XAxisDirection.StatusBits.set(3);
 
-    // Scale is Readonly
+    // Scale and ScaleType are Readonly
     Scale.StatusBits.set(2);
+    ScaleType.StatusBits.set(2);
 }
 
 short FeatureOrthoView::mustExecute() const
@@ -69,15 +70,16 @@ short FeatureOrthoView::mustExecute() const
 /// get called by the container when a Property was changed
 void FeatureOrthoView::onChanged(const App::Property* prop)
 {
-    if (prop == &X ||
-        prop == &Y ||
-        prop == &Type ||
-        prop == &Scale){
+    Drawing::FeatureViewPart::onChanged(prop);
+
+    if (prop == &Type &&
+        Type.isTouched()
+    ){
           if (!this->isRestoring()) {
-              this->touch();
+              FeatureOrthoView::execute();
           }
     }
-    Drawing::FeatureViewPart::onChanged(prop);
+
 }
 
 FeatureOrthoView::~FeatureOrthoView()
@@ -92,27 +94,30 @@ void FeatureOrthoView::onDocumentRestored()
 
 App::DocumentObjectExecReturn *FeatureOrthoView::execute(void)
 {
+    if(this->Type.isTouched()) {
+        this->Type.purgeTouched();
+        std::string projType = this->Type.getValueAsString();
+        if(strcmp(projType.c_str(), "Front") == 0) {
+            Direction.setValue(0., 1., 0.);
+            XAxisDirection.setValue(1., 0., 0.);
+        } else if(strcmp(projType.c_str(), "Rear") == 0) {
+            Direction.setValue(0., -1., 0.);
+            XAxisDirection.setValue(-1., 0., 0);
+        } else if(strcmp(projType.c_str(), "Right") == 0) {
+            Direction.setValue(1., 0., 0.);
+            XAxisDirection.setValue(0, -1., 0);
+        } else if(strcmp(projType.c_str(), "Left") == 0) {
+            Direction.setValue(-1., 0., 0.);
+            XAxisDirection.setValue(0, 1., 0);
+        } else if(strcmp(projType.c_str(), "Top") == 0) {
+            Direction.setValue(0., 0., 1.);
+            XAxisDirection.setValue(1., 0., 0);
+        } else if(strcmp(projType.c_str(), "Bottom") == 0) {
+            Direction.setValue(0., 0., -1.);
+            XAxisDirection.setValue(1., 0., 0);
+        }
 
-    std::string projType = this->Type.getValueAsString();
 
-    if(strcmp(projType.c_str(), "Front") == 0) {
-        Direction.setValue(0., 1., 0.);
-        XAxisDirection.setValue(1., 0., 0.);
-    } else if(strcmp(projType.c_str(), "Back") == 0) {
-        Direction.setValue(0., -1., 0.);
-        XAxisDirection.setValue(-1., 0., 0);
-    } else if(strcmp(projType.c_str(), "Right") == 0) {
-        Direction.setValue(1., 0., 0.);
-        XAxisDirection.setValue(0, -1., 0);
-    } else if(strcmp(projType.c_str(), "Left") == 0) {
-        Direction.setValue(-1., 0., 0.);
-        XAxisDirection.setValue(0, 1., 0);
-    } else if(strcmp(projType.c_str(), "Top") == 0) {
-        Direction.setValue(0., 0., 1.);
-        XAxisDirection.setValue(1., 0., 0);
-    } else if(strcmp(projType.c_str(), "Bottom") == 0) {
-        Direction.setValue(0., 0., -1.);
-        XAxisDirection.setValue(1., 0., 0);
     }
 
     return Drawing::FeatureViewPart::execute();
