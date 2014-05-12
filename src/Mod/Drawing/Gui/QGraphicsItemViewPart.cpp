@@ -240,6 +240,8 @@ void QGraphicsItemViewPart::updateView(bool update)
     Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart *>(this->getViewObject());
 
     if(update ||
+       viewPart->isTouched() ||
+       viewPart->Source.isTouched() ||
        viewPart->Direction.isTouched() ||
        viewPart->Tolerance.isTouched() ||
        viewPart->Scale.isTouched() ||
