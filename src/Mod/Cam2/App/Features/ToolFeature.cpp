@@ -55,6 +55,10 @@ using namespace Cam;
 #include <BRepPrimAPI_MakeTorus.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
 
+#ifndef M_PI
+	#define M_PI PI
+#endif // M_PI
+
 ToolFeature::tap_sizes_t metric_tap_sizes[] = {
       {QString::fromAscii("M1 x 0.25 mm coarse"), 1.0, 0.25},
       {QString::fromAscii("M1.2 x 0.25 mm coarse"), 1.2, 0.25},

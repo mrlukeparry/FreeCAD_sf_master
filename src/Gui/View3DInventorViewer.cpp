@@ -72,6 +72,7 @@
 # include <Inventor/SoOffscreenRenderer.h>
 # include <Inventor/SoPickedPoint.h>
 # include <Inventor/VRMLnodes/SoVRMLGroup.h>
+# include <Inventor/Qt/SoQtBasic.h>
 # include <QEventLoop>
 # include <QGLFramebufferObject>
 # include <QKeyEvent>
@@ -140,9 +141,10 @@ SOQT_OBJECT_ABSTRACT_SOURCE(View3DInventorViewer);
 // *************************************************************************
 
 View3DInventorViewer::View3DInventorViewer (QWidget *parent, const char *name, 
-                                            SbBool embed, Type type, SbBool build) 
+                                            SbBool embed, Type type, SbBool build)
   : inherited (parent, name, embed, type, build), editViewProvider(0), navigation(0),
-    framebuffer(0), editing(FALSE), redirected(FALSE), allowredir(FALSE),axisCross(0),axisGroup(0)
+    framebuffer(0), axisCross(0), axisGroup(0), editing(FALSE), redirected(FALSE),
+    allowredir(FALSE), overrideMode("As Is")
 {
     Gui::Selection().Attach(this);
 
@@ -249,10 +251,15 @@ View3DInventorViewer::View3DInventorViewer (QWidget *parent, const char *name,
     pEventCallback->ref();
     pcViewProviderRoot->addChild(pEventCallback);
     pEventCallback->addEventCallback(SoEvent::getClassTypeId(), handleEventCB, this);
+    
+    dimensionRoot = new SoSwitch(SO_SWITCH_NONE);
+    pcViewProviderRoot->addChild(dimensionRoot);
+    dimensionRoot->addChild(new SoSwitch()); //first one will be for the 3d dimensions.
+    dimensionRoot->addChild(new SoSwitch()); //second one for the delta dimensions.
 
     // This is a callback node that logs all action that traverse the Inventor tree.
 #if defined (FC_DEBUG) && defined(FC_LOGGING_CB)
-    SoCallback * cb = new SoCallback;	 	
+    SoCallback * cb = new SoCallback;
     cb->setCallback(interactionLoggerCB, this);
     pcViewProviderRoot->addChild(cb);
 #endif
@@ -345,7 +352,7 @@ SbBool View3DInventorViewer::hasViewProvider(ViewProvider* pcProvider) const
 void View3DInventorViewer::addViewProvider(ViewProvider* pcProvider)
 {
     SoSeparator* root = pcProvider->getRoot();
-    if (root){
+    if (root) {
         pcViewProviderRoot->addChild(root);
         _ViewProviderMap[root] = pcProvider;
     }
@@ -354,6 +361,7 @@ void View3DInventorViewer::addViewProvider(ViewProvider* pcProvider)
     SoSeparator* back = pcProvider->getBackRoot ();
     if (back) backgroundroot->addChild(back);
 
+    pcProvider->setOverrideMode(this->getOverrideMode());
     _ViewProviderSet.insert(pcProvider);
 }
 
@@ -363,7 +371,7 @@ void View3DInventorViewer::removeViewProvider(ViewProvider* pcProvider)
         resetEditingViewProvider();
 
     SoSeparator* root = pcProvider->getRoot();
-    if (root){
+    if (root) {
         pcViewProviderRoot->removeChild(root);
         _ViewProviderMap.erase(root);
     }
@@ -373,9 +381,7 @@ void View3DInventorViewer::removeViewProvider(ViewProvider* pcProvider)
     if (back) backgroundroot->removeChild(back);
   
     _ViewProviderSet.erase(pcProvider);
-  
 }
-
 
 SbBool View3DInventorViewer::setEditingViewProvider(Gui::ViewProvider* p, int ModNum)
 {
@@ -406,6 +412,24 @@ void View3DInventorViewer::resetEditingViewProvider()
 SbBool View3DInventorViewer::isEditingViewProvider() const
 {
     return this->editViewProvider ? true : false;
+}
+
+/// display override mode
+void View3DInventorViewer::setOverrideMode(const std::string &mode)
+{
+    if (mode == overrideMode)
+        return;
+    overrideMode = mode;
+    for (std::set<ViewProvider*>::iterator it = _ViewProviderSet.begin(); it != _ViewProviderSet.end(); ++it)
+        (*it)->setOverrideMode(mode);
+}
+
+/// update override mode. doesn't affect providers
+void View3DInventorViewer::updateOverrideMode(const std::string &mode)
+{
+    if (mode == overrideMode)
+        return;
+    overrideMode = mode;
 }
 
 void View3DInventorViewer::clearBuffer(void * userdata, SoAction * action)
@@ -471,13 +495,13 @@ void View3DInventorViewer::setEnabledFPSCounter(bool on)
 #endif
 }
 
-void View3DInventorViewer::setAxisCross(bool b)
+void View3DInventorViewer::setAxisCross(bool on)
 {
     SoNode* scene = getSceneGraph();
     SoSeparator* sep = static_cast<SoSeparator*>(scene);
 
-    if(b){
-        if(!axisGroup){
+    if (on) {
+        if (!axisGroup) {
             axisCross = new Gui::SoShapeScale;
             Gui::SoAxisCrossKit* axisKit = new Gui::SoAxisCrossKit();
             axisKit->set("xAxis.appearance.drawStyle", "lineWidth 2");
@@ -490,18 +514,19 @@ void View3DInventorViewer::setAxisCross(bool b)
 
             sep->addChild(axisGroup);
         }
-    }else{
-        if(axisGroup){
+    }
+    else {
+        if (axisGroup) {
             sep->removeChild(axisGroup);
             axisGroup = 0;
         }
     }
 }
+
 bool View3DInventorViewer::hasAxisCross(void)
 {
     return axisGroup;
 }
-
 
 void View3DInventorViewer::setNavigationType(Base::Type t)
 {
@@ -987,11 +1012,36 @@ void View3DInventorViewer::renderFramebuffer()
     glEnable(GL_DEPTH_TEST);
 }
 
+//#define ENABLE_GL_DEPTH_RANGE
+// The calls of glDepthRange inside renderScene() causes problems with transparent objects
+// so that's why it is disabled now: http://forum.freecadweb.org/viewtopic.php?f=3&t=6037&hilit=transparency
+
 // Documented in superclass. Overrides this method to be able to draw
 // the axis cross, if selected, and to keep a continuous animation
 // upon spin.
 void View3DInventorViewer::renderScene(void)
 {
+    // https://bitbucket.org/Coin3D/sogui/src/239bd7ae533d/viewers/SoGuiViewer.cpp.in
+    // The commit introduced a regression for empty view volumes.
+#if SOQT_MAJOR_VERSION > 1 || (SOQT_MAJOR_VERSION == 1 && SOQT_MINOR_VERSION >= 6)
+    // With SoQt 1.6 we have problems when the scene is empty and auto-clipping is turned on.
+    // There is always a warning that the frustum is invalid because the far and near distance
+    // values were set to garbage values when trying to determine the clipping planes.
+    // It will be turned on/off depending on the bounding box since the Coin3d doc says it may
+    // have a bad impact on performance if it's always off.
+    SoGetBoundingBoxAction action(getViewportRegion());
+    action.apply(this->getSceneGraph());
+    SbXfBox3f xbox = action.getXfBoundingBox();
+    if (xbox.isEmpty()) {
+        if (this->isAutoClipping())
+            this->setAutoClipping(FALSE);
+    }
+    else {
+        if (!this->isAutoClipping())
+            this->setAutoClipping(TRUE);
+    }
+#endif
+
     // Must set up the OpenGL viewport manually, as upon resize
     // operations, Coin won't set it up until the SoGLRenderAction is
     // applied again. And since we need to do glClear() before applying
@@ -1005,8 +1055,10 @@ void View3DInventorViewer::renderScene(void)
     glClearColor(col[0], col[1], col[2], 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+#if defined(ENABLE_GL_DEPTH_RANGE)
     // using 90% of the z-buffer for the background and the main node
     glDepthRange(0.1,1.0);
+#endif
 
     // Render our scenegraph with the image.
     SoGLRenderAction * glra = this->getGLRenderAction();
@@ -1028,16 +1080,20 @@ void View3DInventorViewer::renderScene(void)
             QObject::tr("Not enough memory available to display the data."));
     }
 
+#if defined (ENABLE_GL_DEPTH_RANGE)
     // using 10% of the z-buffer for the foreground node
     glDepthRange(0.0,0.1);
+#endif
 
     // Render overlay front scenegraph.
     glra->apply(this->foregroundroot);
 
     if (this->axiscrossEnabled) { this->drawAxisCross(); }
-   
+
+#if defined (ENABLE_GL_DEPTH_RANGE)
     // using the main portion of z-buffer again (for frontbuffer highlighting)
     glDepthRange(0.1,1.0);
+#endif
 
     // Immediately reschedule to get continous spin animation.
     if (this->isAnimating()) { this->scheduleRedraw(); }
@@ -1251,6 +1307,14 @@ SbVec3f View3DInventorViewer::getUpDirection() const
     return upvec;
 }
 
+SbRotation View3DInventorViewer::getCameraOrientation() const
+{
+    SoCamera* cam = this->getCamera();
+    if (!cam)
+        return SbRotation(0,0,0,1); // this is the default
+    return cam->orientation.getValue();
+}
+
 SbVec3f View3DInventorViewer::getPointOnScreen(const SbVec2s& pnt) const
 {
     const SbViewportRegion& vp = this->getViewportRegion();
@@ -1412,6 +1476,14 @@ SoPickedPoint* View3DInventorViewer::pickPoint(const SbVec2s& pos) const
     return (pick ? new SoPickedPoint(*pick) : 0);
 }
 
+const SoPickedPoint* View3DInventorViewer::getPickedPoint(SoEventCallback * n) const
+{
+    if (selectionRoot)
+        return selectionRoot->getPickedPoint(n->getAction());
+    else
+        return n->getPickedPoint();
+}
+
 SbBool View3DInventorViewer::pubSeekToPoint(const SbVec2s& pos)
 {
     return this->seekToPoint(pos);
@@ -1432,7 +1504,7 @@ void View3DInventorViewer::setCameraType(SoType t)
     inherited::setCameraType(t);
     if (t.isDerivedFrom(SoPerspectiveCamera::getClassTypeId())) {
         // When doing a viewAll() for an orthographic camera and switching
-        // to perspective the scene looks completely srange because of the
+        // to perspective the scene looks completely strange because of the
         // heightAngle. Setting it to 45 deg also causes an issue with a too
         // close camera but we don't have this other ugly effect.
         SoCamera* cam = this->getCamera();
@@ -1448,9 +1520,6 @@ void View3DInventorViewer::moveCameraTo(const SbRotation& rot, const SbVec3f& po
 
     SbVec3f campos = cam->position.getValue();
     SbRotation camrot = cam->orientation.getValue();
-    //SbVec3f dir1, dir2;
-    //camrot.multVec(SbVec3f(0, 0, -1), dir1);
-    //rot.multVec(SbVec3f(0, 0, -1), dir2);
 
     QEventLoop loop;
     QTimer timer;
@@ -1468,6 +1537,58 @@ void View3DInventorViewer::moveCameraTo(const SbRotation& rot, const SbVec3f& po
 
     cam->orientation.setValue(rot);
     cam->position.setValue(pos);
+}
+
+void View3DInventorViewer::animatedViewAll(int steps, int ms)
+{
+    SoCamera* cam = this->getCamera();
+    if (!cam)
+        return;
+
+    SbVec3f campos = cam->position.getValue();
+    SbRotation camrot = cam->orientation.getValue();
+    SoGetBoundingBoxAction action(this->getViewportRegion());
+    action.apply(this->getSceneGraph());
+    SbBox3f box = action.getBoundingBox();
+    if (box.isEmpty())
+        return;
+
+    SbSphere sphere;
+    sphere.circumscribe(box);
+
+    SbVec3f direction, pos;
+    camrot.multVec(SbVec3f(0, 0, -1), direction);
+
+    bool isOrthographic = false;
+    float height = 0;
+    float diff = 0;
+    if (cam->isOfType(SoOrthographicCamera::getClassTypeId())) {
+        isOrthographic = true;
+        height = static_cast<SoOrthographicCamera*>(cam)->height.getValue();
+        diff = sphere.getRadius() * 2 - height;
+        pos = (box.getCenter() - direction * sphere.getRadius());
+    }
+    else if (cam->isOfType(SoPerspectiveCamera::getClassTypeId())) {
+        float movelength = sphere.getRadius()/float(tan(static_cast<SoPerspectiveCamera*>
+            (cam)->heightAngle.getValue() / 2.0));
+        pos = box.getCenter() - direction * movelength;
+    }
+
+    QEventLoop loop;
+    QTimer timer;
+    timer.setSingleShot(true);
+    QObject::connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
+    for (int i=0; i<steps; i++) {
+        float s = float(i)/float(steps);
+        if (isOrthographic) {
+            static_cast<SoOrthographicCamera*>(cam)->height.setValue(height + diff * s);
+        }
+
+        SbVec3f curpos = campos * (1.0f-s) + pos * s;
+        cam->position.setValue(curpos);
+        timer.start(Base::clamp<int>(ms,0,5000));
+        loop.exec(QEventLoop::ExcludeUserInputEvents);
+    }
 }
 
 void View3DInventorViewer::boxZoom(const SbBox2s& box)
@@ -1496,6 +1617,9 @@ void View3DInventorViewer::viewAll()
     if (cam && cam->getTypeId().isDerivedFrom(SoPerspectiveCamera::getClassTypeId()))
         static_cast<SoPerspectiveCamera*>(cam)->heightAngle = (float)(M_PI / 4.0);
 
+    if (isAnimationEnabled())
+        animatedViewAll(10, 20);
+
     // call the default implementation first to make sure everything is visible
     SoQtViewer::viewAll();
 
@@ -1504,7 +1628,6 @@ void View3DInventorViewer::viewAll()
         SoSkipBoundingGroup * group = static_cast<SoSkipBoundingGroup*>(path->getTail());
         group->mode = SoSkipBoundingGroup::INCLUDE_BBOX;
     }
-    //navigation->viewAll();
 }
 
 void View3DInventorViewer::viewAll(float factor)
@@ -1753,158 +1876,157 @@ static GLubyte zbmp[] = { 0x1f,0x10,0x08,0x04,0x02,0x01,0x1f };
 
 void View3DInventorViewer::drawAxisCross(void)
 {
-  // FIXME: convert this to a superimposition scenegraph instead of
-  // OpenGL calls. 20020603 mortene.
+    // FIXME: convert this to a superimposition scenegraph instead of
+    // OpenGL calls. 20020603 mortene.
 
-  // Store GL state.
-  glPushAttrib(GL_ALL_ATTRIB_BITS);
-  GLfloat depthrange[2];
-  glGetFloatv(GL_DEPTH_RANGE, depthrange);
-  GLdouble projectionmatrix[16];
-  glGetDoublev(GL_PROJECTION_MATRIX, projectionmatrix);
+    // Store GL state.
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    GLfloat depthrange[2];
+    glGetFloatv(GL_DEPTH_RANGE, depthrange);
+    GLdouble projectionmatrix[16];
+    glGetDoublev(GL_PROJECTION_MATRIX, projectionmatrix);
 
-  glDepthFunc(GL_ALWAYS);
-  glDepthMask(GL_TRUE);
-  glDepthRange(0, 0);
-  glEnable(GL_DEPTH_TEST);
-  glDisable(GL_LIGHTING);
-  glEnable(GL_COLOR_MATERIAL);
-  glDisable(GL_BLEND); // Kills transparency.
+    glDepthFunc(GL_ALWAYS);
+    glDepthMask(GL_TRUE);
+    glDepthRange(0, 0);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glEnable(GL_COLOR_MATERIAL);
+    glDisable(GL_BLEND); // Kills transparency.
 
-  // Set the viewport in the OpenGL canvas. Dimensions are calculated
-  // as a percentage of the total canvas size.
-  SbVec2s view = this->getGLSize();
-  const int pixelarea =
-    int(float(this->axiscrossSize)/100.0f * SoQtMin(view[0], view[1]));
+    // Set the viewport in the OpenGL canvas. Dimensions are calculated
+    // as a percentage of the total canvas size.
+    SbVec2s view = this->getGLSize();
+    const int pixelarea =
+        int(float(this->axiscrossSize)/100.0f * SoQtMin(view[0], view[1]));
 #if 0 // middle of canvas
-  SbVec2s origin(view[0]/2 - pixelarea/2, view[1]/2 - pixelarea/2);
+    SbVec2s origin(view[0]/2 - pixelarea/2, view[1]/2 - pixelarea/2);
 #endif // middle of canvas
 #if 1 // lower right of canvas
-  SbVec2s origin(view[0] - pixelarea, 0);
+    SbVec2s origin(view[0] - pixelarea, 0);
 #endif // lower right of canvas
-  glViewport(origin[0], origin[1], pixelarea, pixelarea);
+    glViewport(origin[0], origin[1], pixelarea, pixelarea);
+
+    // Set up the projection matrix.
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    const float NEARVAL = 0.1f;
+    const float FARVAL = 10.0f;
+    const float dim = NEARVAL * float(tan(M_PI / 8.0)); // FOV is 45° (45/360 = 1/8)
+    glFrustum(-dim, dim, -dim, dim, NEARVAL, FARVAL);
 
 
-  // Set up the projection matrix.
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
+    // Set up the model matrix.
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    SbMatrix mx;
+    SoCamera * cam = this->getCamera();
 
-  const float NEARVAL = 0.1f;
-  const float FARVAL = 10.0f;
-  const float dim = NEARVAL * float(tan(M_PI / 8.0)); // FOV is 45° (45/360 = 1/8)
-  glFrustum(-dim, dim, -dim, dim, NEARVAL, FARVAL);
+    // If there is no camera (like for an empty scene, for instance),
+    // just use an identity rotation.
+    if (cam) { mx = cam->orientation.getValue(); }
+    else { mx = SbMatrix::identity(); }
 
-
-  // Set up the model matrix.
-  glMatrixMode(GL_MODELVIEW);
-  glPushMatrix();
-  SbMatrix mx;
-  SoCamera * cam = this->getCamera();
-
-  // If there is no camera (like for an empty scene, for instance),
-  // just use an identity rotation.
-  if (cam) { mx = cam->orientation.getValue(); }
-  else { mx = SbMatrix::identity(); }
-
-  mx = mx.inverse();
-  mx[3][2] = -3.5; // Translate away from the projection point (along z axis).
-  glLoadMatrixf((float *)mx);
+    mx = mx.inverse();
+    mx[3][2] = -3.5; // Translate away from the projection point (along z axis).
+    glLoadMatrixf((float *)mx);
 
 
-  // Find unit vector end points.
-  SbMatrix px;
-  glGetFloatv(GL_PROJECTION_MATRIX, (float *)px);
-  SbMatrix comb = mx.multRight(px);
+    // Find unit vector end points.
+    SbMatrix px;
+    glGetFloatv(GL_PROJECTION_MATRIX, (float *)px);
+    SbMatrix comb = mx.multRight(px);
 
-  SbVec3f xpos;
-  comb.multVecMatrix(SbVec3f(1,0,0), xpos);
-  xpos[0] = (1 + xpos[0]) * view[0]/2;
-  xpos[1] = (1 + xpos[1]) * view[1]/2;
-  SbVec3f ypos;
-  comb.multVecMatrix(SbVec3f(0,1,0), ypos);
-  ypos[0] = (1 + ypos[0]) * view[0]/2;
-  ypos[1] = (1 + ypos[1]) * view[1]/2;
-  SbVec3f zpos;
-  comb.multVecMatrix(SbVec3f(0,0,1), zpos);
-  zpos[0] = (1 + zpos[0]) * view[0]/2;
-  zpos[1] = (1 + zpos[1]) * view[1]/2;
+    SbVec3f xpos;
+    comb.multVecMatrix(SbVec3f(1,0,0), xpos);
+    xpos[0] = (1 + xpos[0]) * view[0]/2;
+    xpos[1] = (1 + xpos[1]) * view[1]/2;
+    SbVec3f ypos;
+    comb.multVecMatrix(SbVec3f(0,1,0), ypos);
+    ypos[0] = (1 + ypos[0]) * view[0]/2;
+    ypos[1] = (1 + ypos[1]) * view[1]/2;
+    SbVec3f zpos;
+    comb.multVecMatrix(SbVec3f(0,0,1), zpos);
+    zpos[0] = (1 + zpos[0]) * view[0]/2;
+    zpos[1] = (1 + zpos[1]) * view[1]/2;
 
 
-  // Render the cross.
-  {
-    glLineWidth(2.0);
+    // Render the cross.
+    {
+        glLineWidth(2.0);
 
-    enum { XAXIS, YAXIS, ZAXIS };
-    int idx[3] = { XAXIS, YAXIS, ZAXIS };
-    float val[3] = { xpos[2], ypos[2], zpos[2] };
+        enum { XAXIS, YAXIS, ZAXIS };
+        int idx[3] = { XAXIS, YAXIS, ZAXIS };
+        float val[3] = { xpos[2], ypos[2], zpos[2] };
 
-    // Bubble sort.. :-}
-    if (val[0] < val[1]) { SoQtSwap(val[0], val[1]); SoQtSwap(idx[0], idx[1]); }
-    if (val[1] < val[2]) { SoQtSwap(val[1], val[2]); SoQtSwap(idx[1], idx[2]); }
-    if (val[0] < val[1]) { SoQtSwap(val[0], val[1]); SoQtSwap(idx[0], idx[1]); }
-    assert((val[0] >= val[1]) && (val[1] >= val[2])); // Just checking..
+        // Bubble sort.. :-}
+        if (val[0] < val[1]) { SoQtSwap(val[0], val[1]); SoQtSwap(idx[0], idx[1]); }
+        if (val[1] < val[2]) { SoQtSwap(val[1], val[2]); SoQtSwap(idx[1], idx[2]); }
+        if (val[0] < val[1]) { SoQtSwap(val[0], val[1]); SoQtSwap(idx[0], idx[1]); }
+        assert((val[0] >= val[1]) && (val[1] >= val[2])); // Just checking..
 
-    for (int i=0; i < 3; i++) {
-      glPushMatrix();
-      if (idx[i] == XAXIS) {                       // X axis.
-        if (isStereoViewing())
-          glColor3f(0.500f, 0.5f, 0.5f);
-        else
-          glColor3f(0.500f, 0.125f, 0.125f);
-      } else if (idx[i] == YAXIS) {                // Y axis.
-        glRotatef(90, 0, 0, 1);
-        if (isStereoViewing())
-          glColor3f(0.400f, 0.4f, 0.4f);
-        else
-          glColor3f(0.125f, 0.500f, 0.125f);
-      } else {                                     // Z axis.
-        glRotatef(-90, 0, 1, 0);
-        if (isStereoViewing())
-          glColor3f(0.300f, 0.3f, 0.3f);
-        else
-          glColor3f(0.125f, 0.125f, 0.500f);
-      }
-      this->drawArrow(); 
-      glPopMatrix();
+        for (int i=0; i < 3; i++) {
+            glPushMatrix();
+            if (idx[i] == XAXIS) {                       // X axis.
+                if (isStereoViewing())
+                    glColor3f(0.500f, 0.5f, 0.5f);
+                else
+                    glColor3f(0.500f, 0.125f, 0.125f);
+            } else if (idx[i] == YAXIS) {                // Y axis.
+                glRotatef(90, 0, 0, 1);
+                if (isStereoViewing())
+                    glColor3f(0.400f, 0.4f, 0.4f);
+                else
+                    glColor3f(0.125f, 0.500f, 0.125f);
+            } else {                                     // Z axis.
+                glRotatef(-90, 0, 1, 0);
+                if (isStereoViewing())
+                    glColor3f(0.300f, 0.3f, 0.3f);
+                else
+                    glColor3f(0.125f, 0.125f, 0.500f);
+            }
+            this->drawArrow(); 
+            glPopMatrix();
+        }
     }
-  }
 
-  // Render axis notation letters ("X", "Y", "Z").
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(0, view[0], 0, view[1], -1, 1);
+    // Render axis notation letters ("X", "Y", "Z").
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, view[0], 0, view[1], -1, 1);
 
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 
-  GLint unpack;
-  glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpack);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    GLint unpack;
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpack);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-  if(isStereoViewing())
-    glColor3fv(SbVec3f(1.0f, 1.0f, 1.0f).getValue());
-  else
-    glColor3fv(SbVec3f(0.0f, 0.0f, 0.0f).getValue());
+    if(isStereoViewing())
+        glColor3fv(SbVec3f(1.0f, 1.0f, 1.0f).getValue());
+    else
+        glColor3fv(SbVec3f(0.0f, 0.0f, 0.0f).getValue());
 
-  glRasterPos2d(xpos[0], xpos[1]);
-  glBitmap(8, 7, 0, 0, 0, 0, xbmp);
-  glRasterPos2d(ypos[0], ypos[1]);
-  glBitmap(8, 7, 0, 0, 0, 0, ybmp);
-  glRasterPos2d(zpos[0], zpos[1]);
-  glBitmap(8, 7, 0, 0, 0, 0, zbmp);
+    glRasterPos2d(xpos[0], xpos[1]);
+    glBitmap(8, 7, 0, 0, 0, 0, xbmp);
+    glRasterPos2d(ypos[0], ypos[1]);
+    glBitmap(8, 7, 0, 0, 0, 0, ybmp);
+    glRasterPos2d(zpos[0], zpos[1]);
+    glBitmap(8, 7, 0, 0, 0, 0, zbmp);
 
-  glPixelStorei(GL_UNPACK_ALIGNMENT, unpack);
-  glPopMatrix();
+    glPixelStorei(GL_UNPACK_ALIGNMENT, unpack);
+    glPopMatrix();
 
-  // Reset original state.
+    // Reset original state.
 
-  // FIXME: are these 3 lines really necessary, as we push
-  // GL_ALL_ATTRIB_BITS at the start? 20000604 mortene.
-  glDepthRange(depthrange[0], depthrange[1]);
-  glMatrixMode(GL_PROJECTION);
-  glLoadMatrixd(projectionmatrix);
+    // FIXME: are these 3 lines really necessary, as we push
+    // GL_ALL_ATTRIB_BITS at the start? 20000604 mortene.
+    glDepthRange(depthrange[0], depthrange[1]);
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixd(projectionmatrix);
 
-  glPopAttrib();
+    glPopAttrib();
 }
 
 // Draw an arrow for the axis representation directly through OpenGL.
@@ -1962,16 +2084,17 @@ static unsigned char hand_mask_bitmap[] = {
 #define CROSS_HOT_Y 7
 
 static unsigned char cross_bitmap[] = {
-  0xc0, 0x03, 0x40, 0x02, 0x40, 0x02, 0x40, 0x02,
-  0x40, 0x02, 0x40, 0x02, 0x7f, 0xfe, 0x01, 0x80,
-  0x01, 0x80, 0x7f, 0xfe, 0x40, 0x02, 0x40, 0x02,
-  0x40, 0x02, 0x40, 0x02, 0x40, 0x02, 0xc0, 0x03
+    0xc0, 0x03, 0x40, 0x02, 0x40, 0x02, 0x40, 0x02,
+    0x40, 0x02, 0x40, 0x02, 0x7f, 0xfe, 0x01, 0x80,
+    0x01, 0x80, 0x7f, 0xfe, 0x40, 0x02, 0x40, 0x02,
+    0x40, 0x02, 0x40, 0x02, 0x40, 0x02, 0xc0, 0x03
 };
 
 static unsigned char cross_mask_bitmap[] = {
- 0xc0,0x03,0xc0,0x03,0xc0,0x03,0xc0,0x03,0xc0,0x03,0xc0,0x03,0xff,0xff,0xff,
- 0xff,0xff,0xff,0xff,0xff,0xc0,0x03,0xc0,0x03,0xc0,0x03,0xc0,0x03,0xc0,0x03,
- 0xc0,0x03
+    0xc0, 0x03, 0xc0, 0x03, 0xc0, 0x03, 0xc0, 0x03,
+    0xc0, 0x03, 0xc0, 0x03, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xc0, 0x03, 0xc0, 0x03,
+    0xc0, 0x03, 0xc0, 0x03, 0xc0, 0x03, 0xc0, 0x03
 };
 
 // Set cursor graphics according to mode.
@@ -2153,4 +2276,106 @@ std::vector<ViewProvider*> View3DInventorViewer::getViewProvidersOfType(const Ba
         }
     }
     return views;
+}
+
+void View3DInventorViewer::turnAllDimensionsOn()
+{
+    dimensionRoot->whichChild = SO_SWITCH_ALL;
+}
+
+void View3DInventorViewer::turnAllDimensionsOff()
+{
+    dimensionRoot->whichChild = SO_SWITCH_NONE;
+}
+
+void View3DInventorViewer::eraseAllDimensions()
+{
+    static_cast<SoSwitch *>(dimensionRoot->getChild(0))->removeAllChildren();
+    static_cast<SoSwitch *>(dimensionRoot->getChild(1))->removeAllChildren();
+}
+
+void View3DInventorViewer::turn3dDimensionsOn()
+{
+    static_cast<SoSwitch *>(dimensionRoot->getChild(0))->whichChild = SO_SWITCH_ALL;
+}
+
+void View3DInventorViewer::turn3dDimensionsOff()
+{
+    static_cast<SoSwitch *>(dimensionRoot->getChild(0))->whichChild = SO_SWITCH_NONE;
+}
+
+void View3DInventorViewer::addDimension3d(SoNode *node)
+{
+    static_cast<SoSwitch *>(dimensionRoot->getChild(0))->addChild(node);
+}
+
+void View3DInventorViewer::addDimensionDelta(SoNode *node)
+{
+    static_cast<SoSwitch *>(dimensionRoot->getChild(1))->addChild(node);
+}
+
+void View3DInventorViewer::turnDeltaDimensionsOn()
+{
+    static_cast<SoSwitch *>(dimensionRoot->getChild(1))->whichChild = SO_SWITCH_ALL;
+}
+
+void View3DInventorViewer::turnDeltaDimensionsOff()
+{
+    static_cast<SoSwitch *>(dimensionRoot->getChild(1))->whichChild = SO_SWITCH_NONE;
+}
+
+void View3DInventorViewer::setAntiAliasingMode(View3DInventorViewer::AntiAliasing mode)
+{
+    getGLRenderAction()->setSmoothing(false);
+    int buffers = 0;
+
+    switch( mode ) {
+      case Smoothing:
+          getGLRenderAction()->setSmoothing(true);
+          break;
+      case MSAA2x:
+          buffers = 2;
+          break;
+      case MSAA4x:
+          buffers = 4;
+          break;
+      case MSAA8x:
+          buffers = 8;
+          break;
+      case None:
+      default:
+          break;
+    };
+
+#if SOQT_MAJOR_VERSION > 1 || (SOQT_MAJOR_VERSION == 1 && SOQT_MINOR_VERSION >= 5)
+    setSampleBuffers(buffers);
+#else
+    if(buffers != 0)
+        Base::Console().Warning("Multisampling is not supported by SoQT < 1.5, this anti-aliasing mode is disabled");
+#endif
+}
+
+View3DInventorViewer::AntiAliasing View3DInventorViewer::getAntiAliasingMode() const
+{
+    if (getGLRenderAction()->isSmoothing())
+        return Smoothing;
+
+#if SOQT_MAJOR_VERSION > 1 || (SOQT_MAJOR_VERSION == 1 && SOQT_MINOR_VERSION >= 5)
+    int buffers = getSampleBuffers();
+    switch(buffers) {
+      case 0:
+          return None;
+      case 2:
+          return MSAA2x;
+      case 4:
+          return MSAA4x;
+      case 8:
+          return MSAA8x;
+      default:
+          const_cast<View3DInventorViewer*>(this)->setSampleBuffers(0);
+          return None;
+    };
+#else
+      return None;
+#endif
 }

@@ -28,6 +28,7 @@
 
 #include "ui_TaskGrooveParameters.h"
 #include "TaskGrooveParameters.h"
+#include <Base/UnitsApi.h>
 #include <App/Application.h>
 #include <App/Document.h>
 #include <Gui/Application.h>
@@ -80,6 +81,7 @@ TaskGrooveParameters::TaskGrooveParameters(ViewProviderGroove *GrooveView,QWidge
     bool mirrored = pcGroove->Midplane.getValue();
     bool reversed = pcGroove->Reversed.getValue();
 
+    ui->doubleSpinBox->setDecimals(Base::UnitsApi::getDecimals());
     ui->doubleSpinBox->setValue(l);
 
     int count=pcGroove->getSketchAxisCount();
@@ -302,8 +304,8 @@ bool TaskDlgGrooveParameters::reject()
 {
     // get the support and Sketch
     PartDesign::Groove* pcGroove = static_cast<PartDesign::Groove*>(GrooveView->getObject());
-    Sketcher::SketchObject *pcSketch;
-    App::DocumentObject    *pcSupport;
+    Sketcher::SketchObject *pcSketch = 0;
+    App::DocumentObject    *pcSupport = 0;
     if (pcGroove->Sketch.getValue()) {
         pcSketch = static_cast<Sketcher::SketchObject*>(pcGroove->Sketch.getValue());
         pcSupport = pcSketch->Support.getValue();

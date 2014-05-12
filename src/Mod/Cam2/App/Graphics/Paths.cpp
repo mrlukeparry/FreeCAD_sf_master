@@ -86,6 +86,10 @@
 #include <BRepGProp.hxx>
 #include <IntTools_BeanBeanIntersector.hxx>
 
+#ifndef M_PI
+	#define M_PI PI
+#endif // M_PI
+
 namespace Cam
 {
 	/* static */ ContiguousPath::Id_t ContiguousPath::s_next_available_id = 1;

@@ -46,6 +46,10 @@
 
 #include <gp_Pnt.hxx>
 
+#ifndef M_PI
+	#define M_PI PI
+#endif // M_PI
+
 using namespace Cam;
 LinuxCNC::LinuxCNC(MachineProgram *machine_program, TPGFeature* rpgFeature) : GCode(machine_program, rpgFeature)
 {

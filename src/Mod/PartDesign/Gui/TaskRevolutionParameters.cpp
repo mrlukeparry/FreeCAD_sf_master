@@ -28,6 +28,7 @@
 
 #include "ui_TaskRevolutionParameters.h"
 #include "TaskRevolutionParameters.h"
+#include <Base/UnitsApi.h>
 #include <App/Application.h>
 #include <App/Document.h>
 #include <Gui/Application.h>
@@ -80,6 +81,7 @@ TaskRevolutionParameters::TaskRevolutionParameters(ViewProviderRevolution *Revol
     bool mirrored = pcRevolution->Midplane.getValue();
     bool reversed = pcRevolution->Reversed.getValue();
 
+    ui->doubleSpinBox->setDecimals(Base::UnitsApi::getDecimals());
     ui->doubleSpinBox->setValue(l);
 
     int count=pcRevolution->getSketchAxisCount();
@@ -302,8 +304,8 @@ bool TaskDlgRevolutionParameters::reject()
 {
     // get the support and Sketch
     PartDesign::Revolution* pcRevolution = static_cast<PartDesign::Revolution*>(RevolutionView->getObject());
-    Sketcher::SketchObject *pcSketch;
-    App::DocumentObject    *pcSupport;
+    Sketcher::SketchObject *pcSketch = 0;
+    App::DocumentObject    *pcSupport = 0;
     if (pcRevolution->Sketch.getValue()) {
         pcSketch = static_cast<Sketcher::SketchObject*>(pcRevolution->Sketch.getValue());
         pcSupport = pcSketch->Support.getValue();

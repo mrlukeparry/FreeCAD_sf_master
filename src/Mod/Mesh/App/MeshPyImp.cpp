@@ -149,7 +149,8 @@ PyObject*  MeshPy::write(PyObject *args)
 {
     const char* Name;
     char* Ext=0;
-    if (!PyArg_ParseTuple(args, "s|s",&Name,&Ext))
+    char* ObjName=0;
+    if (!PyArg_ParseTuple(args, "s|ss",&Name,&Ext,&ObjName))
         return NULL;
 
     MeshCore::MeshIO::Format format = MeshCore::MeshIO::Undefined;
@@ -161,6 +162,7 @@ PyObject*  MeshPy::write(PyObject *args)
         ext["OBJ" ] = MeshCore::MeshIO::OBJ;
         ext["OFF" ] = MeshCore::MeshIO::OFF;
         ext["IV"  ] = MeshCore::MeshIO::IV;
+        ext["X3D" ] = MeshCore::MeshIO::X3D;
         ext["VRML"] = MeshCore::MeshIO::VRML;
         ext["WRL" ] = MeshCore::MeshIO::VRML;
         ext["WRZ" ] = MeshCore::MeshIO::WRZ;
@@ -174,7 +176,7 @@ PyObject*  MeshPy::write(PyObject *args)
     };
 
     PY_TRY {
-        getMeshObjectPtr()->save(Name, format);
+        getMeshObjectPtr()->save(Name, format, 0, ObjName);
     } PY_CATCH;
     
     Py_Return; 
@@ -1029,11 +1031,11 @@ PyObject*  MeshPy::splitEdge(PyObject *args)
 
     const MeshCore::MeshKernel& kernel = getMeshObjectPtr()->getKernel();
     PY_TRY {
-        if (facet < 0 || facet >= kernel.CountFacets()) {
+        if (facet >= kernel.CountFacets()) {
             PyErr_SetString(PyExc_IndexError, "Facet index out of range");
             return NULL;
         }
-        if (neighbour < 0 || neighbour >= kernel.CountFacets()) {
+        if (neighbour >= kernel.CountFacets()) {
             PyErr_SetString(PyExc_IndexError, "Facet index out of range");
             return NULL;
         }
@@ -1070,7 +1072,7 @@ PyObject*  MeshPy::splitFacet(PyObject *args)
 
     const MeshCore::MeshKernel& kernel = getMeshObjectPtr()->getKernel();
     PY_TRY {
-        if (facet < 0 || facet >= kernel.CountFacets()) {
+        if (facet >= kernel.CountFacets()) {
             PyErr_SetString(PyExc_IndexError, "Facet index out of range");
             return NULL;
         }
@@ -1089,11 +1091,11 @@ PyObject*  MeshPy::swapEdge(PyObject *args)
 
     const MeshCore::MeshKernel& kernel = getMeshObjectPtr()->getKernel();
     PY_TRY {
-        if (facet < 0 || facet >= kernel.CountFacets()) {
+        if (facet >= kernel.CountFacets()) {
             PyErr_SetString(PyExc_IndexError, "Facet index out of range");
             return NULL;
         }
-        if (neighbour < 0 || neighbour >= kernel.CountFacets()) {
+        if (neighbour >= kernel.CountFacets()) {
             PyErr_SetString(PyExc_IndexError, "Facet index out of range");
             return NULL;
         }
@@ -1119,11 +1121,11 @@ PyObject*  MeshPy::collapseEdge(PyObject *args)
 
     const MeshCore::MeshKernel& kernel = getMeshObjectPtr()->getKernel();
     PY_TRY {
-        if (facet < 0 || facet >= kernel.CountFacets()) {
+        if (facet >= kernel.CountFacets()) {
             PyErr_SetString(PyExc_IndexError, "Facet index out of range");
             return NULL;
         }
-        if (neighbour < 0 || neighbour >= kernel.CountFacets()) {
+        if (neighbour >= kernel.CountFacets()) {
             PyErr_SetString(PyExc_IndexError, "Facet index out of range");
             return NULL;
         }
@@ -1148,7 +1150,7 @@ PyObject*  MeshPy::collapseFacet(PyObject *args)
         return NULL;
 
     PY_TRY {
-        if (facet < 0 || facet >= getMeshObjectPtr()->countFacets()) {
+        if (facet >= getMeshObjectPtr()->countFacets()) {
             PyErr_SetString(PyExc_IndexError, "Facet index out of range");
             return NULL;
         }
@@ -1171,7 +1173,7 @@ PyObject*  MeshPy::insertVertex(PyObject *args)
     Base::Vector3f v((float)val->x,(float)val->y,(float)val->z);
 
     PY_TRY {
-        if (facet < 0 || facet >= getMeshObjectPtr()->countFacets()) {
+        if (facet >= getMeshObjectPtr()->countFacets()) {
             PyErr_SetString(PyExc_IndexError, "Facet index out of range");
             return NULL;
         }
@@ -1194,7 +1196,7 @@ PyObject*  MeshPy::snapVertex(PyObject *args)
     Base::Vector3f v((float)val->x,(float)val->y,(float)val->z);
 
     PY_TRY {
-        if (facet < 0 || facet >= getMeshObjectPtr()->countFacets()) {
+        if (facet >= getMeshObjectPtr()->countFacets()) {
             PyErr_SetString(PyExc_IndexError, "Facet index out of range");
             return NULL;
         }
@@ -1494,6 +1496,11 @@ PyObject*  MeshPy::getSegmentsByCurvature(PyObject *args)
 Py::Int MeshPy::getCountPoints(void) const
 {
     return Py::Int((long)getMeshObjectPtr()->countPoints());
+}
+
+Py::Int MeshPy::getCountEdges(void) const
+{
+    return Py::Int((long)getMeshObjectPtr()->countEdges());
 }
 
 Py::Int MeshPy::getCountFacets(void) const

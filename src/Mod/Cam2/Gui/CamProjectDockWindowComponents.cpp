@@ -738,7 +738,9 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 			}
 
             this->widget->setToolTip(tpgsetting->helptext);
-			this->widget->setPlaceholderText(tpgsetting->helptext);
+			#if QT_VERSION >= 0x040700
+				this->widget->setPlaceholderText(tpgsetting->helptext);
+			#endif // QT_VERSION
 
 			this->validator = new Validator(tpgsetting->grab(), this->widget);
 			this->widget->setValidator(validator);
@@ -1013,7 +1015,9 @@ bool CamLengthComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayo
 				}
 
 				camLineEdit->setToolTip(tpgsetting->helptext);
-				camLineEdit->setPlaceholderText(tpgsetting->helptext);
+				#if QT_VERSION >= 0x040700
+					camLineEdit->setPlaceholderText(tpgsetting->helptext);
+				#endif // QT_VERSION
 				this->validator = new Validator(tpgsetting->grab(), camLineEdit);
 				camLineEdit->setValidator(validator);
 				// connect events
@@ -1221,7 +1225,9 @@ bool CamRateComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout
 				ossValue << rate->get( rate->getUnits() );
 				camLineEdit->setText(QString::fromStdString(ossValue.str()));
 				camLineEdit->setToolTip(tpgsetting->helptext);
-				camLineEdit->setPlaceholderText(tpgsetting->helptext);
+				#if QT_VERSION >= 0x040700
+					camLineEdit->setPlaceholderText(tpgsetting->helptext);
+				#endif // QT_VERSION
 				this->validator = new Validator(tpgsetting->grab(), camLineEdit);
 				camLineEdit->setValidator(validator);
 				// connect events
@@ -1648,7 +1654,9 @@ bool CamFilenameComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
             camLineEdit->setObjectName(qname);
             camLineEdit->setText(tpgsetting->getValue());
             camLineEdit->setToolTip(tpgsetting->helptext);
-			camLineEdit->setPlaceholderText(tpgsetting->helptext);
+			#if QT_VERSION >= 0x040700
+				camLineEdit->setPlaceholderText(tpgsetting->helptext);
+			#endif // QT_VERSION
 			camLineEdit->setVisible(tpgsetting->visible);
 			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
 			camLineEdit->setValidator(validator);
@@ -1792,7 +1800,9 @@ bool CamDirectoryComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormL
             camLineEdit->setObjectName(qname);
             camLineEdit->setText(tpgsetting->getValue());
             camLineEdit->setToolTip(tpgsetting->helptext);
-			camLineEdit->setPlaceholderText(tpgsetting->helptext);
+			#if QT_VERSION >= 0x040700
+				camLineEdit->setPlaceholderText(tpgsetting->helptext);
+			#endif // QT_VERSION
 			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
 			camLineEdit->setValidator(validator);
 			camLineEdit->setVisible(tpgsetting->visible);
