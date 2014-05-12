@@ -598,7 +598,7 @@ void CmdDrawingNewLengthDimension::activated(int iMsg)
 
             DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
 
-            if(geom->geomType == DrawingGeometry::GENERIC) {
+            if(geom && geom->geomType == DrawingGeometry::GENERIC) {
                 DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(geom);
                 if(gen1->points.size() > 2) {
                     // Only support straight line edges
@@ -615,6 +615,10 @@ void CmdDrawingNewLengthDimension::activated(int iMsg)
                 dim->References.setValue(Obj, SubNames[0].c_str());
 
             }
+
+            // delete geom as it was created on the heap
+            delete geom;
+
         } else {
 
             // Invalid selection has been made for one reference
@@ -662,6 +666,9 @@ void CmdDrawingNewLengthDimension::activated(int iMsg)
                     // Only support straight line edges
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                                QObject::tr("Please select only straight line edges"));
+
+                    delete ed1;
+                    delete ed2;
                     return;
                 }
 
@@ -671,6 +678,8 @@ void CmdDrawingNewLengthDimension::activated(int iMsg)
                 // Only support straight line edges
                 QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                            QObject::tr("Please provide a valid selection: Only straight line edges are allowed"));
+                delete ed1;
+                delete ed2;
                 return;
             }
 
@@ -687,6 +696,9 @@ void CmdDrawingNewLengthDimension::activated(int iMsg)
             subs.push_back(SubNames[0]);
             subs.push_back(SubNames[1]);
             dim->References.setValues(objs, subs);
+
+            delete ed1;
+            delete ed2;
 
         } else {
 
