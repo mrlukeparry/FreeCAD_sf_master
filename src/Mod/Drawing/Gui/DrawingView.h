@@ -27,8 +27,6 @@
 #include <Gui/MDIView.h>
 #include <Gui/Selection.h>
 
-#include <App/PropertyLinks.h>
-
 QT_BEGIN_NAMESPACE
 class QSlider;
 class QAction;
@@ -51,6 +49,7 @@ namespace DrawingGui
 
 class ViewProviderDrawingPage;
 class CanvasView;
+class QGraphicsItemView;
 
 class DrawingGuiExport DrawingView : public Gui::MDIView, public Gui::SelectionObserver
 {
@@ -61,7 +60,6 @@ public:
     ~DrawingView();
 
 public Q_SLOTS:
-    void attachPageObject(Drawing::FeaturePage *pageFeature);
     void attachTemplate(Drawing::FeatureTemplate *obj);
     void setRenderer(QAction *action);
     void viewAll();
@@ -90,9 +88,6 @@ public:
     PyObject* getPyObject();
 
 protected:
-    App::PropertyLink pageFeat;
-
-protected:
     void findMissingViews( const std::vector<App::DocumentObject*> &list, std::vector<App::DocumentObject*> &missing);
     bool hasQView(App::DocumentObject *obj);
     bool orphanExists(const char *viewName, const std::vector<App::DocumentObject*> &list);
@@ -113,6 +108,8 @@ private:
 
     QString m_currentPath;
     ViewProviderDrawingPage *pageGui;
+
+    QList<QGraphicsItemView *> deleteItems;
 };
 
 } // namespace DrawingViewGui

@@ -169,32 +169,16 @@ DrawingView::DrawingView(ViewProviderDrawingPage *pageVp, Gui::Document* doc, QW
 
 DrawingView::~DrawingView()
 {
+  // Safeely remove graphicview items that have built up TEMP SOLUTION
+  for(QList<QGraphicsItemView*>::iterator it = deleteItems.begin(); it != deleteItems.end(); ++it) {
+      (*it)->deleteLater();
+      (*it) = 0;
+
+  }
+  deleteItems.clear();
+
   delete m_view;
   m_view = 0;
-}
-
-void DrawingView::attachPageObject(Drawing::FeaturePage *pageFeature)
-{
-    return;
-
-    // redundant;
-
-#if 0
-    // A fresh page is added and we iterate through its collected children and add these to Canvas View
-    const std::vector<App::DocumentObject*> &grp = pageFeature->Views.getValues();
-    for (std::vector<App::DocumentObject*>::const_iterator it = grp.begin();it != grp.end(); ++it) {
-        attachView(*it);
-    }
-
-    // Save a link to the page feature - exclusivly one page per drawing view
-    pageFeat.setValue(dynamic_cast<App::DocumentObject*>(pageFeature));
-
-    App::DocumentObject *obj = pageFeature->Template.getValue();
-    if(obj && obj->isDerivedFrom(Drawing::FeatureTemplate::getClassTypeId())) {
-        Drawing::FeatureTemplate *pageTemplate = dynamic_cast<Drawing::FeatureTemplate *>(obj);
-        this->attachTemplate(pageTemplate);
-    }
-#endif
 }
 
 void DrawingView::attachTemplate(Drawing::FeatureTemplate *obj)
@@ -505,7 +489,9 @@ void DrawingView::updateDrawing()
                 m_view->scene()->sceneRect().adjusted(1,1,1,1);
                 m_view->scene()->sceneRect().adjusted(-1,-1,-1,-1);
                 m_view->scene()->setItemIndexMethod(QGraphicsScene::BspTreeIndex);
-                (*qview)->deleteLater();
+
+                deleteItems.append(*qview); // delete in the destructor when completly safe. TEMP SOLUTION
+                //(*qview)->deleteLater();
 
 //                 QGraphicsItemViewPart *part = 0;
 //                 part = dynamic_cast<QGraphicsItemViewPart *>(*qview);
@@ -782,9 +768,12 @@ void DrawingView::saveSVG()
       return;
     }
 
+    int width  =  page->getPageWidth();
+    int height =  page->getPageHeight();
     svgGen.setFileName(fn);
     svgGen.setSize(QSize((int) page->getPageWidth(), (int)page->getPageHeight()));
     svgGen.setViewBox(QRect(0, 0, page->getPageWidth(), page->getPageHeight()));
+    svgGen.setResolution(1. / 0.039370);
 
     bool block = this->blockConnection(true); // avoid to be notified by itself
     Gui::Selection().clearSelection();
