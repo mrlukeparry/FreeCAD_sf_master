@@ -215,6 +215,7 @@ DrawingView* ViewProviderDrawingPage::showDrawingView()
         view->setWindowIcon(Gui::BitmapFactory().pixmap("actions/drawing-landscape"));
         view->setWindowTitle(QObject::tr("Drawing viewer") + QString::fromAscii("[*]"));
         Gui::getMainWindow()->addWindow(view);
+        view->viewAll();
     }
 
     // Update the drawing
@@ -224,43 +225,43 @@ DrawingView* ViewProviderDrawingPage::showDrawingView()
 void ViewProviderDrawingPage::onSelectionChanged(const Gui::SelectionChanges& msg)
 {
 
+    if(view) {
+        if(msg.Type == Gui::SelectionChanges::SetSelection) {
+            view->clearSelection();
+            std::vector<Gui::SelectionSingleton::SelObj> objs = Gui::Selection().getSelection(msg.pDocName);
 
-    if(msg.Type == Gui::SelectionChanges::SetSelection) {
+            for (std::vector<Gui::SelectionSingleton::SelObj>::iterator it = objs.begin(); it != objs.end(); ++it) {
+                Gui::SelectionSingleton::SelObj selObj = *it;
 
-        getDrawingView()->clearSelection();
-        std::vector<Gui::SelectionSingleton::SelObj> objs = Gui::Selection().getSelection(msg.pDocName);
+                if(selObj.pObject == getPageObject())
+                    continue;
 
-        for (std::vector<Gui::SelectionSingleton::SelObj>::iterator it = objs.begin(); it != objs.end(); ++it) {
-            Gui::SelectionSingleton::SelObj selObj = *it;
+                std::string str = msg.pSubName;
+                // If it's a subfeature, dont select feature
+                if(strcmp(str.substr(0,4).c_str(), "Edge") == 0||
+                  strcmp(str.substr(0,6).c_str(), "Vertex") == 0){
+                    // TODO implement me
+                } else {
+                    view->selectFeature(selObj.pObject, true);
+                }
 
-            if(selObj.pObject == getPageObject())
-                continue;
-
-            std::string str = msg.pSubName;
-            // If it's a subfeature, dont select feature
-            if(strcmp(str.substr(0,4).c_str(), "Edge") == 0||
-               strcmp(str.substr(0,6).c_str(), "Vertex") == 0){
-                // TODO implement me
-            } else {
-                getDrawingView()->selectFeature(selObj.pObject, true);
             }
+        } else {
+            bool selectState = (msg.Type == Gui::SelectionChanges::AddSelection) ? true : false;
+            Gui::Document* doc = Gui::Application::Instance->getDocument(this->pcObject->getDocument());
+            App::DocumentObject *obj = doc->getDocument()->getObject(msg.pObjectName);
+            if(obj) {
 
+                std::string str = msg.pSubName;
+                // If it's a subfeature, dont select feature
+                if(strcmp(str.substr(0,4).c_str(), "Edge") == 0||
+                  strcmp(str.substr(0,6).c_str(), "Vertex") == 0){
+                    // TODO implement me
+                } else {
+                    view->selectFeature(obj, selectState);
+                }
+            }
         }
-    } else {
-       bool selectState = (msg.Type == Gui::SelectionChanges::AddSelection) ? true : false;
-       Gui::Document* doc = Gui::Application::Instance->getDocument(this->pcObject->getDocument());
-       App::DocumentObject *obj = doc->getDocument()->getObject(msg.pObjectName);
-       if(obj) {
-
-          std::string str = msg.pSubName;
-          // If it's a subfeature, dont select feature
-          if(strcmp(str.substr(0,4).c_str(), "Edge") == 0||
-             strcmp(str.substr(0,6).c_str(), "Vertex") == 0){
-              // TODO implement me
-          } else {
-              getDrawingView()->selectFeature(obj, selectState);
-          }
-       }
     }
 
 }
@@ -268,12 +269,12 @@ void ViewProviderDrawingPage::onSelectionChanged(const Gui::SelectionChanges& ms
 bool ViewProviderDrawingPage::onDelete(const std::vector<std::string> &subList)
 {
 
-    Gui::getMainWindow()->removeWindow(getDrawingView());
+    Gui::getMainWindow()->removeWindow(view);
     Gui::getMainWindow()->activatePreviousWindow();
 
 
     Gui::Selection().clearSelection();
-    getDrawingView()->deleteLater(); // Delete the drawing view;
+    view->deleteLater(); // Delete the drawing view;
 }
 
 Drawing::FeaturePage* ViewProviderDrawingPage::getPageObject() const
