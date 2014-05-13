@@ -34,6 +34,7 @@
   # include <QContextMenuEvent>
   # include <QGraphicsScene>
   # include <QGridLayout>
+  # include <QScopedPointer>
   # include <QMenu>
   # include <QMessageBox>
   # include <QMouseEvent>
@@ -52,8 +53,9 @@
 
 # include <Mod/Part/App/PartFeature.h>
 
-# include "../App/FeatureViewDimension.h"
-# include "../App/FeatureViewPart.h"
+# include <Mod/Drawing/App/FeatureViewDimension.h>
+# include <Mod/Drawing/App/FeatureViewPart.h>
+
 # include "QGraphicsItemViewDimension.h"
 # include "QGraphicsItemArrow.h"
 
@@ -240,7 +242,7 @@ void QGraphicsItemViewDimension::updateView(bool update)
 
     std::vector<App::DocumentObject *> refs = dim->References.getValues();
 
-    if(update ||
+  if(update ||
        dim->References.isTouched() ||
        dim->ProjDirection.isTouched()) {
         // Reset the cache;
@@ -330,7 +332,6 @@ void QGraphicsItemViewDimension::datumLabelDragFinished()
     Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.X = %f", dim->getNameInDocument(), x);
     Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Y = %f", dim->getNameInDocument(), y);
     Gui::Command::commitCommand();
-    Gui::Command::updateActive();
 }
 
 

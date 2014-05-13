@@ -23,6 +23,7 @@
 #include "PreCompiled.h"
 #ifndef _PreComp_
 # include <QMessageBox>
+#include <QScopedPointer>
 #endif
 
 # include <App/DocumentObject.h>
@@ -120,7 +121,7 @@ void CmdDrawingNewDimension::activated(int iMsg)
         if (SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge") {
             int GeoId = std::atoi(SubNames[0].substr(4,4000).c_str());
 
-            DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
+            QScopedPointer<DrawingGeometry::BaseGeom> geom(Obj->getCompleteEdge(GeoId));
 
             dimType = "Distance";
 
@@ -144,6 +145,7 @@ void CmdDrawingNewDimension::activated(int iMsg)
             dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
             dim->References.setValue(Obj, SubNames[0].c_str());
         } else {
+            abortCommand();
             return;
         }
 
@@ -173,17 +175,19 @@ void CmdDrawingNewDimension::activated(int iMsg)
 
             // Project the edges
             Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart * >(Obj);
-            DrawingGeometry::BaseGeom *ed1 = viewPart->getCompleteEdge(GeoId1);
-            DrawingGeometry::BaseGeom *ed2 = viewPart->getCompleteEdge(GeoId2);
+
+            QScopedPointer<DrawingGeometry::BaseGeom> ed1(Obj->getCompleteEdge(GeoId1));
+            QScopedPointer<DrawingGeometry::BaseGeom> ed2(Obj->getCompleteEdge(GeoId2));
 
             if(ed1->geomType == DrawingGeometry::GENERIC &&
                ed2->geomType == DrawingGeometry::GENERIC) {
-                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(ed1);
-                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(ed2);
+                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(ed1.data());
+                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(ed2.data());
                 if(gen1->points.size() > 2 || gen2->points.size() > 2) {
                     // Only support straight line edges
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                                QObject::tr("Please select only straight line edges"));
+                    abortCommand();
                     return;
                 }
 
@@ -211,6 +215,7 @@ void CmdDrawingNewDimension::activated(int iMsg)
                 // Only support straight line edges
                 QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                            QObject::tr("Please provide a valid selection: Only straight line edges can be currently used"));
+                abortCommand();
                 return;
             }
 
@@ -230,6 +235,7 @@ void CmdDrawingNewDimension::activated(int iMsg)
 
             QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please provide a valid selection"),
                                                        QObject::tr("Incorrect selection"));
+            abortCommand();
             return;
         }
     }
@@ -268,8 +274,9 @@ void CmdDrawingNewDimension::activated(int iMsg)
     Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
     page->addView(page->getDocument()->getObject(FeatName.c_str()));
 
-    updateActive();
     commitCommand();
+
+    Obj->touch();
 }
 
 //===========================================================================
@@ -339,8 +346,7 @@ void CmdDrawingNewRadiusDimension::activated(int iMsg)
         if (SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge") {
             int GeoId = std::atoi(SubNames[0].substr(4,4000).c_str());
 
-            DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
-
+            QScopedPointer<DrawingGeometry::BaseGeom> geom(Obj->getCompleteEdge(GeoId));
             dimType = "Distance";
 
             if(geom->geomType == DrawingGeometry::CIRCLE ||
@@ -365,12 +371,14 @@ void CmdDrawingNewRadiusDimension::activated(int iMsg)
         } else {
             QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                        QObject::tr("Edge selected was not of a circlar type"));
+            abortCommand();
             return;
         }
 
     } else {
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                    QObject::tr("Please provide a valid selection"));
+        abortCommand();
         return;
     }
 
@@ -398,7 +406,7 @@ void CmdDrawingNewRadiusDimension::activated(int iMsg)
     Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
     page->addView(page->getDocument()->getObject(FeatName.c_str()));
 
-    updateActive();
+
     commitCommand();
 }
 
@@ -469,7 +477,7 @@ void CmdDrawingNewDiameterDimension::activated(int iMsg)
         if (SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge") {
             int GeoId = std::atoi(SubNames[0].substr(4,4000).c_str());
 
-            DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
+            QScopedPointer<DrawingGeometry::BaseGeom> geom(Obj->getCompleteEdge(GeoId));
 
             dimType = "Distance";
 
@@ -493,12 +501,14 @@ void CmdDrawingNewDiameterDimension::activated(int iMsg)
             dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
             dim->References.setValue(Obj, SubNames[0].c_str());
         } else {
+            abortCommand();
             return;
         }
 
     } else {
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please provide a valid selection"),
         QObject::tr("Incorrect selection"));
+        abortCommand();
         return;
     }
 
@@ -526,7 +536,7 @@ void CmdDrawingNewDiameterDimension::activated(int iMsg)
     Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
     page->addView(page->getDocument()->getObject(FeatName.c_str()));
 
-    updateActive();
+
     commitCommand();
 }
 
@@ -596,14 +606,15 @@ void CmdDrawingNewLengthDimension::activated(int iMsg)
         if (SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge") {
             int GeoId = std::atoi(SubNames[0].substr(4,4000).c_str());
 
-            DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
+            QScopedPointer<DrawingGeometry::BaseGeom> geom(Obj->getCompleteEdge(GeoId));
 
             if(geom && geom->geomType == DrawingGeometry::GENERIC) {
-                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(geom);
+                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(geom.data());
                 if(gen1->points.size() > 2) {
                     // Only support straight line edges
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                                QObject::tr("Please select only one straight line edge"));
+                    abortCommand();
                     return;
                 }
 
@@ -614,16 +625,19 @@ void CmdDrawingNewLengthDimension::activated(int iMsg)
                 dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
                 dim->References.setValue(Obj, SubNames[0].c_str());
 
+            } else {
+               // Only support straight line edges
+                    QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
+                                                               QObject::tr("Please select only one straight line edge"));
+                    abortCommand();
+                    return;
             }
-
-            // delete geom as it was created on the heap
-            delete geom;
-
         } else {
 
             // Invalid selection has been made for one reference
             QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
-                                                      QObject::tr("Please select an edge"));
+                                                       QObject::tr("Please select a valid edge"));
+            abortCommand();
             return;
         }
     } else if(SubNames.size() == 2) {
@@ -655,20 +669,19 @@ void CmdDrawingNewLengthDimension::activated(int iMsg)
 
             // Project the edges
             Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart * >(Obj);
-            DrawingGeometry::BaseGeom *ed1 = viewPart->getCompleteEdge(GeoId1);
-            DrawingGeometry::BaseGeom *ed2 = viewPart->getCompleteEdge(GeoId2);
+            QScopedPointer<DrawingGeometry::BaseGeom> ed1(Obj->getCompleteEdge(GeoId1));
+            QScopedPointer<DrawingGeometry::BaseGeom> ed2(Obj->getCompleteEdge(GeoId2));
+
 
             if(ed1->geomType == DrawingGeometry::GENERIC &&
                ed2->geomType == DrawingGeometry::GENERIC) {
-                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(ed1);
-                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(ed2);
+                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(ed1.data());
+                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(ed2.data());
                 if(gen1->points.size() > 2 || gen2->points.size() > 2) {
                     // Only support straight line edges
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                                QObject::tr("Please select only straight line edges"));
-
-                    delete ed1;
-                    delete ed2;
+                    abortCommand();
                     return;
                 }
 
@@ -678,8 +691,7 @@ void CmdDrawingNewLengthDimension::activated(int iMsg)
                 // Only support straight line edges
                 QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                            QObject::tr("Please provide a valid selection: Only straight line edges are allowed"));
-                delete ed1;
-                delete ed2;
+                abortCommand();
                 return;
             }
 
@@ -697,19 +709,19 @@ void CmdDrawingNewLengthDimension::activated(int iMsg)
             subs.push_back(SubNames[1]);
             dim->References.setValues(objs, subs);
 
-            delete ed1;
-            delete ed2;
 
         } else {
 
             QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please provide a valid selection"),
                                                        QObject::tr("Incorrect selection"));
+            abortCommand();
             return;
         }
     } else {
 
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                    QObject::tr("Please select atleast two references"));
+        abortCommand();
         return;
     }
 
@@ -736,7 +748,7 @@ void CmdDrawingNewLengthDimension::activated(int iMsg)
     Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
     page->addView(page->getDocument()->getObject(FeatName.c_str()));
 
-    updateActive();
+
     commitCommand();
 }
 
@@ -805,14 +817,15 @@ void CmdDrawingNewDistanceXDimension::activated(int iMsg)
         if (SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge") {
             int GeoId = std::atoi(SubNames[0].substr(4,4000).c_str());
 
-            DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
+            QScopedPointer<DrawingGeometry::BaseGeom> geom(Obj->getCompleteEdge(GeoId));
 
             if(geom->geomType == DrawingGeometry::GENERIC) {
-                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(geom);
+                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(geom.data());
                 if(gen1->points.size() > 2) {
                     // Only support straight line edges
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                                QObject::tr("Please select only one straight line edge"));
+                    abortCommand();
                     return;
                 }
 
@@ -823,6 +836,7 @@ void CmdDrawingNewDistanceXDimension::activated(int iMsg)
                 } else {
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Invalid Selection"),
                                                                QObject::tr("Please select a non-vertical line"));
+                    abortCommand();
                     return;
                 }
 
@@ -832,12 +846,19 @@ void CmdDrawingNewDistanceXDimension::activated(int iMsg)
                 dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
                 dim->References.setValue(Obj, SubNames[0].c_str());
 
+            } else {
+               // Only support straight line edges
+                    QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
+                                                               QObject::tr("Please select only one straight line edge"));
+                    abortCommand();
+                    return;
             }
         } else {
 
             // Invalid selection has been made for one reference
             QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                        QObject::tr("Please select an edge"));
+            abortCommand();
             return;
         }
 
@@ -867,18 +888,18 @@ void CmdDrawingNewDistanceXDimension::activated(int iMsg)
 
             // Project the edges
             Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart * >(Obj);
-            DrawingGeometry::BaseGeom *ed1 = viewPart->getCompleteEdge(GeoId1);
-            DrawingGeometry::BaseGeom *ed2 = viewPart->getCompleteEdge(GeoId2);
+            QScopedPointer<DrawingGeometry::BaseGeom> ed1(Obj->getCompleteEdge(GeoId1));
+            QScopedPointer<DrawingGeometry::BaseGeom> ed2(Obj->getCompleteEdge(GeoId2));
 
             if(ed1->geomType == DrawingGeometry::GENERIC &&
                ed2->geomType == DrawingGeometry::GENERIC) {
-                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(ed1);
-                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(ed2);
+                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(ed1.data());
+                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(ed2.data());
                 if(gen1->points.size() > 2 || gen2->points.size() > 2) {
                     // Only support straight line edges
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
-                                                               QObject::tr("Please select only straight line edges")
-                    );
+                                                               QObject::tr("Please select only straight line edges"));
+                    abortCommand();
                     return;
                 }
 
@@ -893,6 +914,7 @@ void CmdDrawingNewDistanceXDimension::activated(int iMsg)
                 if(xprod > FLT_EPSILON) {
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Invalid Selection"),
                                                                QObject::tr("Please select parallel lines"));
+                    abortCommand();
                     return;
                 }
 
@@ -901,6 +923,7 @@ void CmdDrawingNewDistanceXDimension::activated(int iMsg)
                 } else {
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Invalid Selection"),
                                                                QObject::tr("Please select vertical lines only"));
+                    abortCommand();
                     return;
                 }
 
@@ -908,6 +931,7 @@ void CmdDrawingNewDistanceXDimension::activated(int iMsg)
                 // Only support straight line edges
                 QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                            QObject::tr("Please provide a valid selection: Only straight line edges are allowed"));
+                abortCommand();
                 return;
             }
 
@@ -929,12 +953,14 @@ void CmdDrawingNewDistanceXDimension::activated(int iMsg)
 
             QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                        QObject::tr("Please provide a valid selection"));
+            abortCommand();
             return;
         }
     } else {
 
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                     QObject::tr("Please provide a valid selection"));
+        abortCommand();
         return;
     }
 
@@ -961,7 +987,7 @@ void CmdDrawingNewDistanceXDimension::activated(int iMsg)
     Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
     page->addView(page->getDocument()->getObject(FeatName.c_str()));
 
-    updateActive();
+
     commitCommand();
 }
 
@@ -1031,14 +1057,15 @@ void CmdDrawingNewDistanceYDimension::activated(int iMsg)
         if (SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge") {
             int GeoId = std::atoi(SubNames[0].substr(4,4000).c_str());
 
-            DrawingGeometry::BaseGeom *geom = Obj->getCompleteEdge(GeoId);
+            QScopedPointer<DrawingGeometry::BaseGeom> geom(Obj->getCompleteEdge(GeoId));
 
             if(geom->geomType == DrawingGeometry::GENERIC) {
-                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(geom);
+                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(geom.data());
                 if(gen1->points.size() > 2) {
                     // Only support straight line edges
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                                QObject::tr("Please select only one straight line edge"));
+                    abortCommand();
                     return;
                 }
 
@@ -1050,6 +1077,7 @@ void CmdDrawingNewDistanceYDimension::activated(int iMsg)
                 } else {
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Invalid Selection"),
                                                                QObject::tr("Please select a non-horizontal line"));
+                    abortCommand();
                     return;
                 }
 
@@ -1059,12 +1087,19 @@ void CmdDrawingNewDistanceYDimension::activated(int iMsg)
                 dim = dynamic_cast<Drawing::FeatureViewDimension *>(this->getDocument()->getObject(FeatName.c_str()));
                 dim->References.setValue(Obj, SubNames[0].c_str());
 
+            } else {
+               // Only support straight line edges
+                    QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
+                                                               QObject::tr("Please select only one straight line edge"));
+                    abortCommand();
+                    return;
             }
         } else {
 
             // Invalid selection has been made for one reference
             QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                        QObject::tr("Please select an edge"));
+            abortCommand();
             return;
         }
     } else if(SubNames.size() == 2) {
@@ -1093,17 +1128,18 @@ void CmdDrawingNewDistanceYDimension::activated(int iMsg)
 
             // Project the edges
             Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart * >(Obj);
-            DrawingGeometry::BaseGeom *ed1 = viewPart->getCompleteEdge(GeoId1);
-            DrawingGeometry::BaseGeom *ed2 = viewPart->getCompleteEdge(GeoId2);
+            QScopedPointer<DrawingGeometry::BaseGeom> ed1(Obj->getCompleteEdge(GeoId1));
+            QScopedPointer<DrawingGeometry::BaseGeom> ed2(Obj->getCompleteEdge(GeoId2));
 
             if(ed1->geomType == DrawingGeometry::GENERIC &&
                ed2->geomType == DrawingGeometry::GENERIC) {
-                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(ed1);
-                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(ed2);
+                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(ed1.data());
+                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(ed2.data());
                 if(gen1->points.size() > 2 || gen2->points.size() > 2) {
                     // Only support straight line edges
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Incorrect selection"),
                                                                QObject::tr("Please select only straight line edges"));
+                    abortCommand();
                     return;
                 }
 
@@ -1118,6 +1154,7 @@ void CmdDrawingNewDistanceYDimension::activated(int iMsg)
                 if(xprod > FLT_EPSILON) {
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Invalid Selection"),
                                                                QObject::tr("Please select parallel lines"));
+                    abortCommand();
                     return;
                 }
 
@@ -1126,6 +1163,7 @@ void CmdDrawingNewDistanceYDimension::activated(int iMsg)
                 } else {
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Invalid Selection"),
                                                                QObject::tr("Please select horizonal lines only"));
+                    abortCommand();
                     return;
                 }
 
@@ -1133,6 +1171,7 @@ void CmdDrawingNewDistanceYDimension::activated(int iMsg)
                 // Only support straight line edges
                 QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please provide a valid selection: Only straight line edges are allowed"),
                                                            QObject::tr("Incorrect selection"));
+                abortCommand();
                 return;
             }
 
@@ -1154,12 +1193,14 @@ void CmdDrawingNewDistanceYDimension::activated(int iMsg)
 
             QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please provide a valid selection"),
             QObject::tr("Incorrect selection"));
+            abortCommand();
             return;
         }
     } else {
 
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please select atleast two references"),
         QObject::tr("Incorrect selection"));
+        abortCommand();
         return;
     }
 
@@ -1186,13 +1227,13 @@ void CmdDrawingNewDistanceYDimension::activated(int iMsg)
     Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
     page->addView(page->getDocument()->getObject(FeatName.c_str()));
 
-    updateActive();
+
     commitCommand();
 }
 
 
 //===========================================================================
-// Drawing_NewLengthDimension
+// Drawing_NewAngleDimension
 //===========================================================================
 
 DEF_STD_CMD(CmdDrawingNewAngleDimension);
@@ -1259,17 +1300,18 @@ void CmdDrawingNewAngleDimension::activated(int iMsg)
 
             // Project the edges
             Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart * >(Obj);
-            DrawingGeometry::BaseGeom *ed1 = viewPart->getCompleteEdge(GeoId1);
-            DrawingGeometry::BaseGeom *ed2 = viewPart->getCompleteEdge(GeoId2);
+            QScopedPointer<DrawingGeometry::BaseGeom> ed1(Obj->getCompleteEdge(GeoId1));
+            QScopedPointer<DrawingGeometry::BaseGeom> ed2(Obj->getCompleteEdge(GeoId2));
 
             if(ed1->geomType == DrawingGeometry::GENERIC &&
                ed2->geomType == DrawingGeometry::GENERIC) {
-                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(ed1);
-                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(ed2);
+                DrawingGeometry::Generic *gen1 = static_cast<DrawingGeometry::Generic *>(ed1.data());
+                DrawingGeometry::Generic *gen2 = static_cast<DrawingGeometry::Generic *>(ed2.data());
                 if(gen1->points.size() > 2 || gen2->points.size() > 2) {
                     // Only support straight line edges
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please select only straight line edges"),
                                                                QObject::tr("Incorrect selection"));
+                    abortCommand();
                     return;
                 }
 
@@ -1279,6 +1321,7 @@ void CmdDrawingNewAngleDimension::activated(int iMsg)
                 // Only support straight line edges
                 QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please provide a valid selection: Only straight line edges are allowed"),
                                                            QObject::tr("Incorrect selection"));
+                abortCommand();
                 return;
             }
 
@@ -1300,12 +1343,14 @@ void CmdDrawingNewAngleDimension::activated(int iMsg)
 
             QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please select two edges"),
             QObject::tr("Incorrect selection"));
+            abortCommand();
             return;
         }
     } else {
 
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Please select atleast two references"),
         QObject::tr("Incorrect selection"));
+        abortCommand();
         return;
     }
 
@@ -1334,7 +1379,6 @@ void CmdDrawingNewAngleDimension::activated(int iMsg)
     Drawing::FeaturePage *page = dynamic_cast<Drawing::FeaturePage *>(pages.front());
     page->addView(page->getDocument()->getObject(FeatName.c_str()));
 
-    updateActive();
     commitCommand();
 }
 

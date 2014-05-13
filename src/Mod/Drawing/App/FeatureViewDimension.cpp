@@ -85,7 +85,12 @@ FeatureViewDimension::~FeatureViewDimension()
 void FeatureViewDimension::onChanged(const App::Property* prop)
 {
     // If Tolerance Property is touched
-    if(prop == &References) {
+    if(prop == &References  ||
+       prop == &Precision   ||
+       prop == &Font        ||
+       prop == &Fontsize    ||
+       prop == &CentreLines ||
+       prop == &ProjectionType) {
         this->touch();
     }
 }
@@ -203,8 +208,11 @@ double FeatureViewDimension::getValue() const
 
             Base::Vector3d delta   = measurement->delta();
             Base::Vector3d projDir = ProjDirection.getValue();
+
             Base::Vector3d projDim = delta.ProjToPlane(Base::Vector3d(0.,0.,0.),
                                                        Base::Vector3d(projDir.x, projDir.y, projDir.z));
+
+            Drawing::FeatureViewPart *viewPart = dynamic_cast<Drawing::FeatureViewPart * >(References.getValues().at(0));
 
             Base::Vector3d xaxis = XAxisDirection.getValue();
 
