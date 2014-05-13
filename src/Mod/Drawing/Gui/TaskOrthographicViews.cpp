@@ -66,6 +66,8 @@ TaskOrthographicViews::TaskOrthographicViews(ViewProviderViewOrthographic *vp) :
     //nearestFraction(scale, a, b, 10);
     ui->scaleNum->setText(QString::number(a));
     ui->scaleDenom->setText(QString::number(b));
+    ui->cmbScaleType->setCurrentIndex(orthoFeat->ScaleType.getValue());
+    
 
 
     if(strcmp(orthoFeat->ScaleType.getValueAsString(), "Automatic") == 0 ||
