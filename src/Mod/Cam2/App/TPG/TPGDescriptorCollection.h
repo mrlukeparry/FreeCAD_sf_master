@@ -23,6 +23,12 @@
 #ifndef TPGDESCRIPTORCOLLECTION_H_
 #define TPGDESCRIPTORCOLLECTION_H_
 
+#include <PreCompiled.h>	// for CamExport macro definition.
+
+namespace Cam {
+class CamExport TPGDescriptorCollection;
+}
+
 #include <vector>
 
 #include "TPG.h"
@@ -30,7 +36,7 @@
 
 namespace Cam {
 
-class TPGDescriptorCollection {
+class CamExport TPGDescriptorCollection {
 public:
     TPGDescriptorCollection();
 
@@ -85,7 +91,7 @@ public:
     void onEach(void*func(TPGDescriptor*, void*), void *param);
 
     void print() {
-        printf("TPGDescriptorCollection: (refs: %i)\n", refcnt);
+        qDebug("TPGDescriptorCollection: (refs: %i)\n", refcnt);
     }
 
 protected:

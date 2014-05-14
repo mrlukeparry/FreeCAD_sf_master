@@ -22,11 +22,45 @@
 
 
 #include "PreCompiled.h"
+#ifndef _PreComp_
+# include <QTextStream>
+#endif
+
+// Uncomment this block to remove PySide support and switch back to PyQt
+// #undef HAVE_SHIBOKEN
+// #undef HAVE_PYSIDE
+
+#ifdef FC_OS_WIN32
+#undef max
+#undef min
+#ifdef _MSC_VER
+#pragma warning( disable : 4099 )
+#pragma warning( disable : 4522 )
+#endif
+#endif
+
+#ifdef HAVE_SHIBOKEN
+# undef _POSIX_C_SOURCE
+# undef _XOPEN_SOURCE
+# include <basewrapper.h>
+# include <sbkmodule.h>
+# include <typeresolver.h>
+# include <shiboken.h>
+# ifdef HAVE_PYSIDE
+# include <pyside_qtcore_python.h>
+# include <pyside_qtgui_python.h>
+PyTypeObject** SbkPySide_QtCoreTypes=NULL;
+PyTypeObject** SbkPySide_QtGuiTypes=NULL;
+# endif
+#endif
 
 #include <CXX/Objects.hxx>
 #include <App/Application.h>
 #include <Base/Console.h>
 #include <Base/Exception.h>
+#include <Base/Interpreter.h>
+#include <Base/Quantity.h>
+#include <Base/QuantityPy.h>
 
 
 #include "WidgetFactory.h"
@@ -36,6 +70,188 @@
 
 using namespace Gui;
 
+#if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
+namespace Shiboken {
+template<> struct Converter<Base::Quantity>
+{
+    static inline bool checkType(PyObject* pyObj) {
+        return PyObject_TypeCheck(pyObj, &(Base::QuantityPy::Type));
+    }
+    static inline bool isConvertible(PyObject* pyObj) {
+        return PyObject_TypeCheck(pyObj, &(Base::QuantityPy::Type));
+    }
+    static inline PyObject* toPython(void* cppobj) {
+        return toPython(*reinterpret_cast<Base::Quantity*>(cppobj));
+    }
+    static inline PyObject* toPython(Base::Quantity cpx) {
+        return new Base::QuantityPy(new Base::Quantity(cpx));
+    }
+    static inline Base::Quantity toCpp(PyObject* pyobj) {
+        Base::Quantity q = *static_cast<Base::QuantityPy*>(pyobj)->getQuantityPtr();
+        return q;
+    }
+};
+}
+
+PyObject* toPythonFuncQuantity(const void* cpp)
+{
+    return Shiboken::Converter<Base::Quantity>::toPython(const_cast<void*>(cpp));
+}
+
+void toCppPointerConvFuncQuantity(PyObject*,void*)
+{
+}
+
+PythonToCppFunc toCppPointerCheckFuncQuantity(PyObject* obj)
+{
+    if (Shiboken::Converter<Base::Quantity>::isConvertible(obj))
+        return toCppPointerConvFuncQuantity;
+    else
+        return 0;
+}
+
+void registerTypes()
+{
+    SbkConverter* convert = Shiboken::Conversions::createConverter(&Base::QuantityPy::Type, toPythonFuncQuantity);
+    Shiboken::Conversions::setPythonToCppPointerFunctions(convert, toCppPointerConvFuncQuantity, toCppPointerCheckFuncQuantity);
+    Shiboken::Conversions::registerConverterName(convert, "Base::Quantity");
+}
+#endif
+
+// --------------------------------------------------------
+
+PythonWrapper::PythonWrapper()
+{
+#if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
+    static bool init = false;
+    if (!init) {
+        init = true;
+        registerTypes();
+    }
+#endif
+}
+
+bool PythonWrapper::toCString(const Py::Object& pyobject, std::string& str)
+{
+#if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
+    if (Shiboken::String::check(pyobject.ptr())) {
+        const char* s = Shiboken::String::toCString(pyobject.ptr());
+        if (s) str = s;
+        return true;
+    }
+#endif
+    return false;
+}
+
+QObject* PythonWrapper::toQObject(const Py::Object& pyobject)
+{
+    // http://pastebin.com/JByDAF5Z
+#if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
+    PyTypeObject * type = Shiboken::SbkType<QObject>();
+    if (type) {
+        if (Shiboken::Object::checkType(pyobject.ptr())) {
+            SbkObject* sbkobject = reinterpret_cast<SbkObject *>(pyobject.ptr());
+            void* cppobject = Shiboken::Object::cppPointer(sbkobject, type);
+            return reinterpret_cast<QObject*>(cppobject);
+        }
+    }
+#else
+    Py::Module mainmod(PyImport_AddModule((char*)"sip"));
+    Py::Callable func = mainmod.getDict().getItem("unwrapinstance");
+    Py::Tuple arguments(1);
+    arguments[0] = pyobject; //PyQt pointer
+    Py::Object result = func.apply(arguments);
+    void* ptr = PyLong_AsVoidPtr(result.ptr());
+    return reinterpret_cast<QObject*>(ptr);
+#endif
+
+    return 0;
+}
+
+Py::Object PythonWrapper::fromQWidget(QWidget* widget, const char* className)
+{
+#if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
+    PyTypeObject * type = Shiboken::SbkType<QWidget>();
+    if (type) {
+        SbkObjectType* sbk_type = reinterpret_cast<SbkObjectType*>(type);
+        std::string typeName;
+        if (className)
+            typeName = className;
+        else
+            typeName = widget->metaObject()->className();
+        PyObject* pyobj = Shiboken::Object::newObject(sbk_type, widget, false, false, typeName.c_str());
+        return Py::asObject(pyobj);
+    }
+    throw Py::RuntimeError("Failed to wrap widget");
+#else
+    Py::Module sipmod(PyImport_AddModule((char*)"sip"));
+    Py::Callable func = sipmod.getDict().getItem("wrapinstance");
+    Py::Tuple arguments(2);
+    arguments[0] = Py::asObject(PyLong_FromVoidPtr(widget));
+    Py::Module qtmod(PyImport_ImportModule((char*)"PyQt4.Qt"));
+    arguments[1] = qtmod.getDict().getItem("QWidget");
+    return func.apply(arguments);
+#endif
+}
+
+bool PythonWrapper::loadCoreModule()
+{
+#if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
+    // QtCore
+    if (!SbkPySide_QtCoreTypes) {
+        Shiboken::AutoDecRef requiredModule(Shiboken::Module::import("PySide.QtCore"));
+        if (requiredModule.isNull())
+            return false;
+        SbkPySide_QtCoreTypes = Shiboken::Module::getTypes(requiredModule);
+    }
+#endif
+    return true;
+}
+
+bool PythonWrapper::loadGuiModule()
+{
+#if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
+    // QtGui
+    if (!SbkPySide_QtGuiTypes) {
+        Shiboken::AutoDecRef requiredModule(Shiboken::Module::import("PySide.QtGui"));
+        if (requiredModule.isNull())
+            return false;
+        SbkPySide_QtGuiTypes = Shiboken::Module::getTypes(requiredModule);
+    }
+#endif
+    return true;
+}
+
+void PythonWrapper::createChildrenNameAttributes(PyObject* root, QObject* object)
+{
+#if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
+    Q_FOREACH (QObject* child, object->children()) {
+        const QByteArray name = child->objectName().toLocal8Bit();
+
+        if (!name.isEmpty() && !name.startsWith("_") && !name.startsWith("qt_")) {
+            bool hasAttr = PyObject_HasAttrString(root, name.constData());
+            if (!hasAttr) {
+                Shiboken::AutoDecRef pyChild(Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QOBJECT_IDX], child));
+                PyObject_SetAttrString(root, name.constData(), pyChild);
+            }
+            createChildrenNameAttributes(root, child);
+        }
+        createChildrenNameAttributes(root, child);
+    }
+#endif
+}
+
+void PythonWrapper::setParent(PyObject* pyWdg, QObject* parent)
+{
+#if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
+    if (parent) {
+        Shiboken::AutoDecRef pyParent(Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QWIDGET_IDX], parent));
+        Shiboken::Object::setParent(pyParent, pyWdg);
+    }
+#endif
+}
+
+// ----------------------------------------------------
 
 Gui::WidgetFactoryInst* Gui::WidgetFactoryInst::_pcSingleton = NULL;
 
@@ -168,6 +384,128 @@ QWidget* WidgetFactoryInst::createPrefWidget(const char* sName, QWidget* parent,
 
 // ----------------------------------------------------
 
+PySideUicModule::PySideUicModule()
+  : Py::ExtensionModule<PySideUicModule>("PySideUic")
+{
+    add_varargs_method("loadUiType",&PySideUicModule::loadUiType,
+        "PySide lacks the \"loadUiType\" command, so we have to convert the ui file to py code in-memory first\n"
+        "and then execute it in a special frame to retrieve the form_class.");
+    add_varargs_method("loadUi",&PySideUicModule::loadUi,
+        "Addition of \"loadUi\" to PySide.");
+    initialize("PySideUic helper module"); // register with Python
+}
+
+Py::Object PySideUicModule::loadUiType(const Py::Tuple& args)
+{
+    Base::PyGILStateLocker lock;
+    PyObject* main = PyImport_AddModule("__main__");
+    PyObject* dict = PyModule_GetDict(main);
+    Py::Dict d(PyDict_Copy(dict), true);
+    Py::String uiFile(args.getItem(0));
+
+    QString cmd;
+    QTextStream str(&cmd);
+    // https://github.com/albop/dolo/blob/master/bin/load_ui.py
+    str << "import pysideuic\n"
+        << "from PySide import QtCore, QtGui\n"
+        << "import xml.etree.ElementTree as xml\n"
+        << "from cStringIO import StringIO\n"
+        << "\n"
+        << "uiFile = \"" << uiFile.as_string().c_str() << "\"\n"
+        << "parsed = xml.parse(uiFile)\n"
+        << "widget_class = parsed.find('widget').get('class')\n"
+        << "form_class = parsed.find('class').text\n"
+        << "with open(uiFile, 'r') as f:\n"
+        << "    o = StringIO()\n"
+        << "    frame = {}\n"
+        << "    pysideuic.compileUi(f, o, indent=0)\n"
+        << "    pyc = compile(o.getvalue(), '<string>', 'exec')\n"
+        << "    exec pyc in frame\n"
+        << "    #Fetch the base_class and form class based on their type in the xml from designer\n"
+        << "    form_class = frame['Ui_%s'%form_class]\n"
+        << "    base_class = eval('QtGui.%s'%widget_class)\n";
+
+    PyObject* result = PyRun_String((const char*)cmd.toLatin1(), Py_file_input, d.ptr(), d.ptr());
+    if (result) {
+        Py_DECREF(result);
+        if (d.hasKey("form_class") && d.hasKey("base_class")) {
+            Py::Tuple t(2);
+            t.setItem(0, d.getItem("form_class"));
+            t.setItem(1, d.getItem("base_class"));
+            return t;
+        }
+    }
+    else {
+        throw Py::Exception();
+    }
+
+    return Py::None();
+}
+
+Py::Object PySideUicModule::loadUi(const Py::Tuple& args)
+{
+    Base::PyGILStateLocker lock;
+    PyObject* main = PyImport_AddModule("__main__");
+    PyObject* dict = PyModule_GetDict(main);
+    Py::Dict d(PyDict_Copy(dict), true);
+    d.setItem("uiFile_", args[0]);
+    if (args.size() > 1)
+        d.setItem("base_", args[1]);
+    else
+        d.setItem("base_", Py::None());
+
+    QString cmd;
+    QTextStream str(&cmd);
+#if 0
+    // https://github.com/lunaryorn/snippets/blob/master/qt4/designer/pyside_dynamic.py
+    str << "from PySide import QtCore, QtGui, QtUiTools\n"
+        << "import FreeCADGui"
+        << "\n"
+        << "class UiLoader(QtUiTools.QUiLoader):\n"
+        << "    def __init__(self, baseinstance):\n"
+        << "        QtUiTools.QUiLoader.__init__(self, baseinstance)\n"
+        << "        self.baseinstance = baseinstance\n"
+        << "        self.ui = FreeCADGui.UiLoader()\n"
+        << "\n"
+        << "    def createWidget(self, class_name, parent=None, name=''):\n"
+        << "        if parent is None and self.baseinstance:\n"
+        << "            return self.baseinstance\n"
+        << "        else:\n"
+        << "            widget = self.ui.createWidget(class_name, parent, name)\n"
+        << "            if not widget:\n"
+        << "                widget = QtUiTools.QUiLoader.createWidget(self, class_name, parent, name)\n"
+        << "            if self.baseinstance:\n"
+        << "                setattr(self.baseinstance, name, widget)\n"
+        << "            return widget\n"
+        << "\n"
+        << "loader = UiLoader(globals()[\"base_\"])\n"
+        << "widget = loader.load(globals()[\"uiFile_\"])\n"
+        << "\n";
+#else
+    str << "from PySide import QtCore, QtGui\n"
+        << "import FreeCADGui"
+        << "\n"
+        << "loader = FreeCADGui.UiLoader()\n"
+        << "widget = loader.load(globals()[\"uiFile_\"])\n"
+        << "\n";
+#endif
+
+    PyObject* result = PyRun_String((const char*)cmd.toLatin1(), Py_file_input, d.ptr(), d.ptr());
+    if (result) {
+        Py_DECREF(result);
+        if (d.hasKey("widget")) {
+            return d.getItem("widget");
+        }
+    }
+    else {
+        throw Py::Exception();
+    }
+
+    return Py::None();
+}
+
+// ----------------------------------------------------
+
 UiLoader::UiLoader(QObject* parent)
   : QUiLoader(parent)
 {
@@ -211,6 +549,8 @@ void UiLoaderPy::init_type()
     behaviors().supportRepr();
     behaviors().supportGetattr();
     behaviors().supportSetattr();
+    add_varargs_method("load",&UiLoaderPy::load,"load(string, QWidget parent=None) -> QWidget\n"
+                                                "load(QIODevice, QWidget parent=None) -> QWidget");
     add_varargs_method("createWidget",&UiLoaderPy::createWidget,"createWidget()");
 }
 
@@ -230,23 +570,72 @@ Py::Object UiLoaderPy::repr()
     return Py::String(s_out.str());
 }
 
+Py::Object UiLoaderPy::load(const Py::Tuple& args)
+{
+    Gui::PythonWrapper wrap;
+    if (wrap.loadCoreModule()) {
+        std::string fn;
+        QFile file;
+        QIODevice* device = 0;
+        QWidget* parent = 0;
+        if (wrap.toCString(args[0], fn)) {
+            file.setFileName(QString::fromUtf8(fn.c_str()));
+            if (!file.open(QFile::ReadOnly))
+                throw Py::RuntimeError("Cannot open file");
+            device = &file;
+        }
+        else if (args[0].isString()) {
+            fn = (std::string)Py::String(args[0]);
+            file.setFileName(QString::fromUtf8(fn.c_str()));
+            if (!file.open(QFile::ReadOnly))
+                throw Py::RuntimeError("Cannot open file");
+            device = &file;
+        }
+        else {
+            QObject* obj = wrap.toQObject(args[0]);
+            device = qobject_cast<QIODevice*>(obj);
+        }
+
+        if (args.size() > 1) {
+            QObject* obj = wrap.toQObject(args[1]);
+            parent = qobject_cast<QWidget*>(obj);
+        }
+
+        if (device) {
+            QWidget* widget = loader.load(device, parent);
+            if (widget) {
+                wrap.loadGuiModule();
+
+                Py::Object pyWdg = wrap.fromQWidget(widget);
+                wrap.createChildrenNameAttributes(*pyWdg, widget);
+                wrap.setParent(*pyWdg, parent);
+                return pyWdg;
+            }
+        }
+        else {
+            throw Py::Exception("string or QIODevice expected");
+        }
+    }
+    return Py::None();
+}
+
 Py::Object UiLoaderPy::createWidget(const Py::Tuple& args)
 {
-    Py::Module sipmod(PyImport_AddModule((char*)"sip"));
-    Py::Module qtmod(PyImport_ImportModule((char*)"PyQt4.Qt"));
+    Gui::PythonWrapper wrap;
 
     // 1st argument
-    std::string className = (std::string)Py::String(args[0]);
-
+    Py::String str(args[0]);
+    std::string className;
+    if (str.isUnicode()) {
+        className = str.as_std_string("utf-8");
+    }
+    else {
+        className = (std::string)str;
+    }
     // 2nd argument
     QWidget* parent = 0;
-    if (args.size() > 1) {
-        Py::Callable func = sipmod.getDict().getItem("unwrapinstance");
-        Py::Tuple arguments(1);
-        arguments[0] = args[1]; //PyQt pointer
-        Py::Object result = func.apply(arguments);
-        void* ptr = PyLong_AsVoidPtr(result.ptr());
-        QObject* object = reinterpret_cast<QObject*>(ptr);
+    if (wrap.loadCoreModule() && args.size() > 1) {
+        QObject* object = wrap.toQObject(args[1]);
         if (object)
             parent = qobject_cast<QWidget*>(object);
     }
@@ -254,16 +643,25 @@ Py::Object UiLoaderPy::createWidget(const Py::Tuple& args)
     // 3rd argument
     std::string objectName;
     if (args.size() > 2) {
-        objectName = (std::string)Py::String(args[2]);
+        Py::String str(args[2]);
+        if (str.isUnicode()) {
+            objectName = str.as_std_string("utf-8");
+        }
+        else {
+            objectName = (std::string)str;
+        }
     }
 
     QWidget* widget = loader.createWidget(QString::fromAscii(className.c_str()), parent,
         QString::fromAscii(objectName.c_str()));
-    Py::Callable func = sipmod.getDict().getItem("wrapinstance");
-    Py::Tuple arguments(2);
-    arguments[0] = Py::asObject(PyLong_FromVoidPtr(widget));
-    arguments[1] = qtmod.getDict().getItem("QWidget");
-    return func.apply(arguments);
+    if (!widget) {
+        std::string err = "No such widget class '";
+        err += className;
+        err += "'";
+        throw Py::RuntimeError(err);
+    }
+    wrap.loadGuiModule();
+    return wrap.fromQWidget(widget);
 }
 
 // ----------------------------------------------------

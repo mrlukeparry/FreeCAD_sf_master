@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,7 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 
 #include <App/DocumentObjectGroup.h>
 #include <Gui/Command.h>
@@ -29,20 +30,19 @@
 #include <Gui/MainWindow.h>
 #include <QPointer>
 
-#include "../App/CamFeature.h"
-#include "../App/StockGeometry.h"
-#include "../App/TPGList.h"
-#include "../App/TPGFeature.h"
-#include "../App/CamPartsList.h"
+#include "../App/Features/CamFeature.h"
+#include "../App/Features/TPGFeature.h"
+
+#include "UIManager.h"
 
 
 //===========================================================================
-// CmdCamCreateCamFeature
+// CmdCamFeature
 //===========================================================================
-DEF_STD_CMD_A(CmdCamCreateCamFeature);
+DEF_STD_CMD_A(CmdCamFeature);
 
-CmdCamCreateCamFeature::CmdCamCreateCamFeature()
-  :Command("Cam_CreateCamFeature")
+CmdCamFeature::CmdCamFeature()
+  :Command("Cam_CamFeature")
 {
     sAppModule    = "Cam";
     sGroup        = QT_TR_NOOP("Cam");
@@ -50,37 +50,218 @@ CmdCamCreateCamFeature::CmdCamCreateCamFeature()
     sToolTipText  = QT_TR_NOOP("Create a new Cam Feature");
     sWhatsThis    = sToolTipText;
     sStatusTip    = sToolTipText;
-    sPixmap       = "cam";
+    sPixmap       = "Cam_CamFeature";
 }
 
-void CmdCamCreateCamFeature::activated(int iMsg)
+void CmdCamFeature::activated(int iMsg)
 {
-
-    std::string FeatName = getUniqueObjectName("CamFeature");
-    App::Document *doc   = getActiveGuiDocument()->getDocument();
-
-    // NOTE Need to use simple test case file
-    App::DocumentObject *camFeat =  doc->addObject("Cam::CamFeature", FeatName.c_str());
-
-    // Initialise a few TPG Features and put this in tree for testing
-
-    App::DocumentObject *docObj = doc->getObject(FeatName.c_str());
-
-    if(docObj && docObj->isDerivedFrom(Cam::CamFeature::getClassTypeId())) {
-        Cam::CamFeature *camFeat = dynamic_cast<Cam::CamFeature *>(docObj);
-
-        // We Must Initialise the Cam Feature before usage
-        camFeat->initialise();
-    }
+    openCommand("CamFeatureNew");
+	if (CamGui::UIManager().CamFeature()) {
+//		updateActive();
+    	commitCommand();
+	}
+	else
+		abortCommand();
 }
 
-bool CmdCamCreateCamFeature::isActive(void)
+bool CmdCamFeature::isActive(void)
 {
     return hasActiveDocument();
 }
 
+//===========================================================================
+// CmdCamTPGFeature
+//===========================================================================
+DEF_STD_CMD_A(CmdCamTPGFeature);
+
+CmdCamTPGFeature::CmdCamTPGFeature()
+  :Command("Cam_TPGFeature")
+{
+    sAppModule    = "Cam";
+    sGroup        = QT_TR_NOOP("Cam");
+    sMenuText     = QT_TR_NOOP("Create a new TPG Feature");
+    sToolTipText  = QT_TR_NOOP("Create a new TPG Feature");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Cam_TPGFeature";
+}
+
+void CmdCamTPGFeature::activated(int iMsg)
+{
+    openCommand("New TPG Feature");
+	if (CamGui::UIManager().TPGFeature()) {
+    	commitCommand();
+	}
+	else
+		abortCommand();
+}
+
+bool CmdCamTPGFeature::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+//===========================================================================
+// CmdCamToolFeature
+//===========================================================================
+DEF_STD_CMD_A(CmdCamToolFeature);
+
+CmdCamToolFeature::CmdCamToolFeature()
+  :Command("Cam_ToolFeature")
+{
+    sAppModule    = "Cam";
+    sGroup        = QT_TR_NOOP("Cam");
+    sMenuText     = QT_TR_NOOP("New Tool");
+    sToolTipText  = QT_TR_NOOP("Create a new tool definition");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Cam_ToolFeature";
+}
+
+void CmdCamToolFeature::activated(int iMsg)
+{
+    openCommand("New Tool Feature");
+    if (CamGui::UIManager().ToolFeature()) {
+        commitCommand();
+    }
+    else
+        abortCommand();
+}
+
+bool CmdCamToolFeature::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+//===========================================================================
+// CmdCamMachineFeature
+//===========================================================================
+DEF_STD_CMD_A(CmdCamMachineFeature);
+
+CmdCamMachineFeature::CmdCamMachineFeature()
+  :Command("Cam_MachineFeature")
+{
+    sAppModule    = "Cam";
+    sGroup        = QT_TR_NOOP("Cam");
+    sMenuText     = QT_TR_NOOP("New Machine");
+    sToolTipText  = QT_TR_NOOP("Create a new machine definition");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Cam_MachineFeature";
+}
+
+void CmdCamMachineFeature::activated(int iMsg)
+{
+    openCommand("New Machine Feature");
+    if (CamGui::UIManager().MachineFeature()) {
+        commitCommand();
+    }
+    else
+        abortCommand();
+}
+
+bool CmdCamMachineFeature::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+//===========================================================================
+// CmdCamTPGFeature
+//===========================================================================
+DEF_STD_CMD_A(CmdCamRunTPG);
+
+CmdCamRunTPG::CmdCamRunTPG()
+  :Command("Cam_RunTPG")
+{
+    sAppModule    = "Cam";
+    sGroup        = QT_TR_NOOP("Cam");
+    sMenuText     = QT_TR_NOOP("Run TPG");
+    sToolTipText  = QT_TR_NOOP("Executes the selected TPG to (re)produce its Tool Path");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Cam_RunTPG";
+}
+
+void CmdCamRunTPG::activated(int iMsg)
+{
+    CamGui::UIManager().RunTPG();
+}
+
+bool CmdCamRunTPG::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+
+//===========================================================================
+// CmdCamPostProcess
+//===========================================================================
+DEF_STD_CMD_A(CmdCamPostProcess);
+
+CmdCamPostProcess::CmdCamPostProcess()
+  :Command("Cam_PostProcess")
+{
+    sAppModule    = "Cam";
+    sGroup        = QT_TR_NOOP("Cam");
+    sMenuText     = QT_TR_NOOP("Post Process");
+    sToolTipText  = QT_TR_NOOP("Executes toolpath to (re)produce its Machine Program");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Cam_PostProcess";
+}
+
+void CmdCamPostProcess::activated(int iMsg)
+{
+    CamGui::UIManager().PostProcess();
+}
+
+bool CmdCamPostProcess::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+
+//===========================================================================
+// CmdCamWatchHighlight
+//===========================================================================
+DEF_STD_CMD_A(CmdCamWatchHighlight);
+
+CmdCamWatchHighlight::CmdCamWatchHighlight()
+  :Command("Cam_WatchHighlight")
+{
+    sAppModule    = "Cam";
+    sGroup        = QT_TR_NOOP("Cam");
+    sMenuText     = QT_TR_NOOP("WatchHighlight");
+    sToolTipText  = QT_TR_NOOP("WatchHighlight");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Cam_WatchHighlight";
+}
+
+void CmdCamWatchHighlight::activated(int iMsg)
+{
+    CamGui::UIManager().WatchHighlight();
+}
+
+bool CmdCamWatchHighlight::isActive(void)
+{
+    return hasActiveDocument();
+}
+
+//===========================================================================
+// Common Code
+//===========================================================================
+/**
+ *
+ */
 void CreateCamCommands()
 {
     Gui::CommandManager &rcCmdMgr = Gui::Application::Instance->commandManager();
-    rcCmdMgr.addCommand(new CmdCamCreateCamFeature());
+    rcCmdMgr.addCommand(new CmdCamFeature());
+    rcCmdMgr.addCommand(new CmdCamToolFeature());
+    rcCmdMgr.addCommand(new CmdCamTPGFeature());
+    rcCmdMgr.addCommand(new CmdCamMachineFeature());
+    rcCmdMgr.addCommand(new CmdCamRunTPG());
+	rcCmdMgr.addCommand(new CmdCamPostProcess());
+    rcCmdMgr.addCommand(new CmdCamWatchHighlight());
 }

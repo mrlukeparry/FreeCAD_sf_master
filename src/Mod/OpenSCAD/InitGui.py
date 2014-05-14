@@ -95,10 +95,12 @@ static char * openscadlogo_xpm[] = {
     def Initialize(self):
         import OpenSCAD_rc,OpenSCADCommands
         commands=['OpenSCAD_ReplaceObject','OpenSCAD_RemoveSubtree',\
-            'OpenSCAD_RefineShapeFeature',"OpenSCAD_Edgestofaces",\
-            'OpenSCAD_ExpandPlacements']
+            'OpenSCAD_RefineShapeFeature',\
+            'OpenSCAD_IncreaseToleranceFeature', 'OpenSCAD_Edgestofaces', \
+            'OpenSCAD_ExpandPlacements','OpenSCAD_ExplodeGroup']
         toolbarcommands=['OpenSCAD_ReplaceObject','OpenSCAD_RemoveSubtree',\
-            'OpenSCAD_RefineShapeFeature']
+            'OpenSCAD_ExplodeGroup','OpenSCAD_RefineShapeFeature']
+            #'OpenSCAD_IncreaseToleranceFeature' #icon still missing
         import PartGui
         parttoolbarcommands = ['Part_CheckGeometry',"Part_Primitives",\
             "Part_Builder",'Part_Cut','Part_Fuse','Part_Common',\
@@ -107,9 +109,21 @@ static char * openscadlogo_xpm[] = {
         param = FreeCAD.ParamGet(\
             "User parameter:BaseApp/Preferences/Mod/OpenSCAD")
         openscadfilename = param.GetString('openscadexecutable')
+        if not openscadfilename:
+
+            import OpenSCADUtils
+            openscadfilename = OpenSCADUtils.searchforopenscadexe()
+            if openscadfilename: #automatic search was succsessful
+                FreeCAD.addImportType("OpenSCAD Format (*.scad)","importCSG") 
+                param.SetString('openscadexecutable',openscadfilename) #save the result
         if openscadfilename:
-            commands.extend(['OpenSCAD_AddOpenSCADElement'])
-            toolbarcommands.extend(['OpenSCAD_AddOpenSCADElement'])
+            commands.extend(['OpenSCAD_AddOpenSCADElement',
+                'OpenSCAD_MeshBoolean','OpenSCAD_Hull','OpenSCAD_Minkowski'])
+            toolbarcommands.extend(['OpenSCAD_AddOpenSCADElement',
+                'OpenSCAD_MeshBoolean','OpenSCAD_Hull','OpenSCAD_Minkowski'])
+        else:
+            FreeCAD.Console.PrintWarning('OpenSCAD executable not found\n')
+
         self.appendToolbar("OpenSCADTools",toolbarcommands)
         self.appendMenu('OpenSCAD',commands)
         self.appendToolbar('OpenSCAD Part tools',parttoolbarcommands)
@@ -124,5 +138,3 @@ static char * openscadlogo_xpm[] = {
 
 
 Gui.addWorkbench(OpenSCADWorkbench())
-App.addExportType("OpenSCAD CSG Format (*.csg)","exportCSG") 
-App.addExportType("OpenSCAD Format (*.scad)","exportCSG")

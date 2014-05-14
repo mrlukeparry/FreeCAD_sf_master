@@ -151,7 +151,25 @@ set(QT_RCC_EXECUTABLE ${FREECAD_LIBPACK_DIR}/bin/rcc.exe)
 set(QT_HELPCOMPILER_EXECUTABLE ${FREECAD_LIBPACK_DIR}/bin/qhelpgenerator.exe)
 set(QT_COLLECTIOMGENERATOR_EXECUTABLE ${FREECAD_LIBPACK_DIR}/bin/qcollectiongenerator.exe)
 
+if(FREECAD_LIBPACK_USEPYSIDE) 
+    #  SHIBOKEN_INCLUDE_DIR        - Directories to include to use SHIBOKEN
+    #  SHIBOKEN_LIBRARY            - Files to link against to use SHIBOKEN
+    #  SHIBOKEN_BINARY             - Executable name
 
+    SET(SHIBOKEN_INCLUDE_DIR ${FREECAD_LIBPACK_DIR}/include/shiboken)
+    SET(SHIBOKEN_LIBRARY     optimized ${FREECAD_LIBPACK_DIR}/lib/shiboken-python2.6.lib debug ${FREECAD_LIBPACK_DIR}/lib/shiboken-python2.6_d.lib)
+    set(SHIBOKEN_BINARY      ${FREECAD_LIBPACK_DIR}/bin/shiboken)
+
+    #  PYSIDE_INCLUDE_DIR   - Directories to include to use PySide
+    #  PYSIDE_LIBRARY       - Files to link against to use PySide
+    #  PYSIDE_PYTHONPATH    - Path to where the PySide Python module files could be found
+    #  PYSIDE_TYPESYSTEMS   - Type system files that should be used by other bindings extending PySide
+
+    SET(PYSIDE_INCLUDE_DIR ${FREECAD_LIBPACK_DIR}/include/PySide)
+    SET(PYSIDE_LIBRARY     optimized ${FREECAD_LIBPACK_DIR}/lib/pyside-python2.6.lib debug ${FREECAD_LIBPACK_DIR}/lib/pyside-python2.6_d.lib)
+    #SET(PYSIDE_PYTHONPATH  ${FREECAD_LIBPACK_DIR}/pyside/Lib/site-packages)
+    #SET(PYSIDE_TYPESYSTEMS ${FREECAD_LIBPACK_DIR}/pyside/share/PySide/typesystems)
+endif(FREECAD_LIBPACK_USEPYSIDE)
 
 MACRO (QT4_EXTRACT_OPTIONS _qt4_files _qt4_options)
 	SET(${_qt4_files})
@@ -219,6 +237,8 @@ include(AddFileDependencies)
 
 macro(fc_wrap_cpp outfiles )
 	QT4_EXTRACT_OPTIONS(moc_files moc_options ${ARGN})
+	# fixes bug 0000585: bug with boost 1.48
+	SET(moc_options ${moc_options} -DBOOST_TT_HAS_OPERATOR_HPP_INCLUDED)
 	SET(ARGN)
 	foreach(it ${moc_files})
 		get_filename_component(it ${it} ABSOLUTE)
@@ -392,5 +412,19 @@ SET(EIGEN3_INCLUDE_DIR ${FREECAD_LIBPACK_DIR}/include/eigen3)
 set(EIGEN3_FOUND TRUE)
 
 
-
-
+# FreeType
+if(FREECAD_USE_FREETYPE)
+    set(FREETYPE_LIBRARIES 
+        optimized ${FREECAD_LIBPACK_DIR}/lib/freetype.lib
+        debug ${FREECAD_LIBPACK_DIR}/lib/freetyped.lib
+    )
+    set(FREETYPE_INCLUDE_DIRS
+        ${FREECAD_LIBPACK_DIR}/include/FreeType-2.4.12
+    )
+    set(FREETYPE_VERSION_STRING
+        "2.4.12"
+    )
+    set(FREETYPE_FOUND
+        TRUE
+    )
+endif(FREECAD_USE_FREETYPE)

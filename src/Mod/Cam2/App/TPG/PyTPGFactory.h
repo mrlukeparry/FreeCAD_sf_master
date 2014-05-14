@@ -23,13 +23,13 @@
 #ifndef PYTPGAPI_H_
 #define PYTPGAPI_H_
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 //# include <Python.h>
 #endif
 
 #include <vector>
-#include <qstring.h>
+#include <QString>
 
 #include "TPGDescriptorCollection.h"
 #include "TPGPython.h"

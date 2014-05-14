@@ -23,11 +23,10 @@
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
+# include <QApplication>
 # include <QClipboard>
 # include <QEventLoop>
 # include <QFileDialog>
-# include <QGraphicsScene>
-# include <QGraphicsView>
 # include <QLabel>
 # include <QStatusBar>
 # include <QPointer>
@@ -66,6 +65,7 @@
 #include <Gui/View3DInventorViewer.h>
 #include "MergeDocuments.h"
 #include "NavigationStyle.h"
+#include "GraphvizView.h"
 
 using namespace Gui;
 
@@ -325,28 +325,6 @@ bool StdCmdMergeProjects::isActive(void)
 // Std_ExportGraphviz
 //===========================================================================
 
-namespace Gui {
-class ImageView : public MDIView
-{
-public:
-    ImageView(const QPixmap& p, QWidget* parent=0) : MDIView(0, parent)
-    {
-        scene = new QGraphicsScene();
-        scene->addPixmap(p);
-        view = new QGraphicsView(scene, this);
-        view->show();
-        setCentralWidget(view);
-    }
-    ~ImageView()
-    {
-        delete scene;
-        delete view;
-    }
-    QGraphicsScene* scene;
-    QGraphicsView* view;
-};
-}
-
 DEF_STD_CMD_A(StdCmdExportGraphviz);
 
 StdCmdExportGraphviz::StdCmdExportGraphviz()
@@ -419,7 +397,8 @@ void StdCmdExportGraphviz::activated(int iMsg)
 
     QPixmap px;
     if (px.loadFromData(proc.readAll(), "PNG")) {
-        Gui::ImageView* view = new Gui::ImageView(px);
+        Gui::GraphvizView* view = new Gui::GraphvizView(px);
+        view->setDependencyGraph(str.str());
         view->setWindowTitle(qApp->translate("Std_ExportGraphviz","Dependency graph"));
         getMainWindow()->addWindow(view);
     }
@@ -444,18 +423,21 @@ DEF_STD_CMD(StdCmdNew);
 StdCmdNew::StdCmdNew()
   :Command("Std_New")
 {
-  sGroup        = QT_TR_NOOP("File");
-  sMenuText     = QT_TR_NOOP("&New");
-  sToolTipText  = QT_TR_NOOP("Create a new empty document");
-  sWhatsThis    = "Std_New";
-  sStatusTip    = QT_TR_NOOP("Create a new empty document");
-  sPixmap       = "document-new";
-  sAccel        = keySequenceToAccel(QKeySequence::New);
+    sGroup        = QT_TR_NOOP("File");
+    sMenuText     = QT_TR_NOOP("&New");
+    sToolTipText  = QT_TR_NOOP("Create a new empty document");
+    sWhatsThis    = "Std_New";
+    sStatusTip    = QT_TR_NOOP("Create a new empty document");
+    sPixmap       = "document-new";
+    sAccel        = keySequenceToAccel(QKeySequence::New);
 }
 
 void StdCmdNew::activated(int iMsg)
 {
-  doCommand(Command::Doc,"App.newDocument()");
+    QString cmd;
+    cmd = QString::fromAscii("App.newDocument(\"%1\")")
+        .arg(qApp->translate("StdCmdNew","Unnamed"));
+    doCommand(Command::Doc,(const char*)cmd.toUtf8());
 }
 
 //===========================================================================
@@ -841,7 +823,6 @@ void StdCmdCopy::activated(int iMsg)
 {
     bool done = getGuiApplication()->sendMsgToActiveView("Copy");
     if (!done) {
-        WaitCursor wc;
         QMimeData * mimeData = getMainWindow()->createMimeDataFromSelection();
         QClipboard* cb = QApplication::clipboard();
         cb->setMimeData(mimeData);
@@ -910,59 +891,54 @@ StdCmdDuplicateSelection::StdCmdDuplicateSelection()
 
 void StdCmdDuplicateSelection::activated(int iMsg)
 {
-    App::Document* act = App::GetApplication().getActiveDocument();
-    if (!act)
-        return; // no active document found
-    Gui::Document* doc = Gui::Application::Instance->getDocument(act);
-    std::vector<Gui::SelectionSingleton::SelObj> sel = Gui::Selection().getCompleteSelection();
+    std::vector<SelectionSingleton::SelObj> sel = Selection().getCompleteSelection();
+    std::map< App::Document*, std::vector<App::DocumentObject*> > objs;
     for (std::vector<SelectionSingleton::SelObj>::iterator it = sel.begin(); it != sel.end(); ++it) {
-        if (!it->pObject)
-            continue; // should actually not happen
-        // create a copy of the object
-        App::DocumentObject* copy = act->copyObject(it->pObject, false);
-        if (!copy) // continue if no copy could be created
-            continue;
-        // mark all properties of the copy as "touched" which are touched in the original object
-        std::map<std::string,App::Property*> props;
-        it->pObject->getPropertyMap(props);
-        std::map<std::string,App::Property*> copy_props;
-        copy->getPropertyMap(copy_props);
-        for (std::map<std::string,App::Property*>::iterator jt = props.begin(); jt != props.end(); ++jt) {
-            if (jt->second->isTouched()) {
-                std::map<std::string,App::Property*>::iterator kt;
-                kt = copy_props.find(jt->first);
-                if (kt != copy_props.end()) {
-                    kt->second->touch();
-                }
-            }
-        }
-
-        Gui::Document* parent = Gui::Application::Instance->getDocument(it->pObject->getDocument());
-        if (!parent || !doc)
-            continue; // should not happen
-        // copy the properties of the associated view providers
-        Gui::ViewProvider* view = parent->getViewProvider(it->pObject);
-        Gui::ViewProvider* copy_view = doc->getViewProvider(copy);
-        copy_view->addDynamicProperties(view);
-        if (!view || !copy_view)
-            continue; // should not happen
-
-        // get the properties of the view provider
-        props.clear();
-        view->getPropertyMap(props);
-        copy_props.clear();
-        copy_view->getPropertyMap(copy_props);
-        for (std::map<std::string,App::Property*>::iterator jt = props.begin(); jt != props.end(); ++jt) {
-            std::map<std::string,App::Property*>::iterator kt;
-            kt = copy_props.find(jt->first);
-            if (kt != copy_props.end()) {
-                std::auto_ptr<App::Property> data(jt->second->Copy());
-                if (data.get()) {
-                    kt->second->Paste(*data);
-                }
-            }
+        if (it->pObject && it->pObject->getDocument()) {
+            objs[it->pObject->getDocument()].push_back(it->pObject);
         }
     }
+
+    if (objs.empty())
+        return;
+
+    Base::FileInfo fi(Base::FileInfo::getTempFileName());
+    {
+        std::vector<App::DocumentObject*> sel; // selected
+        std::vector<App::DocumentObject*> all; // object sub-graph
+        for (std::map< App::Document*, std::vector<App::DocumentObject*> >::iterator it = objs.begin(); it != objs.end(); ++it) {
+            std::vector<App::DocumentObject*> dep = it->first->getDependencyList(it->second);
+            sel.insert(sel.end(), it->second.begin(), it->second.end());
+            all.insert(all.end(), dep.begin(), dep.end());
+        }
+
+        if (all.size() > sel.size()) {
+            int ret = QMessageBox::question(getMainWindow(),
+                qApp->translate("Std_DuplicateSelection","Object dependencies"),
+                qApp->translate("Std_DuplicateSelection","The selected objects have a dependency to unselected objects.\n"
+                                                         "Do you want to duplicate them, too?"),
+                QMessageBox::Yes,QMessageBox::No);
+            if (ret == QMessageBox::Yes) {
+                sel = all;
+            }
+        }
+
+        // save stuff to file
+        Base::ofstream str(fi, std::ios::out | std::ios::binary);
+        App::Document* doc = sel.front()->getDocument();
+        MergeDocuments mimeView(doc);
+        doc->exportObjects(sel, str);
+        str.close();
+    }
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    if (doc) {
+        // restore objects from file and add to active document
+        Base::ifstream str(fi, std::ios::in | std::ios::binary);
+        MergeDocuments mimeView(doc);
+        mimeView.importObjects(str);
+        str.close();
+    }
+    fi.deleteFile();
 }
 
 bool StdCmdDuplicateSelection::isActive(void)
@@ -1032,17 +1008,55 @@ void StdCmdDelete::activated(int iMsg)
         Gui::Document* pGuiDoc = Gui::Application::Instance->getDocument(*it);
         std::vector<Gui::SelectionObject> sel = rSel.getSelectionEx((*it)->getName());
         if (!sel.empty()) {
-            (*it)->openTransaction("Delete");
+            bool doDeletion = true;
+            // check if we can delete the object
             for (std::vector<Gui::SelectionObject>::iterator ft = sel.begin(); ft != sel.end(); ++ft) {
+                App::DocumentObject* obj = ft->getObject();
                 Gui::ViewProvider* vp = pGuiDoc->getViewProvider(ft->getObject());
-                if (vp) {
-                    // ask the ViewProvider if its want to do some clean up
-                    if (vp->onDelete(ft->getSubNames()))
-                        doCommand(Doc,"App.getDocument(\"%s\").removeObject(\"%s\")"
-                                 ,(*it)->getName(), ft->getFeatName());
+                // if the object is in edit mode we allow to continue because only sub-elements will be removed
+                if (!vp || !vp->isEditing()) {
+                    std::vector<App::DocumentObject*> links = obj->getInList();
+                    if (!links.empty()) {
+                        // check if the referenced objects are groups or are selected too
+                        for (std::vector<App::DocumentObject*>::iterator lt = links.begin(); lt != links.end(); ++lt) {
+                            if (!(*lt)->getTypeId().isDerivedFrom(App::DocumentObjectGroup::getClassTypeId()) && !rSel.isSelected(*lt)) {
+                                doDeletion = false;
+                                break;
+                            }
+                        }
+
+                        if (!doDeletion) {
+                            break;
+                        }
+                    }
                 }
             }
-            (*it)->commitTransaction();
+
+            if (!doDeletion) {
+                int ret = QMessageBox::question(Gui::getMainWindow(),
+                    qApp->translate("Std_Delete", "Object dependencies"),
+                    qApp->translate("Std_Delete", "This object is referenced by other objects and thus these objects might get broken.\n"
+                                                  "Are you sure to continue?"),
+                    QMessageBox::Yes, QMessageBox::No);
+                if (ret == QMessageBox::Yes)
+                    doDeletion = true;
+            }
+            if (doDeletion) {
+                Gui::getMainWindow()->setUpdatesEnabled(false);
+                (*it)->openTransaction("Delete");
+                for (std::vector<Gui::SelectionObject>::iterator ft = sel.begin(); ft != sel.end(); ++ft) {
+                    Gui::ViewProvider* vp = pGuiDoc->getViewProvider(ft->getObject());
+                    if (vp) {
+                        // ask the ViewProvider if it wants to do some clean up
+                        if (vp->onDelete(ft->getSubNames()))
+                            doCommand(Doc,"App.getDocument(\"%s\").removeObject(\"%s\")"
+                                     ,(*it)->getName(), ft->getFeatName());
+                    }
+                }
+                (*it)->commitTransaction();
+                Gui::getMainWindow()->setUpdatesEnabled(true);
+                Gui::getMainWindow()->update();
+            }
         }
     }
 }

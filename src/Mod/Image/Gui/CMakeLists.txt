@@ -20,6 +20,7 @@ set(ImageGui_LIBS
 set(ImageGui_MOC_HDRS
     ImageView.h
     GLImageBox.h
+    ImageOrientationDialog.h
 )
 
 fc_wrap_cpp(ImageGui_MOC_SRCS ${ImageGui_MOC_HDRS})
@@ -29,15 +30,22 @@ SET(ImageGui_RES_SRCS
     Resources/Image.qrc
 )
 
-fc_add_resources(ImageGui_QRC_SRCS ${ImageGui_RES_SRCS})
-#QT4_ADD_RESOURCES(ImageGui_QRC_SRCS ${ImageGui_RES_SRCS})
+qt4_add_resources(ImageGui_QRC_SRCS ${ImageGui_RES_SRCS})
+
+set(ImageGui_UIC_SRCS
+    ImageOrientationDialog.ui
+)
+qt4_wrap_ui(ImageGui_UIC_HDRS ${ImageGui_UIC_SRCS})
 
 SET(ImageGui_SRCS
 #   ${ImageGui_MOC_SRCS}
-#   ${ImageGui_QRC_SRCS}
+    ${ImageGui_QRC_SRCS}
+    ${ImageGui_UIC_HDRS}
     AppImageGui.cpp
     AppImageGuiPy.cpp
     Command.cpp
+    ImageOrientationDialog.cpp
+    ImageOrientationDialog.h
     ViewProviderImagePlane.cpp
     ViewProviderImagePlane.h
     GLImageBox.cpp
@@ -61,20 +69,7 @@ fc_target_copy_resource(ImageGui
     ${CMAKE_BINARY_DIR}/Mod/Image
     InitGui.py)
 
-if(MSVC)
-    set_target_properties(ImageGui PROPERTIES SUFFIX ".pyd")
-    set_target_properties(ImageGui PROPERTIES DEBUG_OUTPUT_NAME "ImageGui_d")
-    set_target_properties(ImageGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Image)
-    set_target_properties(ImageGui PROPERTIES PREFIX "../")
-elseif(MINGW)
-    set_target_properties(ImageGui PROPERTIES SUFFIX ".pyd")
-    set_target_properties(ImageGui PROPERTIES DEBUG_OUTPUT_NAME "ImageGui_d")
-    set_target_properties(ImageGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Image)
-    set_target_properties(ImageGui PROPERTIES PREFIX "")
-else(MSVC)
-    set_target_properties(ImageGui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Image)
-    set_target_properties(ImageGui PROPERTIES PREFIX "")
-    set_target_properties(ImageGui PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
-endif(MSVC)
+SET_BIN_DIR(ImageGui ImageGui /Mod/Image)
+SET_PYTHON_PREFIX_SUFFIX(ImageGui)
 
-INSTALL(TARGETS ImageGui DESTINATION lib)
+INSTALL(TARGETS ImageGui DESTINATION ${CMAKE_INSTALL_LIBDIR})

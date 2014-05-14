@@ -52,6 +52,10 @@ namespace App {
   class Color;
 }
 
+namespace Base {
+  class ViewProjMethod;
+}
+
 namespace Gui {
   class View3DInventorViewer;
   class SoFCSelection;
@@ -118,6 +122,7 @@ public:
     App::PropertyColor LineColor;
 
     virtual void attach(App::DocumentObject *);
+    virtual bool useNewSelectionModel(void) const {return false;}
     virtual QIcon getIcon() const;
     /// Sets the correct display mode
     virtual void setDisplayMode(const char* ModeName);
@@ -138,7 +143,7 @@ public:
     void clearSelection();
     void deleteSelection();
     void getFacetsFromPolygon(const std::vector<SbVec2f>& picked,
-                              Gui::View3DInventorViewer &Viewer, SbBool inner,
+                              const Base::ViewProjMethod& proj, SbBool inner,
                               std::vector<unsigned long>& indices) const;
     std::vector<unsigned long> getFacetsOfRegion(const SbViewportRegion&, const SbViewportRegion&, SoCamera*) const;
     std::vector<unsigned long> getVisibleFacetsAfterZoom(const SbBox2s&, const SbViewportRegion&, SoCamera*) const;
@@ -155,8 +160,8 @@ protected:
     void onChanged(const App::Property* prop);
     virtual void showOpenEdges(bool);
     void setOpenEdgeColorFrom(const App::Color& col);
-    virtual void cutMesh(const std::vector<SbVec2f>& picked, Gui::View3DInventorViewer &Viewer, SbBool inner);
-    virtual void trimMesh(const std::vector<SbVec2f>& picked, Gui::View3DInventorViewer &Viewer, SbBool inner);
+    virtual void cutMesh(const std::vector<SbVec2f>& picked, const Base::ViewProjMethod& proj, SbBool inner);
+    virtual void trimMesh(const std::vector<SbVec2f>& picked, const Base::ViewProjMethod& proj, SbBool inner);
     virtual void splitMesh(const MeshCore::MeshKernel& toolMesh, const Base::Vector3f& normal, SbBool inner);
     virtual void segmentMesh(const MeshCore::MeshKernel& toolMesh, const Base::Vector3f& normal, SbBool inner);
     virtual void faceInfo(unsigned long facet);

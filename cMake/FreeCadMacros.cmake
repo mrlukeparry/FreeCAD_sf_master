@@ -168,73 +168,14 @@ endmacro(generate_from_py)
 #endmacro(qt4_wrap_ui)
 
 
-# This is a special version of the built in macro qt4_add_resources that generates .cpp files
-#
-#macro(fc_add_resources outfiles )
-#    #QT4_EXTRACT_OPTIONS(rcc_files rcc_options ${ARGN})
-#	set(ARGN )
-#    foreach (it ${rcc_files})
-#      get_filename_component(outfilename ${it} NAME_WE)
-#      get_filename_component(infile ${it} ABSOLUTE)
-#      get_filename_component(rc_path ${infile} PATH)
-#      set(outfile ${CMAKE_CURRENT_BINARY_DIR}/qrc_${outfilename}.cpp)
-#      #  parse file for dependencies 
-#      #  all files are absolute paths or relative to the location of the qrc file
-#      file(READ "${infile}" _RC_FILE_CONTENTS)
-#      string(REGEX MATCHALL "<file[^<]+" _RC_FILES "${_RC_FILE_CONTENTS}")
-#      set(_RC_DEPENDS)
-#      foreach(_RC_FILE ${_RC_FILES})
-#        string(REGEX REPLACE "^<file[^>]*>" "" _RC_FILE "${_RC_FILE}")
-#        string(REGEX MATCH "^/|([A-Za-z]:/)" _ABS_PATH_INDICATOR "${_RC_FILE}")
-#        if(NOT _ABS_PATH_INDICATOR)
-#          set(_RC_FILE "${rc_path}/${_RC_FILE}")
-#        endif(NOT _ABS_PATH_INDICATOR)
-#        set(_RC_DEPENDS ${_RC_DEPENDS} "${_RC_FILE}")
-#      endforeach(_RC_FILE)
-#      add_custom_command(OUTPUT ${outfile}
-#        COMMAND ${QT_RCC_EXECUTABLE}
-#        ARGS ${rcc_options} -name ${outfilename} -o ${outfile} ${infile}
-#        MAIN_DEPENDENCY ${infile}
-#        DEPENDS ${_RC_DEPENDS})
-#      set(${outfiles} ${${outfiles}} ${outfile})
-#    endforeach (it)
-#endmacro(fc_add_resources)
-
-MACRO (fc_add_resources outfiles )
-  QT4_EXTRACT_OPTIONS(rcc_files rcc_options ${ARGN})
-
-  FOREACH (it ${rcc_files})
-    GET_FILENAME_COMPONENT(outfilename ${it} NAME_WE)
-    GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
-    GET_FILENAME_COMPONENT(rc_path ${infile} PATH)
-    SET(outfile ${CMAKE_CURRENT_BINARY_DIR}/qrc_${outfilename}.cpp)
-    #  parse file for dependencies 
-    #  all files are absolute paths or relative to the location of the qrc file
-    FILE(READ "${infile}" _RC_FILE_CONTENTS)
-    STRING(REGEX MATCHALL "<file[^<]+" _RC_FILES "${_RC_FILE_CONTENTS}")
-    SET(_RC_DEPENDS)
-    FOREACH(_RC_FILE ${_RC_FILES})
-      STRING(REGEX REPLACE "^<file[^>]*>" "" _RC_FILE "${_RC_FILE}")
-      STRING(REGEX MATCH "^/|([A-Za-z]:/)" _ABS_PATH_INDICATOR "${_RC_FILE}")
-      IF(NOT _ABS_PATH_INDICATOR)
-        SET(_RC_FILE "${rc_path}/${_RC_FILE}")
-      ENDIF(NOT _ABS_PATH_INDICATOR)
-      SET(_RC_DEPENDS ${_RC_DEPENDS} "${_RC_FILE}")
-    ENDFOREACH(_RC_FILE)
-    ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
-      COMMAND ${QT_RCC_EXECUTABLE}
-      ARGS ${rcc_options} -name ${outfilename} -o ${outfile} ${infile}
-      MAIN_DEPENDENCY ${infile}
-      DEPENDS ${_RC_DEPENDS})
-    SET(${outfiles} ${${outfiles}} ${outfile})
-  ENDFOREACH (it)
-
-ENDMACRO (fc_add_resources)
-
-MACRO(ADD_MSVC_PRECOMPILED_HEADER PrecompiledHeader PrecompiledSource SourcesVar)
+MACRO(ADD_MSVC_PRECOMPILED_HEADER TargetName PrecompiledHeader PrecompiledSource SourcesVar)
   IF(MSVC)
     GET_FILENAME_COMPONENT(PrecompiledBasename ${PrecompiledHeader} NAME_WE)
-    SET(PrecompiledBinary "$(IntDir)\\$(TargetName).pch")
+    IF(MSVC_IDE)
+      SET(PrecompiledBinary "$(IntDir)\\$(TargetName).pch")
+    ELSE(MSVC_IDE)
+      SET(PrecompiledBinary ${CMAKE_CURRENT_BINARY_DIR}/${TargetName}.pch)
+    ENDIF(MSVC_IDE)
     SET(Sources ${${SourcesVar}})
 
     SET_SOURCE_FILES_PROPERTIES(${PrecompiledSource}
@@ -266,3 +207,47 @@ MACRO(GET_MSVC_PRECOMPILED_SOURCE PrecompiledSource SourcesVar)
     ENDFOREACH (it)
   ENDIF(MSVC)
 ENDMACRO(GET_MSVC_PRECOMPILED_SOURCE)
+
+# Macro to replace all the binary output locations.  Takes 2 optional parameters.
+# ${ARGVN} is zero based so the 3rd element is ${ARGV2}.  When the 3rd element is missing,
+# Runtime and Lib directories default to /bin and /lib.  When present, the 3rd element
+# specifies both Runtime and Lib directories.  4th specifies linux install path.
+MACRO(SET_BIN_DIR ProjectName OutputName)
+    set_target_properties(${ProjectName} PROPERTIES OUTPUT_NAME ${OutputName})
+    if(${ARGC} GREATER 2)
+        # VS_IDE (and perhaps others) make Release and Debug subfolders.  This removes them.
+        set_target_properties(${ProjectName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY         ${CMAKE_BINARY_DIR}${ARGV2})
+        set_target_properties(${ProjectName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}${ARGV2})
+        set_target_properties(${ProjectName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${CMAKE_BINARY_DIR}${ARGV2})
+        set_target_properties(${ProjectName} PROPERTIES LIBRARY_OUTPUT_DIRECTORY         ${CMAKE_BINARY_DIR}${ARGV2})
+    else(${ARGC} GREATER 2)
+        set_target_properties(${ProjectName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY         ${CMAKE_BINARY_DIR}/bin)
+        set_target_properties(${ProjectName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin)
+        set_target_properties(${ProjectName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${CMAKE_BINARY_DIR}/bin)
+        set_target_properties(${ProjectName} PROPERTIES LIBRARY_OUTPUT_DIRECTORY         ${CMAKE_BINARY_DIR}/lib)
+    endif(${ARGC} GREATER 2)
+
+    if(WIN32)
+        set_target_properties(${ProjectName} PROPERTIES DEBUG_OUTPUT_NAME ${OutputName}_d)
+    else(WIN32)
+        # FreeCADBase, SMDS, Driver and MEFISTO2 libs don't depend on parts from CMAKE_INSTALL_LIBDIR
+        if(NOT ${ProjectName} MATCHES "^(FreeCADBase|SMDS|Driver|MEFISTO2)$")
+            if(${ARGC} STREQUAL 4)
+                set_target_properties(${ProjectName} PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}${ARGV3})
+            else(${ARGC} STREQUAL 4)
+                set_target_properties(${ProjectName} PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_LIBDIR})
+            endif(${ARGC} STREQUAL 4)
+        endif(NOT ${ProjectName} MATCHES "^(FreeCADBase|SMDS|Driver|MEFISTO2)$")
+    endif(WIN32)
+ENDMACRO(SET_BIN_DIR)
+
+# Set python prefix & suffix together
+MACRO(SET_PYTHON_PREFIX_SUFFIX ProjectName)
+    if(NOT MSVC)
+        set_target_properties(${ProjectName} PROPERTIES PREFIX "")
+    endif(NOT MSVC)
+    
+    if(WIN32)
+        set_target_properties(${ProjectName} PROPERTIES SUFFIX ".pyd")
+    endif(WIN32)
+ENDMACRO(SET_PYTHON_PREFIX_SUFFIX)

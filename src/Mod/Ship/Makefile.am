@@ -5,8 +5,6 @@ data_DATA = \
 	InitGui.py \
 	ShipGui.py \
 	Instance.py \
-	SimInstance.py \
-	TankInstance.py \
 	Ship_rc.py
 
 nobase_data_DATA = \
@@ -14,7 +12,6 @@ nobase_data_DATA = \
 	resources/examples/s60_katamaran.fcstd \
 	resources/examples/wigley.fcstd \
 	resources/examples/wigley_katamaran.fcstd \
-	resources/icons/Ico.xpm \
 	shipLoadExample/__init__.py \
 	shipLoadExample/TaskPanel.py \
 	shipLoadExample/TaskPanel.ui \
@@ -23,7 +20,6 @@ nobase_data_DATA = \
 	shipCreateShip/TaskPanel.py \
 	shipCreateShip/TaskPanel.ui \
 	shipOutlineDraw/__init__.py \
-	shipOutlineDraw/Plot.py \
 	shipOutlineDraw/Preview.py \
 	shipOutlineDraw/TaskPanel.py \
 	shipOutlineDraw/TaskPanel.ui \
@@ -39,36 +35,7 @@ nobase_data_DATA = \
 	shipHydrostatics/Tools.py \
 	shipUtils/__init__.py \
 	shipUtils/Math.py \
-	shipUtils/Paths.py \
-	tankWeights/__init__.py \
-	tankWeights/Preview.py \
-	tankWeights/TaskPanel.py \
-	tankWeights/TaskPanel.ui \
-	tankCreateTank/__init__.py \
-	tankCreateTank/TaskPanel.py \
-	tankCreateTank/TaskPanel.ui \
-	tankGZ/__init__.py \
-	tankGZ/PlotAux.py \
-	tankGZ/TaskPanel.py \
-	tankGZ/TaskPanel.ui \
-	simCreate/__init__.py \
-	simCreate/TaskPanel.py \
-	simCreate/TaskPanel.ui \
-	simRun/__init__.py \
-	simRun/Simulation.py \
-	simRun/TaskPanel.py \
-	simRun/TaskPanel.ui \
-	simRun/clSim/__init__.py \
-	simRun/clSim/initialization.py \
-	simRun/clSim/Utils.py \
-	simRun/Sim/__init__.py \
-	simRun/Sim/initialization.py \
-	simRun/Sim/matrixGen.py \
-	simRun/Sim/computeSources.py \
-	simRun/Sim/fsEvolution.py \
-	simPost/__init__.py \
-	simPost/TaskPanel.py \
-	simPost/TaskPanel.ui
+	shipUtils/Paths.py
 
 CLEANFILES = $(BUILT_SOURCES)
 

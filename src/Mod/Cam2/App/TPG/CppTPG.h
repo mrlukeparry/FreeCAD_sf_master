@@ -23,8 +23,9 @@
 #ifndef CPPTPG_H_
 #define CPPTPG_H_
 
-#include <qstring.h>
+#include <QString>
 
+#include "TPG.h"
 #include "TPGDescriptorCollection.h"
 
 // Forward declarations
@@ -56,14 +57,14 @@ typedef CppTPG* getTPG_t(QString);
  * TODO: see if its possible to make a nice macro that can handle multiple TPG's at once
  */
 #define CPPTPG_API_SOURCE(_type_, _id_, _name_, _desc_)\
-extern "C" Cam::TPGDescriptorCollection* getDescriptors() {\
+extern "C" CamExport Cam::TPGDescriptorCollection* getDescriptors() {\
     Cam::TPGDescriptorCollection* descriptors = new Cam::TPGDescriptorCollection();\
     Cam::TPGDescriptor *descriptor = _TPGDescriptor(_type_, _id_, _name_, _desc_);\
     descriptors->add(descriptor);\
     descriptor->release();\
     return descriptors;\
 }\
-extern "C" Cam::CppTPG* getTPG(QString id) {\
+extern "C" CamExport Cam::CppTPG* getTPG(QString id) {\
     _MakeTPG(_type_, _id_, _name_, _desc_)\
     return NULL;\
 }
@@ -73,8 +74,8 @@ extern "C" Cam::CppTPG* getTPG(QString id) {\
  * header file
  */
 #define CPPTPG_API_HEADER()\
-extern "C" Cam::TPGDescriptorCollection* getDescriptors();\
-extern "C" Cam::CppTPG* getTPG(QString);
+extern "C" CamExport Cam::TPGDescriptorCollection* getDescriptors();\
+extern "C" CamExport Cam::CppTPG* getTPG(QString);
 
 namespace Cam {
 
@@ -86,7 +87,7 @@ protected:
 
 
     CppTPG();
-    virtual ~CppTPG();
+    ~CppTPG();
 
 public:
     /**
@@ -96,6 +97,16 @@ public:
      * stay open until this instance is released.
      */
     void setPlugin(CppTPGPlugin* plugin);
+
+	/*
+	 * Inherited from TPG::initialise(TPGFeature *tpgFeature)
+	 */
+	virtual void initialise(TPGFeature *tpgFeature);
+
+	/*
+	 * Inherited from the TPG::onChanged() method.
+	 */
+	virtual void onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value);
 };
 
 

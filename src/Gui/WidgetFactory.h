@@ -38,6 +38,33 @@ namespace Gui {
   namespace Dialog{
     class PreferencePage;
   }
+
+class GuiExport PythonWrapper
+{
+public:
+    PythonWrapper();
+    bool loadCoreModule();
+    bool loadGuiModule();
+
+    bool toCString(const Py::Object&, std::string&);
+    QObject* toQObject(const Py::Object&);
+    Py::Object fromQWidget(QWidget*, const char* className=0);
+    static void createChildrenNameAttributes(PyObject* root, QObject* object);
+    static void setParent(PyObject* pyWdg, QObject* parent);
+};
+
+class PySideUicModule : public Py::ExtensionModule<PySideUicModule>
+{
+
+public:
+    PySideUicModule();
+    virtual ~PySideUicModule() {}
+
+private:
+    Py::Object loadUiType(const Py::Tuple& args);
+    Py::Object loadUi(const Py::Tuple& args);
+};
+
 /** 
  * The widget factory provides methods for the dynamic creation of widgets.
  * To create these widgets once they must be registered to the factory.
@@ -103,6 +130,7 @@ public:
 
     Py::Object repr();
     Py::Object createWidget(const Py::Tuple&);
+    Py::Object load(const Py::Tuple&);
 
 private:
     static PyObject *PyMake(struct _typeobject *, PyObject *, PyObject *);

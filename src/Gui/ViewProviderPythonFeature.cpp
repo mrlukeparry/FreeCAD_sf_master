@@ -47,6 +47,7 @@
 # include <Inventor/sensors/SoNodeSensor.h> 
 # include <Inventor/SoPickedPoint.h>
 # include <Inventor/actions/SoRayPickAction.h> 
+# include <Inventor/details/SoDetail.h> 
 #endif
 
 #include "ViewProviderPythonFeature.h"
@@ -73,13 +74,13 @@ namespace Gui {
 class PropertyEvent : public QEvent
 {
 public:
-    PropertyEvent(App::Property* p1, App::Property* p2)
-        : QEvent(QEvent::Type(QEvent::User)), p1(p1), p2(p2)
+    PropertyEvent(const Gui::ViewProvider* vp, App::Property* p)
+        : QEvent(QEvent::Type(QEvent::User)), view(vp), prop(p)
     {
     }
 
-    App::Property* p1;
-    App::Property* p2;
+    const Gui::ViewProvider* view;
+    App::Property* prop;
 };
 
 class ViewProviderPythonFeatureObserver : public QObject
@@ -97,8 +98,16 @@ private:
     void customEvent(QEvent* e)
     {
         PropertyEvent* pe = static_cast<PropertyEvent*>(e);
-        pe->p1->Paste(*pe->p2);
-        delete pe->p2;
+        std::set<const Gui::ViewProvider*>::iterator it = viewMap.find(pe->view);
+        // Make sure that the object hasn't been deleted in the meantime (#0001522)
+        if (it != viewMap.end()) {
+            viewMap.erase(it);
+            App::Property* prop = pe->view->getPropertyByName("Proxy");
+            if (prop && prop->isDerivedFrom(App::PropertyPythonObject::getClassTypeId())) {
+                prop->Paste(*pe->prop);
+            }
+        }
+        delete pe->prop;
     }
     static ViewProviderPythonFeatureObserver* _singleton;
 
@@ -110,6 +119,7 @@ private:
             > ObjectProxy;
 
     std::map<const App::Document*, ObjectProxy> proxyMap;
+    std::set<const Gui::ViewProvider*> viewMap;
 };
 
 }
@@ -154,7 +164,9 @@ void ViewProviderPythonFeatureObserver::slotAppendObject(const Gui::ViewProvider
                 App::Property* prop = vp.getPropertyByName("Proxy");
                 if (prop && prop->isDerivedFrom(App::PropertyPythonObject::getClassTypeId())) {
                     // make this delayed so that the corresponding item in the tree view is accessible
-                    QApplication::postEvent(this, new PropertyEvent(prop, jt->second));
+                    QApplication::postEvent(this, new PropertyEvent(&vp, jt->second));
+                    // needed in customEvent()
+                    viewMap.insert(&vp);
                     it->second.erase(jt);
                 }
             }
@@ -171,6 +183,10 @@ void ViewProviderPythonFeatureObserver::slotAppendObject(const Gui::ViewProvider
 
 void ViewProviderPythonFeatureObserver::slotDeleteObject(const Gui::ViewProvider& obj)
 {
+    // check this in customEvent() if the object is still there
+    std::set<const Gui::ViewProvider*>::iterator it = viewMap.find(&obj);
+    if (it != viewMap.end())
+        viewMap.erase(it);
     if (!obj.isDerivedFrom(Gui::ViewProviderDocumentObject::getClassTypeId()))
         return;
     const Gui::ViewProviderDocumentObject& vp = static_cast<const Gui::ViewProviderDocumentObject&>(obj);
@@ -264,7 +280,7 @@ QIcon ViewProviderPythonFeatureImp::getIcon() const
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        Base::Console().Error("ViewProviderPythonFeature::getIcon: %s\n", e.what());
+        e.ReportException();
     }
 
     return QIcon();
@@ -297,15 +313,98 @@ std::vector<App::DocumentObject*> ViewProviderPythonFeatureImp::claimChildren(co
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        Base::Console().Error("ViewProviderPythonFeature::claimChildren: %s\n", e.what());
+        e.ReportException();
     }
 
     return children;
 }
 
+bool ViewProviderPythonFeatureImp::useNewSelectionModel() const
+{
+    // Run the useNewSelectionModel method of the proxy object.
+    Base::PyGILStateLocker lock;
+    try {
+        App::Property* proxy = object->getPropertyByName("Proxy");
+        if (proxy && proxy->getTypeId() == App::PropertyPythonObject::getClassTypeId()) {
+            Py::Object vp = static_cast<App::PropertyPythonObject*>(proxy)->getValue();
+            if (vp.hasAttr(std::string("useNewSelectionModel"))) {
+                Py::Callable method(vp.getAttr(std::string("useNewSelectionModel")));
+                Py::Tuple args;
+                Py::Boolean ok(method.apply(args));
+                return (bool)ok;
+            }
+        }
+    }
+    catch (Py::Exception&) {
+        Base::PyException e; // extract the Python error text
+        e.ReportException();
+    }
+
+    return true;
+}
+
 std::string ViewProviderPythonFeatureImp::getElement(const SoDetail *det) const
 {
+    // Run the onChanged method of the proxy object.
+    Base::PyGILStateLocker lock;
+    try {
+        App::Property* proxy = object->getPropertyByName("Proxy");
+        if (proxy && proxy->getTypeId() == App::PropertyPythonObject::getClassTypeId()) {
+            Py::Object vp = static_cast<App::PropertyPythonObject*>(proxy)->getValue();
+            if (vp.hasAttr(std::string("getElement"))) {
+                PyObject* pivy = 0;
+                // Note: As there is no ref'counting mechanism for the SoDetail class we must
+                // pass '0' as the last parameter so that the Python object does not 'own'
+                // the detail object.
+                pivy = Base::Interpreter().createSWIGPointerObj("pivy.coin", "SoDetail *", (void*)det, 0);
+                Py::Callable method(vp.getAttr(std::string("getElement")));
+                Py::Tuple args(1);
+                args.setItem(0, Py::Object(pivy, true));
+                Py::String name(method.apply(args));
+                return (std::string)name;
+            }
+        }
+    }
+    catch (const Base::Exception& e) {
+        e.ReportException();
+    }
+    catch (Py::Exception&) {
+        Base::PyException e; // extract the Python error text
+        e.ReportException();
+    }
+
     return "";
+}
+
+SoDetail* ViewProviderPythonFeatureImp::getDetail(const char* name) const
+{
+    // Run the onChanged method of the proxy object.
+    Base::PyGILStateLocker lock;
+    try {
+        App::Property* proxy = object->getPropertyByName("Proxy");
+        if (proxy && proxy->getTypeId() == App::PropertyPythonObject::getClassTypeId()) {
+            Py::Object vp = static_cast<App::PropertyPythonObject*>(proxy)->getValue();
+            if (vp.hasAttr(std::string("getDetail"))) {
+                Py::Callable method(vp.getAttr(std::string("getDetail")));
+                Py::Tuple args(1);
+                args.setItem(0, Py::String(name));
+                Py::Object det(method.apply(args));
+                void* ptr = 0;
+                Base::Interpreter().convertSWIGPointerObj("pivy.coin", "SoDetail *", det.ptr(), &ptr, 0);
+                SoDetail* detail = reinterpret_cast<SoDetail*>(ptr);
+                return detail ? detail->copy() : 0;
+            }
+        }
+    }
+    catch (const Base::Exception& e) {
+        e.ReportException();
+    }
+    catch (Py::Exception&) {
+        Base::PyException e; // extract the Python error text
+        e.ReportException();
+    }
+
+    return 0;
 }
 
 std::vector<Base::Vector3d> ViewProviderPythonFeatureImp::getSelectionShape(const char* Element) const
@@ -342,8 +441,7 @@ bool ViewProviderPythonFeatureImp::setEdit(int ModNum)
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        const char* name = object->getObject()->Label.getValue();
-        Base::Console().Error("ViewProviderPythonFeature::setEdit (%s): %s\n", name, e.what());
+        e.ReportException();
     }
 
     return false;
@@ -378,12 +476,46 @@ bool ViewProviderPythonFeatureImp::unsetEdit(int ModNum)
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        const char* name = object->getObject()->Label.getValue();
-        Base::Console().Error("ViewProviderPythonFeature::unsetEdit (%s): %s\n", name, e.what());
+        e.ReportException();
     }
 
     return false;
 }
+
+bool ViewProviderPythonFeatureImp::doubleClicked(void)
+{
+    // Run the onChanged method of the proxy object.
+    Base::PyGILStateLocker lock;
+    try {
+        App::Property* proxy = object->getPropertyByName("Proxy");
+        if (proxy && proxy->getTypeId() == App::PropertyPythonObject::getClassTypeId()) {
+            Py::Object vp = static_cast<App::PropertyPythonObject*>(proxy)->getValue();
+            if (vp.hasAttr(std::string("doubleClicked"))) {
+                if (vp.hasAttr("__object__")) {
+                    Py::Callable method(vp.getAttr(std::string("doubleClicked")));
+                    Py::Tuple args;
+                    //args.setItem(0, Py::Int(ModNum));
+                    Py::Boolean ok(method.apply(args));
+                    return (bool)ok;
+                }
+                else {
+                    Py::Callable method(vp.getAttr(std::string("doubleClicked")));
+                    Py::Tuple args(1);
+                    args.setItem(0, Py::Object(object->getPyObject(), true));
+                    Py::Boolean ok(method.apply(args));
+                    return (bool)ok;
+                }
+            }
+        }
+    }
+    catch (Py::Exception&) {
+        Base::PyException e; // extract the Python error text
+        e.ReportException();
+    }
+
+    return false;
+}
+
 
 void ViewProviderPythonFeatureImp::attach(App::DocumentObject *pcObject)
 {
@@ -414,8 +546,7 @@ void ViewProviderPythonFeatureImp::attach(App::DocumentObject *pcObject)
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        const char* name = object->getObject()->Label.getValue();
-        Base::Console().Error("ViewProviderPythonFeature::attach (%s): %s\n", name, e.what());
+        e.ReportException();
     }
 }
 
@@ -452,8 +583,7 @@ void ViewProviderPythonFeatureImp::updateData(const App::Property* prop)
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        const char* name = object->getObject()->Label.getValue();
-        Base::Console().Error("ViewProviderPythonFeature::updateData (%s): %s\n", name, e.what());
+        e.ReportException();
     }
 }
 
@@ -486,8 +616,7 @@ void ViewProviderPythonFeatureImp::onChanged(const App::Property* prop)
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        const char* name = object->getObject()->Label.getValue();
-        Base::Console().Error("ViewProviderPythonFeature::onChanged (%s): %s\n", name, e.what());
+        e.ReportException();
     }
 }
 
@@ -529,8 +658,7 @@ const char* ViewProviderPythonFeatureImp::getDefaultDisplayMode() const
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        const char* name = object->getObject()->Label.getValue();
-        Base::Console().Error("ViewProviderPythonFeature::getDefaultDisplayMode (%s): %s\n", name, e.what());
+        e.ReportException();
     }
 
     return 0;
@@ -549,8 +677,8 @@ std::vector<std::string> ViewProviderPythonFeatureImp::getDisplayModes(void) con
                 if (vp.hasAttr("__object__")) {
                     Py::Callable method(vp.getAttr(std::string("getDisplayModes")));
                     Py::Tuple args(0);
-                    Py::List list(method.apply(args));
-                    for (Py::List::iterator it = list.begin(); it != list.end(); ++it) {
+                    Py::Sequence list(method.apply(args));
+                    for (Py::Sequence::iterator it = list.begin(); it != list.end(); ++it) {
                         Py::String str(*it);
                         modes.push_back(str.as_std_string());
                     }
@@ -559,8 +687,8 @@ std::vector<std::string> ViewProviderPythonFeatureImp::getDisplayModes(void) con
                     Py::Callable method(vp.getAttr(std::string("getDisplayModes")));
                     Py::Tuple args(1);
                     args.setItem(0, Py::Object(object->getPyObject(), true));
-                    Py::List list(method.apply(args));
-                    for (Py::List::iterator it = list.begin(); it != list.end(); ++it) {
+                    Py::Sequence list(method.apply(args));
+                    for (Py::Sequence::iterator it = list.begin(); it != list.end(); ++it) {
                         Py::String str(*it);
                         modes.push_back(str.as_std_string());
                     }
@@ -570,8 +698,7 @@ std::vector<std::string> ViewProviderPythonFeatureImp::getDisplayModes(void) con
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        const char* name = object->getObject()->Label.getValue();
-        Base::Console().Error("ViewProviderPythonFeature::getDisplayModes (%s): %s\n", name, e.what());
+        e.ReportException();
     }
 
     return modes;
@@ -596,8 +723,7 @@ std::string ViewProviderPythonFeatureImp::setDisplayMode(const char* ModeName)
     }
     catch (Py::Exception&) {
         Base::PyException e; // extract the Python error text
-        const char* name = object->getObject()->Label.getValue();
-        Base::Console().Error("ViewProviderPythonFeature::setDisplayMode (%s): %s\n", name, e.what());
+        e.ReportException();
     }
 
     return ModeName;

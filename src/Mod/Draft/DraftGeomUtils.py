@@ -23,7 +23,7 @@
 
 __title__="FreeCAD Draft Workbench - Geometry library"
 __author__ = "Yorik van Havre, Jacques-Antoine Gaudin, Ken Cline"
-__url__ = ["http://free-cad.sourceforge.net"]
+__url__ = ["http://www.freecadweb.org"]
 
 "this file contains generic geometry functions for manipulating Part shapes"
 
@@ -111,9 +111,11 @@ def isPtOnEdge(pt,edge) :
                     # return DraftVecUtils.isNull(newArc.Center.sub(center)) \
                     #    and DraftVecUtils.isNull(newArc.Axis-axis) \
                     #    and round(newArc.Radius-radius,precision()) == 0
-                    angle1 = DraftVecUtils.angle(begin.sub(center))
-                    angle2 = DraftVecUtils.angle(end.sub(center))
-                    anglept = DraftVecUtils.angle(pt.sub(center))
+                    angle1 = -DraftVecUtils.angle(begin.sub(center))
+                    angle2 = -DraftVecUtils.angle(end.sub(center))
+                    anglept = -DraftVecUtils.angle(pt.sub(center))
+                    if angle2 < angle1:
+                        angle2 = angle2 + math.pi*2
                     if (angle1 < anglept) and (anglept < angle2):
                         return True
     return False
@@ -152,6 +154,26 @@ def isAligned(edge,axis="x"):
             if edge.StartPoint.z == edge.EndPoint.z:
                     return True
     return False
+    
+def areColinear(e1,e2):
+    """areColinear(e1,e2): returns True if both edges are colinear"""
+    if not isinstance(e1.Curve,Part.Line):
+        return False
+    if not isinstance(e2.Curve,Part.Line):
+        return False
+    v1 = vec(e1)
+    v2 = vec(e2)
+    a = round(v1.getAngle(v2),precision()) 
+    if (a == 0) or (a == round(math.pi,precision())):
+        v3 = e2.Vertexes[0].Point.sub(e1.Vertexes[0].Point)
+        if DraftVecUtils.isNull(v3):
+            return True
+        else:
+            a2 = round(v1.getAngle(v3),precision())
+            if (a2 == 0) or (a2 == round(math.pi,precision())):
+                return True
+    return False
+    
 
 def hasOnlyWires(shape):
     "hasOnlyWires(shape): returns True if all the edges are inside a wire"
@@ -171,12 +193,29 @@ def geomType(edge):
             return "Circle"
         elif isinstance(edge.Curve,Part.BSplineCurve):
             return "BSplineCurve"
+        elif isinstance(edge.Curve,Part.BezierCurve):
+            return "BezierCurve"
         elif isinstance(edge.Curve,Part.Ellipse):
             return "Ellipse"
         else:
             return "Unknown"
     except:
         return "Unknown"
+        
+def isValidPath(shape):
+    "isValidPath(shape): returns True if the shape can be used as an extrusion path"
+    if shape.isNull():
+        return False
+    if shape.Faces:
+        return False
+    if len(shape.Wires) > 1:
+        return False
+    if shape.Wires:
+        if shape.Wires[0].isClosed():
+            return False
+    if shape.isClosed():
+        return False
+    return True
 
 # edge functions *****************************************************************
 
@@ -195,43 +234,35 @@ def findIntersection(edge1,edge2,infinite1=False,infinite2=False,ex1=False,ex2=F
     returns a list containing the intersection point(s) of 2 edges.
     You can also feed 4 points instead of edge1 and edge2'''
 
-    pt1 = None
-
-    if isinstance(edge1,FreeCAD.Vector) and isinstance(edge2,FreeCAD.Vector):
-            # we got points directly
-            pt1 = edge1
-            pt2 = edge2
-            pt3 = infinite1
-            pt4 = infinite2
-            infinite1 = ex1
-            infinite2 = ex2
-
-    elif (geomType(edge1) == "Line") and (geomType(edge2) == "Line") :  
-        # we have 2 straight lines  
-        pt1, pt2, pt3, pt4 = [edge1.Vertexes[0].Point,
-                                      edge1.Vertexes[1].Point,
-                                      edge2.Vertexes[0].Point,
-                                      edge2.Vertexes[1].Point]
-
+    def getLineIntersections(pt1,pt2,pt3,pt4,infinite1,infinite2):
         if pt1:
-                # first check if we don't already have coincident endpoints
-                if (pt1 in [pt3,pt4]):
-                        return [pt1]
-                elif (pt2 in [pt3,pt4]):
-                        return [pt2]
+            # first check if we don't already have coincident endpoints
+            if (pt1 in [pt3,pt4]):
+                    return [pt1]
+            elif (pt2 in [pt3,pt4]):
+                    return [pt2]
         norm1 = pt2.sub(pt1).cross(pt3.sub(pt1))
         norm2 = pt2.sub(pt4).cross(pt3.sub(pt4))
         if not DraftVecUtils.isNull(norm1):
-            norm1.normalize()
+            try:
+                norm1.normalize()
+            except:
+                return []
         if not DraftVecUtils.isNull(norm2):
-            norm2.normalize()
+            try:
+                norm2.normalize()
+            except:
+                return []
         if DraftVecUtils.isNull(norm1.cross(norm2)):
             vec1 = pt2.sub(pt1)
             vec2 = pt4.sub(pt3)
             if DraftVecUtils.isNull(vec1) or DraftVecUtils.isNull(vec2):
                 return [] # One of the line has zero-length
-            vec1.normalize()
-            vec2.normalize()
+            try:
+                vec1.normalize()
+                vec2.normalize()
+            except:
+                return []
             norm3 = vec1.cross(vec2)
             if not DraftVecUtils.isNull(norm3) :
                 k = ((pt3.z-pt1.z)*(vec2.x-vec2.y)+(pt3.y-pt1.y)*(vec2.z-vec2.x)+ \
@@ -250,6 +281,34 @@ def findIntersection(edge1,edge2,infinite1=False,infinite2=False,ex1=False,ex2=F
                 return [] # Lines have same direction
         else :
             return [] # Lines aren't on same plane
+
+    # First, try to use distToShape if possible
+    if isinstance(edge1,Part.Edge) and isinstance(edge2,Part.Edge) and (not infinite1) and (not infinite2):
+        dist, pts, geom = edge1.distToShape(edge2)
+        sol = []
+        for p in pts:
+            sol.append(p[0])
+        return sol
+
+    pt1 = None
+
+    if isinstance(edge1,FreeCAD.Vector) and isinstance(edge2,FreeCAD.Vector):
+        # we got points directly
+        pt1 = edge1
+        pt2 = edge2
+        pt3 = infinite1
+        pt4 = infinite2
+        infinite1 = ex1
+        infinite2 = ex2
+        return getLineIntersections(pt1,pt2,pt3,pt4,infinite1,infinite2)
+
+    elif (geomType(edge1) == "Line") and (geomType(edge2) == "Line") :  
+        # we have 2 straight lines  
+        pt1, pt2, pt3, pt4 = [edge1.Vertexes[0].Point,
+                                      edge1.Vertexes[1].Point,
+                                      edge2.Vertexes[0].Point,
+                                      edge2.Vertexes[1].Point]
+        return getLineIntersections(pt1,pt2,pt3,pt4,infinite1,infinite2)
             
     elif (geomType(edge1) == "Circle") and (geomType(edge2) == "Line") \
       or (geomType(edge1) == "Line") and (geomType(edge2) == "Circle") :
@@ -294,10 +353,13 @@ def findIntersection(edge1,edge2,infinite1=False,infinite2=False,ex1=False,ex2=F
             else :
                 return []
                 
-        else : # Line isn't on Arc's plane
+        else : 
+            # Line isn't on Arc's plane
             if dirVec.dot(arc.Curve.Axis) != 0 :
                 toPlane  = Vector(arc.Curve.Axis) ; toPlane.normalize()
                 d = pt1.dot(toPlane)
+                if not d:
+                    return []
                 dToPlane = center.sub(pt1).dot(toPlane)
                 toPlane = Vector(pt1)
                 toPlane.scale(dToPlane/d,dToPlane/d,dToPlane/d)
@@ -395,8 +457,8 @@ def geom(edge,plac=FreeCAD.Placement()):
             c = edge.Curve.Center
             cu = Part.Circle(edge.Curve.Center,normal,edge.Curve.Radius)
             ref = plac.Rotation.multVec(Vector(1,0,0))
-            a1 = DraftVecUtils.angle(v1.sub(c),ref,DraftVecUtils.neg(normal))
-            a2 = DraftVecUtils.angle(v2.sub(c),ref,DraftVecUtils.neg(normal))
+            a1 = DraftVecUtils.angle(v1.sub(c),ref,normal.negative())
+            a2 = DraftVecUtils.angle(v2.sub(c),ref,normal.negative())
 
             # direction check
             if edge.Curve.Axis.getAngle(normal) > 1:
@@ -413,7 +475,7 @@ def mirror (point, edge):
     normPoint = point.add(findDistance(point, edge, False))
     if normPoint:
         normPoint_point = Vector.sub(point, normPoint)
-        normPoint_refl = DraftVecUtils.neg(normPoint_point)
+        normPoint_refl = normPoint_point.negative()
         refl = Vector.add(normPoint, normPoint_refl)
         return refl
     else:
@@ -433,12 +495,27 @@ def isClockwise(edge,ref=None):
     if not ref:
         ref = Vector(0,0,1)
     if n.getAngle(ref) > math.pi/2:
-        n = DraftVecUtils.neg(n)
+        n = n.negative()
     if DraftVecUtils.angle(v1,v2,n) < 0:
         return False
     if n.z < 0:
         return False
     return True
+    
+def isSameLine(e1,e2):
+    """isSameLine(e1,e2): return True if the 2 edges are lines and have the same
+    points"""
+    if not isinstance(e1.Curve,Part.Line):
+        return False
+    if not isinstance(e2.Curve,Part.Line):
+        return False
+    if (DraftVecUtils.equals(e1.Vertexes[0].Point,e2.Vertexes[0].Point)) and \
+       (DraftVecUtils.equals(e1.Vertexes[-1].Point,e2.Vertexes[-1].Point)):
+           return True
+    elif (DraftVecUtils.equals(e1.Vertexes[-1].Point,e2.Vertexes[0].Point)) and \
+       (DraftVecUtils.equals(e1.Vertexes[0].Point,e2.Vertexes[-1].Point)):
+           return True
+    return False
     
 def isWideAngle(edge):
     """returns True if the given edge is an arc with angle > 180 degrees"""
@@ -543,7 +620,8 @@ def sortEdges(lEdges, aVertex=None):
                     elif geomType(result[3]) == "Circle":
                         mp = findMidpoint(result[3])
                         return [Part.Arc(aVertex.Point,mp,result[3].Vertexes[0].Point).toShape()]
-                    elif geomType(result[3]) == "BSplineCurve":
+                    elif geomType(result[3]) == "BSplineCurve" or\
+                        geomType(result[3]) == "BezierCurve":
                         if isLine(result[3].Curve):
                             return [Part.Line(aVertex.Point,result[3].Vertexes[0].Point).toShape()]
                         else:
@@ -581,7 +659,8 @@ def sortEdges(lEdges, aVertex=None):
                     mp = findMidpoint(result[3])
                     newedge = Part.Arc(aVertex.Point,mp,result[3].Vertexes[0].Point).toShape()
                     olEdges += [newedge] + next
-                elif geomType(result[3]) == "BSplineCurve":
+                elif geomType(result[3]) == "BSplineCurve" or \
+                    geomType(result[3]) == "BezierCurve":
                     if isLine(result[3].Curve):
                         newedge = Part.Line(aVertex.Point,result[3].Vertexes[0].Point).toShape()
                         olEdges += [newedge] + next
@@ -592,6 +671,24 @@ def sortEdges(lEdges, aVertex=None):
             return olEdges
         else :
             return []
+
+
+def flattenWire(wire):
+    '''flattenWire(wire): forces a wire to get completely flat
+    along its normal.'''
+    import WorkingPlane
+    n = getNormal(wire)
+    if not n:
+        return
+    o = wire.Vertexes[0].Point
+    plane = WorkingPlane.plane()
+    plane.alignToPointAndAxis(o,n,0)
+    verts = [o]
+    for v in wire.Vertexes[1:]:
+        verts.append(plane.projectPoint(v.Point))
+    verts.append(o)
+    w = Part.makePolygon(verts)
+    return w
 
 
 def findWires(edgeslist):
@@ -716,7 +813,7 @@ def findMidpoint(edge):
         if len(edge.Vertexes) == 1:
                 # Circle
                 dv = first.sub(center)
-                dv = DraftVecUtils.neg(dv)
+                dv = dv.negative()
                 return center.add(dv)
         axis = edge.Curve.Axis
         chord = last.sub(first)
@@ -725,12 +822,12 @@ def findMidpoint(edge):
         ray = first.sub(center)
         apothem = ray.dot(perp)
         sagitta = radius - apothem
-        startpoint = Vector.add(first, DraftVecUtils.scale(chord,0.5))
+        startpoint = Vector.add(first, chord.multiply(0.5))
         endpoint = DraftVecUtils.scaleTo(perp,sagitta)
         return Vector.add(startpoint,endpoint)
 
     elif geomType(edge) == "Line":
-        halfedge = DraftVecUtils.scale(last.sub(first),.5)
+        halfedge = (last.sub(first)).multiply(.5)
         return Vector.add(first,halfedge)
 
     else:
@@ -839,13 +936,14 @@ def getNormal(shape):
                         e1 = vec(shape.Edges[0])
                         for i in range(1,len(shape.Edges)):
                                 e2 = vec(shape.Edges[i])
-                                if 0.1 < abs(e1.getAngle(e2)) < 1.56:
+                                if 0.1 < abs(e1.getAngle(e2)) < 3.14:
                                         n = e1.cross(e2).normalize()
                                         break
         if FreeCAD.GuiUp:
             import Draft
             vdir = Draft.get3DView().getViewDirection()
-            if n.getAngle(vdir) < 0.78: n = DraftVecUtils.neg(n)
+            if n.getAngle(vdir) < 0.78: 
+                n = n.negative()
         return n
 
 def getRotation(v1,v2=FreeCAD.Vector(0,0,1)):
@@ -855,7 +953,8 @@ def getRotation(v1,v2=FreeCAD.Vector(0,0,1)):
         return None
     axis = v1.cross(v2)
     axis.normalize()
-    angle = math.degrees(math.sqrt((v1.Length ^ 2) * (v2.Length ^ 2)) + v1.dot(v2))
+    #angle = math.degrees(math.sqrt((v1.Length ^ 2) * (v2.Length ^ 2)) + v1.dot(v2))
+    angle = math.degrees(DraftVecUtils.angle(v1,v2,axis))
     return FreeCAD.Rotation(axis,angle)
 
 def calculatePlacement(shape):
@@ -958,7 +1057,7 @@ def connect(edges,closed=False):
                                 nedges.append(Part.Line(v1,v2).toShape())
                 elif geomType(curr) == "Circle":
                         if v1 != v2:
-                                nedges.append(Part.Arc(v1,findMidPoint(curr),v2))
+                                nedges.append(Part.Arc(v1,findMidpoint(curr),v2))
         try:
                 return Part.Wire(nedges)
         except:
@@ -998,7 +1097,7 @@ def findDistance(point,edge,strict=False):
             center = edge.Curve.Center
             segment = center.sub(point)
             ratio = (segment.Length - edge.Curve.Radius) / segment.Length
-            dist = DraftVecUtils.scale(segment,ratio)
+            dist = segment.multiply(ratio)
             newpoint = Vector.add(point, dist)
             if (dist.Length == 0):
                 return None
@@ -1012,7 +1111,8 @@ def findDistance(point,edge,strict=False):
                     return None
             else:
                 return dist
-        elif geomType(edge) == "BSplineCurve":
+        elif geomType(edge) == "BSplineCurve" or \
+            geomType(edge) == "BezierCurve":
             try:
                     pr = edge.Curve.parameter(point)
                     np = edge.Curve.value(pr)
@@ -1048,7 +1148,7 @@ def angleBisection(edge1, edge2):
             return Part.Line(origin,origin.add(dir)).toShape()
         else:
             diff = p3.sub(p1)
-            origin = p1.add(DraftVecUtils.scale(diff, 0.5))
+            origin = p1.add(diff.multiply(0.5))
             dir = p2.sub(p1); dir.normalize()
             return Part.Line(origin,origin.add(dir)).toShape()
     else:
@@ -1127,7 +1227,8 @@ def getTangent(edge,frompoint=None):
         '''
         if geomType(edge) == "Line":
                 return vec(edge)
-        elif geomType(edge) == "BSplineCurve":
+        elif geomType(edge) == "BSplineCurve" or \
+            geomType(edge) == "BezierCurve":
                 if not frompoint:
                         return None
                 cp = edge.Curve.parameter(frompoint)
@@ -1667,6 +1768,120 @@ def filletWire(aWire,r,chamfer=False):
             filEdges[-1:] = result[0:2]
             filEdges[0]   = result[2]
     return Part.Wire(filEdges)
+    
+def getCircleFromSpline(edge):
+    "returns a circle-based edge from a bspline-based edge"
+    if geomType(edge) != "BSplineCurve":
+        return None
+    if len(edge.Vertexes) != 1:
+        return None
+    # get 2 points
+    p1 = edge.Curve.value(0)
+    p2 = edge.Curve.value(math.pi/2)
+    # get 2 tangents
+    t1 = edge.Curve.tangent(0)[0]
+    t2 = edge.Curve.tangent(math.pi/2)[0]
+    # get normal
+    n = p1.cross(p2)
+    if DraftVecUtils.isNull(n):
+        return None
+    # get rays
+    r1 = DraftVecUtils.rotate(t1,math.pi/2,n)
+    r2 = DraftVecUtils.rotate(t2,math.pi/2,n)
+    # get center (intersection of rays)
+    i = findIntersection(p1,p1.add(r1),p2,p2.add(r2),True,True)
+    if not i:
+        return None
+    c = i[0]
+    r = (p1.sub(c)).Length
+    circle = Part.makeCircle(r,c,n)
+    #print circle.Curve
+    return circle
+
+def curvetowire(obj,steps):
+    points = obj.copy().discretize(steps)
+    p0 = points[0]
+    edgelist = []
+    for p in points[1:]:
+        edge = Part.makeLine((p0.x,p0.y,p0.z),(p.x,p.y,p.z))
+        edgelist.append(edge)
+        p0 = p
+    return edgelist
+
+def cleanProjection(shape,tessellate=True,seglength=.05):
+    "returns a valid compound of edges, by recreating them"
+    # this is because the projection algorithm somehow creates wrong shapes.
+    # they dispay fine, but on loading the file the shape is invalid
+    # Now with tanderson's fix to ProjectionAlgos, that isn't the case, but this
+    # can be used for tessellating ellipses and splines for DXF output-DF
+    oldedges = shape.Edges
+    newedges = []
+    for e in oldedges:
+        try:
+            if geomType(e) == "Line":
+                newedges.append(e.Curve.toShape())
+            elif geomType(e) == "Circle":
+                if len(e.Vertexes) > 1:
+                    mp = findMidpoint(e)
+                    a = Part.Arc(e.Vertexes[0].Point,mp,e.Vertexes[-1].Point).toShape()
+                    newedges.append(a)
+                else:
+                    newedges.append(e.Curve.toShape())
+            elif geomType(e) == "Ellipse":
+                if tessellate:
+                    newedges.append(Part.Wire(curvetowire(e, seglength)))
+                else:
+                    if len(e.Vertexes) > 1:
+                        a = Part.Arc(e.Curve,e.FirstParameter,e.LastParameter).toShape()
+                        newedges.append(a)
+                    else:
+                        newedges.append(e.Curve.toShape())
+            elif geomType(e) == "BSplineCurve" or \
+                 geomType(e) == "BezierCurve":
+                if tessellate:
+                    newedges.append(Part.Wire(curvetowire(e,seglength)))
+                else:
+                    if isLine(e.Curve):
+                        l = Part.Line(e.Vertexes[0].Point,e.Vertexes[-1].Point).toShape()
+                        newedges.append(l)
+                    else:
+                        newedges.append(e.Curve.toShape())
+            else:
+                newedges.append(e)
+        except:
+            print "Debug: error cleaning edge ",e
+    return Part.makeCompound(newedges)
+    
+def curvetosegment(curve,seglen):
+    points = curve.discretize(seglen)
+    p0 = points[0]
+    edgelist = []
+    for p in points[1:]:
+        edge = Part.makeLine((p0.x,p0.y,p0.z),(p.x,p.y,p.z))
+        edgelist.append(edge)
+        p0 = p
+    return edgelist
+
+def tessellateProjection(shape,seglen):
+    ''' Returns projection with BSplines and Ellipses broken into line segments.
+        Useful for exporting projected views to *dxf files.'''
+    oldedges = shape.Edges
+    newedges = []
+    for e in oldedges:
+        try:
+            if geomType(e) == "Line":
+                newedges.append(e.Curve.toShape())
+            elif geomType(e) == "Circle":
+                newedges.append(e.Curve.toShape())
+            elif geomType(e) == "Ellipse":
+                newedges.append(Part.Wire(curvetosegment(e,seglen)))
+            elif geomType(e) == "BSplineCurve":
+                newedges.append(Part.Wire(curvetosegment(e,seglen)))
+            else:
+                newedges.append(e)
+        except:
+            print "Debug: error cleaning edge ",e
+    return Part.makeCompound(newedges)
 
 # circle functions *********************************************************
 
@@ -1787,8 +2002,8 @@ def circlefrom1Line2Points(edge, p1, p2):
     v2 = p2.sub(s)
     projectedDist = math.sqrt(abs(v1.dot(v2)))
     edgeDir = vec(edge); edgeDir.normalize()
-    projectedCen1 = Vector.add(s, DraftVecUtils.scale(edgeDir, projectedDist))
-    projectedCen2 = Vector.add(s, DraftVecUtils.scale(edgeDir, -projectedDist))
+    projectedCen1 = Vector.add(s, Vector(edgeDir).multiply(projectedDist))
+    projectedCen2 = Vector.add(s, Vector(edgeDir).multiply(-projectedDist))
     perpEdgeDir = edgeDir.cross(Vector(0,0,1))
     perpCen1 = Vector.add(projectedCen1, perpEdgeDir)
     perpCen2 = Vector.add(projectedCen2, perpEdgeDir)
@@ -1820,13 +2035,13 @@ def circleFrom2LinesRadius (edge1, edge2, radius):
     dist12 = radius / math.sin(ang12 * 0.5)
     dist21 = radius / math.sin(ang21 * 0.5)
     circles = []
-    cen = Vector.add(int, DraftVecUtils.scale(vec(bis12), dist12))
+    cen = Vector.add(int, vec(bis12).multiply(dist12))
     circles.append(Part.Circle(cen, NORM, radius))
-    cen = Vector.add(int, DraftVecUtils.scale(vec(bis12), -dist12))
+    cen = Vector.add(int, vec(bis12).multiply(-dist12))
     circles.append(Part.Circle(cen, NORM, radius))
-    cen = Vector.add(int, DraftVecUtils.scale(vec(bis21), dist21))
+    cen = Vector.add(int, vec(bis21).multiply(dist21))
     circles.append(Part.Circle(cen, NORM, radius))
-    cen = Vector.add(int, DraftVecUtils.scale(vec(bis21), -dist21))
+    cen = Vector.add(int, vec(bis21).multiply(-dist21))
     circles.append(Part.Circle(cen, NORM, radius))
     return circles
 
@@ -1884,15 +2099,15 @@ def circleFromPointLineRadius (point, edge, radius):
     if dist.Length == 0:
         segment = vec(edge)
         perpVec = DraftVecUtils.crossproduct(segment); perpVec.normalize()
-        normPoint_c1 = DraftVecUtils.scale(perpVec, radius)
-        normPoint_c2 = DraftVecUtils.scale(perpVec, -radius)
+        normPoint_c1 = Vector(perpVec).multiply(radius)
+        normPoint_c2 = Vector(perpVec).multiply(-radius)
         center1 = point.add(normPoint_c1)
         center2 = point.add(normPoint_c2)
     elif dist.Length > 2 * radius:
         return None
     elif dist.Length == 2 * radius:
         normPoint = point.add(findDistance(point, edge, False))
-        dummy = DraftVecUtils.scale(normPoint.sub(point), 0.5)
+        dummy = (normPoint.sub(point)).multiply(0.5)
         cen = point.add(dummy)
         circ = Part.Circle(cen, NORM, radius)
         if circ:
@@ -1905,8 +2120,8 @@ def circleFromPointLineRadius (point, edge, radius):
         dist = math.sqrt(radius**2 - (radius - normDist)**2)
         centerNormVec = DraftVecUtils.scaleTo(point.sub(normPoint), radius)
         edgeDir = edge.Vertexes[0].Point.sub(normPoint); edgeDir.normalize()
-        center1 = centerNormVec.add(normPoint.add(DraftVecUtils.scale(edgeDir, dist)))
-        center2 = centerNormVec.add(normPoint.add(DraftVecUtils.scale(edgeDir, -dist)))
+        center1 = centerNormVec.add(normPoint.add(Vector(edgeDir).multiply(dist)))
+        center2 = centerNormVec.add(normPoint.add(Vector(edgeDir).multiply(-dist)))
     circles = []
     if center1:
         circ = Part.Circle(center1, NORM, radius)
@@ -1936,8 +2151,8 @@ def circleFrom2PointsRadius(p1, p2, radius):
     dir = vec(p1_p2); dir.normalize()
     perpDir = dir.cross(Vector(0,0,1)); perpDir.normailze()
     dist = math.sqrt(radius**2 - (dist_p1p2 / 2.0)**2)
-    cen1 = Vector.add(mid, DraftVecUtils.scale(perpDir, dist))
-    cen2 = Vector.add(mid, DraftVecUtils.scale(perpDir, -dist))
+    cen1 = Vector.add(mid, Vector(perpDir).multiply(dist))
+    cen2 = Vector.add(mid, Vector(perpDir).multiply(-dist))
     circles = []
     if cen1: circles.append(Part.Circle(cen1, norm, radius))
     if cen2: circles.append(Part.Circle(cen2, norm, radius))
@@ -2182,12 +2397,12 @@ def findHomotheticCenterOfCircles(circle1, circle2):
         perpCenDir = cenDir.cross(Vector(0,0,1)); perpCenDir.normalize()
 
         # Get point on first circle
-        p1 = Vector.add(circle1.Curve.Center, DraftVecUtils.scale(perpCenDir, circle1.Curve.Radius))
+        p1 = Vector.add(circle1.Curve.Center, Vector(perpCenDir).multiply(circle1.Curve.Radius))
 
         centers = []
         # Calculate inner homothetic center
         # Get point on second circle
-        p2_inner = Vector.add(circle1.Curve.Center, DraftVecUtils.scale(perpCenDir, -circle1.Curve.Radius))
+        p2_inner = Vector.add(circle1.Curve.Center, Vector(perpCenDir).multiply(-circle1.Curve.Radius))
         hCenterInner = DraftVecUtils.intersect(circle1.Curve.Center, circle2.Curve.Center, p1, p2_inner, True, True)
         if hCenterInner:
             centers.append(hCenterInner)
@@ -2195,7 +2410,7 @@ def findHomotheticCenterOfCircles(circle1, circle2):
         # Calculate outer homothetic center (only exists of the circles have different radii)
         if circle1.Curve.Radius != circle2.Curve.Radius:
             # Get point on second circle
-            p2_outer = Vector.add(circle1.Curve.Center, DraftVecUtils.scale(perpCenDir, circle1.Curve.Radius))
+            p2_outer = Vector.add(circle1.Curve.Center, Vector(perpCenDir).multiply(circle1.Curve.Radius))
             hCenterOuter = DraftVecUtils.intersect(circle1.Curve.Center, circle2.Curve.Center, p1, p2_outer, True, True)
             if hCenterOuter:
                 centers.append(hCenterOuter)
@@ -2245,7 +2460,7 @@ def findRadicalAxis(circle1, circle2):
         k1 = (dist + (r1^2 - r2^2) / dist) / 2.0
         #k2 = dist - k1
 
-        K = Vector.add(cen1, DraftVecUtils.scale(cenDir, k1))
+        K = Vector.add(cen1, cenDir.multiply(k1))
 
         # K_ .. A point somewhere between K and J (actually with a distance of 1 unit from K).
         K_ = Vector,add(K, perpCenDir)

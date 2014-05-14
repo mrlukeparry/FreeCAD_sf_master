@@ -52,11 +52,11 @@
  
 namespace Base {
 class ConsoleSingleton;
-}; // namespace Base
+} // namespace Base
 
 typedef Base::ConsoleSingleton ConsoleMsgType;
 typedef unsigned int ConsoleMsgFlags;
- 
+
 namespace Base {
 
 /** The console observer class
@@ -72,13 +72,13 @@ public:
         :bErr(true),bMsg(true),bLog(true),bWrn(true) {}
     virtual ~ConsoleObserver() {}
     /// get calles when a Warning is issued
-    virtual void Warning(const char *){};
+    virtual void Warning(const char *){}
     /// get calles when a Message is issued
-    virtual void Message(const char *){};
+    virtual void Message(const char *){}
     /// get calles when a Error is issued
     virtual void Error  (const char *)=0;
     /// get calles when a Log Message is issued
-    virtual void Log    (const char *){};
+    virtual void Log    (const char *){}
 
     virtual const char *Name(void){return 0L;}
     bool bErr,bMsg,bLog,bWrn;
@@ -141,12 +141,14 @@ public:
     void UnsetMode(ConsoleMode m);
     /// Enables or disables message types of a cetain console observer
     ConsoleMsgFlags SetEnabledMsgType(const char* sObs, ConsoleMsgFlags type, bool b);
+    /// Enables or disables message types of a cetain console observer
+    bool IsMsgTypeEnabled(const char* sObs, FreeCAD_ConsoleMsgType type) const;
 
     /// singleton 
     static ConsoleSingleton &Instance(void);
 
     // retrieval of an observer by name
-    ConsoleObserver *Get(const char *Name);
+    ConsoleObserver *Get(const char *Name) const;
 
     static PyMethodDef    Methods[]; 
 

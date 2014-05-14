@@ -185,12 +185,12 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     *boolean << "Mesh_Union" << "Mesh_Intersection" << "Mesh_Difference";
  
     mesh->setCommand("&Meshes");
-    *mesh << "Mesh_Import" << "Mesh_Export" << "Mesh_FromGeometry" << "Separator"
+    *mesh << "Mesh_Import" << "Mesh_Export" << "Mesh_FromPartShape" << "Separator"
           << analyze << "Mesh_HarmonizeNormals" << "Mesh_FlipNormals" << "Separator" 
           << "Mesh_FillupHoles" << "Mesh_FillInteractiveHole" << "Mesh_RemoveComponents"
           << "Mesh_RemoveCompByHand" << "Mesh_AddFacet" << "Mesh_Smoothing" << "Separator" 
           << "Mesh_BuildRegularSolid" << boolean << "Separator" << "Mesh_PolySelect" << "Mesh_PolyCut"
-          << "Mesh_PolySplit" << "Mesh_PolySegm" << "Mesh_PolyTrim" << "Mesh_Segmentation"
+          << "Mesh_PolySplit" << "Mesh_PolySegm" << "Mesh_PolyTrim" << "Mesh_TrimByPlane" << "Mesh_Segmentation"
           << "Mesh_VertexCurvature";
     return root;
 }

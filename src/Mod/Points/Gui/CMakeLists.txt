@@ -32,9 +32,9 @@ SET(Dialogs_SRCS
 )
 SOURCE_GROUP("Dialogs" FILES ${Dialogs_SRCS})
 
-fc_add_resources(Resource_SRCS Resources/Points.qrc)
+qt4_add_resources(Resource_SRCS Resources/Points.qrc)
 SET(Resource_SRCS
-#   ${Resource_SRCS}
+    ${Resource_SRCS}
     Resources/Points.qrc
 )
 SOURCE_GROUP("Resource" FILES ${Resource_SRCS})
@@ -61,20 +61,7 @@ fc_target_copy_resource(PointsGui
     ${CMAKE_BINARY_DIR}/Mod/Points
     InitGui.py)
 
-if(MSVC)
-    set_target_properties(PointsGui PROPERTIES SUFFIX ".pyd")
-    set_target_properties(PointsGui PROPERTIES DEBUG_OUTPUT_NAME "PointsGui_d")
-    set_target_properties(PointsGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Points)
-    set_target_properties(PointsGui PROPERTIES PREFIX "../")
-elseif(MINGW)
-    set_target_properties(PointsGui PROPERTIES SUFFIX ".pyd")
-    set_target_properties(PointsGui PROPERTIES DEBUG_OUTPUT_NAME "PointsGui_d")
-    set_target_properties(PointsGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Points)
-    set_target_properties(PointsGui PROPERTIES PREFIX "")
-else(MSVC)
-    set_target_properties(PointsGui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Points)
-    set_target_properties(PointsGui PROPERTIES PREFIX "")
-    set_target_properties(PointsGui PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
-endif(MSVC)
+SET_BIN_DIR(PointsGui PointsGui /Mod/Points)
+SET_PYTHON_PREFIX_SUFFIX(PointsGui)
 
-INSTALL(TARGETS PointsGui DESTINATION lib)
+INSTALL(TARGETS PointsGui DESTINATION ${CMAKE_INSTALL_LIBDIR})

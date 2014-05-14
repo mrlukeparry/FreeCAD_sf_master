@@ -45,7 +45,7 @@ class Document;
  */
 class GuiExport MDIView : public QMainWindow, public BaseView
 {
-    Q_OBJECT;
+    Q_OBJECT
 
     TYPESYSTEM_HEADER();
 
@@ -77,10 +77,7 @@ public:
     /** @name Printing */
     //@{
 public Q_SLOTS:
-    virtual void setOverrideCursor(const QCursor&);
-    virtual void restoreOverrideCursor();
     virtual void print(QPrinter* printer);
-
 public:
     /** Print content of view */
     virtual void print();
@@ -106,6 +103,10 @@ public:
      */
     virtual void setCurrentViewMode(ViewMode mode);
     ViewMode currentViewMode() const { return currentMode; }
+
+public Q_SLOTS:
+    virtual void setOverrideCursor(const QCursor&);
+    virtual void restoreOverrideCursor();
 
 Q_SIGNALS:
     void message(const QString&, int);

@@ -4,7 +4,12 @@ else(MSVC)
     add_definitions(-DHAVE_LIMITS_H -DHAVE_CONFIG_H)
 endif(MSVC)
 
+if(FREECAD_BUILD_FEM_NETGEN)
+    add_definitions(-DFCWithNetgen)
+endif(FREECAD_BUILD_FEM_NETGEN)
+
 include_directories(
+    ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
     ${Boost_INCLUDE_DIRS}
@@ -20,10 +25,21 @@ include_directories(
 
 link_directories(${OCC_LIBRARY_DIR})
 
+
+
 set(FemGui_LIBS
     Fem
     FreeCADGui
 )
+
+generate_from_xml(ViewProviderFemMeshPy)
+
+SET(Python_SRCS
+    ViewProviderFemMeshPy.xml
+    ViewProviderFemMeshPyImp.cpp
+)
+SOURCE_GROUP("Python" FILES ${Python_SRCS})
+
 
 set(FemGui_MOC_HDRS
     Hypothesis.h
@@ -36,6 +52,11 @@ set(FemGui_MOC_HDRS
     TaskFemConstraintForce.h  
     TaskFemConstraintGear.h   
     TaskFemConstraintPulley.h
+    TaskTetParameter.h
+    TaskAnalysisInfo.h
+    TaskDriver.h
+    TaskDlgAnalysis.h
+    TaskDlgMeshShapeNetgen.h
 )
 fc_wrap_cpp(FemGui_MOC_SRCS ${FemGui_MOC_HDRS})
 SOURCE_GROUP("Moc" FILES ${FemGui_MOC_SRCS})
@@ -48,6 +69,9 @@ set(FemGui_UIC_SRCS
     TaskFemConstraintBearing.ui
     TaskFemConstraintFixed.ui
     TaskFemConstraintForce.ui
+    TaskTetParameter.ui
+    TaskAnalysisInfo.ui
+    TaskDriver.ui
 )
 qt4_wrap_ui(FemGui_UIC_HDRS ${FemGui_UIC_SRCS})
 
@@ -73,7 +97,7 @@ SET(FemGui_DLG_SRCS
     TaskFemConstraintPulley.cpp
     TaskFemConstraintPulley.h
 )
-SOURCE_GROUP("Dialogs" FILES ${FemGui_DLG_SRCS})
+SOURCE_GROUP("Constraint-Dialogs" FILES ${FemGui_DLG_SRCS})
 
 qt4_add_resources(FemResource_SRCS Resources/Fem.qrc)
 
@@ -82,6 +106,12 @@ SOURCE_GROUP("Resources" FILES ${FemResource_SRCS})
 SET(FemGui_SRCS_ViewProvider
     ViewProviderFemMesh.cpp
     ViewProviderFemMesh.h
+    ViewProviderFemMeshShape.cpp
+    ViewProviderFemMeshShape.h
+    ViewProviderFemMeshShapeNetgen.cpp
+    ViewProviderFemMeshShapeNetgen.h
+    ViewProviderAnalysis.cpp
+    ViewProviderAnalysis.h
     ViewProviderSetNodes.cpp
     ViewProviderSetNodes.h
     ViewProviderSetElements.cpp
@@ -104,6 +134,8 @@ SET(FemGui_SRCS_ViewProvider
     ViewProviderFemConstraintGear.h
     ViewProviderFemConstraintPulley.cpp
     ViewProviderFemConstraintPulley.h
+    ViewProviderResult.cpp
+    ViewProviderResult.h
 )
 SOURCE_GROUP("ViewProvider" FILES ${FemGui_SRCS_ViewProvider})
 
@@ -114,18 +146,33 @@ SET(FemGui_SRCS_TaskBoxes
     TaskCreateNodeSet.ui
     TaskCreateNodeSet.cpp
     TaskCreateNodeSet.h
+    TaskDriver.ui
+    TaskDriver.cpp
+    TaskDriver.h
+    TaskAnalysisInfo.ui
+    TaskAnalysisInfo.cpp
+    TaskAnalysisInfo.h
+    TaskTetParameter.ui
+    TaskTetParameter.cpp
+    TaskTetParameter.h
 )
 SOURCE_GROUP("Task_Boxes" FILES ${FemGui_SRCS_TaskBoxes})
 
 SET(FemGui_SRCS_TaskDlg
     TaskDlgCreateNodeSet.h
     TaskDlgCreateNodeSet.cpp
+    TaskDlgMeshShapeNetgen.h
+    TaskDlgMeshShapeNetgen.cpp
+    TaskDlgAnalysis.h
+    TaskDlgAnalysis.cpp
 )
 SOURCE_GROUP("Task_Dialogs" FILES ${FemGui_SRCS_TaskDlg})
 
 SET(FemGui_SRCS_Module
     AppFemGui.cpp
     AppFemGuiPy.cpp
+    ActiveAnalysisObserver.cpp
+    ActiveAnalysisObserver.h
     Command.cpp
     Resources/Fem.qrc
     PreCompiled.cpp
@@ -136,6 +183,7 @@ SET(FemGui_SRCS_Module
 SOURCE_GROUP("Module" FILES ${FemGui_SRCS_Module})
 
 SET(FemGui_SRCS
+    ${Python_SRCS}
     ${FemGui_DLG_SRCS}
     ${FemResource_SRCS}
     ${FemGui_SRCS_ViewProvider}
@@ -152,22 +200,12 @@ target_link_libraries(FemGui ${FemGui_LIBS})
 fc_target_copy_resource(FemGui 
     ${CMAKE_SOURCE_DIR}/src/Mod/Fem
     ${CMAKE_BINARY_DIR}/Mod/Fem
-    InitGui.py)
+    InitGui.py
+    MechanicalMaterial.ui
+    MechanicalAnalysis.ui
+    )
 
-if(MSVC)
-    set_target_properties(FemGui PROPERTIES SUFFIX ".pyd")
-    set_target_properties(FemGui PROPERTIES DEBUG_OUTPUT_NAME "FemGui_d")
-    set_target_properties(FemGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Fem)
-    set_target_properties(FemGui PROPERTIES PREFIX "../")
-elseif(MINGW)
-    set_target_properties(FemGui PROPERTIES SUFFIX ".pyd")
-    set_target_properties(FemGui PROPERTIES DEBUG_OUTPUT_NAME "FemGui_d")
-    set_target_properties(FemGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Fem)
-    set_target_properties(FemGui PROPERTIES PREFIX "")
-else(MSVC)
-    set_target_properties(FemGui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Fem)
-    set_target_properties(FemGui PROPERTIES PREFIX "")
-    set_target_properties(FemGui PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
-endif(MSVC)
+SET_BIN_DIR(FemGui FemGui /Mod/Fem)
+SET_PYTHON_PREFIX_SUFFIX(FemGui)
 
-INSTALL(TARGETS FemGui DESTINATION lib)
+INSTALL(TARGETS FemGui DESTINATION ${CMAKE_INSTALL_LIBDIR})

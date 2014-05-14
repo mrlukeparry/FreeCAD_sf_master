@@ -148,15 +148,16 @@ public:
     */
     Gui::Document* getDocument(const App::Document* pDoc) const;
     /// Shows the associated view provider of the given object
-    void showViewProvider(App::DocumentObject*);
+    void showViewProvider(const App::DocumentObject*);
     /// Hides the associated view provider of the given object
-    void hideViewProvider(App::DocumentObject*);
+    void hideViewProvider(const App::DocumentObject*);
     /// Get the view provider of the given object
-    Gui::ViewProvider* getViewProvider(App::DocumentObject*) const;
+    Gui::ViewProvider* getViewProvider(const App::DocumentObject*) const;
     //@}
 
     /// true when the application shuting down
     bool isClosing(void);
+    void checkForPreviousCrashes();
 
     /** @name workbench handling */
     //@{
@@ -210,6 +211,7 @@ public:
 
     PYFUNCDEF_S(sSendActiveView);
 
+    PYFUNCDEF_S(sGetMainWindow);
     PYFUNCDEF_S(sUpdateGui);
     PYFUNCDEF_S(sUpdateLocale);
     PYFUNCDEF_S(sGetLocale);
@@ -232,6 +234,7 @@ public:
     PYFUNCDEF_S(sGetDocument);
 
     PYFUNCDEF_S(sDoCommand);
+    PYFUNCDEF_S(sAddModule);
 
     static PyMethodDef    Methods[]; 
 

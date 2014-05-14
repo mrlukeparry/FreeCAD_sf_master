@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -26,6 +27,7 @@
 #define CAMGUI_VIEWPROVIDERTPGFEATURE_H
 
 #include <Gui/ViewProviderDocumentObject.h>
+#include "../App/Features/TPGFeature.h"
 
 class QMenu;
 
@@ -61,6 +63,10 @@ public:
     bool doubleClicked(void);
     
     Cam::TPGFeature* getObject() const;
+
+    std::vector<App::DocumentObject*> claimChildren(void) const;
+
+    QIcon getIcon(void) const;
 };
 
 } // namespace

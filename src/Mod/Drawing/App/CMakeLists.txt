@@ -5,6 +5,7 @@ else(MSVC)
 endif(MSVC)
 
 include_directories(
+    ${CMAKE_BINARY_DIR}
     ${Boost_INCLUDE_DIRS}
     ${OCC_INCLUDE_DIR}
     ${ZLIB_INCLUDE_DIR}
@@ -29,6 +30,8 @@ SET(Features_SRCS
     FeatureViewPart.h
     FeatureViewAnnotation.cpp
     FeatureViewAnnotation.h
+    FeatureViewSymbol.cpp
+    FeatureViewSymbol.h
     FeatureClip.cpp
     FeatureClip.h
     PageGroup.cpp
@@ -62,14 +65,8 @@ SET(Drawing_Templates
 if(MSVC)
     add_definitions(-D_PreComp_)
     GET_MSVC_PRECOMPILED_SOURCE("PreCompiled.cpp" Drawing_CPP_SRCS ${Drawing_SRCS} ${Features_SRCS} ${DrawingAlgos_SRCS})
-    ADD_MSVC_PRECOMPILED_HEADER("PreCompiled.h" "PreCompiled.cpp" Drawing_CPP_SRCS)
+    ADD_MSVC_PRECOMPILED_HEADER(Drawing PreCompiled.h PreCompiled.cpp Drawing_CPP_SRCS)
 endif(MSVC)
-
-# Set special compiler flag to convert a SIGSEV into an exception
-# to handle issue #0000478.
-IF(MSVC)
-SET_SOURCE_FILES_PROPERTIES(ProjectionAlgos.cpp PROPERTIES COMPILE_FLAGS "/EHa")
-ENDIF(MSVC)
 
 add_library(Drawing SHARED ${Drawing_SRCS} ${Features_SRCS} ${DrawingAlgos_SRCS})
 target_link_libraries(Drawing ${Drawing_LIBS})
@@ -89,20 +86,7 @@ fc_target_copy_resource(Drawing
     ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/Mod/Drawing
     ${Drawing_Templates})
 
-if(MSVC)
-    set_target_properties(Drawing PROPERTIES SUFFIX ".pyd")
-    set_target_properties(Drawing PROPERTIES DEBUG_OUTPUT_NAME "Drawing_d")
-    set_target_properties(Drawing PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Drawing)
-    set_target_properties(Drawing PROPERTIES PREFIX "../")
-elseif(MINGW)
-    set_target_properties(Drawing PROPERTIES SUFFIX ".pyd")
-    set_target_properties(Drawing PROPERTIES DEBUG_OUTPUT_NAME "Drawing_d")
-    set_target_properties(Drawing PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Drawing)
-    set_target_properties(Drawing PROPERTIES PREFIX "")
-else(MSVC)
-    set_target_properties(Drawing PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Drawing)
-    set_target_properties(Drawing PROPERTIES PREFIX "")
-    set_target_properties(Drawing PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
-endif(MSVC)
+SET_BIN_DIR(Drawing Drawing /Mod/Drawing)
+SET_PYTHON_PREFIX_SUFFIX(Drawing)
 
-INSTALL(TARGETS Drawing DESTINATION lib)
+INSTALL(TARGETS Drawing DESTINATION ${CMAKE_INSTALL_LIBDIR})

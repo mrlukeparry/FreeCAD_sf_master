@@ -110,7 +110,7 @@ void PropertyLink::setPyObject(PyObject *value)
     else {
         std::string error = std::string("type must be 'DocumentObject' or 'NoneType', not ");
         error += value->ob_type->tp_name;
-        throw Py::TypeError(error);
+        throw Base::TypeError(error);
     }
 }
 
@@ -242,22 +242,32 @@ void PropertyLinkSub::setPyObject(PyObject *value)
         DocumentObjectPy  *pcObject = (DocumentObjectPy*)value;
         setValue(pcObject->getDocumentObjectPtr());
     }
-    else if (Py::Object(value).isTuple()) {
-        Py::Tuple tup(value);
-        if (PyObject_TypeCheck(tup[0].ptr(), &(DocumentObjectPy::Type))){
-            DocumentObjectPy  *pcObj = (DocumentObjectPy*)tup[0].ptr();
-            Py::List list(tup[1]);
-            std::vector<std::string> vals(list.size());
-            unsigned int i=0;
-            for(Py::List::iterator it = list.begin();it!=list.end();++it,++i)
-                vals[i] = Py::String(*it);
-
-            setValue(pcObj->getDocumentObjectPtr(),vals);
+    else if (PyTuple_Check(value) || PyList_Check(value)) {
+        Py::Sequence seq(value);
+        if (PyObject_TypeCheck(seq[0].ptr(), &(DocumentObjectPy::Type))){
+            DocumentObjectPy  *pcObj = (DocumentObjectPy*)seq[0].ptr();
+            if (seq[1].isString()) {
+                std::vector<std::string> vals;
+                vals.push_back((std::string)Py::String(seq[1]));
+                setValue(pcObj->getDocumentObjectPtr(),vals);
+            }
+            else if (seq[1].isSequence()) {
+                Py::Sequence list(seq[1]);
+                std::vector<std::string> vals(list.size());
+                unsigned int i=0;
+                for (Py::Sequence::iterator it = list.begin();it!=list.end();++it,++i)
+                    vals[i] = Py::String(*it);
+                setValue(pcObj->getDocumentObjectPtr(),vals);
+            }
+            else {
+                std::string error = std::string("type of second element in tuple must be str or sequence of str");
+                throw Base::TypeError(error);
+            }
         }
         else {
             std::string error = std::string("type of first element in tuple must be 'DocumentObject', not ");
-            error += tup[0].ptr()->ob_type->tp_name;
-            throw Py::TypeError(error);
+            error += seq[0].ptr()->ob_type->tp_name;
+            throw Base::TypeError(error);
         }
     }
     else if(Py_None == value) {
@@ -266,7 +276,7 @@ void PropertyLinkSub::setPyObject(PyObject *value)
     else {
         std::string error = std::string("type must be 'DocumentObject', 'NoneType' or ('DocumentObject',['String',]) not ");
         error += value->ob_type->tp_name;
-        throw Py::TypeError(error);
+        throw Base::TypeError(error);
     }
 }
 
@@ -409,7 +419,7 @@ void PropertyLinkList::setPyObject(PyObject *value)
             if (!PyObject_TypeCheck(*item, &(DocumentObjectPy::Type))) {
                 std::string error = std::string("type in list must be 'DocumentObject', not ");
                 error += (*item)->ob_type->tp_name;
-                throw Py::TypeError(error);
+                throw Base::TypeError(error);
             }
 
             values[i] = static_cast<DocumentObjectPy*>(*item)->getDocumentObjectPtr();
@@ -424,7 +434,7 @@ void PropertyLinkList::setPyObject(PyObject *value)
     else {
         std::string error = std::string("type must be 'DocumentObject' or list of 'DocumentObject', not ");
         error += value->ob_type->tp_name;
-        throw Py::TypeError(error);
+        throw Base::TypeError(error);
     }
 }
 
@@ -552,13 +562,13 @@ void PropertyLinkSubList::setValues(const std::vector<DocumentObject*>& lValue,c
 
 PyObject *PropertyLinkSubList::getPyObject(void)
 {
-    int count = getSize();
+    unsigned int count = getSize();
 #if 0//FIXME: Should switch to tuple
     Py::Tuple sequence(count);
 #else
     Py::List sequence(count);
 #endif
-    for(int i = 0;i<count; i++){
+    for(unsigned int i = 0;i<count; i++){
         Py::Tuple tup(2);
         tup[0] = Py::Object(_lValueList[i]->getPyObject());
         std::string subItem;
@@ -581,7 +591,7 @@ void PropertyLinkSubList::setPyObject(PyObject *value)
         std::vector<std::string>     SubNames;
         SubNames.reserve(size);
 
-        for (Py::Sequence::size_type i=0; i < size; i++) {
+        for (Py::Sequence::size_type i=0; i<size; i++) {
             Py::Object item = list[i];
             if (item.isTuple()) {
                 Py::Tuple tup(item);
@@ -609,7 +619,7 @@ void PropertyLinkSubList::setPyObject(PyObject *value)
     else {
         std::string error = std::string("type must be 'DocumentObject' or list of 'DocumentObject', not ");
         error += value->ob_type->tp_name;
-        throw Py::TypeError(error);
+        throw Base::TypeError(error);
     }
 }
 

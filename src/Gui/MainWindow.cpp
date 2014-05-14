@@ -23,6 +23,7 @@
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
+# include <algorithm>
 # include <QApplication>
 # include <QBuffer>
 # include <QByteArray>
@@ -59,10 +60,14 @@
 #include <Base/Writer.h>
 #include <App/Application.h>
 #include <App/DocumentObject.h>
+#include <App/DocumentObjectGroup.h>
 
 #include "MainWindow.h"
 #include "Application.h"
 #include "Assistant.h"
+#include "DownloadDialog.h"
+#include "DownloadManager.h"
+#include "WaitCursor.h"
 
 #include "Action.h"
 #include "Command.h"
@@ -78,7 +83,6 @@
 #include "Macro.h"
 #include "ProgressBar.h"
 
-#include "Icons/background.xpm"
 #include "WidgetFactory.h"
 #include "BitmapFactory.h"
 #include "Splashscreen.h"
@@ -288,8 +292,7 @@ MainWindow::MainWindow(QWidget * parent, Qt::WFlags f)
     d->mdiArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     d->mdiArea->setOption(QMdiArea::DontMaximizeSubWindowOnActivation, false);
     d->mdiArea->setActivationOrder(QMdiArea::ActivationHistoryOrder);
-    QPixmap backgnd((const char**) background);
-    d->mdiArea->setBackground(backgnd);
+    d->mdiArea->setBackground(QBrush(QColor(160,160,160)));
     setCentralWidget(d->mdiArea);
 #endif
 
@@ -404,7 +407,7 @@ MainWindow::MainWindow(QWidget * parent, Qt::WFlags f)
     // Python console
     PythonConsole* pcPython = new PythonConsole(this);
     pcPython->setWordWrapMode(QTextOption::NoWrap);
-    pcPython->setWindowIcon(Gui::BitmapFactory().pixmap("python_small"));
+    pcPython->setWindowIcon(Gui::BitmapFactory().pixmap("applications-python"));
     pcPython->setObjectName
         (QString::fromAscii(QT_TRANSLATE_NOOP("QDockWidget","Python console")));
     pDockMgr->registerDockWindow("Std_PythonView", pcPython);
@@ -1103,8 +1106,15 @@ void MainWindow::closeEvent (QCloseEvent * e)
     if (e->isAccepted()) {
         // Send close event to all non-modal dialogs
         QList<QDialog*> dialogs = this->findChildren<QDialog*>();
+        // It is possible that closing a dialog internally closes further dialogs. Thus,
+        // we have to check the pointer before.
+        QList< QPointer<QDialog> > dialogs_ptr;
         for (QList<QDialog*>::iterator it = dialogs.begin(); it != dialogs.end(); ++it) {
-            (*it)->close();
+            dialogs_ptr.append(*it);
+        }
+        for (QList< QPointer<QDialog> >::iterator it = dialogs_ptr.begin(); it != dialogs_ptr.end(); ++it) {
+            if (!(*it).isNull())
+                (*it)->close();
         }
         QList<MDIView*> mdis = this->findChildren<MDIView*>();
         // Force to close any remaining (passive) MDI child views
@@ -1172,6 +1182,8 @@ void MainWindow::delayedStartup()
     if (hGrp->GetBool("CreateNewDoc", false)) {
         App::GetApplication().newDocument();
     }
+
+    Application::Instance->checkForPreviousCrashes();
 }
 
 void MainWindow::appendRecentFile(const QString& filename)
@@ -1395,29 +1407,60 @@ void MainWindow::dragEnterEvent (QDragEnterEvent * e)
 {
     // Here we must allow uri drafs and check them in dropEvent
     const QMimeData* data = e->mimeData();
-    if (data->hasUrls())
+    if (data->hasUrls()) {
+#if 0
+#ifdef QT_NO_OPENSSL
+        QList<QUrl> urls = data->urls();
+        for (QList<QUrl>::ConstIterator it = urls.begin(); it != urls.end(); ++it) {
+            if (it->scheme().toLower() == QLatin1String("https")) {
+                e->ignore();
+                return;
+            }
+        }
+#endif
+#endif
         e->accept();
-    else
+    }
+    else {
         e->ignore();
+    }
 }
 
 QMimeData * MainWindow::createMimeDataFromSelection () const
 {
-    std::vector<SelectionSingleton::SelObj> sel = Selection().getCompleteSelection();
-    unsigned int memsize=1000; // ~ for the meta-information
-    std::vector<App::DocumentObject*> obj;
-    obj.reserve(sel.size());
-    for (std::vector<SelectionSingleton::SelObj>::iterator it = sel.begin(); it != sel.end(); ++it) {
-        if (it->pObject) {
-            obj.push_back(it->pObject);
-            memsize += it->pObject->getMemSize();
+    std::vector<SelectionSingleton::SelObj> selobj = Selection().getCompleteSelection();
+    std::map< App::Document*, std::vector<App::DocumentObject*> > objs;
+    for (std::vector<SelectionSingleton::SelObj>::iterator it = selobj.begin(); it != selobj.end(); ++it) {
+        if (it->pObject && it->pObject->getDocument()) {
+            objs[it->pObject->getDocument()].push_back(it->pObject);
         }
     }
 
-    // get a pointer to a document
-    if (obj.empty()) return 0;
-    App::Document* doc = obj.front()->getDocument();
-    if (!doc) return 0;
+    if (objs.empty())
+        return 0;
+
+    std::vector<App::DocumentObject*> sel; // selected
+    std::vector<App::DocumentObject*> all; // object sub-graph
+    for (std::map< App::Document*, std::vector<App::DocumentObject*> >::iterator it = objs.begin(); it != objs.end(); ++it) {
+        std::vector<App::DocumentObject*> dep = it->first->getDependencyList(it->second);
+        sel.insert(sel.end(), it->second.begin(), it->second.end());
+        all.insert(all.end(), dep.begin(), dep.end());
+    }
+
+    if (all.size() > sel.size()) {
+        int ret = QMessageBox::question(getMainWindow(),
+            tr("Object dependencies"),
+            tr("The selected objects have a dependency to unselected objects.\n"
+               "Do you want to copy them, too?"),
+            QMessageBox::Yes,QMessageBox::No);
+        if (ret == QMessageBox::Yes) {
+            sel = all;
+        }
+    }
+
+    unsigned int memsize=1000; // ~ for the meta-information
+    for (std::vector<App::DocumentObject*>::iterator it = sel.begin(); it != sel.end(); ++it)
+        memsize += (*it)->getMemSize();
 
     // if less than ~10 MB
     bool use_buffer=(memsize < 0xA00000);
@@ -1429,22 +1472,25 @@ QMimeData * MainWindow::createMimeDataFromSelection () const
         use_buffer = false;
     }
 
+    WaitCursor wc;
     QString mime;
     if (use_buffer) {
         mime = QLatin1String("application/x-documentobject");
         Base::ByteArrayOStreambuf buf(res);
         std::ostream str(&buf);
         // need this instance to call MergeDocuments::Save()
+        App::Document* doc = sel.front()->getDocument();
         MergeDocuments mimeView(doc);
-        doc->exportObjects(obj, str);
+        doc->exportObjects(sel, str);
     }
     else {
         mime = QLatin1String("application/x-documentobject-file");
         static Base::FileInfo fi(Base::FileInfo::getTempFileName());
         Base::ofstream str(fi, std::ios::out | std::ios::binary);
         // need this instance to call MergeDocuments::Save()
+        App::Document* doc = sel.front()->getDocument();
         MergeDocuments mimeView(doc);
-        doc->exportObjects(obj, str);
+        doc->exportObjects(sel, str);
         str.close();
         res = fi.filePath().c_str();
     }
@@ -1476,7 +1522,13 @@ void MainWindow::insertFromMimeData (const QMimeData * mimeData)
         std::istream in(0);
         in.rdbuf(&buf);
         MergeDocuments mimeView(doc);
-        mimeView.importObjects(in);
+        std::vector<App::DocumentObject*> newObj = mimeView.importObjects(in);
+        std::vector<App::DocumentObjectGroup*> grp = Gui::Selection().getObjectsOfType<App::DocumentObjectGroup>();
+        if (grp.size() == 1) {
+            Gui::Document* gui = Application::Instance->getDocument(doc);
+            if (gui)
+                gui->addRootObjectsToGroup(newObj, grp.front());
+        }
     }
     else if (mimeData->hasFormat(QLatin1String("application/x-documentobject-file"))) {
         QByteArray res = mimeData->data(QLatin1String("application/x-documentobject-file"));
@@ -1486,8 +1538,14 @@ void MainWindow::insertFromMimeData (const QMimeData * mimeData)
         Base::FileInfo fi((const char*)res);
         Base::ifstream str(fi, std::ios::in | std::ios::binary);
         MergeDocuments mimeView(doc);
-        mimeView.importObjects(str);
+        std::vector<App::DocumentObject*> newObj = mimeView.importObjects(str);
         str.close();
+        std::vector<App::DocumentObjectGroup*> grp = Gui::Selection().getObjectsOfType<App::DocumentObjectGroup>();
+        if (grp.size() == 1) {
+            Gui::Document* gui = Application::Instance->getDocument(doc);
+            if (gui)
+                gui->addRootObjectsToGroup(newObj, grp.front());
+        }
     }
     else if (mimeData->hasUrls()) {
         // load the files into the active document if there is one, otherwise let create one
@@ -1517,6 +1575,22 @@ void MainWindow::loadUrls(App::Document* doc, const QList<QUrl>& url)
                 Base::Console().Message("No support to load file '%s'\n",
                     (const char*)info.absoluteFilePath().toUtf8());
             }
+        }
+        else if (it->scheme().toLower() == QLatin1String("http")) {
+            Gui::Dialog::DownloadManager::getInstance()->download(*it);
+        }
+//#ifndef QT_NO_OPENSSL
+        else if (it->scheme().toLower() == QLatin1String("https")) {
+            QUrl url = *it;
+            if (it->hasEncodedQueryItem(QByteArray("sid"))) {
+                url.removeEncodedQueryItem(QByteArray("sid"));
+                url.setScheme(QLatin1String("http"));
+            }
+            Gui::Dialog::DownloadManager::getInstance()->download(url);
+        }
+//#endif
+        else if (it->scheme().toLower() == QLatin1String("ftp")) {
+            Gui::Dialog::DownloadManager::getInstance()->download(*it);
         }
     }
 
@@ -1552,7 +1626,7 @@ void MainWindow::showMessage (const QString& message, int timeout)
 {
     QFontMetrics fm(statusBar()->font());
     QString msg = fm.elidedText(message, Qt::ElideMiddle, this->width()/2);
-#if QT_VERSION != 0x040801
+#if QT_VERSION <= 0x040600
     this->statusBar()->showMessage(msg, timeout);
 #else
     //#0000665: There is a crash under Ubuntu 12.04 (Qt 4.8.1)

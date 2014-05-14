@@ -25,11 +25,13 @@
 
 #ifndef _PreComp_
 # include <QMessageBox>
+# include <QTimer>
 #endif
 
 #include "ui_TaskLinearPatternParameters.h"
 #include "TaskLinearPatternParameters.h"
 #include "TaskMultiTransformParameters.h"
+#include <Base/UnitsApi.h>
 #include <App/Application.h>
 #include <App/Document.h>
 #include <Gui/Application.h>
@@ -93,6 +95,12 @@ TaskLinearPatternParameters::TaskLinearPatternParameters(TaskMultiTransformParam
 
 void TaskLinearPatternParameters::setupUI()
 {
+    updateViewTimer = new QTimer(this);
+    updateViewTimer->setSingleShot(true);
+    updateViewTimer->setInterval(getUpdateViewTimeout());
+
+    connect(updateViewTimer, SIGNAL(timeout()),
+            this, SLOT(onUpdateViewTimer()));
     connect(ui->comboDirection, SIGNAL(activated(int)),
             this, SLOT(onDirectionChanged(int)));
     connect(ui->checkReverse, SIGNAL(toggled(bool)),
@@ -123,6 +131,7 @@ void TaskLinearPatternParameters::setupUI()
     ui->checkReverse->setEnabled(true);
     ui->spinLength->setEnabled(true);
     ui->spinOccurrences->setEnabled(true);
+    ui->spinLength->setDecimals(Base::UnitsApi::getDecimals());
     updateUI();
 }
 
@@ -188,6 +197,16 @@ void TaskLinearPatternParameters::updateUI()
     blockUpdate = false;
 }
 
+void TaskLinearPatternParameters::onUpdateViewTimer()
+{
+    recomputeFeature();
+}
+
+void TaskLinearPatternParameters::kickUpdateViewTimer() const
+{
+    updateViewTimer->start();
+}
+
 void TaskLinearPatternParameters::onSelectionChanged(const Gui::SelectionChanges& msg)
 {
     if (msg.Type == Gui::SelectionChanges::AddSelection) {
@@ -237,8 +256,7 @@ void TaskLinearPatternParameters::onCheckReverse(const bool on) {
     pcLinearPattern->Reversed.setValue(on);
 
     exitSelectionMode();
-    updateUI();
-    recomputeFeature();
+    kickUpdateViewTimer();
 }
 
 void TaskLinearPatternParameters::onLength(const double l) {
@@ -248,8 +266,7 @@ void TaskLinearPatternParameters::onLength(const double l) {
     pcLinearPattern->Length.setValue(l);
 
     exitSelectionMode();
-    updateUI();
-    recomputeFeature();
+    kickUpdateViewTimer();
 }
 
 void TaskLinearPatternParameters::onOccurrences(const int n) {
@@ -259,8 +276,7 @@ void TaskLinearPatternParameters::onOccurrences(const int n) {
     pcLinearPattern->Occurrences.setValue(n);
 
     exitSelectionMode();
-    updateUI();
-    recomputeFeature();
+    kickUpdateViewTimer();
 }
 
 void TaskLinearPatternParameters::onDirectionChanged(int num) {
@@ -297,8 +313,7 @@ void TaskLinearPatternParameters::onDirectionChanged(int num) {
     else if (num == maxcount)
         exitSelectionMode();
 
-    updateUI();
-    recomputeFeature();
+    kickUpdateViewTimer();
 }
 
 void TaskLinearPatternParameters::onUpdateView(bool on)
@@ -391,6 +406,7 @@ TaskDlgLinearPatternParameters::TaskDlgLinearPatternParameters(ViewProviderLinea
 
     Content.push_back(parameter);
 }
+
 //==== calls from the TaskView ===============================================================
 
 bool TaskDlgLinearPatternParameters::accept()
@@ -406,14 +422,19 @@ bool TaskDlgLinearPatternParameters::accept()
         TaskLinearPatternParameters* linearpatternParameter = static_cast<TaskLinearPatternParameters*>(parameter);
         std::string direction = linearpatternParameter->getDirection();
         if (!direction.empty()) {
-            QString buf = QString::fromUtf8("(App.ActiveDocument.%1,[\"%2\"])");
+            App::DocumentObject* sketch = 0;
             if (direction == "H_Axis" || direction == "V_Axis" ||
                 (direction.size() > 4 && direction.substr(0,4) == "Axis"))
-                buf = buf.arg(QString::fromUtf8(linearpatternParameter->getSketchObject()->getNameInDocument()));
+                sketch = linearpatternParameter->getSketchObject();
             else
-                buf = buf.arg(QString::fromUtf8(linearpatternParameter->getSupportObject()->getNameInDocument()));
-            buf = buf.arg(QString::fromUtf8(direction.c_str()));
-            Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Direction = %s", name.c_str(), buf.toStdString().c_str());
+                sketch = linearpatternParameter->getSupportObject();
+
+            if (sketch) {
+                QString buf = QString::fromLatin1("(App.ActiveDocument.%1,[\"%2\"])");
+                buf = buf.arg(QString::fromLatin1(sketch->getNameInDocument()));
+                buf = buf.arg(QString::fromLatin1(direction.c_str()));
+                Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Direction = %s", name.c_str(), buf.toStdString().c_str());
+            }
         } else
             Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Direction = None", name.c_str());
         Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Reversed = %u",name.c_str(),linearpatternParameter->getReverse());

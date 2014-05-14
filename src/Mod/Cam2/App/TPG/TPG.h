@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -36,19 +37,23 @@
 #include <Base/BoundBox.h>
 
 namespace Cam {
-class TPG;
+class CamExport TPG;
 }
 //#include "../GCode.h"
 //#include "TPGCache.h"
-#include "TPGSettings.h"
 #include "ToolPath.h"
+#include "TPGSettings.h"
+#include "../Features/TPGFeature.h"
 
 namespace Cam
 {
 
-class TPGFeature;
-class TPGSettings;
+class CamExport TPGFeature;
+//class CamExport TPGSettings;
 //class TPG;
+#ifdef ERROR
+	#undef ERROR	// This macro name is included in Windows standard header files so it doesn't compile on Windows builds.
+#endif
 
 class CamExport TPG : public Base::BaseClass
 {
@@ -70,23 +75,8 @@ public:
       PLUGIN_PROCESS,
       PLUGIN_PYTHON
     };
-    static QString stateToStr(State state) {
-    	if (state == RUNNING)
-			return QString::fromAscii("Running");
-    	else if (state == STARTED)
-    		return QString::fromAscii("Started");
-    	else if (state == ERROR)
-    		return QString::fromAscii("Error");
-    	else if (state == FINISHED)
-    		return QString::fromAscii("Finished");
-    	else if (state == INITIALISED)
-    		return QString::fromAscii("Initialised");
-		else if (state == UNDEFINED)
-    		return QString::fromAscii("Undefined");
-    	else if (state == LOADED)
-    		return QString::fromAscii("Loaded");
-		return QString::fromAscii("Undefined");
-    }
+
+    static QString stateToStr(State state);
 
     /**
      * Default Constructor
@@ -98,8 +88,10 @@ public:
      */
     TPG(const QString &TPGId, const QString &TPGName, const QString &TPGDescription);
 
-    virtual void initialise(TPGFeature *feat);
-    virtual void initialiseSettings();
+    virtual void initialise(TPGFeature *tpgFeature);
+
+	QString settingName_Geometry() const;	// Used by all TPG objects.
+	QString settingName_Tool() const;
 
     // TPG API methods.  Used by the CAM workbench to run the TPG
 
@@ -113,19 +105,24 @@ public:
     /**
      * Get the settings for a given action
      */
-    virtual TPGSettings *getSettings(QString &action);
+	virtual Settings::TPGSettings *getSettingDefinitions();
+
+	/**
+	 * Allow each TPG to be notied when one of the settings changes.
+	 */
+	virtual void onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value);
 
     /**
      * Run the TPG to generate the ToolPath code.
      *
      * Note: the return will change once the TP Language has been set in store
      */
-    virtual void run(TPGSettings *settings, QString action);
+	virtual void run(Settings::TPGSettings *settings, ToolPath *toolpath, QString action);
 
-    /**
-     * Returns the toolpath from the last run
-     */
-    virtual ToolPath *getToolPath() = 0;
+//    /**
+//     * Returns the toolpath from the last run
+//     */
+//    virtual ToolPath *getToolPath() = 0;
 
     virtual QString getId() { return id; }
     virtual QString getName() { return name; }
@@ -191,7 +188,7 @@ protected:
     const Base::BoundBox3d & setOutputBBox(const Base::BoundBox3d bbox) { outputBBox = bbox; }
 
     std::vector<QString> actions;
-    std::map<QString, Cam::TPGSettings* > settings;
+    std::map<QString, Cam::Settings::TPGSettings* > settings;
     TPGCache    *cache;
     State        state;
     */
@@ -209,12 +206,17 @@ protected:
     QString description;
 
     std::vector<QString> actions; ///< e.g ['action','action2',...]
-    std::map<QString, TPGSettings*> settings; ///< e.g. settings[<action>]
+//    std::map<QString, TPGSettings*> settings; ///< e.g. settings[<action>] // Action has been moved into TPGSettings object
+    Settings::TPGSettings* settings; ///< the setting definitions for this TPG
+
+	// Declare some pointers to individual settings definitions for ease of use.
+	Settings::ObjectNamesForType *geometry;
+	Settings::SingleObjectNameForType *tool;
 
     int refcnt; ///< reference counter
 
-private:
-//    TPGFeature  *tpgFeat; //Subclasses shouldn't need to know about this
+public:
+	TPGFeature *tpgFeature;	// Pointer to parent.
 
 //    // Storage of TPG Bounding Boxes
 //    Base::BoundBox3d inputBBox;

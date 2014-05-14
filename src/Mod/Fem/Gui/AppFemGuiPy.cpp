@@ -26,9 +26,56 @@
 # include <Python.h>
 #endif
 
+#include <App/DocumentObjectPy.h>
+#include <Gui/Application.h>
+#include <Gui/Document.h>
+#include <Gui/ViewProviderDocumentObject.h>
+
+#include <Mod/Fem/App/FemAnalysis.h>
+#include "ActiveAnalysisObserver.h"
+
+
+/* module functions */
+static PyObject * setActiveAnalysis(PyObject *self, PyObject *args)
+{
+    if (FemGui::ActiveAnalysisObserver::instance()->hasActiveObject()) {
+        FemGui::ActiveAnalysisObserver::instance()->highlightActiveObject(Gui::Blue,false);
+        FemGui::ActiveAnalysisObserver::instance()->setActiveObject(0);
+    }
+
+    PyObject *object=0;
+    if (PyArg_ParseTuple(args,"|O!",&(App::DocumentObjectPy::Type), &object)&& object) {
+        App::DocumentObject* obj = static_cast<App::DocumentObjectPy*>(object)->getDocumentObjectPtr();
+        if (!obj || !obj->getTypeId().isDerivedFrom(Fem::FemAnalysis::getClassTypeId())){
+            PyErr_SetString(PyExc_Exception, "Active Analysis object have to be of type Fem::FemAnalysis!");
+            return 0;
+        }
+
+        // get the gui document of the Analysis Item
+        FemGui::ActiveAnalysisObserver::instance()->setActiveObject(static_cast<Fem::FemAnalysis*>(obj));
+        FemGui::ActiveAnalysisObserver::instance()->highlightActiveObject(Gui::Blue,true);
+    }
+
+    Py_Return;
+}
+
+/* module functions */
+static PyObject * getActiveAnalysis(PyObject *self, PyObject *args)
+{
+    if (FemGui::ActiveAnalysisObserver::instance()->hasActiveObject()) {
+        return FemGui::ActiveAnalysisObserver::instance()->getActiveObject()->getPyObject();
+    }
+
+    Py_Return;
+}
+
 
 
 /* registration table  */
 struct PyMethodDef FemGui_Import_methods[] = {
+    {"setActiveAnalysis"       ,setActiveAnalysis      ,METH_VARARGS,
+     "setActiveAnalysis(AnalysisObject) -- Set the Analysis object in work."},
+    {"getActiveAnalysis"       ,getActiveAnalysis      ,METH_VARARGS,
+     "getActiveAnalysis() -- Returns the Analysis object in work."},
     {NULL, NULL}                   /* end of table marker */
 };

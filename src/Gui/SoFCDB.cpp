@@ -47,6 +47,7 @@
 
 #include "propertyeditor/PropertyItem.h"
 #include "NavigationStyle.h"
+#include "Flag.h"
 
 using namespace Gui;
 using namespace Gui::Inventor;
@@ -112,7 +113,6 @@ void Gui::SoFCDB::init()
     PropertyAngleItem               ::init();
     PropertyBoolItem                ::init();
     PropertyVectorItem              ::init();
-    PropertyDoubleVectorItem        ::init();
     PropertyMatrixItem              ::init();
     PropertyPlacementItem           ::init();
     PropertyEnumItem                ::init();
@@ -130,8 +130,12 @@ void Gui::SoFCDB::init()
     BlenderNavigationStyle          ::init();
     TouchpadNavigationStyle         ::init();
 
+    GLGraphicsItem                  ::init();
+    GLFlagWindow                    ::init();
+
     qRegisterMetaType<Base::Vector3f>("Base::Vector3f");
     qRegisterMetaType<Base::Vector3d>("Base::Vector3d");
+    qRegisterMetaType<Base::Quantity>("Base::Quantity");
     init_done = TRUE;
 }
 

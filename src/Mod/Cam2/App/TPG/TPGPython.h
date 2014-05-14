@@ -25,6 +25,7 @@
 #define CAM_TPGPYTHON_H
 
 #include "TPG.h"
+#include "ToolPath.h"
 
 extern void Message(const char*);
 
@@ -51,21 +52,21 @@ public:
     virtual std::vector<QString> &getActions();
 
     /**
-     * Get the settings for a given action
+     * Get the settings for the TPG
      */
-    virtual TPGSettings *getSettings(QString &action);
+	virtual Settings::TPGSettings *getSettingDefinitions();
 
     /**
      * Run the TPG to generate the ToolPath code.
      *
      * Note: the return will change once the TP Language has been set in store
      */
-    virtual void run(TPGSettings *settings, QString);
+    virtual void run(Settings::TPGSettings *settings, ToolPath *toolpath, QString action);
 
-    /**
-     * Returns the toolpath from the last
-     */
-    virtual ToolPath *getToolPath();
+//    /**
+//     * Returns the toolpath from the last
+//     */
+//    virtual ToolPath *getToolPath();
 
     virtual QString getId();
     virtual QString getName();
@@ -77,6 +78,10 @@ protected:
 
     QString PythonUCToQString(PyObject *obj);
     PyObject *QStringToPythonUC(const QString &str);
+
+	PyObject *QStringListToPythonUCList(const QStringList &string_list);
+	QStringList PythonUCListToQStringList(PyObject *obj);
+
 
     /**
      * Creates an instance of cls and stores it in inst if it doesn't exist

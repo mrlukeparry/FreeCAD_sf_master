@@ -24,6 +24,7 @@
 #ifndef GUI_MANUALALIGNMENT_H
 #define GUI_MANUALALIGNMENT_H
 
+#include <QPointer>
 #include <Base/Placement.h>
 #include <Base/Vector3D.h>
 #include <Gui/Application.h>
@@ -214,7 +215,7 @@ protected:
     /** @name Probe picking */
     //@{
     static void probePickedCallback(void * ud, SoEventCallback * n);
-    void applyPickedProbe(Gui::ViewProviderDocumentObject*, const SoPickedPoint* pnt);
+    bool applyPickedProbe(Gui::ViewProviderDocumentObject*, const SoPickedPoint* pnt);
     //@}
 
 protected Q_SLOTS:

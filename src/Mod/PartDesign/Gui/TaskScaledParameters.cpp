@@ -30,6 +30,7 @@
 #include "ui_TaskScaledParameters.h"
 #include "TaskScaledParameters.h"
 #include "TaskMultiTransformParameters.h"
+#include <Base/UnitsApi.h>
 #include <App/Application.h>
 #include <App/Document.h>
 #include <Gui/Application.h>
@@ -113,6 +114,7 @@ void TaskScaledParameters::setupUI()
 
     ui->spinFactor->setEnabled(true);
     ui->spinOccurrences->setEnabled(true);
+    ui->spinFactor->setDecimals(Base::UnitsApi::getDecimals());
 
     updateUI();
 }
@@ -147,7 +149,6 @@ void TaskScaledParameters::onFactor(const double f) {
         return;
     PartDesign::Scaled* pcScaled = static_cast<PartDesign::Scaled*>(getObject());
     pcScaled->Factor.setValue(f);
-    updateUI();
     recomputeFeature();
 }
 
@@ -156,7 +157,6 @@ void TaskScaledParameters::onOccurrences(const int n) {
         return;
     PartDesign::Scaled* pcScaled = static_cast<PartDesign::Scaled*>(getObject());
     pcScaled->Occurrences.setValue(n);
-    updateUI();
     recomputeFeature();
 }
 

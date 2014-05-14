@@ -49,6 +49,11 @@ namespace Py {
 class List;
 }
 
+namespace Base {
+  class Polygon2D;
+  class ViewProjMethod;
+}
+
 namespace MeshCore {
 class AbstractPolygonTriangulator;
 }
@@ -124,6 +129,7 @@ public:
     double getVolume() const;
     void getFaces(std::vector<Base::Vector3d> &Points,std::vector<Facet> &Topo,
         float Accuracy, uint16_t flags=0) const;
+    std::vector<unsigned long> getPointsFromFacets(const std::vector<unsigned long>& facets) const;
     //@}
 
     void setKernel(const MeshCore::MeshKernel& m);
@@ -143,7 +149,8 @@ public:
     void Restore(Base::XMLReader &reader);
     void RestoreDocFile(Base::Reader &reader);
     void save(const char* file,MeshCore::MeshIO::Format f=MeshCore::MeshIO::Undefined,
-        const MeshCore::Material* mat = 0) const;
+        const MeshCore::Material* mat = 0,
+        const char* objectname = 0) const;
     void save(std::ostream&) const;
     bool load(const char* file, MeshCore::Material* mat = 0);
     void load(std::istream&);
@@ -199,8 +206,8 @@ public:
     Base::Vector3d getPointNormal(unsigned long) const;
     void crossSections(const std::vector<TPlane>&, std::vector<TPolylines> &sections,
                        float fMinEps = 1.0e-2f, bool bConnectPolygons = false) const;
-    void cut(const std::vector<Base::Vector3f>& polygon, CutType);
-    void trim(const std::vector<Base::Vector3f>& polygon, CutType);
+    void cut(const Base::Polygon2D& polygon, const Base::ViewProjMethod& proj, CutType);
+    void trim(const Base::Polygon2D& polygon, const Base::ViewProjMethod& proj, CutType);
     //@}
 
     /** @name Selection */
@@ -211,6 +218,8 @@ public:
     void addPointsToSelection(const std::vector<unsigned long>&) const;
     void removeFacetsFromSelection(const std::vector<unsigned long>&) const;
     void removePointsFromSelection(const std::vector<unsigned long>&) const;
+    bool hasSelectedFacets() const;
+    bool hasSelectedPoints() const;
     void getFacetsFromSelection(std::vector<unsigned long>&) const;
     void getPointsFromSelection(std::vector<unsigned long>&) const;
     void clearFacetSelection() const;

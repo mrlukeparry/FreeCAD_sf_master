@@ -22,8 +22,12 @@
 
 #ifndef CAM_SUPPORT_H_
 #define CAM_SUPPORT_H_
-#include <qstring.h>
+#include <QString>
 #include <Python.h>
+
+#ifdef WIN32
+	#include <windows.h>	// For the Sleep() prototype
+#endif // WIN32
 
 /**
  * Convert a QString to a Python Object
@@ -47,6 +51,15 @@ inline const char* ts(QString *str)
   if (str != NULL)
     return str->toAscii().constData();
   return "NULL";
+}
+
+inline void sleepSec(int seconds)
+{
+#ifdef WIN32
+	Sleep(seconds * 1000);
+#else
+	sleep(seconds);
+#endif
 }
 
 #endif /* SUPPORT_H_ */

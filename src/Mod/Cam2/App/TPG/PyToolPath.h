@@ -36,4 +36,12 @@ typedef struct  {
     Cam::ToolPath *tp;
 } cam_PyToolPath;
 
+
+extern PyTypeObject *PyToolPath_Type();
+
+/**
+ * Wrapper function to create new instances of PyToolPath objects from c++
+ */
+extern PyObject* PyToolPath_New(Cam::ToolPath *tp);
+
 #endif /* PYTOOLPATH_H_ */

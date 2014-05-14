@@ -140,9 +140,9 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     Gui::MenuItem* stdviews = new Gui::MenuItem;
     stdviews->setCommand("Standard views");
     *stdviews << "Std_ViewFitAll" << "Std_ViewFitSelection" << "Std_ViewAxo"
-              << "Separator" << "Std_ViewFront" << "Std_ViewRight"
-              << "Std_ViewTop" << "Separator" << "Std_ViewRear"
-              << "Std_ViewLeft" << "Std_ViewBottom";
+              << "Separator" << "Std_ViewFront" << "Std_ViewTop"
+              << "Std_ViewRight" << "Separator" << "Std_ViewRear"
+              << "Std_ViewBottom" << "Std_ViewLeft";
 
     // stereo
     Gui::MenuItem* view3d = new Gui::MenuItem;
@@ -209,7 +209,6 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     mesh->setCommand("&Meshes");
     *mesh << "Mesh_Import"
           << "Mesh_Export"
-          << "Mesh_FromGeometry"
           << "MeshPart_Mesher"
           << "Separator"
           << analyze
@@ -242,7 +241,9 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     geom->setCommand("Sketcher geometries");
     *geom << "Sketcher_CreatePoint"
           << "Sketcher_CreateArc"
+          << "Sketcher_Create3PointArc"
           << "Sketcher_CreateCircle"
+          << "Sketcher_Create3PointCircle"
           << "Sketcher_CreateLine"
           << "Sketcher_CreatePolyline"
           << "Sketcher_CreateRectangle"
@@ -457,7 +458,7 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
           << "Separator"
           << "Std_Refresh"
           << "Separator"
-          //<< "Std_Workbench"
+          << "Std_Workbench"
           << "Std_WhatsThis";
 
     // Macro
@@ -470,8 +471,8 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     Gui::ToolBarItem* view = new Gui::ToolBarItem( root );
     view->setCommand("View");
     *view << "Std_ViewFitAll" << "Separator" << "Std_ViewAxo" << "Separator" << "Std_ViewFront"
-          << "Std_ViewRight" << "Std_ViewTop" << "Separator" << "Std_ViewRear" << "Std_ViewLeft"
-          << "Std_ViewBottom" << "Separator" << "Std_MeasureDistance";
+          << "Std_ViewTop" << "Std_ViewRight" << "Separator" << "Std_ViewRear" << "Std_ViewBottom"
+          << "Std_ViewLeft" << "Separator" << "Std_MeasureDistance";
 
     // Part Design
     Gui::ToolBarItem* part_design = new Gui::ToolBarItem( root );
@@ -503,8 +504,8 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
           << "Sketcher_LeaveSketch"
           << "Separator"
           << "Sketcher_CreatePoint"
-          << "Sketcher_CreateArc"
-          << "Sketcher_CreateCircle"
+          << "Sketcher_CompCreateArc"
+          << "Sketcher_CompCreateCircle"
           << "Sketcher_CreateLine"
           << "Sketcher_CreatePolyline"
           << "Sketcher_CreateRectangle"

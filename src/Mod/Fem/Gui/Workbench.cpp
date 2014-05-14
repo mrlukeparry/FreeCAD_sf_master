@@ -56,13 +56,20 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     Gui::ToolBarItem* fem = new Gui::ToolBarItem(root);
     fem->setCommand("FEM");
      *fem << "Fem_CreateFromShape"
-          << "Fem_CreateAnalysis"
-          << "Fem_CreateNodesSet"
-          << "Fem_ConstraintFixed"
-          << "Fem_ConstraintForce"
-          << "Fem_ConstraintBearing"
-          << "Fem_ConstraintGear"   
-          << "Fem_ConstraintPulley";
+         << "Separator"
+		 << "Fem_MechanicalMaterial"
+		 << "Fem_NewMechanicalAnalysis"
+		 << "Fem_MechanicalJobControl"
+         << "Separator"
+         << "Fem_CreateNodesSet"
+         << "Separator"
+	     << "Fem_ConstraintFixed"
+         << "Fem_ConstraintForce"
+         << "Fem_ConstraintBearing"
+         << "Fem_ConstraintGear"   
+         << "Fem_ConstraintPulley"
+         << "Separator"
+         << "Fem_ShowResult";
     return root;
 }
 
@@ -74,13 +81,21 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     root->insertItem(item, fem);
     fem->setCommand("&FEM");
     *fem << "Fem_CreateFromShape"
-         << "Fem_CreateAnalysis"
+         << "Separator"
+		 << "Fem_MechanicalMaterial"
+		 << "Fem_NewMechanicalAnalysis"
+		 << "Fem_MechanicalJobControl"
+         << "Separator"
          << "Fem_CreateNodesSet"
+         << "Separator"
 	     << "Fem_ConstraintFixed"
          << "Fem_ConstraintForce"
          << "Fem_ConstraintBearing"
          << "Fem_ConstraintGear"   
-         << "Fem_ConstraintPulley";
+         << "Fem_ConstraintPulley"
+         << "Separator"
+         << "Fem_ShowResult"
+         ;
 
     return root;
 }

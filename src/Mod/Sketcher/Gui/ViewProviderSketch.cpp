@@ -51,7 +51,7 @@
 # include <Inventor/nodes/SoTranslation.h>
 # include <Inventor/nodes/SoText2.h>
 # include <Inventor/nodes/SoFont.h>
-# include <Inventor/sensors/SoIdleSensor.h>
+# include <Inventor/nodes/SoPickStyle.h>
 # include <Inventor/nodes/SoCamera.h>
 
 /// Qt Include Files
@@ -80,6 +80,7 @@
 #include <Gui/Document.h>
 #include <Gui/Command.h>
 #include <Gui/Control.h>
+#include <Gui/GLPainter.h>
 #include <Gui/Selection.h>
 #include <Gui/Utilities.h>
 #include <Gui/MainWindow.h>
@@ -87,6 +88,7 @@
 #include <Gui/View3DInventor.h>
 #include <Gui/View3DInventorViewer.h>
 #include <Gui/DlgEditFileIncludeProptertyExternal.h>
+#include <Gui/SoFCBoundingBox.h>
 #include <Gui/SoFCUnifiedSelection.h>
 
 #include <Mod/Part/App/Geometry.h>
@@ -119,14 +121,17 @@ SbColor ViewProviderSketch::SelectColor           (0.11f,0.68f,0.11f);  // #1CAD
 SbTime  ViewProviderSketch::prvClickTime;
 SbVec3f ViewProviderSketch::prvClickPoint;
 SbVec2s ViewProviderSketch::prvCursorPos;
+SbVec2s ViewProviderSketch::newCursorPos;
 
 //**************************************************************************
 // Edit data structure
 
-/// Data structure while edit the sketch
+/// Data structure while editing the sketch
 struct EditData {
     EditData():
     sketchHandler(0),
+    editDatumDialog(false),
+    buttonPress(false),
     DragPoint(-1),
     DragCurve(-1),
     DragConstraint(-1),
@@ -143,11 +148,13 @@ struct EditData {
     PointsCoordinate(0),
     CurvesCoordinate(0),
     CurveSet(0), EditCurveSet(0), RootCrossSet(0),
-    PointSet(0)
+    PointSet(0), pickStyleAxes(0)
     {}
 
     // pointer to the active handler for new sketch objects
     DrawSketchHandler *sketchHandler;
+    bool editDatumDialog;
+    bool buttonPress;
 
     // dragged point
     int DragPoint;
@@ -163,6 +170,7 @@ struct EditData {
     int PreselectConstraint;
     bool blockedPreselection;
     bool FullyConstrained;
+    bool visibleBeforeEdit;
 
     // instance of the solver
     Sketcher::Sketch ActSketch;
@@ -194,6 +202,7 @@ struct EditData {
     SoTranslation *textPos;
 
     SoGroup       *constrGroup;
+    SoPickStyle   *pickStyleAxes;
 };
 
 
@@ -237,6 +246,23 @@ ViewProviderSketch::ViewProviderSketch()
     xInit=0;
     yInit=0;
     relative=false;
+
+    unsigned long color;
+    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+
+    // edge color
+    App::Color edgeColor = LineColor.getValue();
+    color = (unsigned long)(edgeColor.getPackedValue());
+    color = hGrp->GetUnsigned("SketchEdgeColor", color);
+    edgeColor.setPackedValue((uint32_t)color);
+    LineColor.setValue(edgeColor);
+
+    // vertex color
+    App::Color vertexColor = PointColor.getValue();
+    color = (unsigned long)(vertexColor.getPackedValue());
+    color = hGrp->GetUnsigned("SketchVertexColor", color);
+    vertexColor.setPackedValue((uint32_t)color);
+    PointColor.setValue(vertexColor);
 }
 
 ViewProviderSketch::~ViewProviderSketch()
@@ -254,15 +280,21 @@ void ViewProviderSketch::activateHandler(DrawSketchHandler *newHandler)
     edit->sketchHandler->activated(this);
 }
 
-/// removes the active handler
-void ViewProviderSketch::purgeHandler(void)
+void ViewProviderSketch::deactivateHandler()
 {
     assert(edit);
     assert(edit->sketchHandler != 0);
+    edit->sketchHandler->deactivated(this);
     edit->sketchHandler->unsetCursor();
     delete(edit->sketchHandler);
     edit->sketchHandler = 0;
     Mode = STATUS_NONE;
+}
+
+/// removes the active handler
+void ViewProviderSketch::purgeHandler(void)
+{
+    deactivateHandler();
 
     // ensure that we are in sketch only selection mode
     Gui::MDIView *mdi = Gui::Application::Instance->activeDocument()->getActiveView();
@@ -271,6 +303,15 @@ void ViewProviderSketch::purgeHandler(void)
 
     SoNode* root = viewer->getSceneGraph();
     static_cast<Gui::SoFCUnifiedSelection*>(root)->selectionRole.setValue(FALSE);
+}
+
+void ViewProviderSketch::setAxisPickStyle(bool on)
+{
+    assert(edit);
+    if (on)
+        edit->pickStyleAxes->style = SoPickStyle::SHAPE;
+    else
+        edit->pickStyleAxes->style = SoPickStyle::UNPICKABLE;
 }
 
 // **********************************************************************************
@@ -286,6 +327,45 @@ bool ViewProviderSketch::keyPressed(bool pressed, int key)
                 if (!pressed)
                     edit->sketchHandler->quit();
                 return true;
+            }
+            if (edit && edit->editDatumDialog) {
+                edit->editDatumDialog = false;
+                return true;
+            }
+            if (edit && edit->DragConstraint >= 0) {
+                if (!pressed) {
+                    edit->DragConstraint = -1;
+                }
+                return true;
+            }
+            if (edit && edit->DragCurve >= 0) {
+                if (!pressed) {
+                    getSketchObject()->movePoint(edit->DragCurve, Sketcher::none, Base::Vector3d(0,0,0), true);
+                    edit->DragCurve = -1;
+                    resetPositionText();
+                    Mode = STATUS_NONE;
+                }
+                return true;
+            }
+            if (edit && edit->DragPoint >= 0) {
+                if (!pressed) {
+                    int GeoId;
+                    Sketcher::PointPos PosId;
+                    getSketchObject()->getGeoVertexIndex(edit->DragPoint, GeoId, PosId);
+                    getSketchObject()->movePoint(GeoId, PosId, Base::Vector3d(0,0,0), true);
+                    edit->DragPoint = -1;
+                    resetPositionText();
+                    Mode = STATUS_NONE;
+                }
+                return true;
+            }
+            if (edit) {
+                // #0001479: 'Escape' key dismissing dialog cancels Sketch editing
+                // If we receive a button release event but not a press event before
+                // then ignore this one.
+                if (!pressed && !edit->buttonPress)
+                    return true;
+                edit->buttonPress = pressed;
             }
             return false;
         }
@@ -456,6 +536,7 @@ bool ViewProviderSketch::mouseButtonPressed(int Button, bool pressed, const SbVe
                         prvClickTime = SbTime::getTimeOfDay();
                         prvClickPoint = point;
                         prvCursorPos = cursorPos;
+                        newCursorPos = cursorPos;
                         if (!done)
                             Mode = STATUS_SKETCH_StartRubberBand;
                     }
@@ -475,7 +556,7 @@ bool ViewProviderSketch::mouseButtonPressed(int Button, bool pressed, const SbVe
                         //Base::Console().Log("Select Point:%d\n",this->DragPoint);
                         // Do selection
                         std::stringstream ss;
-                        ss << "Vertex" << edit->PreselectPoint;
+                        ss << "Vertex" << edit->PreselectPoint + 1;
 
                         if (Gui::Selection().isSelected(getSketchObject()->getDocument()->getName()
                            ,getSketchObject()->getNameInDocument(),ss.str().c_str()) ) {
@@ -500,9 +581,9 @@ bool ViewProviderSketch::mouseButtonPressed(int Button, bool pressed, const SbVe
                         //Base::Console().Log("Select Point:%d\n",this->DragPoint);
                         std::stringstream ss;
                         if (edit->PreselectCurve >= 0)
-                            ss << "Edge" << edit->PreselectCurve;
+                            ss << "Edge" << edit->PreselectCurve + 1;
                         else // external geometry
-                            ss << "ExternalEdge" << -edit->PreselectCurve - 3;
+                            ss << "ExternalEdge" << -edit->PreselectCurve - 2;
 
                         // If edge already selected move from selection
                         if (Gui::Selection().isSelected(getSketchObject()->getDocument()->getName()
@@ -558,7 +639,7 @@ bool ViewProviderSketch::mouseButtonPressed(int Button, bool pressed, const SbVe
                     if (pp) {
 
                         std::stringstream ss;
-                        ss << "Constraint" << edit->PreselectConstraint;
+                        ss << "Constraint" << edit->PreselectConstraint + 1;
 
                         // If the constraint already selected remove
                         if (Gui::Selection().isSelected(getSketchObject()->getDocument()->getName()
@@ -676,7 +757,9 @@ bool ViewProviderSketch::mouseButtonPressed(int Button, bool pressed, const SbVe
                             geom->setCommand("Sketcher geoms");
                             *geom << "Sketcher_CreatePoint"
                                   << "Sketcher_CreateArc"
+                                  << "Sketcher_Create3PointArc"
                                   << "Sketcher_CreateCircle"
+                                  << "Sketcher_Create3PointCircle"
                                   << "Sketcher_CreateLine"
                                   << "Sketcher_CreatePolyline"
                                   << "Sketcher_CreateRectangle"
@@ -732,8 +815,8 @@ bool ViewProviderSketch::mouseButtonPressed(int Button, bool pressed, const SbVe
                                     // If the object selected is of type edge
                                     if (it->size() > 4 && it->substr(0,4) == "Edge") {
                                         // Get the index of the object selected
-                                        int index=std::atoi(it->substr(4,4000).c_str());
-                                        if (edit->PreselectCurve == index)
+                                        int GeoId = std::atoi(it->substr(4,4000).c_str()) - 1;
+                                        if (edit->PreselectCurve == GeoId)
                                             rightClickOnSelectedLine = true;
                                     } else {
                                         // The selection is not exclusively edges
@@ -792,9 +875,10 @@ void ViewProviderSketch::editDoubleClicked(void)
             Constr->Type == Sketcher::DistanceX || Constr->Type == Sketcher::DistanceY ||
             Constr->Type == Sketcher::Radius || Constr->Type == Sketcher::Angle) {
 
+            // Coin's SoIdleSensor causes problems on some platform while Qt seems to work properly (#0001517)
             EditDatumDialog * editDatumDialog = new EditDatumDialog(this, edit->PreselectConstraint);
-            SoIdleSensor* sensor = new SoIdleSensor(EditDatumDialog::run, editDatumDialog);
-            sensor->schedule();
+            QCoreApplication::postEvent(editDatumDialog, new QEvent(QEvent::User));
+            edit->editDatumDialog = true; // avoid to double handle "ESC"
         }
     }
 }
@@ -929,12 +1013,24 @@ bool ViewProviderSketch::mouseMove(const SbVec2s &cursorPos, Gui::View3DInventor
             return true;
         }
         case STATUS_SKETCH_UseRubberBand: {
-            // a redraw is required in order to clear any previous rubberband
-            draw(true);
-            viewer->drawRect(prvCursorPos.getValue()[0],
-                             viewer->getGLWidget()->height() - prvCursorPos.getValue()[1],
-                             cursorPos.getValue()[0],
-                             viewer->getGLWidget()->height() - cursorPos.getValue()[1]);
+            Gui::GLPainter p;
+            p.begin(viewer);
+            p.setColor(1.0, 1.0, 0.0, 0.0);
+            p.setLogicOp(GL_XOR);
+            p.setLineWidth(3.0f);
+            p.setLineStipple(2, 0x3F3F);
+            // first redraw the old rectangle with XOR to restore the correct colors
+            p.drawRect(prvCursorPos.getValue()[0],
+                       viewer->getGLWidget()->height() - prvCursorPos.getValue()[1],
+                       newCursorPos.getValue()[0],
+                       viewer->getGLWidget()->height() - newCursorPos.getValue()[1]);
+            newCursorPos = cursorPos;
+            // now draw the new rectangle
+            p.drawRect(prvCursorPos.getValue()[0],
+                       viewer->getGLWidget()->height() - prvCursorPos.getValue()[1],
+                       newCursorPos.getValue()[0],
+                       viewer->getGLWidget()->height() - newCursorPos.getValue()[1]);
+            p.end();
             return true;
         }
         default:
@@ -1172,18 +1268,19 @@ void ViewProviderSketch::onSelectionChanged(const Gui::SelectionChanges& msg)
                     if (msg.pSubName) {
                         std::string shapetype(msg.pSubName);
                         if (shapetype.size() > 4 && shapetype.substr(0,4) == "Edge") {
-                            int index=std::atoi(&shapetype[4]);
-                            edit->SelCurvSet.insert(index);
+                            int GeoId = std::atoi(&shapetype[4]) - 1;
+                            edit->SelCurvSet.insert(GeoId);
                             this->updateColor();
                         }
                         else if (shapetype.size() > 12 && shapetype.substr(0,12) == "ExternalEdge") {
-                            int index=std::atoi(&shapetype[12]);
-                            edit->SelCurvSet.insert(-index-3);
+                            int GeoId = std::atoi(&shapetype[12]) - 1;
+                            GeoId = -GeoId - 3;
+                            edit->SelCurvSet.insert(GeoId);
                             this->updateColor();
                         }
                         else if (shapetype.size() > 6 && shapetype.substr(0,6) == "Vertex") {
-                            int index=std::atoi(&shapetype[6]);
-                            addSelectPoint(index);
+                            int VtId = std::atoi(&shapetype[6]) - 1;
+                            addSelectPoint(VtId);
                             this->updateColor();
                         }
                         else if (shapetype == "RootPoint") {
@@ -1199,8 +1296,8 @@ void ViewProviderSketch::onSelectionChanged(const Gui::SelectionChanges& msg)
                             this->updateColor();
                         }
                         else if (shapetype.size() > 10 && shapetype.substr(0,10) == "Constraint") {
-                            int index=std::atoi(&shapetype[10]);
-                            edit->SelConstraintSet.insert(index);
+                            int ConstrId = std::atoi(&shapetype[10]) - 1;
+                            edit->SelConstraintSet.insert(ConstrId);
                             this->drawConstraintIcons();
                             this->updateColor();
                         }
@@ -1216,18 +1313,19 @@ void ViewProviderSketch::onSelectionChanged(const Gui::SelectionChanges& msg)
                     if (msg.pSubName) {
                         std::string shapetype(msg.pSubName);
                         if (shapetype.size() > 4 && shapetype.substr(0,4) == "Edge") {
-                            int index=std::atoi(&shapetype[4]);
-                            edit->SelCurvSet.erase(index);
+                            int GeoId = std::atoi(&shapetype[4]) - 1;
+                            edit->SelCurvSet.erase(GeoId);
                             this->updateColor();
                         }
                         else if (shapetype.size() > 12 && shapetype.substr(0,12) == "ExternalEdge") {
-                            int index=std::atoi(&shapetype[12]);
-                            edit->SelCurvSet.erase(-index-3);
+                            int GeoId = std::atoi(&shapetype[12]) - 1;
+                            GeoId = -GeoId - 3;
+                            edit->SelCurvSet.erase(GeoId);
                             this->updateColor();
                         }
                         else if (shapetype.size() > 6 && shapetype.substr(0,6) == "Vertex") {
-                            int index=std::atoi(&shapetype[6]);
-                            removeSelectPoint(index);
+                            int VtId = std::atoi(&shapetype[6]) - 1;
+                            removeSelectPoint(VtId);
                             this->updateColor();
                         }
                         else if (shapetype == "RootPoint") {
@@ -1243,8 +1341,8 @@ void ViewProviderSketch::onSelectionChanged(const Gui::SelectionChanges& msg)
                             this->updateColor();
                         }
                         else if (shapetype.size() > 10 && shapetype.substr(0,10) == "Constraint") {
-                            int index=std::atoi(&shapetype[10]);
-                            edit->SelConstraintSet.erase(index);
+                            int ConstrId = std::atoi(&shapetype[10]) - 1;
+                            edit->SelConstraintSet.erase(ConstrId);
                             this->drawConstraintIcons();
                             this->updateColor();
                         }
@@ -1328,7 +1426,7 @@ bool ViewProviderSketch::detectPreselection(const SoPickedPoint *Point, int &PtI
 
         if (PtIndex != -1 && PtIndex != edit->PreselectPoint) { // if a new point is hit
             std::stringstream ss;
-            ss << "Vertex" << PtIndex;
+            ss << "Vertex" << PtIndex + 1;
             bool accepted =
             Gui::Selection().setPreselect(getSketchObject()->getDocument()->getName()
                                          ,getSketchObject()->getNameInDocument()
@@ -1349,9 +1447,9 @@ bool ViewProviderSketch::detectPreselection(const SoPickedPoint *Point, int &PtI
         } else if (GeoIndex != -1 && GeoIndex != edit->PreselectCurve) {  // if a new curve is hit
             std::stringstream ss;
             if (GeoIndex >= 0)
-                ss << "Edge" << GeoIndex;
+                ss << "Edge" << GeoIndex + 1;
             else // external geometry
-                ss << "ExternalEdge" << -GeoIndex - 3; // convert index start from -3 to 0
+                ss << "ExternalEdge" << -GeoIndex - 2; // convert index start from -3 to 1
             bool accepted =
             Gui::Selection().setPreselect(getSketchObject()->getDocument()->getName()
                                          ,getSketchObject()->getNameInDocument()
@@ -1398,7 +1496,7 @@ bool ViewProviderSketch::detectPreselection(const SoPickedPoint *Point, int &PtI
             }
         } else if (ConstrIndex != -1 && ConstrIndex != edit->PreselectConstraint) { // if a constraint is hit
             std::stringstream ss;
-            ss << "Constraint" << ConstrIndex;
+            ss << "Constraint" << ConstrIndex + 1;
             bool accepted =
             Gui::Selection().setPreselect(getSketchObject()->getDocument()->getName()
                                          ,getSketchObject()->getNameInDocument()
@@ -1494,7 +1592,7 @@ void ViewProviderSketch::doBoxSelection(const SbVec2s &startPos, const SbVec2s &
 
             if (polygon.Contains(Base::Vector2D(pnt0.x, pnt0.y))) {
                 std::stringstream ss;
-                ss << "Vertex" << VertexId;
+                ss << "Vertex" << VertexId + 1;
                 Gui::Selection().addSelection(doc->getName(), sketchObject->getNameInDocument(), ss.str().c_str());
             }
 
@@ -1511,19 +1609,19 @@ void ViewProviderSketch::doBoxSelection(const SbVec2s &startPos, const SbVec2s &
             bool pnt2Inside = polygon.Contains(Base::Vector2D(pnt2.x, pnt2.y));
             if (pnt1Inside) {
                 std::stringstream ss;
-                ss << "Vertex" << VertexId - 1;
+                ss << "Vertex" << VertexId;
                 Gui::Selection().addSelection(doc->getName(), sketchObject->getNameInDocument(), ss.str().c_str());
             }
 
             if (pnt2Inside) {
                 std::stringstream ss;
-                ss << "Vertex" << VertexId;
+                ss << "Vertex" << VertexId + 1;
                 Gui::Selection().addSelection(doc->getName(), sketchObject->getNameInDocument(), ss.str().c_str());
             }
 
             if (pnt1Inside && pnt2Inside) {
                 std::stringstream ss;
-                ss << "Edge" << GeoId;
+                ss << "Edge" << GeoId + 1;
                 Gui::Selection().addSelection(doc->getName(), sketchObject->getNameInDocument(), ss.str().c_str());
             }
 
@@ -1538,7 +1636,7 @@ void ViewProviderSketch::doBoxSelection(const SbVec2s &startPos, const SbVec2s &
 
             if (polygon.Contains(Base::Vector2D(pnt0.x, pnt0.y))) {
                 std::stringstream ss;
-                ss << "Vertex" << VertexId;
+                ss << "Vertex" << VertexId + 1;
                 Gui::Selection().addSelection(doc->getName(), sketchObject->getNameInDocument(), ss.str().c_str());
 
                 int countSegments = 12;
@@ -1565,7 +1663,7 @@ void ViewProviderSketch::doBoxSelection(const SbVec2s &startPos, const SbVec2s &
                 if (bpolyInside) {
                     ss.clear();
                     ss.str("");
-                    ss << "Edge" << GeoId;
+                    ss << "Edge" << GeoId + 1;
                     Gui::Selection().addSelection(doc->getName(), sketchObject->getNameInDocument(),ss.str().c_str());
                 }
             }
@@ -1574,9 +1672,9 @@ void ViewProviderSketch::doBoxSelection(const SbVec2s &startPos, const SbVec2s &
             // Check if arc lies inside box selection
             const Part::GeomArcOfCircle *aoc = dynamic_cast<const Part::GeomArcOfCircle *>(*it);
 
-            pnt0 = aoc->getCenter();
-            pnt1 = aoc->getStartPoint();
-            pnt2 = aoc->getEndPoint();
+            pnt0 = aoc->getStartPoint();
+            pnt1 = aoc->getEndPoint();
+            pnt2 = aoc->getCenter();
             VertexId += 3;
 
             Plm.multVec(pnt0, pnt0);
@@ -1586,27 +1684,27 @@ void ViewProviderSketch::doBoxSelection(const SbVec2s &startPos, const SbVec2s &
             pnt1 = proj(pnt1);
             pnt2 = proj(pnt2);
 
-            if (polygon.Contains(Base::Vector2D(pnt0.x, pnt0.y))) {
+            bool pnt0Inside = polygon.Contains(Base::Vector2D(pnt0.x, pnt0.y));
+            if (pnt0Inside) {
                 std::stringstream ss;
-                ss << "Vertex" << VertexId - 2;
+                ss << "Vertex" << VertexId - 1;
                 Gui::Selection().addSelection(doc->getName(), sketchObject->getNameInDocument(), ss.str().c_str());
             }
 
             bool pnt1Inside = polygon.Contains(Base::Vector2D(pnt1.x, pnt1.y));
             if (pnt1Inside) {
                 std::stringstream ss;
-                ss << "Vertex" << VertexId - 1;
-                Gui::Selection().addSelection(doc->getName(), sketchObject->getNameInDocument(), ss.str().c_str());
-            }
-
-            bool pnt2Inside = polygon.Contains(Base::Vector2D(pnt2.x, pnt2.y));
-            if (pnt2Inside) {
-                std::stringstream ss;
                 ss << "Vertex" << VertexId;
                 Gui::Selection().addSelection(doc->getName(), sketchObject->getNameInDocument(), ss.str().c_str());
             }
 
-            if (pnt1Inside && pnt2Inside) {
+            if (polygon.Contains(Base::Vector2D(pnt2.x, pnt2.y))) {
+                std::stringstream ss;
+                ss << "Vertex" << VertexId + 1;
+                Gui::Selection().addSelection(doc->getName(), sketchObject->getNameInDocument(), ss.str().c_str());
+            }
+
+            if (pnt0Inside && pnt1Inside) {
                 double startangle, endangle;
                 aoc->getRange(startangle, endangle);
                 if (startangle > endangle) // if arc is reversed
@@ -1636,7 +1734,7 @@ void ViewProviderSketch::doBoxSelection(const SbVec2s &startPos, const SbVec2s &
 
                 if (bpolyInside) {
                     std::stringstream ss;
-                    ss << "Edge" << GeoId;
+                    ss << "Edge" << GeoId + 1;
                     Gui::Selection().addSelection(doc->getName(), sketchObject->getNameInDocument(), ss.str().c_str());
                 }
             }
@@ -1721,41 +1819,52 @@ void ViewProviderSketch::updateColor(void)
         SoSeparator *s = dynamic_cast<SoSeparator *>(edit->constrGroup->getChild(i));
 
         // Check Constraint Type
-        ConstraintType type = getSketchObject()->Constraints.getValues()[i]->Type;
+        Sketcher::Constraint* constraint = getSketchObject()->Constraints.getValues()[i];
+        ConstraintType type = constraint->Type;
         bool hasDatumLabel  = (type == Sketcher::Angle ||
                                type == Sketcher::Radius ||
                                type == Sketcher::Symmetric ||
                                type == Sketcher::Distance ||
-                               type == Sketcher::DistanceX || type == Sketcher::DistanceY);
+                               type == Sketcher::DistanceX ||
+                               type == Sketcher::DistanceY);
 
-        // Non DatumLabel Nodes will have a material excluding coincident 
+        // Non DatumLabel Nodes will have a material excluding coincident
         bool hasMaterial = false;
 
         SoMaterial *m;
         if (!hasDatumLabel && type != Sketcher::Coincident) {
-          hasMaterial = true;
-          m = dynamic_cast<SoMaterial *>(s->getChild(0));
+            hasMaterial = true;
+            m = dynamic_cast<SoMaterial *>(s->getChild(0));
         }
 
         if (edit->SelConstraintSet.find(i) != edit->SelConstraintSet.end()) {
             if (hasDatumLabel) {
                 SoDatumLabel *l = dynamic_cast<SoDatumLabel *>(s->getChild(0));
                 l->textColor = SelectColor;
-            } else if (hasMaterial) 
-              m->diffuseColor = SelectColor;
+            } else if (hasMaterial) {
+                m->diffuseColor = SelectColor;
+            } else if (type == Sketcher::Coincident) {
+                int index;
+                index = edit->ActSketch.getPointId(constraint->First, constraint->FirstPos) + 1;
+                if (index >= 0 && index < PtNum) pcolor[index] = SelectColor;
+                index = edit->ActSketch.getPointId(constraint->Second, constraint->SecondPos) + 1;
+                if (index >= 0 && index < PtNum) pcolor[index] = SelectColor;
+            }
         } else if (edit->PreselectConstraint == i) {
             if (hasDatumLabel) {
                 SoDatumLabel *l = dynamic_cast<SoDatumLabel *>(s->getChild(0));
                 l->textColor = PreselectColor;
-            } else if (hasMaterial)
-              m->diffuseColor = PreselectColor;
+            } else if (hasMaterial) {
+                m->diffuseColor = PreselectColor;
+            }
         }
         else {
             if (hasDatumLabel) {
                 SoDatumLabel *l = dynamic_cast<SoDatumLabel *>(s->getChild(0));
                 l->textColor = ConstrDimColor;
-            } else if (hasMaterial)
-              m->diffuseColor = ConstrDimColor;
+            } else if (hasMaterial) {
+                m->diffuseColor = ConstrDimColor;
+            }
         }
     }
 
@@ -2012,9 +2121,9 @@ void ViewProviderSketch::draw(bool temp)
 
             Index.push_back(countSegments+1);
             edit->CurvIdToGeoId.push_back(GeoId);
-            Points.push_back(center);
             Points.push_back(start);
             Points.push_back(end);
+            Points.push_back(center);
         }
         else if ((*it)->getTypeId() == Part::GeomBSplineCurve::getClassTypeId()) { // add a bspline
             const Part::GeomBSplineCurve *spline = dynamic_cast<const Part::GeomBSplineCurve *>(*it);
@@ -2364,9 +2473,9 @@ Restart:
                     if ((Constr->Type == DistanceX || Constr->Type == DistanceY) &&
                         Constr->FirstPos != Sketcher::none && Constr->Second == Constraint::GeoUndef)
                         // display negative sign for absolute coordinates
-                        asciiText->string = SbString().sprintf("%.2f",Constr->Value);
+                        asciiText->string = SbString(Base::Quantity(Constr->Value,Base::Unit::Length).getUserString().toUtf8().constData());
                     else // hide negative sign
-                        asciiText->string = SbString().sprintf("%.2f",std::abs(Constr->Value));
+                        asciiText->string = SbString(Base::Quantity(std::abs(Constr->Value),Base::Unit::Length).getUserString().toUtf8().constData());
 
                     if (Constr->Type == Distance)
                         asciiText->datumtype = SoDatumLabel::DISTANCE;
@@ -2582,7 +2691,7 @@ Restart:
                         break;
 
                     SoDatumLabel *asciiText = dynamic_cast<SoDatumLabel *>(sep->getChild(0));
-                    asciiText->string    = SbString().sprintf("%.2f",Base::toDegrees<double>(std::abs(Constr->Value)));
+                    asciiText->string    = SbString(Base::Quantity(Base::toDegrees<double>(std::abs(Constr->Value)),Base::Unit::Angle).getUserString().toUtf8().constData());
                     asciiText->datumtype = SoDatumLabel::ANGLE;
                     asciiText->param1    = Constr->LabelDistance;
                     asciiText->param2    = startangle;
@@ -2629,7 +2738,8 @@ Restart:
                     SbVec3f p2(pnt2.x,pnt2.y,zConstr);
 
                     SoDatumLabel *asciiText = dynamic_cast<SoDatumLabel *>(sep->getChild(0));
-                    asciiText->string       = SbString().sprintf("%.2f",Constr->Value);
+                    asciiText->string = SbString(Base::Quantity(Constr->Value,Base::Unit::Length).getUserString().toUtf8().constData());
+
                     asciiText->datumtype    = SoDatumLabel::RADIUS;
                     asciiText->param1       = Constr->LabelDistance;
                     asciiText->param2       = Constr->LabelPosition;
@@ -2669,6 +2779,9 @@ void ViewProviderSketch::rebuildConstraintsVisual(void)
     edit->constrGroup->removeAllChildren();
     edit->vConstrType.clear();
 
+    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+    int fontSize = hGrp->GetInt("EditSketcherFontSize", 17);
+
     for (std::vector<Sketcher::Constraint *>::const_iterator it=constrlist.begin(); it != constrlist.end(); ++it) {
         // root separator for one constraint
         SoSeparator *sep = new SoSeparator();
@@ -2680,6 +2793,16 @@ void ViewProviderSketch::rebuildConstraintsVisual(void)
         SoMaterial *mat = new SoMaterial;
         mat->ref();
         mat->diffuseColor = ConstrDimColor;
+        // Get sketch normal
+        Base::Vector3d RN(0,0,1);
+
+        // move to position of Sketch
+        Base::Placement Plz = getSketchObject()->Placement.getValue();
+        Base::Rotation tmp(Plz.getRotation());
+        tmp.multVec(RN,RN);
+        Plz.setRotation(tmp);
+
+        SbVec3f norm(RN.x, RN.y, RN.z);
 
         // distinguish different constraint types to build up
         switch ((*it)->Type) {
@@ -2688,85 +2811,89 @@ void ViewProviderSketch::rebuildConstraintsVisual(void)
             case DistanceY:
             case Radius:
             case Angle:
-                {
-                    SoDatumLabel *text = new SoDatumLabel();
-                    text->string = "";
-                    text->textColor = ConstrDimColor;
-                    SoAnnotation *anno = new SoAnnotation();
-                    anno->renderCaching = SoSeparator::OFF;
-                    anno->addChild(text);
-                    sep->addChild(text);
-                    edit->constrGroup->addChild(anno);
-                    edit->vConstrType.push_back((*it)->Type);
-                    // nodes not needed
-                    sep->unref();
-                    mat->unref();
-                    continue; // jump to next constraint
-                }
-                break;
+            {
+                SoDatumLabel *text = new SoDatumLabel();
+                text->norm.setValue(norm);
+                text->string = "";
+                text->textColor = ConstrDimColor;
+                text->size.setValue(fontSize);
+                text->useAntialiasing = false;
+                SoAnnotation *anno = new SoAnnotation();
+                anno->renderCaching = SoSeparator::OFF;
+                anno->addChild(text);
+                sep->addChild(text);
+                edit->constrGroup->addChild(anno);
+                edit->vConstrType.push_back((*it)->Type);
+                // nodes not needed
+                sep->unref();
+                mat->unref();
+                continue; // jump to next constraint
+            }
+            break;
             case Horizontal:
             case Vertical:
-                {
-                    sep->addChild(mat);
-                    sep->addChild(new SoZoomTranslation()); // 1.
-                    sep->addChild(new SoImage());       // 2. constraint icon
+            {
+                sep->addChild(mat);
+                sep->addChild(new SoZoomTranslation()); // 1.
+                sep->addChild(new SoImage());       // 2. constraint icon
 
-                    // remember the type of this constraint node
-                    edit->vConstrType.push_back((*it)->Type);
-                }
-                break;
+                // remember the type of this constraint node
+                edit->vConstrType.push_back((*it)->Type);
+            }
+            break;
             case Coincident: // no visual for coincident so far
                 edit->vConstrType.push_back(Coincident);
                 break;
             case Parallel:
             case Perpendicular:
             case Equal:
-                {
-                    // Add new nodes to Constraint Seperator
-                    sep->addChild(mat);
-                    sep->addChild(new SoZoomTranslation()); // 1.
-                    sep->addChild(new SoImage());           // 2. first constraint icon
-                    sep->addChild(new SoZoomTranslation()); // 3.
-                    sep->addChild(new SoImage());           // 4. second constraint icon
+            {
+                // Add new nodes to Constraint Seperator
+                sep->addChild(mat);
+                sep->addChild(new SoZoomTranslation()); // 1.
+                sep->addChild(new SoImage());           // 2. first constraint icon
+                sep->addChild(new SoZoomTranslation()); // 3.
+                sep->addChild(new SoImage());           // 4. second constraint icon
 
-                    // remember the type of this constraint node
-                    edit->vConstrType.push_back((*it)->Type);
-                }
-                break;
+                // remember the type of this constraint node
+                edit->vConstrType.push_back((*it)->Type);
+            }
+            break;
             case PointOnObject:
             case Tangent:
-                {
-                    // Add new nodes to Constraint Seperator
-                    sep->addChild(mat);
-                    sep->addChild(new SoZoomTranslation()); // 1.
-                    sep->addChild(new SoImage());           // 2. constraint icon
+            {
+                // Add new nodes to Constraint Seperator
+                sep->addChild(mat);
+                sep->addChild(new SoZoomTranslation()); // 1.
+                sep->addChild(new SoImage());           // 2. constraint icon
 
-                    if ((*it)->Type == Tangent) {
-                        const Part::Geometry *geo1 = getSketchObject()->getGeometry((*it)->First);
-                        const Part::Geometry *geo2 = getSketchObject()->getGeometry((*it)->Second);
-                        if (geo1->getTypeId() == Part::GeomLineSegment::getClassTypeId() &&
-                            geo2->getTypeId() == Part::GeomLineSegment::getClassTypeId()) {
-                            sep->addChild(new SoZoomTranslation());
-                            sep->addChild(new SoImage());   // 3. second constraint icon
+                if ((*it)->Type == Tangent) {
+                    const Part::Geometry *geo1 = getSketchObject()->getGeometry((*it)->First);
+                    const Part::Geometry *geo2 = getSketchObject()->getGeometry((*it)->Second);
+                    if (geo1->getTypeId() == Part::GeomLineSegment::getClassTypeId() &&
+                        geo2->getTypeId() == Part::GeomLineSegment::getClassTypeId()) {
+                        sep->addChild(new SoZoomTranslation());
+                    sep->addChild(new SoImage());   // 3. second constraint icon
                         }
-                    }
-
-                    edit->vConstrType.push_back((*it)->Type);
                 }
-                break;
+
+                edit->vConstrType.push_back((*it)->Type);
+            }
+            break;
             case Symmetric:
-                {
-                    SoDatumLabel *arrows = new SoDatumLabel();
-                    arrows->string = "";
-                    arrows->textColor = ConstrDimColor;
+            {
+                SoDatumLabel *arrows = new SoDatumLabel();
+                arrows->norm.setValue(norm);
+                arrows->string = "";
+                arrows->textColor = ConstrDimColor;
 
-                    sep->addChild(arrows);              // 0.
-                    sep->addChild(new SoTranslation()); // 1.
-                    sep->addChild(new SoImage());       // 2. constraint icon
+                sep->addChild(arrows);              // 0.
+                sep->addChild(new SoTranslation()); // 1.
+                sep->addChild(new SoImage());       // 2. constraint icon
 
-                    edit->vConstrType.push_back((*it)->Type);
-                }
-                break;
+                edit->vConstrType.push_back((*it)->Type);
+            }
+            break;
             default:
                 edit->vConstrType.push_back(None);
         }
@@ -2858,6 +2985,7 @@ bool ViewProviderSketch::setEdit(int ModNum)
     edit = new EditData();
 
     createEditInventorNodes();
+    edit->visibleBeforeEdit = this->isVisible();
     this->hide(); // avoid that the wires interfere with the edit lines
 
     ShowGrid.setValue(true);
@@ -2885,10 +3013,18 @@ bool ViewProviderSketch::setEdit(int ModNum)
     color = (unsigned long)(FullyConstrainedColor.getPackedValue());
     color = hGrp->GetUnsigned("FullyConstrainedColor", color);
     FullyConstrainedColor.setPackedValue((uint32_t)color, transparency);
-    // constraints dimensions, icons and external geometry colors are hard coded
-    // ConstrDimColor;
-    // ConstrIcoColor;
-    // CurveExternalColor;
+    // set the constraint dimension color
+    color = (unsigned long)(ConstrDimColor.getPackedValue());
+    color = hGrp->GetUnsigned("ConstrainedDimColor", color);
+    ConstrDimColor.setPackedValue((uint32_t)color, transparency);
+    // set the constraint color
+    color = (unsigned long)(ConstrIcoColor.getPackedValue());
+    color = hGrp->GetUnsigned("ConstrainedIcoColor", color);
+    ConstrIcoColor.setPackedValue((uint32_t)color, transparency);
+    // set the external geometry color
+    color = (unsigned long)(CurveExternalColor.getPackedValue());
+    color = hGrp->GetUnsigned("ExternalColor", color);
+    CurveExternalColor.setPackedValue((uint32_t)color, transparency);
 
     // set the highlight color
     unsigned long highlight = (unsigned long)(PreselectColor.getPackedValue());
@@ -3003,81 +3139,110 @@ void ViewProviderSketch::createEditInventorNodes(void)
     assert(edit);
 
     edit->EditRoot = new SoSeparator;
+    edit->EditRoot->setName("Sketch_EditRoot");
     pcRoot->addChild(edit->EditRoot);
     edit->EditRoot->renderCaching = SoSeparator::OFF ;
 
     // stuff for the points ++++++++++++++++++++++++++++++++++++++
+    SoSeparator* pointsRoot = new SoSeparator;
+    edit->EditRoot->addChild(pointsRoot);
     edit->PointsMaterials = new SoMaterial;
-    edit->EditRoot->addChild(edit->PointsMaterials);
+    edit->PointsMaterials->setName("PointsMaterials");
+    pointsRoot->addChild(edit->PointsMaterials);
 
     SoMaterialBinding *MtlBind = new SoMaterialBinding;
+    MtlBind->setName("PointsMaterialBinding");
     MtlBind->value = SoMaterialBinding::PER_VERTEX;
-    edit->EditRoot->addChild(MtlBind);
+    pointsRoot->addChild(MtlBind);
 
     edit->PointsCoordinate = new SoCoordinate3;
-    edit->EditRoot->addChild(edit->PointsCoordinate);
+    edit->PointsCoordinate->setName("PointsCoordinate");
+    pointsRoot->addChild(edit->PointsCoordinate);
 
     SoDrawStyle *DrawStyle = new SoDrawStyle;
+    DrawStyle->setName("PointsDrawStyle");
     DrawStyle->pointSize = 8;
-    edit->EditRoot->addChild(DrawStyle);
+    pointsRoot->addChild(DrawStyle);
+
     edit->PointSet = new SoMarkerSet;
+    edit->PointSet->setName("PointSet");
     edit->PointSet->markerIndex = SoMarkerSet::CIRCLE_FILLED_7_7;
-    edit->EditRoot->addChild(edit->PointSet);
+    pointsRoot->addChild(edit->PointSet);
 
     // stuff for the Curves +++++++++++++++++++++++++++++++++++++++
+    SoSeparator* curvesRoot = new SoSeparator;
+    edit->EditRoot->addChild(curvesRoot);
     edit->CurvesMaterials = new SoMaterial;
-    edit->EditRoot->addChild(edit->CurvesMaterials);
+    edit->CurvesMaterials->setName("CurvesMaterials");
+    curvesRoot->addChild(edit->CurvesMaterials);
 
     MtlBind = new SoMaterialBinding;
+    MtlBind->setName("CurvesMaterialsBinding");
     MtlBind->value = SoMaterialBinding::PER_FACE;
-    edit->EditRoot->addChild(MtlBind);
+    curvesRoot->addChild(MtlBind);
 
     edit->CurvesCoordinate = new SoCoordinate3;
-    edit->EditRoot->addChild(edit->CurvesCoordinate);
+    edit->CurvesCoordinate->setName("CurvesCoordinate");
+    curvesRoot->addChild(edit->CurvesCoordinate);
 
     DrawStyle = new SoDrawStyle;
+    DrawStyle->setName("CurvesDrawStyle");
     DrawStyle->lineWidth = 3;
-    edit->EditRoot->addChild(DrawStyle);
+    curvesRoot->addChild(DrawStyle);
 
     edit->CurveSet = new SoLineSet;
-
-    edit->EditRoot->addChild(edit->CurveSet);
+    edit->CurveSet->setName("CurvesLineSet");
+    curvesRoot->addChild(edit->CurveSet);
 
     // stuff for the RootCross lines +++++++++++++++++++++++++++++++++++++++
+    SoGroup* crossRoot = new Gui::SoSkipBoundingGroup;
+    edit->pickStyleAxes = new SoPickStyle();
+    edit->pickStyleAxes->style = SoPickStyle::SHAPE;
+    crossRoot->addChild(edit->pickStyleAxes);
+    edit->EditRoot->addChild(crossRoot);
     MtlBind = new SoMaterialBinding;
+    MtlBind->setName("RootCrossMaterialBinding");
     MtlBind->value = SoMaterialBinding::PER_FACE;
-    edit->EditRoot->addChild(MtlBind);
+    crossRoot->addChild(MtlBind);
 
     DrawStyle = new SoDrawStyle;
+    DrawStyle->setName("RootCrossDrawStyle");
     DrawStyle->lineWidth = 2;
-    edit->EditRoot->addChild(DrawStyle);
+    crossRoot->addChild(DrawStyle);
 
     edit->RootCrossMaterials = new SoMaterial;
+    edit->RootCrossMaterials->setName("RootCrossMaterials");
     edit->RootCrossMaterials->diffuseColor.set1Value(0,CrossColorH);
     edit->RootCrossMaterials->diffuseColor.set1Value(1,CrossColorV);
-    edit->EditRoot->addChild(edit->RootCrossMaterials);
+    crossRoot->addChild(edit->RootCrossMaterials);
 
     edit->RootCrossCoordinate = new SoCoordinate3;
-    edit->EditRoot->addChild(edit->RootCrossCoordinate);
+    edit->RootCrossCoordinate->setName("RootCrossCoordinate");
+    crossRoot->addChild(edit->RootCrossCoordinate);
 
     edit->RootCrossSet = new SoLineSet;
-    edit->RootCrossSet->numVertices.set1Value(0,2);
-    edit->RootCrossSet->numVertices.set1Value(1,2);
-    edit->EditRoot->addChild(edit->RootCrossSet);
+    edit->RootCrossSet->setName("RootCrossLineSet");
+    crossRoot->addChild(edit->RootCrossSet);
 
     // stuff for the EditCurves +++++++++++++++++++++++++++++++++++++++
+    SoSeparator* editCurvesRoot = new SoSeparator;
+    edit->EditRoot->addChild(editCurvesRoot);
     edit->EditCurvesMaterials = new SoMaterial;
-    edit->EditRoot->addChild(edit->EditCurvesMaterials);
+    edit->EditCurvesMaterials->setName("EditCurvesMaterials");
+    editCurvesRoot->addChild(edit->EditCurvesMaterials);
 
     edit->EditCurvesCoordinate = new SoCoordinate3;
-    edit->EditRoot->addChild(edit->EditCurvesCoordinate);
+    edit->EditCurvesCoordinate->setName("EditCurvesCoordinate");
+    editCurvesRoot->addChild(edit->EditCurvesCoordinate);
 
     DrawStyle = new SoDrawStyle;
+    DrawStyle->setName("EditCurvesDrawStyle");
     DrawStyle->lineWidth = 3;
-    edit->EditRoot->addChild(DrawStyle);
+    editCurvesRoot->addChild(DrawStyle);
 
     edit->EditCurveSet = new SoLineSet;
-    edit->EditRoot->addChild(edit->EditCurveSet);
+    edit->EditCurveSet->setName("EditCurveLineSet");
+    editCurvesRoot->addChild(edit->EditCurveSet);
 
     ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
     float transparency;
@@ -3085,16 +3250,18 @@ void ViewProviderSketch::createEditInventorNodes(void)
     cursorTextColor.setPackedValue((uint32_t)hGrp->GetUnsigned("CursorTextColor", cursorTextColor.getPackedValue()), transparency);
 
     // stuff for the edit coordinates ++++++++++++++++++++++++++++++++++++++
-    SoMaterial *CoordTextMaterials = new SoMaterial;
-    CoordTextMaterials->diffuseColor = cursorTextColor;
-    edit->EditRoot->addChild(CoordTextMaterials);
-
     SoSeparator *Coordsep = new SoSeparator();
+    Coordsep->setName("CoordSeparator");
     // no caching for fluctuand data structures
     Coordsep->renderCaching = SoSeparator::OFF;
 
+    SoMaterial *CoordTextMaterials = new SoMaterial;
+    CoordTextMaterials->setName("CoordTextMaterials");
+    CoordTextMaterials->diffuseColor = cursorTextColor;
+    Coordsep->addChild(CoordTextMaterials);
+
     SoFont *font = new SoFont();
-    font->size = 15.0;
+    font->size = 10.0;
     Coordsep->addChild(font);
 
     edit->textPos = new SoTranslation();
@@ -3104,21 +3271,23 @@ void ViewProviderSketch::createEditInventorNodes(void)
     edit->textX->justification = SoText2::LEFT;
     edit->textX->string = "";
     Coordsep->addChild(edit->textX);
-
     edit->EditRoot->addChild(Coordsep);
 
     // group node for the Constraint visual +++++++++++++++++++++++++++++++++++
     MtlBind = new SoMaterialBinding;
+    MtlBind->setName("ConstraintMaterialBinding");
     MtlBind->value = SoMaterialBinding::OVERALL ;
     edit->EditRoot->addChild(MtlBind);
 
     // use small line width for the Constraints
     DrawStyle = new SoDrawStyle;
+    DrawStyle->setName("ConstraintDrawStyle");
     DrawStyle->lineWidth = 1;
     edit->EditRoot->addChild(DrawStyle);
 
     // add the group where all the constraints has its SoSeparator
     edit->constrGroup = new SoGroup();
+    edit->constrGroup->setName("ConstraintGroup");
     edit->EditRoot->addChild(edit->constrGroup);
 }
 
@@ -3127,16 +3296,19 @@ void ViewProviderSketch::unsetEdit(int ModNum)
     ShowGrid.setValue(false);
     TightGrid.setValue(true);
 
+    if (edit->sketchHandler)
+        deactivateHandler();
+
     edit->EditRoot->removeAllChildren();
     pcRoot->removeChild(edit->EditRoot);
 
-    if (edit->sketchHandler)
-        purgeHandler();
+    if (edit->visibleBeforeEdit)
+        this->show();
+    else
+        this->hide();
 
     delete edit;
     edit = 0;
-
-    this->show();
 
     try {
         // and update the sketch
@@ -3166,10 +3338,15 @@ void ViewProviderSketch::setEditViewer(Gui::View3DInventorViewer* viewer, int Mo
     viewer->setEditing(TRUE);
     SoNode* root = viewer->getSceneGraph();
     static_cast<Gui::SoFCUnifiedSelection*>(root)->selectionRole.setValue(FALSE);
+    antiAliasing = (int)viewer->getAntiAliasingMode();
+    if (antiAliasing != Gui::View3DInventorViewer::None)
+        viewer->setAntiAliasingMode(Gui::View3DInventorViewer::None);
 }
 
 void ViewProviderSketch::unsetEditViewer(Gui::View3DInventorViewer* viewer)
 {
+    if (antiAliasing != Gui::View3DInventorViewer::None)
+        viewer->setAntiAliasingMode(Gui::View3DInventorViewer::AntiAliasing(antiAliasing));
     viewer->setEditing(FALSE);
     SoNode* root = viewer->getSceneGraph();
     static_cast<Gui::SoFCUnifiedSelection*>(root)->selectionRole.setValue(TRUE);
@@ -3180,7 +3357,7 @@ void ViewProviderSketch::setPositionText(const Base::Vector2D &Pos, const SbStri
     edit->textX->string = text;
     edit->textPos->translation = SbVec3f(Pos.fX,Pos.fY,zText);
 }
-  
+
 void ViewProviderSketch::setPositionText(const Base::Vector2D &Pos)
 {
     SbString text;
@@ -3321,6 +3498,8 @@ bool ViewProviderSketch::onDelete(const std::vector<std::string> &subList)
 {
     if (edit) {
         std::vector<Gui::SelectionObject> selection = Gui::Selection().getSelectionEx();
+        if (selection.empty())
+            return false;
         const std::vector<std::string> &SubNames = selection[0].getSubNames();
 
         Gui::Selection().clearSelection();
@@ -3333,14 +3512,14 @@ bool ViewProviderSketch::onDelete(const std::vector<std::string> &subList)
         // go through the selected subelements
         for (std::vector<std::string>::const_iterator it=SubNames.begin(); it != SubNames.end(); ++it) {
             if (it->size() > 4 && it->substr(0,4) == "Edge") {
-                int GeoId = std::atoi(it->substr(4,4000).c_str());
+                int GeoId = std::atoi(it->substr(4,4000).c_str()) - 1;
                 delGeometries.insert(GeoId);
             } else if (it->size() > 12 && it->substr(0,12) == "ExternalEdge") {
-                int GeoId = std::atoi(it->substr(12,4000).c_str());
+                int GeoId = std::atoi(it->substr(12,4000).c_str()) - 1;
                 GeoId = -GeoId - 3;
                 delGeometries.insert(GeoId);
             } else if (it->size() > 6 && it->substr(0,6) == "Vertex") {
-                int VtId = std::atoi(it->substr(6,4000).c_str());
+                int VtId = std::atoi(it->substr(6,4000).c_str()) - 1;
                 int GeoId;
                 Sketcher::PointPos PosId;
                 getSketchObject()->getGeoVertexIndex(VtId, GeoId, PosId);
@@ -3352,7 +3531,7 @@ bool ViewProviderSketch::onDelete(const std::vector<std::string> &subList)
             } else if (*it == "RootPoint") {
                 delCoincidents.insert(-1);
             } else if (it->size() > 10 && it->substr(0,10) == "Constraint") {
-                int ConstrId = std::atoi(it->substr(10,4000).c_str());
+                int ConstrId = std::atoi(it->substr(10,4000).c_str()) - 1;
                 delConstraints.insert(ConstrId);
             }
         }

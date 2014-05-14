@@ -30,6 +30,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <boost/dynamic_bitset.hpp>
 #include <boost/filesystem/path.hpp>
 
 #include <Base/Uuid.h>
@@ -182,6 +183,9 @@ public:
 
     virtual void Save (Base::Writer &writer) const;
     virtual void Restore(Base::XMLReader &reader);
+
+    virtual Property *Copy(void) const;
+    virtual void Paste(const Property &from);
 
 private:
     bool _CustomEnum;
@@ -369,7 +373,7 @@ public:
     
     /** Sets the property 
      */
-    void setValue(void){};
+    void setValue(void){}
     void setValue(const std::string& key,const std::string& value);
     void setValues(const std::map<std::string,std::string>&);
     
@@ -424,8 +428,8 @@ public:
     virtual ~PropertyFloat();
 
 
-    void setValue(float lValue);
-    float getValue(void) const;
+    void setValue(double lValue);
+    double getValue(void) const;
     
     virtual const char* getEditorName(void) const { return "Gui::PropertyEditor::PropertyFloatItem"; }
     
@@ -438,10 +442,10 @@ public:
     virtual Property *Copy(void) const;
     virtual void Paste(const Property &from);
     
-    virtual unsigned int getMemSize (void) const{return sizeof(float);}
+    virtual unsigned int getMemSize (void) const{return sizeof(double);}
     
 protected:
-    float _dValue;
+    double _dValue;
 };
 
 /** Constraint float properties
@@ -472,7 +476,7 @@ public:
     //@{
     /// the boundary struct
     struct Constraints {
-        float LowerBound, UpperBound, StepSize;
+        double LowerBound, UpperBound, StepSize;
     };
     /** setting the boundaries
      * This sets the constraint struct. It can be dynamcly 
@@ -519,16 +523,18 @@ public:
 
     /** Sets the property 
      */
-    void setValue(float);
+    void setValue(double);
+
+    void setValue (void){}
     
     /// index operator
-    float operator[] (const int idx) const {return _lValueList.operator[] (idx);} 
+    double operator[] (const int idx) const {return _lValueList.operator[] (idx);} 
     
     
-    void set1Value (const int idx, float value){_lValueList.operator[] (idx) = value;}
-    void setValues (const std::vector<float>& values);
+    void set1Value (const int idx, double value){_lValueList.operator[] (idx) = value;}
+    void setValues (const std::vector<double>& values);
     
-    const std::vector<float> &getValues(void) const{return _lValueList;}
+    const std::vector<double> &getValues(void) const{return _lValueList;}
     
     virtual PyObject *getPyObject(void);
     virtual void setPyObject(PyObject *);
@@ -544,7 +550,7 @@ public:
     virtual unsigned int getMemSize (void) const;
 
 private:
-    std::vector<float> _lValueList;
+    std::vector<double> _lValueList;
 };
 
 
@@ -739,6 +745,44 @@ public:
     
 private:
     bool _lValue;
+};
+
+/** Bool list properties
+ * 
+ */
+class AppExport PropertyBoolList : public PropertyLists
+{
+    TYPESYSTEM_HEADER();
+
+public:
+    PropertyBoolList();
+    ~PropertyBoolList();
+
+    virtual void setSize(int newSize);
+    virtual int getSize(void) const;
+
+    /** Sets the property 
+     */
+    void setValue(bool);
+
+    /// index operator
+    void  set1Value (const int idx, bool value);
+    void setValues (const boost::dynamic_bitset<>& values);
+
+    const boost::dynamic_bitset<> &getValues(void) const{return _lValueList;}
+
+    virtual PyObject *getPyObject(void);
+    virtual void setPyObject(PyObject *);
+    
+    virtual void Save (Base::Writer &writer) const;
+    virtual void Restore(Base::XMLReader &reader);
+    
+    virtual Property *Copy(void) const;
+    virtual void Paste(const Property &from);
+    virtual unsigned int getMemSize (void) const;
+
+private:
+    boost::dynamic_bitset<> _lValueList;
 };
 
 

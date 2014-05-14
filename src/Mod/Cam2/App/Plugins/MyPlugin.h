@@ -35,7 +35,7 @@ namespace Cam
 class CamExport MyPlugin: public LibTPG
 {
 public:
-    MyPlugin() {}
+	MyPlugin() {}
     MyPlugin(TPGDescriptor *descriptor);
     ~MyPlugin();
 

@@ -5,7 +5,12 @@
 #ifndef AREA_HEADER
 #define AREA_HEADER
 
+#include <PreCompiled.h>
+
 #include "Curve.h"
+
+namespace area
+{
 
 enum PocketMode
 {
@@ -15,7 +20,7 @@ enum PocketMode
 	ZigZagThenSingleOffsetPocketMode,
 };
 
-struct CAreaPocketParams
+struct LibAreaExport CAreaPocketParams
 {
 	double tool_radius;
 	double extra_offset;
@@ -35,10 +40,10 @@ struct CAreaPocketParams
 	}
 };
 
-class CArea
+class LibAreaExport CArea
 {
 public:
-	std::list<CCurve> m_curves;
+	std::list<area::CCurve> m_curves;
 	static double m_accuracy;
 	static double m_units; // 1.0 for mm, 25.4 for inches. All points are multiplied by this before going to the engine
 	static bool m_fit_arcs;
@@ -50,7 +55,7 @@ public:
 	static bool m_set_processing_length_in_split;
 	static bool m_please_abort; // the user sets this from another thread, to tell MakeOnePocketCurve to finish with no result.
 
-	void append(const CCurve& curve);
+	void append(const area::CCurve& curve);
 	void Subtract(const CArea& a2);
 	void Intersect(const CArea& a2);
 	void Union(const CArea& a2);
@@ -60,9 +65,9 @@ public:
 	Point NearestPoint(const Point& p)const;
 	void GetBox(CBox &box);
 	void Reorder();
-	void MakePocketToolpath(std::list<CCurve> &toolpath, const CAreaPocketParams &params)const;
-	void SplitAndMakePocketToolpath(std::list<CCurve> &toolpath, const CAreaPocketParams &params)const;
-	void MakeOnePocketCurve(std::list<CCurve> &curve_list, const CAreaPocketParams &params)const;
+	void MakePocketToolpath(std::list<area::CCurve> &toolpath, const CAreaPocketParams &params)const;
+	void SplitAndMakePocketToolpath(std::list<area::CCurve> &toolpath, const CAreaPocketParams &params)const;
+	void MakeOnePocketCurve(std::list<area::CCurve> &curve_list, const CAreaPocketParams &params)const;
 	static bool HolesLinked();
 	void Split(std::list<CArea> &m_areas)const;
 	double GetArea(bool always_add = false)const;
@@ -76,9 +81,11 @@ enum eOverlapType
 	eCrossing,
 };
 
-eOverlapType GetOverlapType(const CCurve& c1, const CCurve& c2);
-eOverlapType GetOverlapType(const CArea& a1, const CArea& a2);
-bool IsInside(const Point& p, const CCurve& c);
-bool IsInside(const Point& p, const CArea& a);
+eOverlapType LibAreaExport GetOverlapType(const area::CCurve& c1, const area::CCurve& c2);
+eOverlapType LibAreaExport GetOverlapType(const CArea& a1, const CArea& a2);
+bool LibAreaExport IsInside(const Point& p, const area::CCurve& c);
+bool LibAreaExport IsInside(const Point& p, const CArea& a);
+
+} // End namespace area
 
 #endif // #define AREA_HEADER

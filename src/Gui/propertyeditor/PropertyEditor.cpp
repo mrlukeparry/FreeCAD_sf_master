@@ -89,7 +89,7 @@ void PropertyEditor::commitData (QWidget * editor)
     committing = false;
     if (delaybuild) {
         delaybuild = false;
-        propertyModel->buildUp(std::map<std::string, std::vector<App::Property*> >());
+        propertyModel->buildUp(PropertyModel::PropertyList());
     }
 }
 
@@ -126,7 +126,7 @@ void PropertyEditor::drawBranches(QPainter *painter, const QRect &rect, const QM
     //painter->setPen(savedPen);
 }
 
-void PropertyEditor::buildUp(const std::map<std::string, std::vector<App::Property*> >& props)
+void PropertyEditor::buildUp(const PropertyModel::PropertyList& props)
 {
     if (committing) {
         Base::Console().Warning("While committing the data to the property the selection has changed.\n");
@@ -136,9 +136,11 @@ void PropertyEditor::buildUp(const std::map<std::string, std::vector<App::Proper
 
     QModelIndex index = this->currentIndex();
     QStringList propertyPath = propertyModel->propertyPathFromIndex(index);
+    if (!propertyPath.isEmpty())
+        this->selectedProperty = propertyPath;
     propertyModel->buildUp(props);
-    if (!propertyPath.isEmpty()) {
-        QModelIndex index = propertyModel->propertyIndexFromPath(propertyPath);
+    if (!this->selectedProperty.isEmpty()) {
+        QModelIndex index = propertyModel->propertyIndexFromPath(this->selectedProperty);
         this->setCurrentIndex(index);
     }
 }

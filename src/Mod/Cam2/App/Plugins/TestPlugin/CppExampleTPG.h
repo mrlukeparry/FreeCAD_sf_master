@@ -25,9 +25,10 @@
 
 #include <vector>
 
-#include <TPG/TPG.h>
-#include <TPG/TPGFactory.h>
 #include <TPG/CppTPG.h>
+#include <TPG/TPGFactory.h>
+#include <TPG/TPGSettings.h>
+#include <TPG/ToolPath.h>
 
 namespace Cam {
 
@@ -47,12 +48,52 @@ public:
      *
      * Note: the return will change once the TP Language has been set in stone
      */
-    virtual void run(TPGSettings *settings, QString action);
+    virtual void run(Settings::TPGSettings *settings, ToolPath *toolpath, QString action);
 
-    /**
-     * Returns the toolpath from the last
-     */
-    virtual ToolPath *getToolPath() {return NULL;}
+//    /**
+//     * Returns the toolpath from the last
+//     */
+//    virtual ToolPath *getToolPath();
+
+	/**
+	 * Add the settings required by this ToolPath Generator.  This method
+	 * also calls the CppTPG::initialiseSettings() method so that those
+	 * associated with all TPGs (such as Geometry and Tool) are included
+	 */
+	virtual void initialise(TPGFeature *tpgFeature);
+
+	/**
+	 * Allow this object to know when one of its settings has changed.  NOTE: It's important
+	 * that, if implemented, this object also calls the CppTPG::onChanged() method so that
+	 * it, in turn, can call the TPG::onChanged() method.  These other layers of classes
+	 * might also be interested.
+	 */
+	virtual void onChanged( Settings::Definition *tpgSettingDefinition, QString previous_value, QString new_value );
+
+public:
+	Settings::Length	*depth;
+	Settings::Length	*standoff;
+	Settings::Double	*dwell;
+	Settings::Length	*peck_depth;
+	Settings::Enumeration *retract_mode;
+	Settings::Length	*clearance_height;
+	Settings::Double	*spindle_speed;
+	Settings::Rate		*feed_rate;
+	Settings::Text		*sometimes_hidden;
+	Settings::Radio		*speed;
+
+	typedef enum
+	{
+		eRapidRetract = 0,
+		eFeedRetract
+	} RetractMode_t;
+
+	// Conversion routines between RetractMode_t and QString (and vice versa)
+	friend QString & operator<< ( QString & buf, const CppExampleTPG::RetractMode_t & retract_mode );
+	RetractMode_t toRetractMode( const QString string_representation ) const;
+
+private:
+	ToolPath *toolpath;	// cache of toolpath from last call of the run() method.
 };
 
 } /* namespace Cam */

@@ -28,6 +28,7 @@
 #include <CXX/Extensions.hxx>
 
 class SoEventCallback;
+class QImage;
 
 namespace Gui {
 
@@ -57,6 +58,8 @@ public:
     Py::Object viewPosition(const Py::Tuple&);
     Py::Object viewRotateLeft(const Py::Tuple&);
     Py::Object viewRotateRight(const Py::Tuple&);
+    Py::Object zoomIn(const Py::Tuple&);
+    Py::Object zoomOut(const Py::Tuple&);
     Py::Object startAnimating(const Py::Tuple&);
     Py::Object stopAnimating(const Py::Tuple&);
     Py::Object setAnimationEnabled(const Py::Tuple&);
@@ -72,6 +75,7 @@ public:
     Py::Object getViewDirection(const Py::Tuple&);
     Py::Object setCamera(const Py::Tuple&);
     Py::Object setCameraOrientation(const Py::Tuple&);
+    Py::Object getCameraOrientation(const Py::Tuple&);
     Py::Object getCameraType(const Py::Tuple&);
     Py::Object setCameraType(const Py::Tuple&);
     Py::Object getCameraNode(const Py::Tuple&);
@@ -81,6 +85,7 @@ public:
     Py::Object getObjectsInfo(const Py::Tuple&);
     Py::Object getSize(const Py::Tuple&);
     Py::Object getPoint(const Py::Tuple&);
+    Py::Object getPointOnScreen(const Py::Tuple&);
     Py::Object addEventCallback(const Py::Tuple&);
     Py::Object removeEventCallback(const Py::Tuple&);
     Py::Object setAnnotation(const Py::Tuple&);
@@ -92,16 +97,22 @@ public:
     Py::Object listNavigationTypes(const Py::Tuple&);
     Py::Object getNavigationType(const Py::Tuple&);
     Py::Object setNavigationType(const Py::Tuple&);
+    Py::Object setAxisCross(const Py::Tuple&);
+    Py::Object hasAxisCross(const Py::Tuple&);
+    Py::Object addDraggerCallback(const Py::Tuple&);
+    Py::Object removeDraggerCallback(const Py::Tuple&);
 
 private:
     static void eventCallback(void * ud, SoEventCallback * n);
     static void eventCallbackPivy(void * ud, SoEventCallback * n);
     static void eventCallbackPivyEx(void * ud, SoEventCallback * n);
+    static void draggerCallback(void * ud, SoDragger* dragger);
 
 private:
     typedef PyObject* (*method_varargs_handler)(PyObject *_self, PyObject *_args);
     static method_varargs_handler pycxx_handler;
     static PyObject *method_varargs_ext_handler(PyObject *_self, PyObject *_args);
+    void createImageFromFramebuffer(int backgroundType, int width, int height, QImage&);
 
 private:
     std::list<PyObject*> callbacks;

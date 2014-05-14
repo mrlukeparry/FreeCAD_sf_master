@@ -1,5 +1,4 @@
 
-if (MSVC)
 add_subdirectory(App)
 if(FREECAD_BUILD_GUI)
     add_subdirectory(Gui)
@@ -11,9 +10,15 @@ INSTALL(
         Init.py
         InitGui.py
         convert2TetGen.py
+        CalculixLib.py
         FemExample.py
+        FemLib.py
+        MechanicalAnalysis.py
+        MechanicalMaterial.py
+        MechanicalMaterial.ui
+        MechanicalAnalysis.ui
+        ShowDisplacement.ui
     DESTINATION
         Mod/Fem
 )
 
-endif(MSVC)

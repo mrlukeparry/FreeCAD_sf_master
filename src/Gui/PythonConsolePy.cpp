@@ -57,6 +57,15 @@ PythonStdout::~PythonStdout()
 {
 }
 
+Py::Object PythonStdout::getattr(const char *name)
+{
+    if (strcmp(name, "softspace") == 0) {
+        int i=0;
+        return Py::Int(i);
+    }
+    return getattr_methods(name);
+}
+
 Py::Object PythonStdout::repr()
 {
     std::string s;
@@ -117,6 +126,15 @@ PythonStderr::PythonStderr(PythonConsole *pc)
 
 PythonStderr::~PythonStderr()
 {
+}
+
+Py::Object PythonStderr::getattr(const char *name)
+{
+    if (strcmp(name, "softspace") == 0) {
+        int i=0;
+        return Py::Int(i);
+    }
+    return getattr_methods(name);
 }
 
 Py::Object PythonStderr::repr()
@@ -180,6 +198,15 @@ OutputStdout::~OutputStdout()
 {
 }
 
+Py::Object OutputStdout::getattr(const char *name)
+{
+    if (strcmp(name, "softspace") == 0) {
+        int i=0;
+        return Py::Int(i);
+    }
+    return getattr_methods(name);
+}
+
 Py::Object OutputStdout::repr()
 {
     std::string s;
@@ -239,6 +266,15 @@ OutputStderr::~OutputStderr()
 {
 }
 
+Py::Object OutputStderr::getattr(const char *name)
+{
+    if (strcmp(name, "softspace") == 0) {
+        int i=0;
+        return Py::Int(i);
+    }
+    return getattr_methods(name);
+}
+
 Py::Object OutputStderr::repr()
 {
     std::string s;
@@ -292,19 +328,11 @@ void PythonStdin::init_type()
 PythonStdin::PythonStdin(PythonConsole *pc)
   : pyConsole(pc)
 {
-    editField = new PythonInputField(/*getMainWindow()*/);
-    timer = new QTimer();
-    timer->setInterval(250);
-    QObject::connect(timer, SIGNAL(timeout()),
-                     editField, SLOT(hide()));
     console = getMainWindow()->findChild<PythonConsole*>();
 }
 
 PythonStdin::~PythonStdin()
 {
-    // call deleteLater() because deleting immediately causes problems
-    editField->deleteLater();
-    timer->deleteLater();
 }
 
 Py::Object PythonStdin::repr()

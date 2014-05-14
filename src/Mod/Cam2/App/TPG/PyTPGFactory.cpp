@@ -21,7 +21,7 @@
  ***************************************************************************/
 
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -186,7 +186,7 @@ TPGDescriptorCollection* PyTPGFactoryInst::getDescriptors()
     if (descriptors->size() == 0)
         this->scanPlugins();
 
-    printf("Found %i PyTPGs\n", descriptors->size());
+    printf("Found %i PyTPGs\n", int(descriptors->size()));
 
     // copy the tpg list cache
     return descriptors->clone();

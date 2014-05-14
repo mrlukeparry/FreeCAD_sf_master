@@ -29,9 +29,84 @@
 #include "ItemList.h"
 #include "MachineProgram.h"
 
+#include <CXX/Extensions.hxx>
+
+
 namespace Cam {
 
-class PostProcessorInst {
+	/**
+	 * Python class for redirection of stdout to the MachineProgram
+	 * object.  This was copied from the App/Gui/PythonConsolePy.h file
+	 * @see PythonStderr
+	 * @see PythonConsole
+	 * @author Werner Mayer
+	 */
+	class PythonStdout : public Py::PythonExtension<PythonStdout> 
+	{
+	private:
+		MachineProgram* machine_program;
+		QString buffer;
+		QStringList::size_type toolpath_index;	// Which line of the toolpath QStringList did this machine_program code come from?
+
+	public:
+		PythonStdout(MachineProgram *machine_program)
+		{
+			this->machine_program = machine_program->grab();
+		}
+		~PythonStdout()
+		{
+			this->machine_program->release();
+		}
+
+		void ToolPathIndex(QStringList::size_type index)
+		{
+			this->toolpath_index = index;
+		}
+
+		static void init_type(void);    // announce properties and methods
+
+		Py::Object repr();
+		Py::Object write(const Py::Tuple&);
+		Py::Object flush(const Py::Tuple&);
+	};
+
+	/**
+	 * Python class for redirection of stdout to the MachineProgram
+	 * object.  This was copied from the App/Gui/PythonConolePy.h file
+	 * @see PythonStderr
+	 * @see PythonConsole
+	 * @author Werner Mayer
+	 */
+	class PythonStderr : public Py::PythonExtension<PythonStderr> 
+	{
+	private:
+		MachineProgram* machine_program;
+		QString buffer;
+		QStringList::size_type toolpath_index;	// Which line of the toolpath QStringList did this machine_program code come from?
+
+	public:
+		PythonStderr(MachineProgram *machine_program)
+		{
+			this->machine_program = machine_program->grab();
+		}
+		~PythonStderr()
+		{
+			this->machine_program->release();
+		}
+
+		void ToolPathIndex(QStringList::size_type index)
+		{
+			this->toolpath_index = index;
+		}
+
+		static void init_type(void);    // announce properties and methods
+
+		Py::Object repr();
+		Py::Object write(const Py::Tuple&);
+		Py::Object flush(const Py::Tuple&);
+	};
+
+	class PostProcessorInst {
 
 protected:
     static PostProcessorInst* _pcSingleton;
@@ -46,7 +121,6 @@ public:
 
     Cam::ItemList *getPostProcessorList(bool rescan);
     Cam::MachineProgram *postProcess(Cam::ToolPath *toolpath, Cam::Item *postprocessor);
-
 };
 
 /// Get the global instance

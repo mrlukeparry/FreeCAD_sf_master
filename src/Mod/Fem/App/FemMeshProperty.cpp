@@ -35,6 +35,7 @@
 #include <Base/Exception.h>
 #include <Base/FileInfo.h>
 #include <Base/Stream.h>
+#include <Base/PlacementPy.h>
 
 #include "FemMeshProperty.h"
 #include "FemMeshPy.h"
@@ -110,10 +111,14 @@ void PropertyFemMesh::setPyObject(PyObject *value)
         FemMeshPy *pcObject = static_cast<FemMeshPy*>(value);
         setValue(*pcObject->getFemMeshPtr());
     }
+    else if (PyObject_TypeCheck(value, &(Base::PlacementPy::Type))) {
+        Base::PlacementPy *pcObject = static_cast<Base::PlacementPy*>(value);
+        transformGeometry(pcObject->getPlacementPtr()->toMatrix());
+    }
     else {
         std::string error = std::string("type must be 'FemMesh', not ");
         error += value->ob_type->tp_name;
-        throw Py::TypeError(error);
+        throw Base::TypeError(error);
     }
 }
 
@@ -138,23 +143,12 @@ unsigned int PropertyFemMesh::getMemSize (void) const
 
 void PropertyFemMesh::Save (Base::Writer &writer) const
 {
-    if (!writer.isForceXML()) {
-        //See SaveDocFile(), RestoreDocFile()
-        writer.Stream() << writer.ind() << "<FemMesh file=\"" 
-                        << writer.addFile("FemMesh.unv", this)
-                        << "\"/>" << std::endl;
-    }
+    _FemMesh->Save(writer);
 }
 
 void PropertyFemMesh::Restore(Base::XMLReader &reader)
 {
-    reader.readElement("FemMesh");
-    std::string file (reader.getAttribute("file") );
-
-    if (!file.empty()) {
-        // initate a file read
-        reader.addFile(file.c_str(),this);
-    }
+    _FemMesh->Restore(reader);
 }
 
 void PropertyFemMesh::SaveDocFile (Base::Writer &writer) const
@@ -162,7 +156,7 @@ void PropertyFemMesh::SaveDocFile (Base::Writer &writer) const
     _FemMesh->SaveDocFile(writer);
 }
 
-void PropertyFemMesh::RestoreDocFile(Base::Reader &reader)
+void PropertyFemMesh::RestoreDocFile(Base::Reader &reader )
 {
     aboutToSetValue();
     _FemMesh->RestoreDocFile(reader);

@@ -303,9 +303,12 @@ void MeshObject::RestoreDocFile(Base::Reader &reader)
 }
 
 void MeshObject::save(const char* file, MeshCore::MeshIO::Format f,
-                      const MeshCore::Material* mat) const
+                      const MeshCore::Material* mat,
+                      const char* objectname) const
 {
     MeshCore::MeshOutput aWriter(this->_kernel, mat);
+    if (objectname)
+        aWriter.SetObjectName(objectname);
     aWriter.Transform(this->_Mtrx);
     aWriter.SaveAny(file, f);
 }
@@ -587,6 +590,23 @@ void MeshObject::getPointsFromSelection(std::vector<unsigned long>& inds) const
     MeshCore::MeshAlgorithm(this->_kernel).GetPointsFlag(inds, MeshCore::MeshPoint::SELECTED);
 }
 
+bool MeshObject::hasSelectedFacets() const
+{
+    unsigned long ct = MeshCore::MeshAlgorithm(this->_kernel).CountFacetFlag(MeshCore::MeshFacet::SELECTED);
+    return ct > 0;
+}
+
+bool MeshObject::hasSelectedPoints() const
+{
+    unsigned long ct = MeshCore::MeshAlgorithm(this->_kernel).CountPointFlag(MeshCore::MeshPoint::SELECTED);
+    return ct > 0;
+}
+
+std::vector<unsigned long> MeshObject::getPointsFromFacets(const std::vector<unsigned long>& facets) const
+{
+    return _kernel.GetFacetPoints(facets);
+}
+
 void MeshObject::updateMesh(const std::vector<unsigned long>& facets)
 {
     std::vector<unsigned long> points;
@@ -815,23 +835,9 @@ void MeshObject::crossSections(const std::vector<MeshObject::TPlane>& planes, st
     }
 }
 
-void MeshObject::cut(const std::vector<Base::Vector3f>& polygon, MeshObject::CutType type)
+void MeshObject::cut(const Base::Polygon2D& polygon2d,
+                     const Base::ViewProjMethod& proj, MeshObject::CutType type)
 {
-    MeshCore::FlatTriangulator tria;
-    tria.SetPolygon(polygon);
-    // this gives us the inverse matrix
-    Base::Matrix4D inv = tria.GetTransformToFitPlane();
-    // compute the matrix for the coordinate transformation
-    Base::Matrix4D mat = inv;
-    mat.inverseOrthogonal();
-
-    std::vector<Base::Vector3f> poly = tria.ProjectToFitPlane();
-
-    Base::ViewProjMatrix proj(mat);
-    Base::Polygon2D polygon2d;
-    for (std::vector<Base::Vector3f>::const_iterator it = poly.begin(); it != poly.end(); ++it)
-        polygon2d.Add(Base::Vector2D(it->x, it->y));
-
     MeshCore::MeshAlgorithm meshAlg(this->_kernel);
     std::vector<unsigned long> check;
 
@@ -851,22 +857,9 @@ void MeshObject::cut(const std::vector<Base::Vector3f>& polygon, MeshObject::Cut
         this->deleteFacets(check);
 }
 
-void MeshObject::trim(const std::vector<Base::Vector3f>& polygon, MeshObject::CutType type)
+void MeshObject::trim(const Base::Polygon2D& polygon2d,
+                      const Base::ViewProjMethod& proj, MeshObject::CutType type)
 {
-    MeshCore::FlatTriangulator tria;
-    tria.SetPolygon(polygon);
-    // this gives us the inverse matrix
-    Base::Matrix4D inv = tria.GetTransformToFitPlane();
-    // compute the matrix for the coordinate transformation
-    Base::Matrix4D mat = inv;
-    mat.inverseOrthogonal();
-
-    std::vector<Base::Vector3f> poly = tria.ProjectToFitPlane();
-
-    Base::ViewProjMatrix proj(mat);
-    Base::Polygon2D polygon2d;
-    for (std::vector<Base::Vector3f>::const_iterator it = poly.begin(); it != poly.end(); ++it)
-        polygon2d.Add(Base::Vector2D(it->x, it->y));
     MeshCore::MeshTrimming trim(this->_kernel, &proj, polygon2d);
     std::vector<unsigned long> check;
     std::vector<MeshCore::MeshGeomFacet> triangle;

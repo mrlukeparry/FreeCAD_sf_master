@@ -3,7 +3,6 @@ SET(Arch_SRCS
     Init.py
     InitGui.py
     ArchComponent.py
-    ArchCell.py
     ArchWall.py
     importIFC.py
     ifcReader.py
@@ -21,7 +20,13 @@ SET(Arch_SRCS
     ArchAxis.py
     ArchVRM.py
     ArchRoof.py
+    ArchStairs.py
     importWebGL.py
+    ArchSpace.py
+    ArchRebar.py
+    TestArch.py
+    ifcWriter.py
+    ArchFrame.py
 )
 SOURCE_GROUP("" FILES ${Arch_SRCS})
 

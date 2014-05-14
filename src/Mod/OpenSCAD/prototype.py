@@ -132,17 +132,16 @@ class Node:
             h = self.arguments['h']
             r1 ,r2 = self.arguments['r1'], self.arguments['r2']
             if '$fn' in self.arguments and self.arguments['$fn'] > 2 \
-            and self.arguments['$fn']<=Node.fnmin:
-                if r1 == r2:
-                    import Draft
-                    base = Draft.makePolygon(int(self.arguments['$fn']),r1)
-                    obj = doc.addObject("Part::Extrusion",'prism')
-                    obj.Base= base
-                    obj.Dir = (0,0,h)
+            and self.arguments['$fn']<=Node.fnmin: # polygonal
+                if r1 == r2: # prismatic
+                    obj = doc.addObject("Part::Prism","prism")
+                    obj.Polygon = int(self.arguments['$fn'])
+                    obj.Circumradius  = r1
+                    obj.Height  = h
                     if self.arguments['center']:
                         center(obj,0,0,h)
-                    base.ViewObject.hide()
-                elif True: #use Frustum Feature with makeRuledSurface
+                    #base.ViewObject.hide()
+                elif False: #use Frustum Feature with makeRuledSurface
                     obj=doc.addObject("Part::FeaturePython",'frustum')
                     Frustum(obj,r1,r2,int(self.arguments['$fn']),h)
                     ViewProviderTree(obj.ViewObject)
@@ -659,14 +658,18 @@ def readfile(filename):
     isopenscad = relname.lower().endswith('.scad')
     if isopenscad:
         tmpfile=callopenscad(filename)
-        lastimportpath = os.getcwd() #https://github.com/openscad/openscad/issues/128
+        if OpenSCADUtils.workaroundforissue128needed():
+            lastimportpath = os.getcwd() #https://github.com/openscad/openscad/issues/128
         f = pythonopen(tmpfile)
     else:
         f = pythonopen(filename)
     rootnode=parsenode(f.read())[0]
     f.close()
-    if isopenscad:
-        os.unlink(tmpfile)
+    if isopenscad and tmpfile:
+        try:
+            os.unlink(tmpfile)
+        except OSError:
+            pass
     return rootnode.flattengroups()
 
 def open(filename):

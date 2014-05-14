@@ -4,13 +4,19 @@ else(MSVC)
     add_definitions(-DHAVE_LIMITS_H -DHAVE_CONFIG_H)
 endif(MSVC)
 
+if(FREECAD_BUILD_FEM_NETGEN)
+    add_definitions(-DFCWithNetgen)
+endif(FREECAD_BUILD_FEM_NETGEN)
+
 
 include_directories(
+    ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_BINARY_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src/3rdParty/ANN/include
     ${Boost_INCLUDE_DIRS}
+    ${QT_INCLUDE_DIR}
     ${OCC_INCLUDE_DIR}
     ${PYTHON_INCLUDE_PATH}
     ${ZLIB_INCLUDE_DIR}
@@ -20,14 +26,23 @@ include_directories(
 
 link_directories(${OCC_LIBRARY_DIR})
 
-set(Fem_LIBS
-    Part
-    Mesh
-    FreeCADApp
-    StdMeshers
-    NETGENPlugin
-    SMESH
-)
+
+if(FREECAD_BUILD_FEM_NETGEN)
+    set(Fem_LIBS
+        Part
+        FreeCADApp
+        StdMeshers
+        NETGENPlugin
+        SMESH
+    )
+else(FREECAD_BUILD_FEM_NETGEN)
+    set(Fem_LIBS
+        Part
+        FreeCADApp
+        StdMeshers
+        SMESH
+    )
+endif(FREECAD_BUILD_FEM_NETGEN)
 
 generate_from_xml(FemMeshPy)
 
@@ -48,16 +63,33 @@ SET(Mod_SRCS
 )
 SOURCE_GROUP("Module" FILES ${Mod_SRCS})
 
+SET(FemScripts_SRCS
+    convert2TetGen.py
+    FemLib.py
+    CalculixLib.py
+    MechanicalAnalysis.ui
+    MechanicalAnalysis.py
+    MechanicalMaterial.ui
+    MechanicalMaterial.py
+    ShowDisplacement.ui
+)
+#SOURCE_GROUP("Scripts" FILES ${FemScripts_SRCS})
 
 SET(FemBase_SRCS
     FemMeshObject.cpp
     FemMeshObject.h
     FemMeshShapeObject.cpp
     FemMeshShapeObject.h
+    FemMeshShapeNetgenObject.cpp
+    FemMeshShapeNetgenObject.h
     FemAnalysis.cpp
     FemAnalysis.h
     FemMesh.cpp
     FemMesh.h
+    FemResultObject.cpp
+    FemResultObject.h
+    FemConstraint.cpp
+    FemConstraint.h
     FemMeshProperty.cpp
     FemMeshProperty.h
 	)
@@ -79,8 +111,6 @@ SET(FemSet_SRCS
 SOURCE_GROUP("Set objects" FILES ${FemSet_SRCS})
 	
 SET(FemConstraints_SRCS
-    FemConstraint.cpp
-    FemConstraint.h
     FemConstraintBearing.h
     FemConstraintBearing.cpp
     FemConstraintFixed.cpp
@@ -94,14 +124,24 @@ SET(FemConstraints_SRCS
 	)
 SOURCE_GROUP("Constraints" FILES ${FemConstraints_SRCS})
 
+SET(FemResult_SRCS
+    FemResultValue.cpp
+    FemResultValue.h
+    FemResultVector.cpp
+    FemResultVector.h
+	)
+SOURCE_GROUP("ResultObjects" FILES ${FemResult_SRCS})
+
 SET(Fem_SRCS
 	${FemBase_SRCS}
 	${FemSet_SRCS}
 	${FemConstraints_SRCS}
+	${FemResult_SRCS}
     ${Mod_SRCS}
     ${Python_SRCS}
 )
 
+FILE( GLOB Driver_Resources Driver/*.py )
 
 
 add_library(Fem SHARED ${Fem_SRCS})
@@ -111,24 +151,12 @@ target_link_libraries(Fem ${Fem_LIBS})
 fc_target_copy_resource(Fem 
     ${CMAKE_SOURCE_DIR}/src/Mod/Fem
     ${CMAKE_BINARY_DIR}/Mod/Fem
-    Init.py 
-    convert2TetGen.py
-    FemLib.py)
+	${Driver_Resources} 
+	Init.py 
+    ${FemScripts_SRCS}
+    )
 
-if(MSVC)
-    set_target_properties(Fem PROPERTIES SUFFIX ".pyd")
-    set_target_properties(Fem PROPERTIES DEBUG_OUTPUT_NAME "Fem_d")
-    set_target_properties(Fem PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Fem)
-    set_target_properties(Fem PROPERTIES PREFIX "../")
-elseif(MINGW)
-    set_target_properties(Fem PROPERTIES SUFFIX ".pyd")
-    set_target_properties(Fem PROPERTIES DEBUG_OUTPUT_NAME "Fem_d")
-    set_target_properties(Fem PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Fem)
-    set_target_properties(Fem PROPERTIES PREFIX "")
-else(MSVC)
-    set_target_properties(Fem PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Fem)
-    set_target_properties(Fem PROPERTIES PREFIX "")
-    set_target_properties(Fem PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
-endif(MSVC)
+SET_BIN_DIR(Fem Fem /Mod/Fem)
+SET_PYTHON_PREFIX_SUFFIX(Fem)
 
-INSTALL(TARGETS Fem DESTINATION lib)
+INSTALL(TARGETS Fem DESTINATION ${CMAKE_INSTALL_LIBDIR})

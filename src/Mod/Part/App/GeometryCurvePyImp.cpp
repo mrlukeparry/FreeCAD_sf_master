@@ -23,6 +23,7 @@
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
+# include <sstream>
 # include <BRepBuilderAPI_MakeEdge.hxx>
 # include <gp_Dir.hxx>
 # include <gp_Vec.hxx>
@@ -42,7 +43,10 @@
 # include <Handle_Geom_BSplineSurface.hxx>
 # include <Precision.hxx>
 # include <GeomAPI_ProjectPointOnCurve.hxx>
+# include <GeomConvert_ApproxCurve.hxx>
 # include <Standard_Failure.hxx>
+# include <Standard_NullValue.hxx>
+# include <ShapeConstruct_Curve.hxx>
 #endif
 
 #include <Base/GeometryPyCXX.h>
@@ -54,6 +58,7 @@
 #include "RectangularTrimmedSurfacePy.h"
 #include "BSplineSurfacePy.h"
 #include "PlanePy.h"
+#include "BSplineCurvePy.h"
 
 #include "TopoShape.h"
 #include "TopoShapePy.h"
@@ -337,6 +342,119 @@ PyObject* GeometryCurvePy::intersect2d(PyObject *args)
         PyErr_SetString(PyExc_Exception, e->GetMessageString());
         return 0;
     }
+}
+
+PyObject* GeometryCurvePy::toBSpline(PyObject * args)
+{
+    Handle_Geom_Geometry g = getGeometryPtr()->handle();
+    Handle_Geom_Curve c = Handle_Geom_Curve::DownCast(g);
+    try {
+        if (!c.IsNull()) {
+            double u,v;
+            u=c->FirstParameter();
+            v=c->LastParameter();
+            if (!PyArg_ParseTuple(args, "|dd", &u,&v))
+                return 0;
+            ShapeConstruct_Curve scc;
+            Handle_Geom_BSplineCurve spline = scc.ConvertToBSpline(c, u, v, Precision::Confusion());
+            if (spline.IsNull())
+                Standard_NullValue::Raise("Conversion to B-Spline failed");
+            return new BSplineCurvePy(new GeomBSplineCurve(spline));
+        }
+    }
+    catch (Standard_Failure) {
+        Handle_Standard_Failure e = Standard_Failure::Caught();
+        PyErr_SetString(PyExc_Exception, e->GetMessageString());
+        return 0;
+    }
+
+    PyErr_SetString(PyExc_Exception, "Geometry is not a curve");
+    return 0;
+}
+
+PyObject* GeometryCurvePy::approximateBSpline(PyObject *args)
+{
+    double tolerance;
+    int maxSegment, maxDegree;
+    char* order = "C2";
+    if (!PyArg_ParseTuple(args, "dii|s", &tolerance, &maxSegment, &maxDegree, &order))
+        return 0;
+
+    GeomAbs_Shape absShape;
+    std::string str = order;
+    if (str == "C0")
+        absShape = GeomAbs_C0;
+    else if (str == "G1")
+        absShape = GeomAbs_G1;
+    else if (str == "C1")
+        absShape = GeomAbs_C1;
+    else if (str == "G2")
+        absShape = GeomAbs_G2;
+    else if (str == "C2")
+        absShape = GeomAbs_C2;
+    else if (str == "C3")
+        absShape = GeomAbs_C3;
+    else if (str == "CN")
+        absShape = GeomAbs_CN;
+    else
+        absShape = GeomAbs_C2;
+
+    try {
+        Handle_Geom_Curve self = Handle_Geom_Curve::DownCast(getGeometryPtr()->handle());
+        GeomConvert_ApproxCurve approx(self, tolerance, absShape, maxSegment, maxDegree);
+        if (approx.IsDone()) {
+            return new BSplineCurvePy(new GeomBSplineCurve(approx.Curve()));
+        }
+        else if (approx.HasResult()) {
+            std::stringstream str;
+            str << "Maximum error (" << approx.MaxError() << ") is outside tolerance";
+            PyErr_SetString(PyExc_RuntimeError, str.str().c_str());
+            return 0;
+        }
+        else {
+            PyErr_SetString(PyExc_RuntimeError, "Approximation of curve failed");
+            return 0;
+        }
+    }
+    catch (Standard_Failure) {
+        Handle_Standard_Failure e = Standard_Failure::Caught();
+        PyErr_SetString(PyExc_Exception, e->GetMessageString());
+        return 0;
+    }
+}
+
+Py::String GeometryCurvePy::getContinuity(void) const
+{
+    GeomAbs_Shape c = Handle_Geom_Curve::DownCast
+        (getGeometryPtr()->handle())->Continuity();
+    std::string str;
+    switch (c) {
+    case GeomAbs_C0:
+        str = "C0";
+        break;
+    case GeomAbs_G1:
+        str = "G1";
+        break;
+    case GeomAbs_C1:
+        str = "C1";
+        break;
+    case GeomAbs_G2:
+        str = "G2";
+        break;
+    case GeomAbs_C2:
+        str = "C2";
+        break;
+    case GeomAbs_C3:
+        str = "C3";
+        break;
+    case GeomAbs_CN:
+        str = "CN";
+        break;
+    default:
+        str = "Unknown";
+        break;
+    }
+    return Py::String(str);
 }
 
 Py::Float GeometryCurvePy::getFirstParameter(void) const

@@ -26,22 +26,40 @@
 #define __PRECOMPILED_GUI__
 
 #include <FCConfig.h>
+#include <QtCore>	// For the Q_DECL_IMPORT/EXPORT macros.
 
 #undef QT_NO_CAST_FROM_ASCII
 
-// Importing of App classes
 #ifdef FC_OS_WIN32
-# define MeshExport    __declspec(dllimport)
-# define PartExport    __declspec(dllimport)
-# define PartGuiExport __declspec(dllimport)
-# define CamExport     __declspec(dllimport)
-# define CamGuiExport  __declspec(dllexport)
+	#ifdef FCAppCam
+		// We're in the 'Cam' application module so we want to export the various classes.
+		# define MeshExport    Q_DECL_IMPORT
+		# define PartExport    Q_DECL_IMPORT
+		# define PartGuiExport Q_DECL_IMPORT
+		# define CamExport     Q_DECL_EXPORT
+		# define CamGuiExport  Q_DECL_EXPORT
+		#ifdef FCLibArea
+			// We must be compiling the libArea library
+			# define LibAreaExport   Q_DECL_EXPORT
+		#else
+			# define LibAreaExport   Q_DECL_IMPORT
+		#endif // FCLibArea
+	#else
+		// We're in the Plugin or GUI modules so we want to import the various classes.
+		# define MeshExport    Q_DECL_IMPORT
+		# define PartExport    Q_DECL_IMPORT
+		# define PartGuiExport Q_DECL_IMPORT
+		# define CamExport     Q_DECL_IMPORT
+		# define CamGuiExport  Q_DECL_EXPORT
+		# define LibAreaExport   Q_DECL_IMPORT
+	#endif // FCAppCam
 #else // for Linux
-# define MeshExport
-# define PartExport
-# define PartGuiExport
-# define CamExport
-# define CamGuiExport
+	# define MeshExport
+	# define PartExport
+	# define PartGuiExport
+	# define CamExport
+	# define CamGuiExport
+	# define LibAreaExport
 #endif
 
 #ifdef _MSC_VER

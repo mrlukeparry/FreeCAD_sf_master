@@ -8,7 +8,7 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:freecad="http://sourceforge.net/apps/mediawiki/free-cad/index.php?title=Svg_Namespace"
+   xmlns:freecad="http://www.freecadweb.org/wiki/index.php?title=Svg_Namespace"
    width="420mm"
    height="297mm"
    viewBox="0 0 420 297"
@@ -18,6 +18,8 @@
    inkscape:version="0.48.1 r9760"
    sodipodi:docname="A3_Landscape.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape">
+   <!-- Working space 10 10 410 287 -->
+   <!-- Title block 220 227 410 287 -->
   <metadata
      id="metadata849">
     <rdf:RDF>

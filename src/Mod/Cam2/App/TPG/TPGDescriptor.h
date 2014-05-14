@@ -23,7 +23,12 @@
 #ifndef TPGDESCRIPTOR2_H_
 #define TPGDESCRIPTOR2_H_
 
-#include <qstring.h>
+#include <PreCompiled.h>
+
+namespace Cam {
+class CamExport TPGDescriptor;
+}
+#include <QString>
 
 #include "TPG.h"
 
@@ -33,14 +38,12 @@ namespace Cam {
  * A superclass for TPG Descriptors.  These describe the basic information
  * about a TPG and contain a method to create a new instance of this TPG.
  */
-class TPGDescriptor {
+class CamExport TPGDescriptor {
 
 protected:
     int refcnt;
 
-    virtual ~TPGDescriptor() {
-        printf("Deleted TPGDescriptor: %p\n", this);
-    }
+    virtual ~TPGDescriptor();
 
 public:
     QString id;
@@ -49,64 +52,28 @@ public:
 
     QString type; // subclasses should set this to their classname in the constructor
 
-    TPGDescriptor(QString id, QString name, QString description, QString type) {
-        this->id = id;
-        this->name = name;
-        this->description = description;
-        this->type = type;
-        refcnt = 1;
-    }
+    TPGDescriptor(QString id, QString name, QString description, QString type);
+
     /// Convenience method for using plain ascii string
-    TPGDescriptor(const char *id, const char * name, const char * description,
-            const char * type) {
-        this->id = QString::fromAscii(id);
-        this->name = QString::fromAscii(name);
-        this->description = QString::fromAscii(description);
-        this->type = QString::fromAscii(type);
-        refcnt = 1;
-    }
-    TPGDescriptor(const TPGDescriptor &copy) {
-        this->id = copy.id;
-        this->name = copy.name;
-        this->description = copy.description;
-        this->type = copy.type;
-        refcnt = 1;
-    }
-    TPGDescriptor(const TPGDescriptor *copy) {
-        this->id = copy->id;
-        this->name = copy->name;
-        this->description = copy->description;
-        this->type = copy->type;
-        refcnt = 1;
-    }
+    TPGDescriptor(const char *id, const char * name, const char * description, const char * type);
+    TPGDescriptor(const TPGDescriptor &copy);
+    TPGDescriptor(const TPGDescriptor *copy);
 
     /**
      * Increases reference count
      */
-    TPGDescriptor *grab() {
-        refcnt++;
-
-        return this;
-    }
+    TPGDescriptor *grab();
 
     /**
      * Decreases reference count and deletes self if no other references
      */
-    void release() {
-        refcnt--;
-        if (refcnt == 0)
-            delete this;
-    }
+    void release();
 
     /**
      * Creates a new instance of this TPG.  Sub-classes need to implement this
      */
     virtual Cam::TPG* make() = 0;
-    virtual void print() {
-        printf("- ('%s', '%s', '%s', '%s')\n", id.toAscii().constData(),
-                name.toAscii().constData(), description.toAscii().constData(),
-                type.toAscii().constData());
-    }
+    virtual void print();
 };
 
 } /* namespace Cam */

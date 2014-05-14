@@ -4,9 +4,14 @@
 
 #pragma once
 
+#include <PreCompiled.h>
+
 #include "Point.h"
 
-class Circle{
+namespace area
+{
+
+class LibAreaExport Circle{
 public:
 	Point m_c;
 	double m_radius;
@@ -17,3 +22,6 @@ public:
 	bool PointIsOn(const Point& p, double accuracy);
 	bool LineIsOn(const Point& p0, const Point& p1, double accuracy);
 };
+
+} // End namespace area
+

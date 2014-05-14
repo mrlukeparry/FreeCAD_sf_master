@@ -24,17 +24,18 @@
 #ifndef GUI_VIEW3DINVENTORVIEWER_H
 #define GUI_VIEW3DINVENTORVIEWER_H
 
+#include <list>
+#include <map>
 #include <set>
-#include <stack>
+#include <vector>
 
 #include <Base/Type.h>
 #include <Inventor/Qt/viewers/SoQtViewer.h>
 #include <Inventor/nodes/SoEventCallback.h>
 #include <Inventor/Qt/SoQtCursor.h>
+#include <QCursor>
 
 #include <Gui/Selection.h>
-#include <Gui/Flag.h>
-#include <QPointer>
 
 
 class SoSeparator;
@@ -45,6 +46,9 @@ class SbSphereSheetProjector;
 class SoEventCallback;
 class SbBox2s;
 class SoVectorizeAction;
+class QGLFramebufferObject;
+class QImage;
+class SoGroup;
 
 namespace Gui {
 
@@ -54,6 +58,8 @@ class NavigationStyle;
 class SoFCUnifiedSelection;
 class Document;
 class SoFCUnifiedSelection;
+class GLGraphicsItem;
+class SoShapeScale;
 
 /** The Inventor viewer
  *
@@ -74,8 +80,9 @@ public:
     enum SelectionMode {
         Lasso       = 0,  /**< Select objects using a lasso. */
         Rectangle   = 1,  /**< Select objects using a rectangle. */
-        BoxZoom     = 2,  /**< Perform a box zoom. */
-        Clip        = 3,  /**< Clip objects using a lasso. */
+        Rubberband  = 2,  /**< Select objects using a rubberband. */
+        BoxZoom     = 3,  /**< Perform a box zoom. */
+        Clip        = 4,  /**< Clip objects using a lasso. */
     };
     /** @name Modus handling of the viewer
       * Here the you can switch on/off several features
@@ -89,6 +96,22 @@ public:
         DisallowRotation=8,/**< switch of the rotation. */
         DisallowPanning=16,/**< switch of the panning. */
         DisallowZooming=32,/**< switch of the zooming. */
+    };
+    //@}
+    
+    /** @name Anti-Aliasing modes of the rendered 3D scene
+      * Here you can switch between different methods for anti aliasing wich provide quite different results
+      * at different runtime impact. 
+      * - Smoothing enables openGL line and vertex smoothing which is basicly deprecadet
+      * - MSAA is hardeware multi sampling (with 2, 4 or 8 passes), a quite commom and efficient AA technique
+      */
+    //@{
+    enum AntiAliasing {
+        None,
+        Smoothing,
+        MSAA2x,
+        MSAA4x,
+        MSAA8x
     };
     //@}
 
@@ -121,8 +144,18 @@ public:
     void setFeedbackSize(const int size);
     int getFeedbackSize(void) const;
 
+    void setRenderFramebuffer(const SbBool enable);
+    SbBool isRenderFramebuffer() const;
+    void renderToFramebuffer(QGLFramebufferObject*);
+
     virtual void setViewing(SbBool enable);
     virtual void setCursorEnabled(SbBool enable);
+
+    void addGraphicsItem(GLGraphicsItem*);
+    void removeGraphicsItem(GLGraphicsItem*);
+    std::list<GLGraphicsItem*> getGraphicsItems() const;
+    std::list<GLGraphicsItem*> getGraphicsItemsOfType(const Base::Type&) const;
+    void clearGraphicsItems();
 
     /** @name Handling of view providers */
     //@{
@@ -142,20 +175,18 @@ public:
     SbBool isEditingViewProvider() const;
     /// reset from edit mode
     void resetEditingViewProvider();
+    /// display override mode
+    void setOverrideMode(const std::string &mode);
+    void updateOverrideMode(const std::string &mode);
+    std::string getOverrideMode() {return overrideMode;}
     //@}
 
     /** @name Making pictures */
     //@{
     /**
      * Creates an image with width \a w and height \a h of the current scene graph
-     * and exports the rendered scenegraph directly to file \a filename.
-     * If \a comment is set to '$MIBA' information regarding the MIBA standard is
-     * embedded to the picture, otherwise the \a comment is embedded as is.
-     * The appropriate file format must support embedding meta information which
-     * is provided by JPEG or PNG.
+     * and exports the rendered scenegraph to an image.
      */
-    void savePicture(const char* filename, int w, int h, int eBackgroundType,
-                     const char* comment) const;
     void savePicture(int w, int h, int eBackgroundType, QImage&) const;
     void saveGraphic(int pagesize, int eBackgroundType, SoVectorizeAction* va) const;
     //@}
@@ -182,6 +213,8 @@ public:
     void setEditingCursor (const QCursor& cursor);
     void setRedirectToSceneGraph(SbBool redirect) { this->redirected = redirect; }
     SbBool isRedirectedToSceneGraph() const { return this->redirected; }
+    void setRedirectToSceneGraphEnabled(SbBool enable) { this->allowredir = enable; }
+    SbBool isRedirectToSceneGraphEnabled(void) const { return this->allowredir; }
     //@}
 
     /** @name Pick actions */
@@ -189,6 +222,7 @@ public:
     // calls a PickAction on the scene graph
     bool pickPoint(const SbVec2s& pos,SbVec3f &point,SbVec3f &norm) const;
     SoPickedPoint* pickPoint(const SbVec2s& pos) const;
+    const SoPickedPoint* getPickedPoint(SoEventCallback * n) const;
     SbBool pubSeekToPoint(const SbVec2s& pos);
     void pubSeekToPoint(const SbVec3f& pos);
     //@}
@@ -212,6 +246,8 @@ public:
     SbVec3f getViewDirection() const;
     /** Returns the up direction */
     SbVec3f getUpDirection() const;
+    /** Returns the orientation of the camera. */
+    SbRotation getCameraOrientation() const; 
     /** Returns the 3d point on the focal plane to the given 2d point. */
     SbVec3f getPointOnScreen(const SbVec2s&) const;
     /** Returns the near plane represented by its normal and base point. */
@@ -226,6 +262,32 @@ public:
     SbVec3f projectOnNearPlane(const SbVec2f&) const;
     /** Project the given normalized 2d point onto the far plane */
     SbVec3f projectOnFarPlane(const SbVec2f&) const;
+    //@}
+    
+    /** @name Dimension controls
+     * the "turn*" functions are wired up to parameter groups through view3dinventor.
+     * don't call them directly. instead set the parameter groups.
+     * @see TaskDimension
+     */
+    //@{
+    void turnAllDimensionsOn();
+    void turnAllDimensionsOff();
+    void turn3dDimensionsOn();
+    void turn3dDimensionsOff();
+    void turnDeltaDimensionsOn();
+    void turnDeltaDimensionsOff();
+    void eraseAllDimensions();
+    void addDimension3d(SoNode *node);
+    void addDimensionDelta(SoNode *node);
+    //@}
+    
+    /** @name Anti-Aliasing Control
+     * the anti-aliasing mode is controled by parameters through view3dinventor.
+     * don't call them directly. Instead set the parameter View/AntiAliasing.
+     */
+    //@{
+    void setAntiAliasingMode(AntiAliasing mode);
+    AntiAliasing getAntiAliasingMode() const;
     //@}
 
     /**
@@ -252,25 +314,27 @@ public:
      */
     void viewSelection();
 
-    /** @name Draw routines */
-    //@{
-    void drawRect (int x, int y, int w, int h);
-    void drawLine (int x1, int y1, int x2, int y2);
-    //@}
-
-    void setGradientBackgroud(bool b);
-    void setGradientBackgroudColor(const SbColor& fromColor,
-                                   const SbColor& toColor);
-    void setGradientBackgroudColor(const SbColor& fromColor,
-                                   const SbColor& toColor,
-                                   const SbColor& midColor);
+    void setGradientBackground(bool b);
+    bool hasGradientBackground() const;
+    void setGradientBackgroundColor(const SbColor& fromColor,
+                                    const SbColor& toColor);
+    void setGradientBackgroundColor(const SbColor& fromColor,
+                                    const SbColor& toColor,
+                                    const SbColor& midColor);
     void setEnabledFPSCounter(bool b);
     void setNavigationType(Base::Type);
+
+    void setAxisCross(bool b);
+    bool hasAxisCross(void);
+
     NavigationStyle* navigationStyle() const;
 
     void setDocument(Gui::Document *pcDocument);
 
 protected:
+    void renderScene();
+    void renderFramebuffer();
+    void animatedViewAll(int steps, int ms);
     virtual void actualRedraw(void);
     virtual void setSeekMode(SbBool enable);
     virtual void afterRealizeHook(void);
@@ -291,43 +355,47 @@ private:
     static void selectCB(void * closure, SoPath * p);
     static void deselectCB(void * closure, SoPath * p);
     static SoPath * pickFilterCB(void * data, const SoPickedPoint * pick);
+    void initialize();
+    void drawAxisCross(void);
+    static void drawArrow(void);
+    void setCursorRepresentation(int mode);
+
 
 private:
     std::set<ViewProvider*> _ViewProviderSet;
     std::map<SoSeparator*,ViewProvider*> _ViewProviderMap;
+    std::list<GLGraphicsItem*> graphicsItems;
     ViewProvider* editViewProvider;
     SoFCBackgroundGradient *pcBackGround;
     SoSeparator * backgroundroot;
     SoSeparator * foregroundroot;
-    SoRotationXYZ * arrowrotation;
     SoDirectionalLight* backlight;
 
     SoSeparator * pcViewProviderRoot;
     SoEventCallback* pEventCallback;
     NavigationStyle* navigation;
     SoFCUnifiedSelection* selectionRoot;
+    QGLFramebufferObject* framebuffer;
+    SoSwitch *dimensionRoot;
 
-    void initialize();
+    // small axis cross in the corner
     SbBool axiscrossEnabled;
     int axiscrossSize;
+    // big one in the middle
+    SoShapeScale* axisCross;
+    SoGroup* axisGroup;
 
-    void drawAxisCross(void);
-    static void drawArrow(void);
 
     SbBool editing;
     QCursor editCursor;
     SbBool redirected;
+    SbBool allowredir;
 
-    void setCursorRepresentation(int mode);
-
-public:
-    void addFlag(Flag*, FlagLayout::Position);
-
-private:
-    QPointer<FlagLayout> _flaglayout;
+    std::string overrideMode;
 
     // friends
     friend class NavigationStyle;
+    friend class GLPainter;
 };
 
 } // namespace Gui

@@ -435,10 +435,13 @@ void PythonDebugger::runFile(const QString& fn)
         dict = PyDict_Copy(dict);
         if (PyDict_GetItemString(dict, "__file__") == NULL) {
             PyObject *f = PyString_FromString((const char*)pxFileName);
-            if (f == NULL)
+            if (f == NULL) {
+                fclose(fp);
                 return;
+            }
             if (PyDict_SetItemString(dict, "__file__", f) < 0) {
                 Py_DECREF(f);
+                fclose(fp);
                 return;
             }
             Py_DECREF(f);
@@ -531,7 +534,7 @@ void PythonDebugger::showDebugMarker(const QString& fn, int line)
 
     if (!edit) {
         PythonEditor* editor = new PythonEditor();
-        editor->setWindowIcon(Gui::BitmapFactory().pixmap("python_small"));
+        editor->setWindowIcon(Gui::BitmapFactory().pixmap("applications-python"));
         edit = new PythonEditorView(editor, getMainWindow());
         edit->open(fn);
         edit->resize(400, 300);

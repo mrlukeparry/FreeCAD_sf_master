@@ -28,6 +28,7 @@
 
 #include "InputVector.h"
 #include "ui_InputVector.h"
+#include <Base/UnitsApi.h>
 
 using namespace Gui;
 
@@ -62,6 +63,10 @@ LocationWidget::LocationWidget (QWidget * parent)
     dValue->setCurrentIndex(-1);
     box->addWidget(dLabel, 3, 0, 1, 1);
     box->addWidget(dValue, 3, 1, 1, 1);
+
+    xValue->setDecimals(Base::UnitsApi::getDecimals());
+    yValue->setDecimals(Base::UnitsApi::getDecimals());
+    zValue->setDecimals(Base::UnitsApi::getDecimals());
 
     QGridLayout* gridLayout = new QGridLayout(this);
     gridLayout->addLayout(box, 0, 0, 1, 2);
@@ -105,10 +110,10 @@ void LocationWidget::retranslateUi()
 
         dValue->setCurrentIndex(2);
 
-        // Vector3f declared to use with QVariant see Gui/propertyeditor/PropertyItem.h
-        dValue->setItemData(0, QVariant::fromValue<Base::Vector3f>(Base::Vector3f(1,0,0)));
-        dValue->setItemData(1, QVariant::fromValue<Base::Vector3f>(Base::Vector3f(0,1,0)));
-        dValue->setItemData(2, QVariant::fromValue<Base::Vector3f>(Base::Vector3f(0,0,1)));
+        // Vector3d declared to use with QVariant see Gui/propertyeditor/PropertyItem.h
+        dValue->setItemData(0, QVariant::fromValue<Base::Vector3d>(Base::Vector3d(1,0,0)));
+        dValue->setItemData(1, QVariant::fromValue<Base::Vector3d>(Base::Vector3d(0,1,0)));
+        dValue->setItemData(2, QVariant::fromValue<Base::Vector3d>(Base::Vector3d(0,0,1)));
     }
     else {
         dValue->setItemText(0, QApplication::translate("Gui::LocationDialog", "X"));
@@ -119,21 +124,21 @@ void LocationWidget::retranslateUi()
     }
 } 
 
-Base::Vector3f LocationWidget::getPosition() const
+Base::Vector3d LocationWidget::getPosition() const
 {
-    return Base::Vector3f((float)this->xValue->value(),
-                          (float)this->yValue->value(),
-                          (float)this->zValue->value());
+    return Base::Vector3d(this->xValue->value(),
+                          this->yValue->value(),
+                          this->zValue->value());
 }
 
-void LocationWidget::setPosition(const Base::Vector3f& v)
+void LocationWidget::setPosition(const Base::Vector3d& v)
 {
     this->xValue->setValue(v.x);
     this->yValue->setValue(v.y);
     this->zValue->setValue(v.z);
 }
 
-void LocationWidget::setDirection(const Base::Vector3f& dir)
+void LocationWidget::setDirection(const Base::Vector3d& dir)
 {
     if (dir.Length() < FLT_EPSILON) {
         return;
@@ -142,8 +147,8 @@ void LocationWidget::setDirection(const Base::Vector3f& dir)
     // check if the user-defined direction is already there
     for (int i=0; i<dValue->count()-1; i++) {
         QVariant data = dValue->itemData (i);
-        if (data.canConvert<Base::Vector3f>()) {
-            const Base::Vector3f val = data.value<Base::Vector3f>();
+        if (data.canConvert<Base::Vector3d>()) {
+            const Base::Vector3d val = data.value<Base::Vector3d>();
             if (val == dir) {
                 dValue->setCurrentIndex(i);
                 return;
@@ -157,31 +162,34 @@ void LocationWidget::setDirection(const Base::Vector3f& dir)
         .arg(dir.y)
         .arg(dir.z);
     dValue->insertItem(dValue->count()-1, display,
-        QVariant::fromValue<Base::Vector3f>(dir));
+        QVariant::fromValue<Base::Vector3d>(dir));
     dValue->setCurrentIndex(dValue->count()-2);
 }
 
-Base::Vector3f LocationWidget::getDirection() const
+Base::Vector3d LocationWidget::getDirection() const
 {
     QVariant data = dValue->itemData (this->dValue->currentIndex());
-    if (data.canConvert<Base::Vector3f>()) {
-        return data.value<Base::Vector3f>();
+    if (data.canConvert<Base::Vector3d>()) {
+        return data.value<Base::Vector3d>();
     }
     else {
-        return Base::Vector3f(0,0,1);
+        return Base::Vector3d(0,0,1);
     }
 }
 
-Base::Vector3f LocationWidget::getUserDirection(bool* ok) const
+Base::Vector3d LocationWidget::getUserDirection(bool* ok) const
 {
     Gui::Dialog::Ui_InputVector iv;
     QDialog dlg(const_cast<LocationWidget*>(this));
     iv.setupUi(&dlg);
-    Base::Vector3f dir;
+    iv.vectorX->setDecimals(Base::UnitsApi::getDecimals());
+    iv.vectorY->setDecimals(Base::UnitsApi::getDecimals());
+    iv.vectorZ->setDecimals(Base::UnitsApi::getDecimals());
+    Base::Vector3d dir;
     if (dlg.exec()) {
-        dir.x = (float)iv.vectorX->value();
-        dir.y = (float)iv.vectorY->value();
-        dir.z = (float)iv.vectorZ->value();
+        dir.x = iv.vectorX->value();
+        dir.y = iv.vectorY->value();
+        dir.z = iv.vectorZ->value();
         if (ok) *ok = true;
     }
     else {
@@ -196,7 +204,7 @@ void LocationWidget::on_direction_activated(int index)
     // last item is selected to define direction by user
     if (index+1 == dValue->count()) {
         bool ok;
-        Base::Vector3f dir = this->getUserDirection(&ok);
+        Base::Vector3d dir = this->getUserDirection(&ok);
         if (ok) {
             if (dir.Length() < FLT_EPSILON) {
                 QMessageBox::critical(this, LocationDialog::tr("Wrong direction"),
@@ -220,16 +228,19 @@ LocationDialog::~LocationDialog()
 {
 }
 
-Base::Vector3f LocationDialog::getUserDirection(bool* ok) const
+Base::Vector3d LocationDialog::getUserDirection(bool* ok) const
 {
     Gui::Dialog::Ui_InputVector iv;
     QDialog dlg(const_cast<LocationDialog*>(this));
     iv.setupUi(&dlg);
-    Base::Vector3f dir;
+    iv.vectorX->setDecimals(Base::UnitsApi::getDecimals());
+    iv.vectorY->setDecimals(Base::UnitsApi::getDecimals());
+    iv.vectorZ->setDecimals(Base::UnitsApi::getDecimals());
+    Base::Vector3d dir;
     if (dlg.exec()) {
-        dir.x = (float)iv.vectorX->value();
-        dir.y = (float)iv.vectorY->value();
-        dir.z = (float)iv.vectorZ->value();
+        dir.x = iv.vectorX->value();
+        dir.y = iv.vectorY->value();
+        dir.z = iv.vectorZ->value();
         if (ok) *ok = true;
     }
     else {

@@ -21,7 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -98,9 +98,9 @@ TPG * TPGFactoryInst::getPlugin(QString id) {
 void TPGFactoryInst::scanPlugins(short tpgtype /*= ALL_TPG*/) {
 
     // scan for plugins
-    if (tpgtype & PYTHON_TPG > 0)
+    if ((tpgtype & PYTHON_TPG) > 0)
         Cam::PyTPGFactory().scanPlugins();
-    if (tpgtype & CPP_TPG > 0)
+    if ((tpgtype & CPP_TPG) > 0)
         Cam::CppTPGFactory().scanPlugins();
 
     // clear my cache (if any)
@@ -108,11 +108,17 @@ void TPGFactoryInst::scanPlugins(short tpgtype /*= ALL_TPG*/) {
 
     // update cache
     Cam::TPGDescriptorCollection *descs = Cam::PyTPGFactory().getDescriptors();
-    d->descriptors->absorb(descs);
-    descs->release();
+	if (descs)
+	{
+		d->descriptors->absorb(descs);
+		descs->release();
+	}
     descs = Cam::CppTPGFactory().getDescriptors();
-    d->descriptors->absorb(descs);
-    descs->release();
+	if (descs)
+	{
+		d->descriptors->absorb(descs);
+		descs->release();
+	}
 }
 
 /**

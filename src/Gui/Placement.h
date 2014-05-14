@@ -50,7 +50,7 @@ public:
     void accept();
     void reject();
 
-    Base::Vector3f getDirection() const;
+    Base::Vector3d getDirection() const;
     void setPlacement(const Base::Placement&);
     Base::Placement getPlacement() const;
     void showDefaultButtons(bool);
@@ -67,8 +67,10 @@ private Q_SLOTS:
 private:
     void setPlacementData(const Base::Placement&);
     Base::Placement getPlacementData() const;
+    QString getPlacementString() const;
     void directionActivated(int);
-    void applyPlacement(const Base::Placement& p, bool incremental, bool data);
+    void applyPlacement(const Base::Placement& p, bool incremental);
+    void applyPlacement(const QString& p, bool incremental);
     void revertTransformation();
     void slotActiveDocument(const Gui::Document&);
 

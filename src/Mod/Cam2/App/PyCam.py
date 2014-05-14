@@ -44,7 +44,7 @@ class PyTPGBase(object):
     '''The Base class for all Python TPG's'''
     ## Class attributes ##
     id = None # Generate once by running 'import uuid; str(uuid.uuid1())' in python e.g. 'b7b4ada0-23e8-11e2-a9d9-08002734b94f'
-    name = "Un-named" # Should match Class name
+    name = "PyTPGBase" # Should match Class name
     description = "This PyTPG forgot to override the description" # to help the user choose your TPG
     
     def __init__(self):
@@ -75,22 +75,22 @@ class PyTPGBase(object):
         '''Returns a list of actions that this PyTPG offers'''
         return []
 
-    def getSettings(self, action=None):
-        '''Returns a list of settings that the PyTPG 'Action' will take.  If 
-        action is None, then this will return a dictionary of all actions 
-        settings.  Each setting will be in format of (<name>, <label>, <type>, <defaultvalue>, <units>, <helptext>)'''
-        if action:
-            return []
-        return {}
+    def getSettingDefinitions(self):
+        '''Returns a list of settings that the TPG uses for each 'Action'.
         
-    def run(self, action, settings=[]):
+        @return: Cam.TPGSettings instance containing the settings
+        '''
+
+        return Cam.TPGSettings()
+        
+    def run(self, settings, toolpath, action):
         '''Runs the selected action and returns the resulting TP'''
         raise UnimplementedTPError(action) # The run() method of this TP hasn't been implemented
     
-    def getToolPath(self):
-        '''Gets a reference to the current ToolPath.  This can be called while 
-        the run method is being executed in another thread to see the progress'''
-        return self._toolPath
+#     def getToolPath(self):
+#         '''Gets a reference to the current ToolPath.  This can be called while 
+#         the run method is being executed in another thread to see the progress'''
+#         return self._toolPath
     
     ## Python to C++ API ##
     # Call these methods to obtain/send data from/to the C++ side

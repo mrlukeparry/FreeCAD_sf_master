@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,12 +21,13 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #include <QMenu>
 #endif
 
 #include <Gui/Application.h>
+#include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
@@ -37,7 +39,7 @@
 #include <Gui/SoFCBoundingBox.h>
 #include <Gui/View3DInventor.h>
 
-#include "../App/TPGFeature.h"
+#include "../App/Features/TPGFeature.h"
 
 #include "TaskDialog/TaskDlgEditTPGFeature.h"
 #include "ViewProviderTPGFeature.h"
@@ -56,10 +58,10 @@ ViewProviderTPGFeature::~ViewProviderTPGFeature()
 
 void ViewProviderTPGFeature::setupContextMenu(QMenu *menu, QObject *receiver, const char *member)
 {
-    Cam::TPG *tpg = NULL;
-    tpg = getObject()->getTPG();
-    if(tpg == NULL)
-        return;
+//    Cam::TPG *tpg = NULL;
+//    tpg = getObject()->getTPG();
+//    if(tpg == NULL)
+//        return;
     
     menu->addAction(QObject::tr("Edit ") + QString::fromAscii(getObject()->Label.getValue()), receiver, member);
 }
@@ -124,4 +126,30 @@ void ViewProviderTPGFeature::unsetEdit(int ModNum)
 Cam::TPGFeature* ViewProviderTPGFeature::getObject() const
 {
     return dynamic_cast<Cam::TPGFeature*>(pcObject);
+}
+
+std::vector<App::DocumentObject*> ViewProviderTPGFeature::claimChildren(void) const
+{
+    // Collect any child fields and put this in the CamFeature tree
+    std::vector<App::DocumentObject*> result;
+    Cam::TPGFeature *feat = static_cast<Cam::TPGFeature*>(getObject());
+    try {
+        // claim the ToolPath that belongs to this TPGFeature
+        App::DocumentObject* toolPath = feat->ToolPath.getValue();
+        result.push_back(toolPath);
+
+        // claim the Machine program that belong to this Feature
+        App::DocumentObject* machineProgram = feat->MachineProgram.getValue();
+        result.push_back(machineProgram);
+
+        return result;
+    } catch (...) {
+        std::vector<App::DocumentObject*> tmp;
+        return tmp;
+    }
+}
+
+QIcon ViewProviderTPGFeature::getIcon(void) const
+{
+	return Gui::BitmapFactory().pixmap("Cam_TPGFeature");
 }

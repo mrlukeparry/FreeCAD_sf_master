@@ -38,6 +38,7 @@ class RuledSurface : public Part::Feature
 public:
     RuledSurface();
 
+    App::PropertyEnumeration Orientation;
     App::PropertyLinkSub Curve1;
     App::PropertyLinkSub Curve2;
 
@@ -53,6 +54,9 @@ public:
 
 protected:
     void onChanged (const App::Property* prop);
+
+private:
+    static const char* OrientationEnums[];
 };
 
 class Loft : public Part::Feature
@@ -65,6 +69,7 @@ public:
     App::PropertyLinkList Sections;
     App::PropertyBool Solid;
     App::PropertyBool Ruled;
+    App::PropertyBool Closed;
 
     /** @name methods override feature */
     //@{

@@ -38,9 +38,16 @@ using namespace Base;
 std::string RotationPy::representation(void) const
 {
     RotationPy::PointerType ptr = reinterpret_cast<RotationPy::PointerType>(_pcTwinPointer);
+    Py::Float q0(ptr->getValue()[0]);
+    Py::Float q1(ptr->getValue()[1]);
+    Py::Float q2(ptr->getValue()[2]);
+    Py::Float q3(ptr->getValue()[3]);
     std::stringstream str;
-    str << "Quaternion (";
-    str << ptr->getValue()[0] << ","<< ptr->getValue()[1] << "," << ptr->getValue()[2] << "," << ptr->getValue()[3];
+    str << "Rotation (";
+    str << (std::string)q0.repr() << ", "
+        << (std::string)q1.repr() << ", "
+        << (std::string)q2.repr() << ", "
+        << (std::string)q3.repr();
     str << ")";
 
     return str.str();
@@ -99,7 +106,13 @@ int RotationPy::PyInit(PyObject* args, PyObject* /*kwd*/)
         return 0;
     }
 
-    PyErr_SetString(PyExc_Exception, "empty parameter list, four floats or Vector and float");
+    PyErr_SetString(PyExc_TypeError, "Rotation constructor accepts:\n"
+        "-- empty parameter list\n"
+        "-- Rotation object"
+        "-- four floats (a quaternion)\n"
+        "-- three floats (yaw, pitch, roll)"
+        "-- Vector (rotation axis) and float (rotation angle)\n"
+        "-- two Vectors (two axes)");
     return -1;
 }
 

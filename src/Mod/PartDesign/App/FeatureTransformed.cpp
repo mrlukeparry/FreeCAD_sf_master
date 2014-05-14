@@ -40,9 +40,14 @@
 #include "FeatureAdditive.h"
 #include "FeatureSubtractive.h"
 #include "FeatureMirrored.h"
+#include "FeatureLinearPattern.h"
+#include "FeaturePolarPattern.h"
 
 #include <Base/Console.h>
 #include <Base/Exception.h>
+#include <Base/Parameter.h>
+#include <App/Application.h>
+#include <Mod/Part/App/modelRefine.h>
 
 using namespace PartDesign;
 
@@ -75,10 +80,27 @@ App::DocumentObject* Transformed::getSupportObject() const
 App::DocumentObject* Transformed::getSketchObject() const
 {
     std::vector<DocumentObject*> originals = Originals.getValues();
-    if (!originals.empty() && originals.front()->getTypeId().isDerivedFrom(PartDesign::SketchBased::getClassTypeId()))
+    if (!originals.empty() && originals.front()->getTypeId().isDerivedFrom(PartDesign::SketchBased::getClassTypeId())) {
         return (static_cast<PartDesign::SketchBased*>(originals.front()))->getVerifiedSketch();
-    else
-        return NULL;
+    }
+    else if (this->getTypeId().isDerivedFrom(LinearPattern::getClassTypeId())) {
+        // if Originals is empty then try the linear pattern's Direction property
+        const LinearPattern* pattern = static_cast<const LinearPattern*>(this);
+        return pattern->Direction.getValue();
+    }
+    else if (this->getTypeId().isDerivedFrom(PolarPattern::getClassTypeId())) {
+        // if Originals is empty then try the polar pattern's Axis property
+        const PolarPattern* pattern = static_cast<const PolarPattern*>(this);
+        return pattern->Axis.getValue();
+    }
+    else if (this->getTypeId().isDerivedFrom(Mirrored::getClassTypeId())) {
+        // if Originals is empty then try the mirror pattern's MirrorPlane property
+        const Mirrored* pattern = static_cast<const Mirrored*>(this);
+        return pattern->MirrorPlane.getValue();
+    }
+    else {
+        return 0;
+    }
 }
 
 short Transformed::mustExecute() const
@@ -174,7 +196,9 @@ App::DocumentObjectExecReturn *Transformed::execute(void)
 
             // Check for intersection with support
             if (!Part::checkIntersection(support, mkTrf.Shape(), false, true)) {
+#ifdef FC_DEBUG // do not write this in release mode because a message appears already in the task view
                 Base::Console().Warning("Transformed shape does not intersect support %s: Removed\n", (*o)->getNameInDocument());
+#endif
                 nointersect_trsfms.insert(t);
             } else {
                 v_transformations.push_back(t);
@@ -262,11 +286,13 @@ App::DocumentObjectExecReturn *Transformed::execute(void)
             // lets check if the result is a solid
             if (result.IsNull())
                 return new App::DocumentObjectExecReturn("Resulting shape is not a solid", *o);
+            result = refineShapeIfActive(result);
         } else {
             BRepAlgoAPI_Cut mkCut(support, transformedShapes);
             if (!mkCut.IsDone())
                 return new App::DocumentObjectExecReturn("Cut out of support failed", *o);
             result = mkCut.Shape();
+            result = refineShapeIfActive(result);
         }
 
         support = result; // Use result of this operation for fuse/cut of next original
@@ -290,6 +316,19 @@ App::DocumentObjectExecReturn *Transformed::execute(void)
         // in this code
     else
         return App::DocumentObject::StdReturn;
+}
+
+TopoDS_Shape Transformed::refineShapeIfActive(const TopoDS_Shape& oldShape) const
+{
+    Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
+        .GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/PartDesign");
+    if (hGrp->GetBool("RefineModel", false)) {
+        Part::BRepBuilderAPI_RefineModel mkRefine(oldShape);
+        TopoDS_Shape resShape = mkRefine.Shape();
+        return resShape;
+    }
+
+    return oldShape;
 }
 
 }

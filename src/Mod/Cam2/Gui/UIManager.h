@@ -26,9 +26,20 @@
 #include <QObject>
 #include <QListView>
 
+#include <boost/bind.hpp>
+#include <boost/signals.hpp>
+
+#include <Gui/Tree.h>
+#include <Gui/ViewProviderDocumentObject.h>
+
+#include "../App/Features/CamFeature.h"
+#include "../App/Features/TPGFeature.h"
 #include "../App/TPG/TPGFactory.h"
 #include "../App/TPG/TPG.h"
 #include "TPGListModel.h"
+
+
+typedef boost::signals::connection Connection;
 
 namespace CamGui {
 
@@ -36,13 +47,36 @@ namespace CamGui {
 /**
  * A class to manage the interactions between the various UI components of the
  * CAM workbench.
+ *
+ * TODO: use Boost Signal/Slots since that is what the main FreeCAD uses.
  */
-class CamGuiExport UIManagerInst : public QObject {
+class CamGuiExport UIManagerInst : public QObject,
+								   public Gui::SelectionSingleton::ObserverType
+{
 
   Q_OBJECT
 
 protected:
   static UIManagerInst* _pcSingleton;
+
+  QString tpgLibrarySelectedID;
+
+  Connection highlightObjectConnection;
+
+  /**
+   * Creates a new CamFeature and adds it to the document
+   */
+  Cam::CamFeature *makeCamFeature(App::Document* Doc);
+
+  /**
+   * Creates a new TPGFeature and adds it to the CamFeature
+   */
+  Cam::TPGFeature *makeTPGFeature(App::Document* Doc, Cam::CamFeature *CamFeature, Cam::TPGDescriptor *tpgDescriptor);
+
+  /**
+   * Performs the work to analyse the current selection and send setting update signal
+   */
+  void updateCamProjectSelection(const char* pDocName);
 
 public:
   UIManagerInst();
@@ -52,6 +86,47 @@ public:
   static UIManagerInst& instance(void);
   static void destruct (void);
 
+  // Implementations for GUI Commands
+  bool CamFeature();
+  /**
+   * Used by the CamTPGFeature GUI Command to do the work required to add a TPGFeature
+   */
+  bool TPGFeature();
+  /**
+   * Used by the CamToolFeature GUI Command to do the work required to add a ToolFeature
+   */
+  bool ToolFeature();
+  /**
+   * Used by the CamMachineFeature GUI Command to do the work required to add a MachineFeature
+   */
+  bool MachineFeature();
+  /**
+   * Executes the selected TPG(s) to (re)produce its Tool Path.
+   */
+  bool RunTPG();
+  /**
+   * Executes the selected TPG(s) to (re)produce its Machine Program from the Tool Path.
+   */
+  bool PostProcess();
+  /**
+   * Debugging Command for testing.
+   * TODO: remove this Command when no long needed
+   */
+  bool WatchHighlight();
+
+  /**
+   * Change the TPG Library selection.  This controls which TPG will be created
+   * when the TPGFeature Gui Command is activated.
+   */
+  void setTPGLibrarySelection(Cam::TPGDescriptor *tpgDescriptor);
+
+  //SLOTS (boost)
+//  void onHighlightObject(const Gui::ViewProviderDocumentObject&, const Gui::HighlightMode&, bool flag);
+
+  /// Receive selection change events so we can update the Cam settings Dock window
+  virtual void OnChange(Gui::SelectionSingleton::SubjectType &rCaller,
+                        Gui::SelectionSingleton::MessageType Reason);
+
 public Q_SLOTS:
   void addTPG(Cam::TPGDescriptor *tpg);
   void reloadTPGs();
@@ -60,7 +135,9 @@ public Q_SLOTS:
 Q_SIGNALS:
   void updatedTPGList(TPGListModel *model);
 
-  void updatedTPGSelection(Cam::TPG* tpg);
+  void updatedTPGSelection(Cam::Settings::Feature* feature);
+  void updatedToolPathSelection(Cam::ToolPathFeature* toolpath);
+  void updatedMachineProgramSelection(Cam::MachineProgramFeature* machineProgram);
 
   void updatedTPGStateSig(QString tpgid, Cam::TPG::State state, int progress);
 };

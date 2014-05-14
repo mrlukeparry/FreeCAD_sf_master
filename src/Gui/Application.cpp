@@ -41,7 +41,10 @@
 # include <QGLFramebufferObject>
 #endif
 # include <QSessionManager>
+# include <QTextStream>
 #endif
+
+#include <boost/interprocess/sync/file_lock.hpp>
 
 
 // FreeCAD Base header
@@ -95,6 +98,7 @@
 #include "ViewProviderMeasureDistance.h"
 #include "ViewProviderPlacement.h"
 #include "ViewProviderPlane.h"
+#include "ViewProviderMaterialObject.h"
 
 #include "Language/Translator.h"
 #include "TaskView/TaskDialogPython.h"
@@ -335,6 +339,18 @@ Application::Application(bool GUIenabled)
             ("User parameter:BaseApp/Preferences/Units");
         Base::UnitsApi::setDecimals(hUnits->GetInt("Decimals", Base::UnitsApi::getDecimals()));
 
+        // Check for the symbols for group separator and deciaml point. They must be different otherwise
+        // Qt doesn't work properly.
+#if defined(Q_OS_WIN32)
+        if (QLocale::system().groupSeparator() == QLocale::system().decimalPoint()) {
+            QMessageBox::critical(0, QLatin1String("Invalid system settings"),
+                QLatin1String("Your system uses the same symbol for decimal point and group separator.\n\n"
+                              "This causes serious problems and makes the application fail to work properly.\n"
+                              "Go to the system configuration panel of the OS and fix this issue, please."));
+            throw Base::Exception("Invalid system settings");
+        }
+#endif
+
         // setting up Python binding
         Base::PyGILStateLocker lock;
         PyObject* module = Py_InitModule3("FreeCADGui", Application::Methods,
@@ -351,6 +367,11 @@ Application::Application(bool GUIenabled)
         UiLoaderPy::init_type();
         Base::Interpreter().addType(UiLoaderPy::type_object(),
             module,"UiLoader");
+
+        // PySide additions
+        PySideUicModule* pySide = new PySideUicModule();
+        Py_INCREF(pySide->module().ptr());
+        PyModule_AddObject(module, "PySideUic", pySide->module().ptr());
 
         //insert Selection module
         PyObject* pSelectionModule = Py_InitModule3("Selection", SelectionSingleton::Methods,
@@ -799,19 +820,19 @@ Gui::Document* Application::getDocument(const App::Document* pDoc) const
         return 0;
 }
 
-void Application::showViewProvider(App::DocumentObject* obj)
+void Application::showViewProvider(const App::DocumentObject* obj)
 {
     ViewProvider* vp = getViewProvider(obj);
     if (vp) vp->show();
 }
 
-void Application::hideViewProvider(App::DocumentObject* obj)
+void Application::hideViewProvider(const App::DocumentObject* obj)
 {
     ViewProvider* vp = getViewProvider(obj);
     if (vp) vp->hide();
 }
 
-Gui::ViewProvider* Application::getViewProvider(App::DocumentObject* obj) const
+Gui::ViewProvider* Application::getViewProvider(const App::DocumentObject* obj) const
 {
     App::Document* doc = obj->getDocument();
     if (doc) {
@@ -1070,52 +1091,61 @@ QPixmap Application::workbenchIcon(const QString& wb) const
         // get its Icon member if possible
         try {
             Py::Object handler(pcWorkbench);
-            Py::Object member = handler.getAttr(std::string("Icon"));
-            Py::String data(member);
-            std::string content = data.as_std_string();
+            if (handler.hasAttr(std::string("Icon"))) {
+                Py::Object member = handler.getAttr(std::string("Icon"));
+                Py::String data(member);
+                std::string content = data.as_std_string();
 
-            // test if in XPM format
-            QByteArray ary;
-            int strlen = (int)content.size();
-            ary.resize(strlen);
-            for (int j=0; j<strlen; j++)
-                ary[j]=content[j];
-            if (ary.indexOf("/* XPM */") > 0) {
-                // Make sure to remove crap around the XPM data
-                QList<QByteArray> lines = ary.split('\n');
-                QByteArray buffer;
-                buffer.reserve(ary.size()+lines.size());
-                for (QList<QByteArray>::iterator it = lines.begin(); it != lines.end(); ++it) {
-                    QByteArray trim = it->trimmed();
-                    if (!trim.isEmpty()) {
-                        buffer.append(trim);
-                        buffer.append('\n');
+                // test if in XPM format
+                QByteArray ary;
+                int strlen = (int)content.size();
+                ary.resize(strlen);
+                for (int j=0; j<strlen; j++)
+                    ary[j]=content[j];
+                if (ary.indexOf("/* XPM */") > 0) {
+                    // Make sure to remove crap around the XPM data
+                    QList<QByteArray> lines = ary.split('\n');
+                    QByteArray buffer;
+                    buffer.reserve(ary.size()+lines.size());
+                    for (QList<QByteArray>::iterator it = lines.begin(); it != lines.end(); ++it) {
+                        QByteArray trim = it->trimmed();
+                        if (!trim.isEmpty()) {
+                            buffer.append(trim);
+                            buffer.append('\n');
+                        }
+                    }
+                    icon.loadFromData(buffer, "XPM");
+                }
+                else {
+                    // is it a file name...
+                    QString file = QString::fromUtf8(content.c_str());
+                    icon.load(file);
+                    if (icon.isNull()) {
+                        // ... or the name of another icon?
+                        icon = BitmapFactory().pixmap(file.toUtf8());
                     }
                 }
-                icon.loadFromData(buffer, "XPM");
-            }
-            else {
-                // is it a file name...
-                QString file = QString::fromUtf8(content.c_str());
-                icon.load(file);
-                if (icon.isNull()) {
-                    // ... or the name of another icon?
-                    icon = BitmapFactory().pixmap(file.toUtf8());
+
+                if (!icon.isNull()) {
+                    BitmapFactory().addPixmapToCache(iconName.c_str(), icon);
                 }
-            }
 
-            if (!icon.isNull()) {
-                BitmapFactory().addPixmapToCache(iconName.c_str(), icon);
+                return icon;
             }
-
-            return icon;
         }
         catch (Py::Exception& e) {
             e.clear();
         }
     }
 
-    return QPixmap();
+    QIcon icon = QApplication::windowIcon();
+    if (!icon.isNull()) {
+        QList<QSize> s = icon.availableSizes();
+        return icon.pixmap(s[0]);
+    }
+    else {
+        return QPixmap();
+    }
 }
 
 QString Application::workbenchToolTip(const QString& wb) const
@@ -1449,6 +1479,8 @@ void Application::initTypes(void)
     Gui::ViewProviderPythonGeometry             ::init();
     Gui::ViewProviderPlacement                  ::init();
     Gui::ViewProviderPlane                      ::init();
+    Gui::ViewProviderMaterialObject             ::init();
+    Gui::ViewProviderMaterialObjectPython       ::init();
 
     // Workbench
     Gui::Workbench                              ::init();
@@ -1707,6 +1739,20 @@ void Application::runApplication(void)
         mw.loadWindowSettings();
     }
 
+    hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MainWindow");
+    QMdiArea* mdi = mw.findChild<QMdiArea*>();
+    mdi->setProperty("showImage", hGrp->GetBool("TiledBackground", false));
+
+    std::string style = hGrp->GetASCII("StyleSheet");
+    if (!style.empty()) {
+        QFile f(QLatin1String(style.c_str()));
+        if (f.open(QFile::ReadOnly)) {
+            mdi->setBackground(QBrush(Qt::NoBrush));
+            QTextStream str(&f);
+            qApp->setStyleSheet(str.readAll());
+        }
+    }
+
     //initialize spaceball.
     mainApp.initSpaceball(&mw);
 
@@ -1736,9 +1782,24 @@ void Application::runApplication(void)
     Base::Console().Log("Init: Entering event loop\n");
 
     try {
+        std::stringstream s;
+        s << Base::FileInfo::getTempPath() << App::GetApplication().getExecutableName()
+          << "_" << QCoreApplication::applicationPid() << ".lock";
+        // open a lock file with the PID
+        Base::FileInfo fi(s.str());
+        Base::ofstream lock(fi);
+        boost::interprocess::file_lock flock(s.str().c_str());
+        flock.lock();
+
         int ret = mainApp.exec();
         if (ret == systemExit)
             throw Base::SystemExitException();
+
+        // close the lock file, in case of a crash we can see the existing lock file
+        // on the next restart and try to repair the documents, if needed.
+        flock.unlock();
+        lock.close();
+        fi.deleteFile();
     }
     catch (const Base::SystemExitException&) {
         Base::Console().Message("System exit\n");
@@ -1752,4 +1813,67 @@ void Application::runApplication(void)
     }
 
     Base::Console().Log("Finish: Event loop left\n");
+}
+
+void Application::checkForPreviousCrashes()
+{
+    QDir tmp = QDir::temp();
+    tmp.setNameFilters(QStringList() << QString::fromAscii("*.lock"));
+    tmp.setFilter(QDir::Files);
+
+    QList<QFileInfo> restoreDocFiles;
+    QString exeName = QString::fromAscii(App::GetApplication().getExecutableName());
+    QList<QFileInfo> locks = tmp.entryInfoList();
+    for (QList<QFileInfo>::iterator it = locks.begin(); it != locks.end(); ++it) {
+        QString bn = it->baseName();
+        // ignore the lock file for this instance
+        QString pid = QString::number(QCoreApplication::applicationPid());
+        if (bn.startsWith(exeName) && bn.indexOf(pid) < 0) {
+            QString fn = it->absoluteFilePath();
+            boost::interprocess::file_lock flock((const char*)fn.toLocal8Bit());
+            if (flock.try_lock()) {
+                // OK, this file is a leftover from a previous crash
+                QString crashed_pid = bn.mid(exeName.length()+1);
+                // search for transient directories with this PID
+                QString filter;
+                QTextStream str(&filter);
+                str << exeName << "_Doc_*_" << crashed_pid;
+                tmp.setNameFilters(QStringList() << filter);
+                tmp.setFilter(QDir::Dirs);
+                QList<QFileInfo> dirs = tmp.entryInfoList();
+                if (dirs.isEmpty()) {
+                    // delete the lock file immediately if not transient directories are related
+                    tmp.remove(fn);
+                }
+                else {
+                    int countDeletedDocs = 0;
+                    for (QList<QFileInfo>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
+                        QDir doc_dir(it->absoluteFilePath());
+                        doc_dir.setFilter(QDir::NoDotAndDotDot|QDir::AllEntries);
+                        uint entries = doc_dir.entryList().count();
+                        if (entries == 0) {
+                            // in this case we can delete the transient directory because
+                            // we cannot do anything
+                            if (tmp.rmdir(it->filePath()))
+                                countDeletedDocs++;
+                        }
+                        else {
+                            // store the transient directory in case it's not empty
+                            restoreDocFiles << *it;
+                        }
+                    }
+
+                    // all directories corresponding to the lock file have been deleted
+                    // so delete the lock file, too
+                    if (countDeletedDocs == dirs.size()) {
+                        tmp.remove(fn);
+                    }
+                }
+            }
+        }
+    }
+
+    if (!restoreDocFiles.isEmpty()) {
+        //TODO:
+    }
 }

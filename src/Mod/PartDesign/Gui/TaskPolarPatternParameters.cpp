@@ -25,11 +25,13 @@
 
 #ifndef _PreComp_
 # include <QMessageBox>
+# include <QTimer>
 #endif
 
 #include "ui_TaskPolarPatternParameters.h"
 #include "TaskPolarPatternParameters.h"
 #include "TaskMultiTransformParameters.h"
+#include <Base/UnitsApi.h>
 #include <App/Application.h>
 #include <App/Document.h>
 #include <Gui/Application.h>
@@ -93,6 +95,12 @@ TaskPolarPatternParameters::TaskPolarPatternParameters(TaskMultiTransformParamet
 
 void TaskPolarPatternParameters::setupUI()
 {
+    updateViewTimer = new QTimer(this);
+    updateViewTimer->setSingleShot(true);
+    updateViewTimer->setInterval(getUpdateViewTimeout());
+
+    connect(updateViewTimer, SIGNAL(timeout()),
+            this, SLOT(onUpdateViewTimer()));
     connect(ui->comboAxis, SIGNAL(activated(int)),
             this, SLOT(onAxisChanged(int)));
     connect(ui->checkReverse, SIGNAL(toggled(bool)),
@@ -123,6 +131,7 @@ void TaskPolarPatternParameters::setupUI()
     ui->checkReverse->setEnabled(true);
     ui->spinAngle->setEnabled(true);
     ui->spinOccurrences->setEnabled(true);
+    ui->spinAngle->setDecimals(Base::UnitsApi::getDecimals());
     updateUI();
 }
 
@@ -169,6 +178,16 @@ void TaskPolarPatternParameters::updateUI()
     blockUpdate = false;
 }
 
+void TaskPolarPatternParameters::onUpdateViewTimer()
+{
+    recomputeFeature();
+}
+
+void TaskPolarPatternParameters::kickUpdateViewTimer() const
+{
+    updateViewTimer->start();
+}
+
 void TaskPolarPatternParameters::onSelectionChanged(const Gui::SelectionChanges& msg)
 {
     if (msg.Type == Gui::SelectionChanges::AddSelection) {
@@ -213,8 +232,7 @@ void TaskPolarPatternParameters::onCheckReverse(const bool on) {
     pcPolarPattern->Reversed.setValue(on);
 
     exitSelectionMode();
-    updateUI();
-    recomputeFeature();
+    kickUpdateViewTimer();
 }
 
 void TaskPolarPatternParameters::onAngle(const double a) {
@@ -224,8 +242,7 @@ void TaskPolarPatternParameters::onAngle(const double a) {
     pcPolarPattern->Angle.setValue(a);
 
     exitSelectionMode();
-    updateUI();
-    recomputeFeature();
+    kickUpdateViewTimer();
 }
 
 void TaskPolarPatternParameters::onOccurrences(const int n) {
@@ -235,8 +252,7 @@ void TaskPolarPatternParameters::onOccurrences(const int n) {
     pcPolarPattern->Occurrences.setValue(n);
 
     exitSelectionMode();
-    updateUI();
-    recomputeFeature();
+    kickUpdateViewTimer();
 }
 
 void TaskPolarPatternParameters::onAxisChanged(int num) {
@@ -259,8 +275,7 @@ void TaskPolarPatternParameters::onAxisChanged(int num) {
     else if (num == 1)
         exitSelectionMode();
 
-    updateUI();
-    recomputeFeature();
+    kickUpdateViewTimer();
 }
 
 void TaskPolarPatternParameters::onUpdateView(bool on)
@@ -355,13 +370,18 @@ bool TaskDlgPolarPatternParameters::accept()
         TaskPolarPatternParameters* polarpatternParameter = static_cast<TaskPolarPatternParameters*>(parameter);
         std::string axis = polarpatternParameter->getAxis();
         if (!axis.empty()) {
-            QString buf = QString::fromUtf8("(App.ActiveDocument.%1,[\"%2\"])");
+            App::DocumentObject* sketch = 0;
             if (axis == "N_Axis")
-                buf = buf.arg(QString::fromUtf8(polarpatternParameter->getSketchObject()->getNameInDocument()));
+                sketch = polarpatternParameter->getSketchObject();
             else
-                buf = buf.arg(QString::fromUtf8(polarpatternParameter->getSupportObject()->getNameInDocument()));
-            buf = buf.arg(QString::fromUtf8(axis.c_str()));
-            Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Axis = %s", name.c_str(), buf.toStdString().c_str());
+                sketch = polarpatternParameter->getSupportObject();
+
+            if (sketch) {
+                QString buf = QString::fromLatin1("(App.ActiveDocument.%1,[\"%2\"])");
+                buf = buf.arg(QString::fromLatin1(sketch->getNameInDocument()));
+                buf = buf.arg(QString::fromLatin1(axis.c_str()));
+                Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Axis = %s", name.c_str(), buf.toStdString().c_str());
+            }
         } else
             Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Axis = None", name.c_str());
         Gui::Command::doCommand(Gui::Command::Doc,"App.ActiveDocument.%s.Reversed = %u",name.c_str(),polarpatternParameter->getReverse());

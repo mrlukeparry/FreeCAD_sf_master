@@ -2,16 +2,9 @@ SET(ShipMain_SRCS
 	InitGui.py
 	ShipGui.py
     Instance.py
-    SimInstance.py
-    TankInstance.py
 	Ship_rc.py
 )
 SOURCE_GROUP("" FILES ${ShipMain_SRCS})
-
-SET(ShipIcons_SRCS
-	resources/icons/Ico.xpm
-)
-SOURCE_GROUP("shipicons" FILES ${ShipIcons_SRCS})
 
 SET(ShipExamples_SRCS
 	resources/examples/s60.fcstd
@@ -38,7 +31,6 @@ SOURCE_GROUP("shipcreateship" FILES ${ShipCreateShip_SRCS})
 
 SET(ShipOutlineDraw_SRCS
 	shipOutlineDraw/__init__.py
-	shipOutlineDraw/Plot.py
 	shipOutlineDraw/Preview.py
 	shipOutlineDraw/TaskPanel.py
 	shipOutlineDraw/TaskPanel.ui
@@ -70,60 +62,7 @@ SET(ShipUtils_SRCS
 )
 SOURCE_GROUP("shiputils" FILES ${ShipUtils_SRCS})
 
-SET(ShipWeights_SRCS
-	tankWeights/__init__.py
-	tankWeights/Preview.py
-	tankWeights/TaskPanel.py
-	tankWeights/TaskPanel.ui
-)
-SOURCE_GROUP("shipweights" FILES ${ShipWeights_SRCS})
-
-SET(ShipCreateTank_SRCS
-	tankCreateTank/__init__.py
-	tankCreateTank/TaskPanel.py
-	tankCreateTank/TaskPanel.ui
-)
-SOURCE_GROUP("shipcreatetank" FILES ${ShipCreateTank_SRCS})
-
-SET(ShipGZ_SRCS
-	tankGZ/__init__.py
-	tankGZ/PlotAux.py
-	tankGZ/TaskPanel.py
-	tankGZ/TaskPanel.ui
-)
-SOURCE_GROUP("shipgz" FILES ${ShipGZ_SRCS})
-
-SET(SimCreate_SRCS
-	simCreate/__init__.py
-	simCreate/TaskPanel.py
-	simCreate/TaskPanel.ui
-)
-SOURCE_GROUP("simcreate" FILES ${SimCreate_SRCS})
-
-SET(SimRun_SRCS
-	simRun/__init__.py
-	simRun/Simulation.py
-	simRun/TaskPanel.py
-	simRun/TaskPanel.ui
-	simRun/clSim/__init__.py
-	simRun/clSim/initialization.py
-	simRun/clSim/Utils.py
-	simRun/Sim/__init__.py
-	simRun/Sim/initialization.py
-	simRun/Sim/matrixGen.py
-	simRun/Sim/computeSources.py
-	simRun/Sim/fsEvolution.py
-)
-SOURCE_GROUP("simrun" FILES ${SimRun_SRCS})
-
-SET(SimPost_SRCS
-	simPost/__init__.py
-	simPost/TaskPanel.py
-	simPost/TaskPanel.ui
-)
-SOURCE_GROUP("simpost" FILES ${SimPost_SRCS})
-
-SET(all_files ${ShipMain_SRCS} ${ShipIcons_SRCS} ${ShipExamples_SRCS} ${ShipLoadExample_SRCS} ${ShipCreateShip_SRCS} ${ShipOutlineDraw_SRCS} ${ShipAreasCurve_SRCS} ${ShipHydrostatics_SRCS} ${ShipUtils_SRCS} ${ShipWeights_SRCS} ${ShipCreateTank_SRCS} ${ShipGZ_SRCS} ${SimCreate_SRCS} ${SimRun_SRCS} ${SimPost_SRCS})
+SET(all_files ${ShipMain_SRCS} ${ShipExamples_SRCS} ${ShipLoadExample_SRCS} ${ShipCreateShip_SRCS} ${ShipOutlineDraw_SRCS} ${ShipAreasCurve_SRCS} ${ShipHydrostatics_SRCS} ${ShipUtils_SRCS})
 
 ADD_CUSTOM_TARGET(Ship ALL
     SOURCES ${all_files}
@@ -131,12 +70,6 @@ ADD_CUSTOM_TARGET(Ship ALL
 
 fc_copy_sources(Mod/Ship "${CMAKE_BINARY_DIR}/Mod/Ship" ${all_files})
 
-INSTALL(
-    FILES
-        ${ShipIcons_SRCS}
-    DESTINATION
-        Mod/Ship/resources/icons
-)
 INSTALL(
     FILES
         ${ShipExamples_SRCS}
@@ -178,42 +111,6 @@ INSTALL(
         ${ShipUtils_SRCS}
     DESTINATION
         Mod/Ship/shipUtils
-)
-INSTALL(
-    FILES
-        ${ShipWeights_SRCS}
-    DESTINATION
-        Mod/Ship/tankWeights
-)
-INSTALL(
-    FILES
-        ${ShipCreateTank_SRCS}
-    DESTINATION
-        Mod/Ship/tankCreateTank
-)
-INSTALL(
-    FILES
-        ${ShipGZ_SRCS}
-    DESTINATION
-        Mod/Ship/tankGZ
-)
-INSTALL(
-    FILES
-        ${SimCreate_SRCS}
-    DESTINATION
-        Mod/Ship/simCreate
-)
-INSTALL(
-    FILES
-        ${SimRun_SRCS}
-    DESTINATION
-        Mod/Ship/simRun
-)
-INSTALL(
-    FILES
-        ${SimPost_SRCS}
-    DESTINATION
-        Mod/Ship/simPost
 )
 INSTALL(
     FILES

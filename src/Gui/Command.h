@@ -155,7 +155,7 @@ protected:
     //@{
     /// Methods which gets called when activated, needs to be reimplemented!
     virtual void activated(int iMsg)=0;
-    /// Overite this method if your Cmd is not always active
+    /// Override this method if your Cmd is not always active
     virtual bool isActive(void){return true;} 
     /// Creates the used Action
     virtual Action * createAction(void);
@@ -184,7 +184,7 @@ public:
     /// Get pointer to the Application Window
     static Application*  getGuiApplication(void);   
     /// Get a reference to the selection 
-    Gui::SelectionSingleton&  getSelection(void);
+    static Gui::SelectionSingleton&  getSelection(void);
     /// Get pointer to the active gui document
     Gui::Document*  getActiveGuiDocument(void) const;
     /** Get pointer to the named or active App document

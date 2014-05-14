@@ -25,47 +25,40 @@
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
-#	include <stdio.h>
-# if defined (_POSIX_C_SOURCE)
-#   undef  _POSIX_C_SOURCE
-# endif // (re-)defined in pyconfig.h
-#	include <Python.h>
 #endif
 
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
-
-#include <App/Application.h>
-#include <Mod/Part/App/TopologyPy.h>
-
-#include "FeatureImportStep.h"
-#include "FeatureImportIges.h"
+#include "StepShapePy.h"
+#include "StepShape.h"
 
 
 /* registration table  */
-extern struct PyMethodDef Import_methods[];
+extern struct PyMethodDef Import_Import_methods[];
 
-
-// python entry
-#ifdef FC_OS_WIN32
-#	define ModuleExport __declspec(dllexport)
-#else
-#	define ModuleExport
-#endif
+PyDoc_STRVAR(module_doc,
+"This module is about import/export files formates.\n"
+"\n");
 extern "C" {
-void ModuleExport initImport() {
+void ImportExport initImport()
+{
+    PyObject* importModule = Py_InitModule3("Import", Import_Import_methods, module_doc); /* mod name, table ptr */
 
-	(void) Py_InitModule("Import", Import_methods);   /* mod name, table ptr */
+    try {
+        Base::Interpreter().loadModule("Part");
+    }
+    catch(const Base::Exception& e) {
+        PyErr_SetString(PyExc_ImportError, e.what());
+        return;
+    }
 
-  // load dependend module
-  Base::Interpreter().loadModule("Part");
+    // add mesh elements
+    Base::Interpreter().addType(&Import::StepShapePy  ::Type,importModule,"StepShape");
 
-	App::AbstractFeatureFactory().AddProducer("ImportStep",new App::AbstractFeatureProducer<Import::FeatureImportStep>);
-	App::AbstractFeatureFactory().AddProducer("ImportIges",new App::AbstractFeatureProducer<Import::FeatureImportIges>);
+        // init Type system
+    //Import::StepShape       ::init();
 
-	Base::Console().Log("Import loaded\n");
-
-	return;
+    Base::Console().Log("Loading Import module... done\n");
 }
 
 

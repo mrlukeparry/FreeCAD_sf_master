@@ -26,6 +26,7 @@
 
 #include <App/ComplexGeoData.h>
 #include <Base/Placement.h>
+#include <Base/Quantity.h>
 
 #include <vector>
 #include <list>
@@ -35,6 +36,7 @@ class SMESH_Gen;
 class SMESH_Mesh;
 class SMESH_Hypothesis;
 class TopoDS_Shape;
+class TopoDS_Face;
 
 namespace Fem
 {
@@ -81,7 +83,10 @@ public:
 
     /** @name search and retraivel */
     //@{
+    /// retriving by region growing
     std::set<long> getSurfaceNodes(long ElemId,short FaceId, float Angle=360)const;
+    /// retrivinb by face
+    std::set<long> getSurfaceNodes(const TopoDS_Face &face)const;
     //@}
 
     /** @name Placement control */
@@ -92,6 +97,8 @@ public:
     Base::Matrix4D getTransform(void) const;
     /// Bound box from the shape
     Base::BoundBox3d getBoundBox(void)const;
+    /// get the volume (when there are volume elements)
+    Base::Quantity getVolume(void)const;
     //@}
 
     /** @name Modification */
@@ -100,16 +107,35 @@ public:
     void transformGeometry(const Base::Matrix4D &rclMat);
     //@}
 
+    struct FemMeshInfo {
+	    int numFaces; 
+        int numNode;
+        int numTria;
+        int numQuad;
+        int numPoly;
+        int numVolu;
+        int numTetr;
+        int numHexa;
+        int numPyrd;
+        int numPris;
+        int numHedr;
+    };
+
+    ///
+    struct FemMeshInfo getInfo(void) const;
+
     /// import from files
     void read(const char *FileName);
     void write(const char *FileName) const;
-    void writeABAQUS(const std::string &Filename, Base::Placement* = 0) const;
+    void writeABAQUS(const std::string &Filename) const;
 
 private:
     void copyMeshData(const FemMesh&);
     void readNastran(const std::string &Filename);
 
 private:
+    /// positioning matrix
+    Base::Matrix4D _Mtrx;
     SMESH_Gen  *myGen;
     SMESH_Mesh *myMesh;
 

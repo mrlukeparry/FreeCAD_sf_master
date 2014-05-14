@@ -48,6 +48,7 @@ public:
   App::PropertyInteger      Integer;
   App::PropertyFloat        Float;
   App::PropertyBool         Bool;
+  App::PropertyBoolList     BoolList;
   App::PropertyString       String;
   App::PropertyPath         Path;
   App::PropertyStringList   StringList;
@@ -93,6 +94,10 @@ public:
   App::PropertyInteger   TypeAll;
   App::PropertyInteger   TypeTransient;
   
+  App::PropertyQuantity  QuantityLength;
+  //App::PropertyQuantity  QuantityMass;
+  //App::PropertyQuantity  QuantityAngle;
+
   /** @name methods overide Feature */
   //@{
   /// recalculate the Feature

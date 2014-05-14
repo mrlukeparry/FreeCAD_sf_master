@@ -77,6 +77,7 @@ SET(Document_CPP_SRCS
     Plane.cpp
     Transactions.cpp
     VRMLObject.cpp
+	MaterialObject.cpp
 )
 
 SET(Document_HPP_SRCS
@@ -98,6 +99,7 @@ SET(Document_HPP_SRCS
     Plane.h
     Transactions.h
     VRMLObject.h
+	MaterialObject.h
 )
 SET(Document_SRCS
     ${Document_CPP_SRCS}
@@ -168,34 +170,22 @@ SET(FreeCADApp_SRCS
 
 if(MSVC)
     add_definitions(-D_PreComp_)
-    ADD_MSVC_PRECOMPILED_HEADER("PreCompiled.h" "PreCompiled.cpp" FreeCADApp_CPP_SRCS)
+    ADD_MSVC_PRECOMPILED_HEADER(FreeCADApp PreCompiled.h PreCompiled.cpp FreeCADApp_CPP_SRCS)
 endif(MSVC)
 
 add_library(FreeCADApp SHARED ${FreeCADApp_SRCS})
 
 target_link_libraries(FreeCADApp ${FreeCADApp_LIBS})
 
-# Note this is IDE specific, not necessarily platform specific
-if(MSVC)
-    set_target_properties(FreeCADApp PROPERTIES DEBUG_OUTPUT_NAME "FreeCADAppD")
-    set_target_properties(FreeCADApp PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    # dirty hack to avoid Debug/Release subdirectory
-    set_target_properties(FreeCADApp PROPERTIES PREFIX "../")
-elseif(MINGW)
-    set_target_properties(FreeCADApp PROPERTIES DEBUG_OUTPUT_NAME "FreeCADAppD")
-    set_target_properties(FreeCADApp PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-else(MSVC)
-    set_target_properties(FreeCADApp PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-    set_target_properties(FreeCADApp PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
-endif(MSVC)
+SET_BIN_DIR(FreeCADApp FreeCADApp)
 
 if(WIN32)
     INSTALL(TARGETS FreeCADApp
         RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
 else(WIN32)
     INSTALL(TARGETS FreeCADApp
-        LIBRARY DESTINATION lib
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
 endif(WIN32)

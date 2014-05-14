@@ -30,6 +30,12 @@
 *                                                                              *
 *******************************************************************************/
 
+#ifdef WIN32
+	// We MUST declare this before including <algorithm> because windef.h has
+	// definitions for min and max that mess up the std::min and std::max methods.
+	#define NOMINMAX
+#endif // WIN32
+
 #include "clipper.hpp"
 #include <cmath>
 #include <ctime>
@@ -38,6 +44,10 @@
 #include <stdexcept>
 #include <cstring>
 #include <cstdlib>
+
+#ifdef WIN32
+	#include <stdlib.h>	// for _abs64() prototype
+#endif
 
 namespace clipper {
 
@@ -60,7 +70,11 @@ class Int128
     Int128(long64 _lo = 0)
     {
       hi = 0;
-      lo = std::abs(_lo);
+	  #ifdef WIN32
+		lo = _abs64(_lo);
+	  #else
+		lo = std::abs(_lo);
+	  #endif
       if (_lo < 0) Negate(*this);
     }
 
@@ -69,7 +83,11 @@ class Int128
     long64 operator= (const long64 &val)
     {
       hi = 0;
-      lo = std::abs(val);
+	  #ifdef WIN32
+		lo = _abs64(val);
+	  #else
+		lo = std::abs(val);
+	  #endif
       if (val < 0) Negate(*this);
       return val;
     }

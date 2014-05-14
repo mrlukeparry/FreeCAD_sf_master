@@ -21,7 +21,7 @@
  ***************************************************************************/
 
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 # include <BRepPrimAPI_MakeBox.hxx>
 # include <TopoDS_Face.hxx>
@@ -106,7 +106,7 @@ static PyObject * _registerPyTPGFactory_(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &obj)) { //, &method
 		char *error = new char[120];
 		error[0] = 0;
-		sprintf(error, "Cam._registerTPGManagerCallback_() expects 1 parameters, but given %i", PyTuple_Size(args));
+		sprintf(error, "Cam._registerTPGManagerCallback_() expects 1 parameters, but given %i", int(PyTuple_Size(args)));
 		PyErr_SetString(PyExc_TypeError, error);
 		return NULL;
 	}
@@ -151,7 +151,7 @@ static PyObject *updateProgressPyTPG(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ss|i", &tpgid, &status, &progress)) {
 		char *error = new char[120];
 		error[0] = 0;
-		sprintf(error, "Cam.updateProgressPyTPG() expects 2 or 3 parameters (str, str, int), but given %i", PyTuple_Size(args));
+		sprintf(error, "Cam.updateProgressPyTPG() expects 2 or 3 parameters (str, str, int), but given %i", int(PyTuple_Size(args)));
 		PyErr_SetString(PyExc_TypeError, error);
 		return NULL;
 	}
@@ -183,7 +183,7 @@ static PyObject *test(PyObject *self, PyObject *args)
 //	Cam::PyTPGManager().test();
     Cam::TPGFactory().scanPlugins();
     Cam::TPGDescriptorCollection *plugins = Cam::TPGFactory().getDescriptors();
-	for (int i = 0; i < plugins->size(); i++)
+	for (::size_t i = 0; i < plugins->size(); i++)
 		plugins->at(i)->print();
 
 	if (plugins->size() > 0)
@@ -197,9 +197,9 @@ static PyObject *test(PyObject *self, PyObject *args)
             printf(" '%s'\n", ts(desc));
             // test the pyTPG API
             vector<QString> actions = tpg->getActions();
-            for (int i = 0; i < actions.size(); i++) {
+			for (::size_t i = 0; i < actions.size(); i++) {
                 printf(" - Action: %s\n", ts(actions[i]));
-                Cam::TPGSettings *settings = tpg->getSettings(actions[i]);
+                Cam::Settings::TPGSettings *settings = tpg->getSettingDefinitions();
                 settings->print();
                 delete settings;
             }
@@ -219,7 +219,7 @@ static PyObject *test1(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &str)) {
 		char *error = new char[120];
 		error[0] = 0;
-		sprintf(error, "Cam.test1() expects 1 parameters, but given %i", PyTuple_Size(args));
+		sprintf(error, "Cam.test1() expects 1 parameters, but given %i", int(PyTuple_Size(args)));
 		PyErr_SetString(PyExc_TypeError, error);
 		return NULL;
 	}

@@ -20,20 +20,18 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
 #include "CppTPGPlugin.h"
 #include "CppTPGDescriptorWrapper.h"
 
-#include <dlfcn.h>
-
 namespace Cam {
 
-CppTPGPlugin::CppTPGPlugin(QString filename) {
+CppTPGPlugin::CppTPGPlugin(QString filename) : library(filename)
+{
     this->filename = filename;
-    library = NULL;
     getDescriptorsPtr = NULL;
     getTPGPtr = NULL;
     descriptors = NULL;
@@ -42,9 +40,20 @@ CppTPGPlugin::CppTPGPlugin(QString filename) {
 
 CppTPGPlugin::~CppTPGPlugin() {
     if (descriptors != NULL)
+	{
         descriptors->release();
-    if (library != NULL)
+		descriptors = NULL;
+	}
+
+    if (library.isLoaded())
+	{
         close();
+	}
+
+	getTPGPtr = NULL;
+	getDescriptorsPtr = NULL;
+
+	refcnt = 0;
 }
 
 /**
@@ -71,7 +80,7 @@ Cam::TPGDescriptorCollection* CppTPGPlugin::getDescriptors() {
             return result;
         }
     }
-    printf("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
+    qWarning("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
     return NULL;
 }
 
@@ -82,10 +91,10 @@ Cam::TPGDescriptorCollection* CppTPGPlugin::getDescriptors() {
  * implementation once all references are released
  */
 TPG* CppTPGPlugin::getTPG(QString id) {
-    if (isOpen()) {
+    if ((isOpen()) && (getTPGPtr != NULL)) {
         return getTPGPtr(id);
     }
-    printf("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
+    qWarning("Warning: NULL descriptors: %s\nError: %s\n", this->filename.toAscii().constData(), this->error.toAscii().constData());
     return NULL;
 }
 
@@ -103,28 +112,33 @@ CppTPGPlugin* CppTPGPlugin::grab() {
 void CppTPGPlugin::release() {
     refcnt--;
     if (refcnt <= 0)
+	{
         delete this;
+	}
 }
 
 /**
  * Makes sure library is open, attempts to open it if it isn't.
  */
 bool CppTPGPlugin::isOpen() {
-    if (library == NULL) {
-        library = dlopen(filename.toAscii(), RTLD_NOW);
-        if (!library) {
-            error = QString::fromAscii(dlerror());
+	if (! library.isLoaded()) {
+        library.load();
+		if (! library.isLoaded()) {
+			error = library.errorString();
             return false;
         }
 
-        // open symbols as well
-        dlerror();// reset errors
-        getDescriptorsPtr = (getDescriptors_t*) dlsym(library, "getDescriptors");
-        const char* dlsym_error = dlerror();
-        if (dlsym_error != NULL) {error = QString::fromAscii(dlsym_error); close(); return false;}
-        getTPGPtr = (getTPG_t*) dlsym(library, "getTPG");
-        dlsym_error = dlerror();
-        if (dlsym_error != NULL) {error = QString::fromAscii(dlsym_error); close(); return false;}
+		getDescriptorsPtr = NULL;
+		getTPGPtr = NULL;
+
+        // resolve symbols
+		getDescriptorsPtr = (getDescriptors_t*) library.resolve("getDescriptors");
+		if (getDescriptorsPtr == NULL) {error = library.errorString(); close(); return false;}
+		qDebug("Correctly retrieved function pointers for getDescriptors() from plugin library %s\n", this->filename.toAscii().constData() );	// TODO - remove this when the module is more robust.
+
+		getTPGPtr = (getTPG_t*) library.resolve("getTPG");
+		if (getTPGPtr == NULL) {error = library.errorString(); close(); return false;}
+		printf("Correctly retrieved function pointer for getTPG() from plugin library %s\n", this->filename.toAscii().constData() );	// TODO - remove this when the module is more robust.
     }
     return true;
 }
@@ -133,20 +147,16 @@ bool CppTPGPlugin::isOpen() {
  * Close the library and cleanup pointers
  */
 void CppTPGPlugin::close() {
-    if (library != NULL) {
+	if (library.isLoaded()) {
 //        // clear caches
 //        if (descriptors != NULL)
 //            delDescriptorsPtr(descriptors);
 
-        dlclose(library);
-
-        // cleanup
-        library = NULL;
-        getDescriptorsPtr = NULL;
-//        delDescriptorsPtr = NULL;
-        getTPGPtr = NULL;
-//        delTPGPtr = NULL;
+		library.unload();
     }
+
+	getDescriptorsPtr = NULL;
+	getTPGPtr = NULL;
 }
 
 } /* namespace CamGui */

@@ -46,6 +46,7 @@
 
 #include <Base/Console.h>
 #include <Base/Exception.h>
+#include <Base/Interpreter.h>
 #include <App/Document.h>
 #include <App/DocumentObjectGroup.h>
 #include <App/DocumentObject.h>
@@ -61,6 +62,7 @@
 #include <Gui/View3DInventor.h>
 #include <Gui/View3DInventorViewer.h>
 #include <Gui/WaitCursor.h>
+#include <CXX/Objects.hxx>
 
 #include "DlgEvaluateMeshImp.h"
 #include "DlgRegularSolidImp.h"
@@ -171,18 +173,48 @@ void CmdMeshUnion::activated(int iMsg)
     std::string name1 = obj.front()->getNameInDocument();
     std::string name2 = obj.back()->getNameInDocument();
     std::string name3 = getUniqueObjectName("Union");
-    openCommand("Mesh Union");
-    doCommand(Doc,
-        "import Mesh,MeshGui\n"
-        "mesh = App.ActiveDocument.%s.Mesh."
-        "unite(App.ActiveDocument.%s.Mesh)\n"
-        "App.activeDocument().addObject(\"Mesh::Feature\",\"%s\")\n"
-        "App.activeDocument().%s.Mesh = mesh\n",
-        name1.c_str(), name2.c_str(),
-        name3.c_str(), name3.c_str());
- 
-    updateActive();
-    commitCommand();
+
+    try {
+        openCommand("Mesh union");
+        doCommand(Doc,
+            "import OpenSCADUtils\n"
+            "mesh = OpenSCADUtils.meshoptempfile('union',(App.ActiveDocument.%s.Mesh,App.ActiveDocument.%s.Mesh))\n"
+            "App.ActiveDocument.addObject(\"Mesh::Feature\",\"%s\")\n"
+            "App.ActiveDocument.%s.Mesh = mesh\n",
+            name1.c_str(), name2.c_str(),
+            name3.c_str(), name3.c_str());
+
+        updateActive();
+        commitCommand();
+    }
+    catch (...) {
+        abortCommand();
+        Base::PyGILStateLocker lock;
+        PyObject* main = PyImport_AddModule("__main__");
+        PyObject* dict = PyModule_GetDict(main);
+        Py::Dict d(PyDict_Copy(dict), true);
+
+        const char* cmd = "import OpenSCADUtils\nopenscadfilename = OpenSCADUtils.searchforopenscadexe()";
+        PyObject* result = PyRun_String(cmd, Py_file_input, d.ptr(), d.ptr());
+        Py_XDECREF(result);
+
+        bool found = false;
+        if (d.hasKey("openscadfilename")) {
+            found = (bool)Py::Boolean(d.getItem("openscadfilename"));
+        }
+
+        if (found) {
+            QMessageBox::critical(Gui::getMainWindow(),
+                qApp->translate("Mesh_Union", "OpenSCAD"),
+                qApp->translate("Mesh_Union", "Unknwon error occured while running OpenSCAD."));
+        }
+        else {
+            QMessageBox::warning(Gui::getMainWindow(),
+                qApp->translate("Mesh_Union", "OpenSCAD"),
+                qApp->translate("Mesh_Union", "OpenSCAD cannot be found on your system.\n"
+                                              "Please visit http://www.openscad.org/index.html to install it."));
+        }
+    }
 }
 
 bool CmdMeshUnion::isActive(void)
@@ -211,18 +243,48 @@ void CmdMeshDifference::activated(int iMsg)
     std::string name1 = obj.front()->getNameInDocument();
     std::string name2 = obj.back()->getNameInDocument();
     std::string name3 = getUniqueObjectName("Difference");
-    openCommand("Mesh Union");
-    doCommand(Doc,
-        "import Mesh,MeshGui\n"
-        "mesh = App.ActiveDocument.%s.Mesh."
-        "difference(App.ActiveDocument.%s.Mesh)\n"
-        "App.activeDocument().addObject(\"Mesh::Feature\",\"%s\")\n"
-        "App.activeDocument().%s.Mesh = mesh\n",
-        name1.c_str(), name2.c_str(),
-        name3.c_str(), name3.c_str());
+    openCommand("Mesh difference");
 
-    updateActive();
-    commitCommand();
+    try {
+        doCommand(Doc,
+            "import OpenSCADUtils\n"
+            "mesh = OpenSCADUtils.meshoptempfile('difference',(App.ActiveDocument.%s.Mesh,App.ActiveDocument.%s.Mesh))\n"
+            "App.ActiveDocument.addObject(\"Mesh::Feature\",\"%s\")\n"
+            "App.ActiveDocument.%s.Mesh = mesh\n",
+            name1.c_str(), name2.c_str(),
+            name3.c_str(), name3.c_str());
+
+        updateActive();
+        commitCommand();
+    }
+    catch (...) {
+        abortCommand();
+        Base::PyGILStateLocker lock;
+        PyObject* main = PyImport_AddModule("__main__");
+        PyObject* dict = PyModule_GetDict(main);
+        Py::Dict d(PyDict_Copy(dict), true);
+
+        const char* cmd = "import OpenSCADUtils\nopenscadfilename = OpenSCADUtils.searchforopenscadexe()";
+        PyObject* result = PyRun_String(cmd, Py_file_input, d.ptr(), d.ptr());
+        Py_XDECREF(result);
+
+        bool found = false;
+        if (d.hasKey("openscadfilename")) {
+            found = (bool)Py::Boolean(d.getItem("openscadfilename"));
+        }
+
+        if (found) {
+            QMessageBox::critical(Gui::getMainWindow(),
+                qApp->translate("Mesh_Union", "OpenSCAD"),
+                qApp->translate("Mesh_Union", "Unknwon error occured while running OpenSCAD."));
+        }
+        else {
+            QMessageBox::warning(Gui::getMainWindow(),
+                qApp->translate("Mesh_Union", "OpenSCAD"),
+                qApp->translate("Mesh_Union", "OpenSCAD cannot be found on your system.\n"
+                                              "Please visit http://www.openscad.org/index.html to install it."));
+        }
+    }
 }
 
 bool CmdMeshDifference::isActive(void)
@@ -251,18 +313,48 @@ void CmdMeshIntersection::activated(int iMsg)
     std::string name1 = obj.front()->getNameInDocument();
     std::string name2 = obj.back()->getNameInDocument();
     std::string name3 = getUniqueObjectName("Intersection");
-    openCommand("Mesh Union");
-    doCommand(Doc,
-        "import Mesh,MeshGui\n"
-        "mesh = App.ActiveDocument.%s.Mesh."
-        "intersect(App.ActiveDocument.%s.Mesh)\n"
-        "App.activeDocument().addObject(\"Mesh::Feature\",\"%s\")\n"
-        "App.activeDocument().%s.Mesh = mesh\n",
-        name1.c_str(), name2.c_str(),
-        name3.c_str(), name3.c_str());
+    openCommand("Mesh intersection");
 
-    updateActive();
-    commitCommand();
+    try {
+        doCommand(Doc,
+            "import OpenSCADUtils\n"
+            "mesh = OpenSCADUtils.meshoptempfile('intersection',(App.ActiveDocument.%s.Mesh,App.ActiveDocument.%s.Mesh))\n"
+            "App.ActiveDocument.addObject(\"Mesh::Feature\",\"%s\")\n"
+            "App.ActiveDocument.%s.Mesh = mesh\n",
+            name1.c_str(), name2.c_str(),
+            name3.c_str(), name3.c_str());
+
+        updateActive();
+        commitCommand();
+    }
+    catch (...) {
+        abortCommand();
+        Base::PyGILStateLocker lock;
+        PyObject* main = PyImport_AddModule("__main__");
+        PyObject* dict = PyModule_GetDict(main);
+        Py::Dict d(PyDict_Copy(dict), true);
+
+        const char* cmd = "import OpenSCADUtils\nopenscadfilename = OpenSCADUtils.searchforopenscadexe()";
+        PyObject* result = PyRun_String(cmd, Py_file_input, d.ptr(), d.ptr());
+        Py_XDECREF(result);
+
+        bool found = false;
+        if (d.hasKey("openscadfilename")) {
+            found = (bool)Py::Boolean(d.getItem("openscadfilename"));
+        }
+
+        if (found) {
+            QMessageBox::critical(Gui::getMainWindow(),
+                qApp->translate("Mesh_Union", "OpenSCAD"),
+                qApp->translate("Mesh_Union", "Unknwon error occured while running OpenSCAD."));
+        }
+        else {
+            QMessageBox::warning(Gui::getMainWindow(),
+                qApp->translate("Mesh_Union", "OpenSCAD"),
+                qApp->translate("Mesh_Union", "OpenSCAD cannot be found on your system.\n"
+                                              "Please visit http://www.openscad.org/index.html to install it."));
+        }
+    }
 }
 
 bool CmdMeshIntersection::isActive(void)
@@ -283,7 +375,7 @@ CmdMeshImport::CmdMeshImport()
     sToolTipText  = QT_TR_NOOP("Imports a mesh from file");
     sWhatsThis    = "Mesh_Import";
     sStatusTip    = QT_TR_NOOP("Imports a mesh from file");
-    sPixmap       = "import_mesh";
+    sPixmap       = "Mesh_Import_Mesh";
 }
 
 void CmdMeshImport::activated(int iMsg)
@@ -335,7 +427,7 @@ CmdMeshExport::CmdMeshExport()
     sToolTipText  = QT_TR_NOOP("Exports a mesh to file");
     sWhatsThis    = "Mesh_Export";
     sStatusTip    = QT_TR_NOOP("Exports a mesh to file");
-    sPixmap       = "export_mesh";
+    sPixmap       = "Mesh_Export_Mesh";
 }
 
 void CmdMeshExport::activated(int iMsg)
@@ -356,6 +448,7 @@ void CmdMeshExport::activated(int iMsg)
     ext << qMakePair<QString, QByteArray>(QObject::tr("Alias Mesh (*.obj)"), "OBJ");
     ext << qMakePair<QString, QByteArray>(QObject::tr("Object File Format (*.off)"), "OFF");
     ext << qMakePair<QString, QByteArray>(QObject::tr("Inventor V2.1 ascii (*.iv)"), "IV");
+    ext << qMakePair<QString, QByteArray>(QObject::tr("X3D Extensible 3D(*.x3d)"), "X3D");
     ext << qMakePair<QString, QByteArray>(QObject::tr("Standford Polygon (*.ply)"), "PLY");
     ext << qMakePair<QString, QByteArray>(QObject::tr("VRML V2.0 (*.wrl *.vrml)"), "VRML");
     ext << qMakePair<QString, QByteArray>(QObject::tr("Compressed VRML 2.0 (*.wrz)"), "WRZ");
@@ -380,10 +473,11 @@ void CmdMeshExport::activated(int iMsg)
         }
 
         //openCommand("Export Mesh");
-        doCommand(Doc,"FreeCAD.ActiveDocument.getObject(\"%s\").Mesh.write(\"%s\",\"%s\")",
+        doCommand(Doc,"FreeCAD.ActiveDocument.getObject(\"%s\").Mesh.write(\"%s\",\"%s\",\"%s\")",
                  docObj->getNameInDocument(),
                  (const char*)fn.toUtf8(),
-                 (const char*)extension);
+                 (const char*)extension,
+                 docObj->Label.getValue());
         //commitCommand();
     }
 }
@@ -425,7 +519,7 @@ void CmdMeshFromGeometry::activated(int iMsg)
             (*it)->getPropertyMap(Map);
             Mesh::MeshObject mesh;
             for (std::map<std::string, App::Property*>::iterator jt = Map.begin(); jt != Map.end(); ++jt) {
-                if (jt->second->getTypeId().isDerivedFrom(App::PropertyComplexGeoData::getClassTypeId())) {
+                if (jt->first == "Shape" && jt->second->getTypeId().isDerivedFrom(App::PropertyComplexGeoData::getClassTypeId())) {
                     std::vector<Base::Vector3d> aPoints;
                     std::vector<Data::ComplexGeoData::Facet> aTopo;
                     static_cast<App::PropertyComplexGeoData*>(jt->second)->getFaces(aPoints, aTopo,(float)tol);
@@ -447,6 +541,33 @@ bool CmdMeshFromGeometry::isActive(void)
     return getSelection().countObjectsOfType(App::GeoFeature::getClassTypeId()) >= 1;
 }
 
+//===========================================================================
+// Mesh_FromPart
+//===========================================================================
+DEF_STD_CMD_A(CmdMeshFromPartShape);
+
+CmdMeshFromPartShape::CmdMeshFromPartShape()
+  : Command("Mesh_FromPartShape")
+{
+    sAppModule    = "Mesh";
+    sGroup        = QT_TR_NOOP("Mesh");
+    sMenuText     = QT_TR_NOOP("Create mesh from shape...");
+    sToolTipText  = QT_TR_NOOP("Tessellate shape");
+    sWhatsThis    = sToolTipText;
+    sStatusTip    = sToolTipText;
+    sPixmap       = "Mesh_Mesh_from_Shape.svg";
+}
+
+void CmdMeshFromPartShape::activated(int iMsg)
+{
+    doCommand(Doc,"import MeshPartGui, FreeCADGui\nFreeCADGui.runCommand('MeshPart_Mesher')\n");
+}
+
+bool CmdMeshFromPartShape::isActive(void)
+{
+    return (hasActiveDocument() && !Gui::Control().activeDialog());
+}
+
 //--------------------------------------------------------------------------------------
 
 DEF_STD_CMD_A(CmdMeshVertexCurvature);
@@ -460,7 +581,7 @@ CmdMeshVertexCurvature::CmdMeshVertexCurvature()
     sToolTipText  = QT_TR_NOOP("Calculates the curvature of the vertices of a mesh");
     sWhatsThis    = "Mesh_VertexCurvature";
     sStatusTip    = QT_TR_NOOP("Calculates the curvature of the vertices of a mesh");
-    sPixmap       = "curv_info";
+    sPixmap       = "Mesh_Curvature_Plot";
 }
 
 void CmdMeshVertexCurvature::activated(int iMsg)
@@ -800,6 +921,94 @@ bool CmdMeshPolyTrim::isActive(void)
 
 //--------------------------------------------------------------------------------------
 
+DEF_STD_CMD_A(CmdMeshTrimByPlane);
+
+CmdMeshTrimByPlane::CmdMeshTrimByPlane()
+  : Command("Mesh_TrimByPlane")
+{
+    sAppModule    = "Mesh";
+    sGroup        = QT_TR_NOOP("Mesh");
+    sMenuText     = QT_TR_NOOP("Trim mesh with a plane");
+    sToolTipText  = QT_TR_NOOP("Trims a mesh with a plane");
+    sStatusTip    = QT_TR_NOOP("Trims a mesh with a plane");
+}
+
+void CmdMeshTrimByPlane::activated(int iMsg)
+{
+    Base::Type partType = Base::Type::fromName("Part::Plane");
+    std::vector<App::DocumentObject*> plane = getSelection().getObjectsOfType(partType);
+    if (plane.empty()) {
+        QMessageBox::warning(Gui::getMainWindow(),
+            qApp->translate("Mesh_TrimByPlane", "Select plane"),
+            qApp->translate("Mesh_TrimByPlane", "Please select a plane at which you trim the mesh."));
+        return;
+    }
+
+    Base::Placement plm = static_cast<App::GeoFeature*>(plane.front())->Placement.getValue();
+    Base::Vector3d normal(0,0,1);
+    plm.getRotation().multVec(normal, normal);
+    Base::Vector3d view;
+    if (normal == Base::Vector3d(0,0,1)) {
+        view.Set(0,1,0);
+    }
+    else {
+        Base::Vector3d dir(0,0,1);
+        view = normal % dir;
+    }
+
+    Base::Vector3d base = plm.getPosition();
+    Base::Vector3d up = normal % view;
+
+    Base::Rotation rot(Base::Vector3d(0,0,1), view);
+    Base::Matrix4D mat;
+    rot.getValue(mat);
+    Base::ViewProjMatrix proj(mat);
+
+    openCommand("Trim with plane");
+    std::vector<App::DocumentObject*> docObj = Gui::Selection().getObjectsOfType(Mesh::Feature::getClassTypeId());
+    for (std::vector<App::DocumentObject*>::iterator it = docObj.begin(); it != docObj.end(); ++it) {
+        Mesh::MeshObject* mesh = static_cast<Mesh::Feature*>(*it)->Mesh.startEditing();
+        Base::BoundBox3d bbox = mesh->getBoundBox();
+        double len = bbox.CalcDiagonalLength();
+        // project center of bbox onto plane and use this as base point
+        Base::Vector3d cnt = bbox.CalcCenter();
+        double dist = (cnt-base)*normal;
+        base = cnt - normal * dist;
+
+        Base::Vector3d p1 = base + up * len;
+        Base::Vector3d p2 = base - up * len;
+        Base::Vector3d p3 = p2 + normal * len;
+        Base::Vector3d p4 = p1 + normal * len;
+        p1 = mat * p1;
+        p2 = mat * p2;
+        p3 = mat * p3;
+        p4 = mat * p4;
+
+        Base::Polygon2D polygon2d;
+        polygon2d.Add(Base::Vector2D(p1.x, p1.y));
+        polygon2d.Add(Base::Vector2D(p2.x, p2.y));
+        polygon2d.Add(Base::Vector2D(p3.x, p3.y));
+        polygon2d.Add(Base::Vector2D(p4.x, p4.y));
+
+        Mesh::MeshObject::CutType type = Mesh::MeshObject::INNER;
+        mesh->trim(polygon2d, proj, type);
+        static_cast<Mesh::Feature*>(*it)->Mesh.finishEditing();
+        (*it)->purgeTouched();
+    }
+    commitCommand();
+}
+
+bool CmdMeshTrimByPlane::isActive(void)
+{
+    // Check for the selected mesh feature (all Mesh types)
+    if (getSelection().countObjectsOfType(Mesh::Feature::getClassTypeId()) != 1)
+        return false;
+
+    return true;
+}
+
+//--------------------------------------------------------------------------------------
+
 DEF_STD_CMD_A(CmdMeshPolySplit);
 
 CmdMeshPolySplit::CmdMeshPolySplit()
@@ -970,7 +1179,7 @@ void CmdMeshEvaluateFacet::activated(int iMsg)
     if (view) {
         Gui::View3DInventorViewer* viewer = view->getViewer();
         viewer->setEditing(true);
-        viewer->setEditingCursor(QCursor(Gui::BitmapFactory().pixmap("mesh_pipette"),4,29));
+        viewer->setEditingCursor(QCursor(Gui::BitmapFactory().pixmapFromSvg("mesh_pipette",QSize(32,32)),4,29));
         viewer->addEventCallback(SoMouseButtonEvent::getClassTypeId(), MeshGui::ViewProviderMeshFaceSet::faceInfoCallback);
      }
 }
@@ -1003,6 +1212,7 @@ CmdMeshRemoveComponents::CmdMeshRemoveComponents()
     sToolTipText  = QT_TR_NOOP("Remove topologic independent components from the mesh");
     sWhatsThis    = "Mesh_RemoveComponents";
     sStatusTip    = QT_TR_NOOP("Remove topologic independent components from the mesh");
+    sPixmap       = "Mesh_Remove_Components";
 }
 
 void CmdMeshRemoveComponents::activated(int iMsg)
@@ -1019,9 +1229,19 @@ bool CmdMeshRemoveComponents::isActive(void)
 {
     // Check for the selected mesh feature (all Mesh types)
     App::Document* doc = getDocument();
-    return (doc && doc->countObjectsOfType
-            (Mesh::Feature::getClassTypeId()) > 0
-            && !Gui::Control().activeDialog());
+    if (!(doc && doc->countObjectsOfType(Mesh::Feature::getClassTypeId()) > 0))
+        return false;
+    Gui::Document* viewDoc = Gui::Application::Instance->getDocument(doc);
+    Gui::View3DInventor* view = dynamic_cast<Gui::View3DInventor*>(viewDoc->getActiveView());
+    if (view) {
+        Gui::View3DInventorViewer* viewer = view->getViewer();
+        if (viewer->isEditing())
+            return false;
+    }
+    if (Gui::Control().activeDialog())
+        return false;
+
+    return true;
 }
 
 //--------------------------------------------------------------------------------------
@@ -1120,7 +1340,8 @@ CmdMeshSmoothing::CmdMeshSmoothing()
 
 void CmdMeshSmoothing::activated(int iMsg)
 {
-    MeshGui::DlgSmoothing dlg(Gui::getMainWindow());
+#if 0
+    MeshGui::SmoothingDialog dlg(Gui::getMainWindow());
     if (dlg.exec() == QDialog::Accepted) {
         Gui::WaitCursor wc;
         openCommand("Mesh Smoothing");
@@ -1149,10 +1370,17 @@ void CmdMeshSmoothing::activated(int iMsg)
         }
         commitCommand();
     }
+#else
+    Gui::Control().showDialog(new MeshGui::TaskSmoothing());
+#endif
 }
 
 bool CmdMeshSmoothing::isActive(void)
 {
+#if 1
+    if (Gui::Control().activeDialog())
+        return false;
+#endif
     // Check for the selected mesh feature (all Mesh types)
     return getSelection().countObjectsOfType(Mesh::Feature::getClassTypeId()) > 0;
 }
@@ -1170,6 +1398,7 @@ CmdMeshHarmonizeNormals::CmdMeshHarmonizeNormals()
     sToolTipText  = QT_TR_NOOP("Harmonizes the normals of the mesh");
     sWhatsThis    = "Mesh_HarmonizeNormals";
     sStatusTip    = QT_TR_NOOP("Harmonizes the normals of the mesh");
+    sPixmap       = "Mesh_Harmonize_Normals";
 }
 
 void CmdMeshHarmonizeNormals::activated(int iMsg)
@@ -1203,6 +1432,7 @@ CmdMeshFlipNormals::CmdMeshFlipNormals()
     sToolTipText  = QT_TR_NOOP("Flips the normals of the mesh");
     sWhatsThis    = "Mesh_FlipNormals";
     sStatusTip    = QT_TR_NOOP("Flips the normals of the mesh");
+    sPixmap       = "Mesh_Flip_Normals";
 }
 
 void CmdMeshFlipNormals::activated(int iMsg)
@@ -1275,7 +1505,7 @@ CmdMeshBuildRegularSolid::CmdMeshBuildRegularSolid()
     sToolTipText  = QT_TR_NOOP("Builds a regular solid");
     sWhatsThis    = "Mesh_BuildRegularSolid";
     sStatusTip    = QT_TR_NOOP("Builds a regular solid");
-    sPixmap       = "solid_mesh";
+    sPixmap       = "Mesh_Regular_Solid";
 }
 
 void CmdMeshBuildRegularSolid::activated(int iMsg)
@@ -1419,6 +1649,7 @@ void CreateMeshCommands(void)
     rcCmdMgr.addCommand(new CmdMeshPolyCut());
     rcCmdMgr.addCommand(new CmdMeshPolySplit());
     rcCmdMgr.addCommand(new CmdMeshPolyTrim());
+    rcCmdMgr.addCommand(new CmdMeshTrimByPlane());
     rcCmdMgr.addCommand(new CmdMeshToolMesh());
     rcCmdMgr.addCommand(new CmdMeshTransform());
     rcCmdMgr.addCommand(new CmdMeshEvaluation());
@@ -1434,5 +1665,6 @@ void CreateMeshCommands(void)
     rcCmdMgr.addCommand(new CmdMeshFillInteractiveHole());
     rcCmdMgr.addCommand(new CmdMeshRemoveCompByHand());
     rcCmdMgr.addCommand(new CmdMeshFromGeometry());
+    rcCmdMgr.addCommand(new CmdMeshFromPartShape());
     rcCmdMgr.addCommand(new CmdMeshSegmentation());
 }

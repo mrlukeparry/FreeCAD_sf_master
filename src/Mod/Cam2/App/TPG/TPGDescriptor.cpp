@@ -19,12 +19,76 @@
  *   Suite 330, Boston, MA  02111-1307, USA                                *
  *                                                                         *
  ***************************************************************************/
-#include "../PreCompiled.h"
+
 #ifndef _PreComp_
 #endif
 
 #include "TPGDescriptor.h"
 
 namespace Cam {
+
+	 TPGDescriptor::TPGDescriptor(QString id, QString name, QString description, QString type) {
+        this->id = id;
+        this->name = name;
+        this->description = description;
+        this->type = type;
+        refcnt = 1;
+    }
+    /// Convenience method for using plain ascii string
+    TPGDescriptor::TPGDescriptor(const char *id, const char * name, const char * description,
+            const char * type) {
+        this->id = QString::fromAscii(id);
+        this->name = QString::fromAscii(name);
+        this->description = QString::fromAscii(description);
+        this->type = QString::fromAscii(type);
+        refcnt = 1;
+    }
+    TPGDescriptor::TPGDescriptor(const TPGDescriptor &copy) {
+        this->id = copy.id;
+        this->name = copy.name;
+        this->description = copy.description;
+        this->type = copy.type;
+        refcnt = 1;
+    }
+	TPGDescriptor::TPGDescriptor(const TPGDescriptor *copy) {
+        this->id = copy->id;
+        this->name = copy->name;
+        this->description = copy->description;
+        this->type = copy->type;
+        refcnt = 1;
+    }
+
+	/* virtual */ TPGDescriptor::~TPGDescriptor() {
+        qDebug("Deleted TPGDescriptor: %p\n", this);
+    }
+
+	/* virtual */ void TPGDescriptor::print() {
+        qDebug("- ('%s', '%s', '%s', '%s')\n", id.toAscii().constData(),
+                name.toAscii().constData(), description.toAscii().constData(),
+                type.toAscii().constData());
+    }
+
+
+
+
+
+
+    /**
+     * Increases reference count
+     */
+    TPGDescriptor *TPGDescriptor::grab() {
+        refcnt++;
+
+        return this;
+    }
+
+    /**
+     * Decreases reference count and deletes self if no other references
+     */
+	void TPGDescriptor::release() {
+        refcnt--;
+        if (refcnt == 0)
+            delete this;
+    }
 
 } /* namespace Cam */

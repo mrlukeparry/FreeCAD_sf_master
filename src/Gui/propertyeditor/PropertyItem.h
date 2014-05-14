@@ -36,6 +36,7 @@
 #include <Base/UnitsApi.h>
 #include <App/PropertyStandard.h>
 #include <Gui/Widgets.h>
+#include <Gui/InputField.h>
 
 Q_DECLARE_METATYPE(Base::Vector3f)
 Q_DECLARE_METATYPE(Base::Vector3d)
@@ -232,10 +233,9 @@ class GuiExport PropertyUnitItem: public PropertyItem
     virtual QVariant editorData(QWidget *editor) const;
 
 protected:
-    //virtual QVariant toString(const QVariant&) const;
+    virtual QVariant toString(const QVariant&) const;
     virtual QVariant value(const App::Property*) const;
     virtual void setValue(const QVariant&);
-    Base::QuantityType  UnitType;
 
     PropertyUnitItem();
 };
@@ -328,39 +328,6 @@ protected:
 
 protected:
     PropertyVectorItem();
-
-private:
-    PropertyFloatItem* m_x;
-    PropertyFloatItem* m_y;
-    PropertyFloatItem* m_z;
-};
-
-class GuiExport PropertyDoubleVectorItem: public PropertyItem
-{
-    Q_OBJECT
-    Q_PROPERTY(double x READ x WRITE setX DESIGNABLE true USER true)
-    Q_PROPERTY(double y READ y WRITE setY DESIGNABLE true USER true)
-    Q_PROPERTY(double z READ z WRITE setZ DESIGNABLE true USER true)
-    TYPESYSTEM_HEADER();
-
-    virtual QWidget* createEditor(QWidget* parent, const QObject* receiver, const char* method) const;
-    virtual void setEditorData(QWidget *editor, const QVariant& data) const;
-    virtual QVariant editorData(QWidget *editor) const;
-
-    double x() const;
-    void setX(double x);
-    double y() const;
-    void setY(double y);
-    double z() const;
-    void setZ(double z);
-
-protected:
-    virtual QVariant toString(const QVariant&) const;
-    virtual QVariant value(const App::Property*) const;
-    virtual void setValue(const QVariant&);
-
-protected:
-    PropertyDoubleVectorItem();
 
 private:
     PropertyFloatItem* m_x;
@@ -508,10 +475,11 @@ protected:
 private:
     bool init_axis;
     bool changed_value;
+    double rot_angle;
     Base::Vector3d rot_axis;
     PropertyAngleItem * m_a;
-    PropertyDoubleVectorItem* m_d;
-    PropertyDoubleVectorItem* m_p;
+    PropertyVectorItem* m_d;
+    PropertyVectorItem* m_p;
 };
 
 /**
@@ -640,6 +608,21 @@ protected:
     virtual QVariant toolTip(const App::Property*) const;
 };
 
+class LinkSelection : public QObject
+{
+    Q_OBJECT
+
+public:
+    LinkSelection(const QStringList&);
+    ~LinkSelection();
+
+public Q_SLOTS:
+    void select();
+
+private:
+    QStringList link;
+};
+
 class LinkLabel : public QLabel
 {
     Q_OBJECT
@@ -653,8 +636,11 @@ public:
 protected Q_SLOTS:
     void onLinkActivated(const QString&);
 
+Q_SIGNALS:
+    void linkChanged(const QStringList&);
+
 private:
-    QStringList object;
+    QStringList link;
 };
 
 /**

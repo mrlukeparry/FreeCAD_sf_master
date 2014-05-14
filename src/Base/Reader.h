@@ -161,10 +161,15 @@ public:
     bool isRegistered(Base::Persistence *Object) const;
     virtual void addName(const char*, const char*);
     virtual const char* getName(const char*) const;
+    virtual bool doNameMapping() const;
     //@}
 
     /// Schema Version of the document
     int DocumentSchema;
+    /// Version of FreeCAD that wrote this document
+    std::string ProgramVersion;
+    /// Version of the file format
+    int FileVersion;
 
 protected:
     /// read the next element
@@ -226,6 +231,18 @@ protected:
     };
     std::vector<FileEntry> FileList;
     std::vector<std::string> FileNames;
+};
+
+class BaseExport Reader : public std::istream
+{
+public:
+    Reader(std::istream&, int version);
+    int getFileVersion() const;
+    std::istream& getStream();
+
+private:
+    std::istream& _str;
+    int fileVersion;
 };
 
 }

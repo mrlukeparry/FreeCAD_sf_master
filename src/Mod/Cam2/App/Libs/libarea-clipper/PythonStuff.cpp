@@ -20,6 +20,7 @@
 #pragma implementation
 #endif
 
+#ifdef LIBAREA_USE_BOOST_PYTHON
 #include <boost/progress.hpp>
 #include <boost/timer.hpp>
 #include <boost/foreach.hpp>
@@ -31,11 +32,12 @@
 
 #include "clipper.hpp"
 using namespace clipper;
+using namespace area;
 
 
 namespace bp = boost::python;
 
-boost::python::list getVertices(const CCurve& curve) {
+boost::python::list getVertices(const area::CCurve& curve) {
 	boost::python::list vlist;
 	BOOST_FOREACH(const CVertex& vertex, curve.m_vertices) {
 		vlist.append(vertex);
@@ -45,13 +47,13 @@ boost::python::list getVertices(const CCurve& curve) {
 
 boost::python::list getCurves(const CArea& area) {
 	boost::python::list clist;
-	BOOST_FOREACH(const CCurve& curve, area.m_curves) {
+	BOOST_FOREACH(const area::CCurve& curve, area.m_curves) {
 		clist.append(curve);
     }
 	return clist;
 }
 
-static void print_curve(const CCurve& c)
+static void print_curve(const area::CCurve& c)
 {
 	unsigned int nvertices = c.m_vertices.size();
 	printf("number of vertices = %d\n", nvertices);
@@ -67,24 +69,24 @@ static void print_curve(const CCurve& c)
 
 static void print_area(const CArea &a)
 {
-	for(std::list<CCurve>::const_iterator It = a.m_curves.begin(); It != a.m_curves.end(); It++)
+	for(std::list<area::CCurve>::const_iterator It = a.m_curves.begin(); It != a.m_curves.end(); It++)
 	{
-		const CCurve& curve = *It;
+		const area::CCurve& curve = *It;
 		print_curve(curve);
 	}
 }
 
-static unsigned int num_vertices(const CCurve& curve)
+static unsigned int num_vertices(const area::CCurve& curve)
 {
 	return curve.m_vertices.size();
 }
 
-static CVertex FirstVertex(const CCurve& curve)
+static CVertex FirstVertex(const area::CCurve& curve)
 {
 	return curve.m_vertices.front();
 }
 
-static CVertex LastVertex(const CCurve& curve)
+static CVertex LastVertex(const area::CCurve& curve)
 {
 	return curve.m_vertices.back();
 }
@@ -112,20 +114,20 @@ static CArea AreaFromDxf(const char* filepath)
 	return area;
 }
 
-static void append_point(CCurve& c, const Point& p)
+static void append_point(area::CCurve& c, const Point& p)
 {
 	c.m_vertices.push_back(CVertex(p));
 }
 
 boost::python::list MakePocketToolpath(const CArea& a, double tool_radius, double extra_offset, double stepover, bool from_center, bool use_zig_zag, double zig_angle)
 {
-	std::list<CCurve> toolpath;
+	std::list<area::CCurve> toolpath;
 
 	CAreaPocketParams params(tool_radius, extra_offset, stepover, from_center, use_zig_zag ? ZigZagPocketMode : SpiralPocketMode, zig_angle);
 	a.SplitAndMakePocketToolpath(toolpath, params);
 
 	boost::python::list clist;
-	BOOST_FOREACH(const CCurve& c, toolpath) {
+	BOOST_FOREACH(const area::CCurve& c, toolpath) {
 		clist.append(c);
     }
 	return clist;
@@ -148,7 +150,7 @@ void dxfArea(CArea& area, const char* str)
 	area = CArea();
 }
 
-boost::python::list getCurveSpans(const CCurve& c)
+boost::python::list getCurveSpans(const area::CCurve& c)
 {
 	boost::python::list span_list;
 	const Point *prev_p = NULL;
@@ -167,7 +169,7 @@ boost::python::list getCurveSpans(const CCurve& c)
 	return span_list;
 }
 
-Span getFirstCurveSpan(const CCurve& c)
+Span getFirstCurveSpan(const area::CCurve& c)
 {
 	if(c.m_vertices.size() < 2)return Span();
 
@@ -177,7 +179,7 @@ Span getFirstCurveSpan(const CCurve& c)
 	return Span(p, *VIt, true);
 }
 
-Span getLastCurveSpan(const CCurve& c)
+Span getLastCurveSpan(const area::CCurve& c)
 {
 	if(c.m_vertices.size() < 2)return Span();
 
@@ -249,33 +251,33 @@ BOOST_PYTHON_MODULE(AreaClipper) {
 		.def_readwrite("v", &Span::m_v)
     ;
 
-	bp::class_<CCurve>("Curve")
-        .def(bp::init<CCurve>())
+	bp::class_<area::CCurve>("Curve")
+        .def(bp::init<area::CCurve>())
         .def("getVertices", &getVertices)
-        .def("append",&CCurve::append)
+        .def("append",&area::CCurve::append)
         .def("append",&append_point)
         .def("text", &print_curve)
-		.def("NearestPoint", static_cast< Point (CCurve::*)(const Point& p)const >(&CCurve::NearestPoint))
-		.def("Reverse", &CCurve::Reverse)
+		.def("NearestPoint", static_cast< Point (area::CCurve::*)(const Point& p)const >(&area::CCurve::NearestPoint))
+		.def("Reverse", &area::CCurve::Reverse)
 		.def("getNumVertices", &num_vertices)
 		.def("FirstVertex", &FirstVertex)
 		.def("LastVertex", &LastVertex)
-		.def("GetArea", &CCurve::GetArea)
-		.def("IsClockwise", &CCurve::IsClockwise)
-		.def("IsClosed", &CCurve::IsClosed)
-        .def("ChangeStart",&CCurve::ChangeStart)
-        .def("ChangeEnd",&CCurve::ChangeEnd)
-        .def("Offset",&CCurve::Offset)
-        .def("OffsetForward",&CCurve::OffsetForward)
+		.def("GetArea", &area::CCurve::GetArea)
+		.def("IsClockwise", &area::CCurve::IsClockwise)
+		.def("IsClosed", &area::CCurve::IsClosed)
+        .def("ChangeStart",&area::CCurve::ChangeStart)
+        .def("ChangeEnd",&area::CCurve::ChangeEnd)
+        .def("Offset",&area::CCurve::Offset)
+        .def("OffsetForward",&area::CCurve::OffsetForward)
         .def("GetSpans",&getCurveSpans)
         .def("GetFirstSpan",&getFirstCurveSpan)
         .def("GetLastSpan",&getLastCurveSpan)
-        .def("Break",&CCurve::Break)
-        .def("Perim",&CCurve::Perim)
-        .def("PerimToPoint",&CCurve::PerimToPoint)
-        .def("PointToPerim",&CCurve::PointToPerim)
-		.def("FitArcs",&CCurve::FitArcs)
-        .def("UnFitArcs",&CCurve::UnFitArcs)
+        .def("Break",&area::CCurve::Break)
+        .def("Perim",&area::CCurve::Perim)
+        .def("PerimToPoint",&area::CCurve::PerimToPoint)
+        .def("PointToPerim",&area::CCurve::PointToPerim)
+		.def("FitArcs",&area::CCurve::FitArcs)
+        .def("UnFitArcs",&area::CCurve::UnFitArcs)
     ;
 
 	bp::class_<CBox>("Box")
@@ -310,3 +312,6 @@ BOOST_PYTHON_MODULE(AreaClipper) {
     bp::def("AreaFromDxf", AreaFromDxf);
     bp::def("TangentialArc", TangentialArc);
 }
+
+#endif // LIBAREA_USE_BOOST_PYTHON
+

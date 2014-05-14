@@ -26,9 +26,11 @@
 
 #include <Inventor/nodekits/SoSubKit.h>
 #include <Inventor/nodekits/SoBaseKit.h>
+#include <Inventor/nodes/SoShape.h>
 #include <Inventor/fields/SoSFFloat.h>
 #include <Inventor/fields/SoSFColor.h>
 #include <Inventor/fields/SoSFString.h>
+#include <Inventor/fields/SoSFVec3f.h>
 
 class SbViewport;
 class SoState;

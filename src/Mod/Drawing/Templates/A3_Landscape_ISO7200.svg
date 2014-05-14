@@ -9,14 +9,14 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:freecad="http://sourceforge.net/apps/mediawiki/free-cad/index.php?title=Svg_Namespace"
+   xmlns:freecad="http://www.freecadweb.org/wiki/index.php?title=Svg_Namespace"
    width="420mm"
    height="297mm"
    viewBox="0 0 420 297"
    id="svg5211"
    version="1.1"
    inkscape:version="0.48.1 "
-   sodipodi:docname="iso7200-a4-portrait">
+   sodipodi:docname="iso7200-a3-landscape">
   <defs
      id="defs5213" />
   <sodipodi:namedview
@@ -38,6 +38,8 @@
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1" />
+<!-- Working space 20 10 410 287 -->
+<!-- Title block 230 251 410 287 -->
   <metadata
      id="metadata5216">
     <rdf:RDF>

@@ -130,7 +130,7 @@ InteractiveInterpreter::InteractiveInterpreter()
     Base::PyGILStateLocker lock;
     PyObject* module = PyImport_ImportModule("code");
     if (!module)
-    throw Base::PyException();
+        throw Base::PyException();
     PyObject* func = PyObject_GetAttrString(module, "InteractiveInterpreter");
     PyObject* args = Py_BuildValue("()");
     d = new InteractiveInterpreterP;
@@ -539,10 +539,18 @@ void PythonConsole::keyPressEvent(QKeyEvent * e)
 
           case Qt::Key_Period:
           {
-              // analyse context and show available call tips
-              int contextLength = cursor.position() - inputLineBegin.position();
-              TextEdit::keyPressEvent(e);
-              d->callTipsList->showTips( inputStrg.left( contextLength ) );
+              // In Qt 4.8 there is a strange behaviour because when pressing ":"
+              // then key is also set to 'Period' instead of 'Colon'. So we have
+              // to make sure we only handle the period.
+              if (e->text() == QLatin1String(".")) {
+                  // analyse context and show available call tips
+                  int contextLength = cursor.position() - inputLineBegin.position();
+                  TextEdit::keyPressEvent(e);
+                  d->callTipsList->showTips( inputStrg.left( contextLength ) );
+              }
+              else {
+                  TextEdit::keyPressEvent(e);
+              }
           }   break;
 
           case Qt::Key_Home:
@@ -786,8 +794,10 @@ bool PythonConsole::isComment(const QString& source) const
         QChar ch = source.at(i++);
         if (ch.isSpace())
             continue;
-        if (ch == QLatin1Char('#'))
+        else if (ch == QLatin1Char('#'))
             return true;
+        else
+            return false;
     }
 
     return false;
@@ -841,6 +851,14 @@ void PythonConsole::changeEvent(QEvent *e)
             connect(dw, SIGNAL(visibilityChanged(bool)),
                     this, SLOT(visibilityChanged(bool)));
         }
+    }
+    else if (e->type() == QEvent::StyleChange) {
+        QPalette pal = palette();
+        QColor color = pal.windowText().color();
+        unsigned long text = (color.red() << 24) | (color.green() << 16) | (color.blue() << 8);
+        // if this parameter is not already set use the style's window text color
+        text = getWindowParameter()->GetUnsigned("Text", text);
+        getWindowParameter()->SetUnsigned("Text", text);
     }
     TextEdit::changeEvent(e);
 }
@@ -1416,71 +1434,5 @@ void ConsoleHistory::doScratch( void )
 }
 
 // -----------------------------------------------------
-
-/* TRANSLATOR Gui::PythonInputField */
-
-PythonInputField::PythonInputField(QWidget* parent)
-  : QWidget(parent)
-{
-    QGridLayout* gridLayout = new QGridLayout(this);
-    gridLayout->setSpacing(6);
-    gridLayout->setMargin(9);
-
-    editField = new PythonEditor(this);
-    gridLayout->addWidget(editField, 0, 0, 1, 1);
-    setFocusProxy(editField);
-
-    QHBoxLayout* hboxLayout = new QHBoxLayout();
-    hboxLayout->setSpacing(6);
-    hboxLayout->setMargin(0);
-
-    QSpacerItem* spacerItem = new QSpacerItem(131, 31, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    hboxLayout->addItem(spacerItem);
-
-    okButton = new QPushButton(this);
-    hboxLayout->addWidget(okButton);
-    clearButton = new QPushButton(this);
-    hboxLayout->addWidget(clearButton);
-    gridLayout->addLayout(hboxLayout, 1, 0, 1, 1);
-
-
-    this->setWindowTitle(Gui::PythonConsole::tr("Python Input Dialog"));
-    okButton->setText(tr("OK"));
-    clearButton->setText(tr("Clear"));
-
-    QObject::connect(okButton, SIGNAL(clicked()), this, SIGNAL(textEntered()));
-    QObject::connect(clearButton, SIGNAL(clicked()), editField, SLOT(clear()));
-}
-
-PythonInputField::~PythonInputField()
-{
-}
-
-QString PythonInputField::getText() const
-{
-    return editField->toPlainText();
-}
-
-void PythonInputField::clear()
-{
-    return editField->clear();
-}
-
-void PythonInputField::changeEvent(QEvent *e)
-{
-    if (e->type() == QEvent::LanguageChange) {
-        this->setWindowTitle(Gui::PythonConsole::tr("Python Input Dialog"));
-        okButton->setText(tr("OK"));
-        clearButton->setText(tr("Clear"));
-    }
-    else {
-        QWidget::changeEvent(e);
-    }
-}
-
-void PythonInputField::showEvent(QShowEvent* e)
-{
-    editField->setFocus();
-}
 
 #include "moc_PythonConsole.cpp"

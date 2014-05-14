@@ -20,10 +20,10 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
-# include <qobject.h>
-# include <qmessagebox.h>
+# include <QObject>
+# include <QMessageBox>
 
 #endif
 # include <Gui/MainWindow.h>
@@ -104,12 +104,12 @@ void TPGLibraryDockWindow::selectionChanged(const QItemSelection &newselection, 
     QModelIndexList idxs = newselection.indexes();
 
     Cam::TPGDescriptor *tpg = tpgs->get(idxs[0].row());
-    html = "<html><body style=\"font-family:'Cantarell'; font-size:11pt; margin: 0;\">"\
-        "<p style=\"margin:0;\"><span style=\"font-weight:bold;\">Name</span>: " + tpg->name + "</p>"\
-        "<p style=\"margin:0;\"><span style=\"font-weight:bold;\">Description</span>: <br/>" + tpg->description + "</p>"\
+	html = QString::fromUtf8("<html><body style=\"font-family:'Cantarell'; font-size:11pt; margin: 0;\">"\
+		"<p style=\"margin:0;\"><span style=\"font-weight:bold;\">Name</span>: ") + tpg->name + QString::fromUtf8("</p>"\
+        "<p style=\"margin:0;\"><span style=\"font-weight:bold;\">Description</span>: <br/>") + tpg->description + QString::fromUtf8("</p>"\
         "<hr style=\"margin:0;\"/>"\
-        "<p style=\"font-size:8pt; font-style:italic; color:#868686; margin: 0;\">{" + tpg->id + "}</p>"\
-        "</body></html>";
+        "<p style=\"font-size:8pt; font-style:italic; color:#868686; margin: 0;\">{") + tpg->id + QString::fromUtf8("}</p>"\
+        "</body></html>");
   }
   else if (newselection.size() == 0)
     html = QString::fromAscii("<html><body><p style=\"font-family:'Cantarell'; font-size:8pt; font-style:italic; color:#868686;\">No TPG selected</p></body></html>");

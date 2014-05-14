@@ -25,11 +25,11 @@
 
 #include <Gui/DockWindow.h>
 
-#include <qlabel.h>
-#include <qlist.h>
-#include <qmap.h>
-#include <qobject.h>
-#include <qprogressbar.h>
+#include <QLabel>
+#include <QList>
+#include <QMap>
+#include <QObject>
+#include <QProgressBar>
 
 #include "ui_CamProjectDockWindow.h"
 
@@ -55,7 +55,7 @@ public:
 	 *
 	 * Provide a NULL newSettings to stop edit any settings.
 	 */
-	bool editSettings(Cam::TPGSettings* newSettings, bool saveOld = true);
+	bool editSettings(Cam::Settings::TPGSettings* newSettings, bool saveOld = true);
 
 	/**
 	 * Saves the current values from the UI into the settings objects.
@@ -80,11 +80,11 @@ protected:
 			this->name = name;
 
 			progressLabel = new QLabel(parent);
-			progressLabel->setObjectName("label" + name);
+			progressLabel->setObjectName(QString::fromUtf8("label") + name);
 			progressLabel->setText(name); //TODO: get the name of the TPG
 
 			progressBar = new QProgressBar(parent);
-			progressBar->setObjectName("progressBar" + name);
+			progressBar->setObjectName(QString::fromUtf8("progressBar") + name);
 			progressBar->setValue(0);
 			progressBar->setTextVisible(true);
 			progressBar->setRange(0, 100);
@@ -107,13 +107,13 @@ protected:
 		 * Updates the TPG Status progressbar
 		 */
 		void updateState(Cam::TPG::State state, int progress) {
-			progressLabel->setText(name + ": " + Cam::TPG::stateToStr(state));
+			progressLabel->setText(name + QString::fromUtf8(": ") + Cam::TPG::stateToStr(state));
 			if (progress >= 0 && progress <= 100)
 				progressBar->setValue(progress);
 		}
 	};
 
-	Cam::TPGSettings *currentSettings;
+	Cam::Settings::TPGSettings *currentSettings;
 	QList<CamComponent*> components;
 
 	QMap<QString, ProgressBar*> progressBars;
@@ -122,12 +122,20 @@ public Q_SLOTS:
 	/**
 	 * Receive messages to update the settings area for a tpg
 	 */
-	void updatedTPGSelection(Cam::TPG* tpg);
+	void updatedTPGSelection(Cam::Settings::Feature* feature);
 
 	/**
 	 * Receive messages to update a progress bar
 	 */
 	void updatedTPGState(QString tpgid, Cam::TPG::State state, int progress);
+
+	/**
+	 * Receive messages indicating that one of the CamComponent objects has changed.  We need to
+	 * run through all CamComponents to see if any of their 'Settings::Definition::visible' flags has changed
+	 * at which point we should change their QWidget::isVisible() flag to the same value.  i.e. to
+	 * either hide or re-display the user interface items that represent that setting in this dialog.
+	 */
+	void UpdatedCamComponent(CamComponent *camComponent);
 
 private:
 	Ui_CamProjectDockWindow* ui;

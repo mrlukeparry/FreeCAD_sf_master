@@ -5,9 +5,14 @@
 
 #pragma once
 
+#include <PreCompiled.h>
+
 #include <cmath>
 
-class Point{
+namespace area
+{
+
+class LibAreaExport Point {
 public:
 	// can be a position, or a vector
 	double x, y;
@@ -40,4 +45,7 @@ public:
 	void Rotate(double angle){if(fabs(angle) < 1.0e-09)return; Rotate(cos(angle), sin(angle));}
 };
 
-const Point operator*(const double &d, const Point &p);
+inline const area::Point operator*(const double &d, const area::Point &p) { return p * d;}
+
+} // End namespace area
+

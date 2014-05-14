@@ -1,5 +1,6 @@
 /***************************************************************************
  *   Copyright (c) 2012 Luke Parry    (l.parry@warwick.ac.uk)              *
+ *   Copyright (c) 2013 Andrew Robinson <andrewjrobinson@gmail.com>        *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,7 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <PreCompiled.h>
 
 #ifndef CAMGUI_VIEWPROVIDERCAMFEATURE_H
 #define CAMGUI_VIEWPROVIDERCAMFEATURE_H
@@ -60,6 +61,10 @@ public:
     /// grouping handling
     std::vector<App::DocumentObject*> claimChildren(void)const;
     Cam::CamFeature* getObject() const;
+
+//    std::vector<std::string> getDisplayModes(void) const;
+
+//    QIcon getIcon(void) const;
 };
 
 } // namespace

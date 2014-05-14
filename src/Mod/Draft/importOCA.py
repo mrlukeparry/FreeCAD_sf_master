@@ -1,10 +1,11 @@
+# -*- coding: utf8 -*-
 
 #***************************************************************************
 #*                                                                         *
-#*   Copyright (c) 2009 Yorik van Havre <yorik@uncreated.net>              * 
+#*   Copyright (c) 2009 Yorik van Havre <yorik@uncreated.net>              *
 #*                                                                         *
 #*   This program is free software; you can redistribute it and/or modify  *
-#*   it under the terms of the GNU General Public License (GPL)            *
+#*   it under the terms of the GNU Lesser General Public License (LGPL)    *
 #*   as published by the Free Software Foundation; either version 2 of     *
 #*   the License, or (at your option) any later version.                   *
 #*   for detail see the LICENCE text file.                                 *
@@ -23,7 +24,7 @@
 
 __title__="FreeCAD Draft Workbench - OCA importer/exporter"
 __author__ = "Yorik van Havre <yorik@uncreated.net>"
-__url__ = ["http://yorik.orgfree.com","http://free-cad.sourceforge.net"]
+__url__ = ["http://www.freecadweb.org"]
 
 '''
 This script imports OCA/gcad files into FreeCAD.
@@ -257,13 +258,13 @@ def export(exportList,filename):
     oca.write("# edges\r\n")
     count = 1
     for e in edges:
-        if DraftGeomUtils.geomType(e) == "Line"):
+        if DraftGeomUtils.geomType(e) == "Line":
             oca.write("L"+str(count)+"=")
             oca.write(writepoint(e.Vertexes[0].Point))
             oca.write(" ")
             oca.write(writepoint(e.Vertexes[-1].Point))
             oca.write("\r\n")
-        elif DraftGeomUtils.geomType(e) == "Circle"):
+        elif DraftGeomUtils.geomType(e) == "Circle":
             if (len(e.Vertexes) > 1):
                 oca.write("C"+str(count)+"=ARC ")
                 oca.write(writepoint(e.Vertexes[0].Point))

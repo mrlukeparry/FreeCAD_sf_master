@@ -5,6 +5,8 @@ else(MSVC)
 endif(MSVC)
 
 include_directories(
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App/Features
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
     ${Boost_INCLUDE_DIRS}
@@ -12,11 +14,14 @@ include_directories(
     ${ZLIB_INCLUDE_DIR}
     ${PYTHON_INCLUDE_PATH}
     ${XERCESC_INCLUDE_DIR}
+    ${QT_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/src/Mod/Cam2/App/Libs/libarea-clipper
 )
 link_directories(${OCC_LIBRARY_DIR})
 
 set(Cam_LIBS
     Part
+    AreaClipper
     ${OCC_LIBRARIES}
     FreeCADApp
 )
@@ -31,21 +36,30 @@ add_subdirectory(Plugins)
 
 # generate_from_xml(CamPy)
 
+SET(Graphics_SRCS
+    Graphics/CDouble.h
+    Graphics/Paths.h
+    Graphics/Paths.cpp
+)
+SOURCE_GROUP("Graphics" FILES ${Graphics_SRCS})
+
 SET(Features_SRCS
-    CamPartsList.cpp
-    CamPartsList.h
-    Feature.cpp
-    Feature.h
-    GCodeFeature.cpp
-    GCodeFeature.h
-    StockGeometry.cpp
-    StockGeometry.h
-    TPGFeature.cpp
-    TPGFeature.h
-    TPGList.cpp
-    TPGList.h
-    CamFeature.cpp
-    CamFeature.h
+    Features/CamFeature.cpp
+    Features/CamFeature.h
+    Features/CamSettingsableFeature.cpp
+    Features/CamSettingsableFeature.h
+    Features/Feature.cpp
+    Features/Feature.h
+    Features/MachineFeature.cpp
+    Features/MachineFeature.h
+    Features/MachineProgramFeature.cpp
+    Features/MachineProgramFeature.h
+    Features/ToolFeature.cpp
+    Features/ToolFeature.h
+    Features/ToolPathFeature.cpp
+    Features/ToolPathFeature.h
+    Features/TPGFeature.cpp
+    Features/TPGFeature.h
 )
 SOURCE_GROUP("Features" FILES ${Features_SRCS})
 
@@ -76,6 +90,8 @@ SET(TPG_SRCS
     TPG/PyTPGFactory.h
     TPG/PyTPGDescriptor.cpp
     TPG/PyTPGDescriptor.h
+    TPG/PyTPGSettings.cpp
+    TPG/PyTPGSettings.h
     TPG/PyToolPath.cpp
     TPG/PyToolPath.h
     
@@ -94,6 +110,13 @@ SET(TPG_SRCS
 )
 SOURCE_GROUP("TPG" FILES ${TPG_SRCS})
 
+SET(PLUGINS_SRCS
+	Plugins/MyPlugin.cpp
+	Plugins/MyPlugin.h
+)
+
+SOURCE_GROUP("Plugins" FILES ${PLUGINS_SRCS})
+
 # SET(Python_SRCS
 # )
 # SOURCE_GROUP("Python" FILES ${Python_SRCS})
@@ -101,6 +124,8 @@ SOURCE_GROUP("TPG" FILES ${TPG_SRCS})
 SET(CamModule_SRCS
     AppCam.cpp
     AppCamPy.cpp
+    LinuxCNC.cpp
+    LinuxCNC.h
     GCode.cpp
     GCode.h
     MachineSettings.cpp
@@ -124,7 +149,9 @@ SET(Cam_SRCS
     ${TPG_SRCS}
     ${CamModule_SRCS}
     ${Features_SRCS}
+    ${Graphics_SRCS}
     ${Python_SRCS}
+    ${PLUGINS_SRCS}
 )
 
 SET(Cam_Scripts
@@ -156,6 +183,12 @@ SET(PostProc_Scripts
     PyPostProcessor/PostProcessorAPI.py
     PyPostProcessor/TestPostProcessor.py
     PyPostProcessor/PostProcessor/__init__.py
+    PyPostProcessor/PostProcessor/nc.py
+    PyPostProcessor/PostProcessor/format.py
+    PyPostProcessor/PostProcessor/iso.py
+    PyPostProcessor/PostProcessor/linuxcnc.py
+    PyPostProcessor/PostProcessor/mach3.py
+    PyPostProcessor/PostProcessor/hm50.py
 
 	## TODO: add core postprocessor files
 
@@ -188,18 +221,20 @@ fc_target_copy_resource(Cam
 if(MSVC)
     set_target_properties(Cam PROPERTIES SUFFIX ".pyd")
     set_target_properties(Cam PROPERTIES DEBUG_OUTPUT_NAME "Cam_d")
-    set_target_properties(Cam PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam)
+    set_target_properties(Cam PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Mod/Cam")
     set_target_properties(Cam PROPERTIES PREFIX "../")
 
 elseif(MINGW)
     set_target_properties(Cam PROPERTIES SUFFIX ".pyd")
     set_target_properties(Cam PROPERTIES DEBUG_OUTPUT_NAME "Cam_d")
-    set_target_properties(Cam PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam)
+    set_target_properties(Cam PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Mod/Cam")
     set_target_properties(Cam PROPERTIES PREFIX "")
 else(MSVC)
-    set_target_properties(Cam PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam)
+    set_target_properties(Cam PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Mod/Cam")
     set_target_properties(Cam PROPERTIES PREFIX "")
-    set_target_properties(Cam PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
+    set_target_properties(Cam PROPERTIES INSTALL_RPATH "${INSTALL_RPATH}")
 endif(MSVC)
+
+add_definitions(-DCAM_BINARY_DIR="${CMAKE_BINARY_DIR}")
 
 INSTALL(TARGETS Cam DESTINATION lib)

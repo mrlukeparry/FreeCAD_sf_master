@@ -5,8 +5,9 @@
 #include "Area.h"
 #include "clipper.hpp"
 using namespace clipper;
+using namespace area;
 
-#define TPolygon Polygon
+#define TPolygon clipper::Polygon
 #define TPolyPolygon Polygons
 
 bool CArea::HolesLinked(){ return false; }
@@ -245,10 +246,10 @@ static void OffsetWithLoops(const TPolyPolygon &pp, TPolyPolygon &pp_new, double
 static void MakePolyPoly( const CArea& area, TPolyPolygon &pp, bool reverse = true ){
 	pp.clear();
 
-	for(std::list<CCurve>::const_iterator It = area.m_curves.begin(); It != area.m_curves.end(); It++)
+	for(std::list<area::CCurve>::const_iterator It = area.m_curves.begin(); It != area.m_curves.end(); It++)
 	{
 		pts_for_AddVertex.clear();
-		const CCurve& curve = *It;
+		const area::CCurve& curve = *It;
 		const CVertex* prev_vertex = NULL;
 		for(std::list<CVertex>::const_iterator It2 = curve.m_vertices.begin(); It2 != curve.m_vertices.end(); It2++)
 		{
@@ -280,7 +281,7 @@ static void MakePolyPoly( const CArea& area, TPolyPolygon &pp, bool reverse = tr
 	}
 }
 
-static void SetFromResult( CCurve& curve, const TPolygon& p, bool reverse = true )
+static void SetFromResult( area::CCurve& curve, const TPolygon& p, bool reverse = true )
 {
 	for(unsigned int j = 0; j < p.size(); j++)
 	{
@@ -306,8 +307,8 @@ static void SetFromResult( CArea& area, const TPolyPolygon& pp, bool reverse = t
 	{
 		const TPolygon& p = pp[i];
 
-		area.m_curves.push_back(CCurve());
-		CCurve &curve = area.m_curves.back();
+		area.m_curves.push_back(area::CCurve());
+		area::CCurve &curve = area.m_curves.back();
 		SetFromResult(curve, p, reverse);
     }
 }
@@ -360,7 +361,7 @@ void CArea::Offset(double inwards_value)
 	this->Reorder();
 }
 
-void UnFitArcs(CCurve &curve)
+void UnFitArcs(area::CCurve &curve)
 {
 	pts_for_AddVertex.clear();
 	const CVertex* prev_vertex = NULL;

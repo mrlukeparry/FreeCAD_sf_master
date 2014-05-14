@@ -22,7 +22,7 @@
 
 
 #include "Support.h"
-#include "qstring.h"
+#include <QString>
 
 /**
  * Convert a QString to a Python Object

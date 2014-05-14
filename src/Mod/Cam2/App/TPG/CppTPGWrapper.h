@@ -51,7 +51,7 @@ public:
     /**
      * Get the settings for a given action
      */
-    virtual TPGSettings *getSettings(QString &action);
+    virtual TPGSettings *getSettingDefinitions(QString &action);
 
     /**
      * Run the TPG to generate the ToolPath code.

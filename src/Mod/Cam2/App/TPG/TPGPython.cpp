@@ -21,15 +21,18 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
 #include <QString>
 
-#include "../TPGFeature.h"
+#include <Base/Console.h>
+
+#include "../Features/TPGFeature.h"
 #include "TPGPython.h"
 #include "PyToolPath.h"
+#include "PyTPGSettings.h"
 
 using namespace Cam;
 
@@ -45,8 +48,7 @@ using namespace Cam;
 //     return "NULL";
 // }
 
-TPGPython::TPGPython(PyObject *cls) :
-		TPG()
+TPGPython::TPGPython(PyObject *cls)
 {
 	//TODO: check the cls is an instance of PyTPG (somehow, possibly checking for the presence of api methods)
 	Py_XINCREF(cls);
@@ -75,6 +77,29 @@ QString TPGPython::PythonUCToQString(PyObject *obj)
 		return QString::fromLatin1(PyString_AS_STRING(obj));
 	return QString();
 }
+
+
+PyObject *TPGPython::QStringListToPythonUCList(const QStringList &string_list)
+{
+	PyObject *py_string_list = PyList_New(string_list.size());
+	for (QStringList::size_type i=0; i<string_list.size(); i++)
+	{
+		PyList_SET_ITEM(py_string_list, i, PyString_FromString(string_list.at(i).toAscii().constData()));
+	}
+	return(py_string_list);
+}
+
+QStringList TPGPython::PythonUCListToQStringList(PyObject *obj)
+{
+	QStringList string_list;
+	for (Py_ssize_t i=0; i<PyList_Size(obj); i++)
+	{
+		PyObject *entry = PyList_GetItem(obj, i);
+		string_list.append(PythonUCToQString(PyList_GetItem(obj, i)));
+	}
+	return(string_list);
+}
+
 
 /**
  * Creates an instance of cls and stores it in inst if it doesn't exist
@@ -175,63 +200,102 @@ std::vector<QString> &TPGPython::getActions()
 }
 
 /**
- * Get the settings for a given action
- * Note: this is a pointer to the internal storage so don't delete it.
+ * Get the settings for this TPG
+ * Note: the returned pointer is a deep copy so do as you like to it.
+ * You're the owner release it when your done.
+ *
+ * TODO: load the options for each setting
  */
-TPGSettings *TPGPython::getSettings(QString &action)
+Settings::TPGSettings *TPGPython::getSettingDefinitions()
 {
-	TPGSettings *setting = NULL;
-	std::map<QString, TPGSettings*>::iterator it = settings.find(action);
-	PyObject *inst = getInst();
-	if (inst != NULL)
-	{
-        PyGILState_STATE state = PyGILState_Ensure();
-		PyObject *arg = QStringToPythonUC(action);
-		PyObject *result = PyObject_CallMethod(inst, "getSettings", "(O)", arg);
-		if (result != NULL)
-		{
-			if (PyList_Check(result))
-			{
-				setting = new TPGSettings();
-				int len = PyList_Size(result);
+	if (settings == NULL) {
+		PyObject *inst = getInst();
+		if (inst != NULL) {
+			// Run the method
+	        PyGILState_STATE state = PyGILState_Ensure();
+			PyObject *settingsObj = PyObject_CallMethod(inst, "getSettingDefinitions", NULL);
+			if (settingsObj != NULL) {
+				Base::Console().Log("Called getSettingDefinitions() ok.\n");
 
-				for (int i = 0; i < len; i++)
-				{
-					PyObject *item = PyList_GetItem(result, i);
-					if (PyTuple_Check(item))
-					{
-						char *name;
-						char *label;
-						char *type;
-						char *defaultvalue;
-						char *units;
-						char *helptext;
-//						int items = PyTuple_Size(item);
-
-
-						if (PyArg_ParseTuple(item, "zzzzzz", &name, &label, &type,
-								&defaultvalue, &units, &helptext))
-						{
-							setting->addSetting(
-									new TPGSetting(name, label, type, defaultvalue,
-											units, helptext));
-						}
-					}
-					else
-						printf("Not a Tuple!\n");
+				if (PyCamTPGSettings_Check(settingsObj)) {
+					Base::Console().Log("Got settings object.\n");
+					cam_PyTPGSettings *pyTPGSettings = (cam_PyTPGSettings*) settingsObj;
+					settings = pyTPGSettings->settings->clone();
 				}
-				settings[action] = setting;
+				else
+					Base::Console().Warning("Value returned from PyTPG.getSettingDefinitions() is not a Cam.TPGSettings object.\n");
+
+				Py_DecRef(settingsObj);
+
+//				// Extract the Each action from the Dictionary
+//				if (PyDict_Check(settingsDict)) {
+//					PyObject *settingsDictKeys = PyDict_Keys(settingsDict);
+//					if (PyList_Check(settingsDictKeys)) {
+//						int settingsDictKeysLen = PyList_Size(settingsDictKeys);
+//						for (int k = 0; k < settingsDictKeysLen; k++) {
+//							PyObject *settingsDictKey = PyList_GetItem(settingsDictKeys, k);
+//
+//							// Extract settings from list
+//							PyObject *settingsDictValue = PyDict_GetItem(settingsDict, settingsDictKey);
+//							if (PyList_Check(settingsDictValue)) {
+//								settings = new TPGSettings();
+//								int len = PyList_Size(settingsDictValue);
+//								for (int i = 0; i < len; i++) {
+//
+//									// Extract details of each setting
+//									PyObject *item = PyList_GetItem(settingsDictValue, i);
+//									if (PyTuple_Check(item)) {
+//										char *name;
+//										char *label;
+//										char *type;
+//										char *defaultvalue;
+//										char *units;
+//										char *helptext;
+//
+//										if (PyArg_ParseTuple(item, "zzzzzz", &name, &label, &type,
+//												&defaultvalue, &units, &helptext)){
+//											QString qaction = QString::fromAscii(PyString_AsString(settingsDictKey));
+//											settings->addSettingDefinition(qaction,
+//													new TPGSettingDefinition(name, label, type, defaultvalue,
+//															units, helptext));
+//										}
+//										else
+//											//TODO: make this more informative
+//											Base::Console().Warning("Setting tuple is meant to contain 6 items!\n");
+//									}
+//									else
+//										//TODO: make this more informative
+//										Base::Console().Warning("Not a Tuple!\n");
+//								}
+//							}
+//							else
+//								//TODO: make this more informative
+//								Base::Console().Warning("Value for Action is meant to be a list.  Ignoring this Action.\n");
+//						}
+//					}
+//					else
+//						//TODO: make this more informative
+//						Base::Console().Warning("Dictionary key list not a list.  This shouldn't happen.\n");
+//				}
+//				else
+//					//TODO: make this more informative
+//					Base::Console().Warning("Settings needs to be a dictionary.\n");
+//				Py_DecRef(settingsDict);
 			}
-			Py_DecRef(result);
+			else
+				Base::Console().Warning("Unable to execute PyTPG.getSettingDefinitions() method.\n");
+	        PyGILState_Release(state);
 		}
-		Py_DecRef(arg);
-        PyGILState_Release(state);
+		else
+			//TODO: make this more informative
+			Base::Console().Warning("Unable to create an instance of TPG's Python Class.\n");
 	}
-	else
-	{
-		setting = it->second;
-	}
-	return setting;
+
+	if (settings != NULL)
+		return settings->clone();
+
+	Base::Console().Warning("Unable to load the settings object.\n");
+	return NULL;
 }
 
 /**
@@ -239,16 +303,20 @@ TPGSettings *TPGPython::getSettings(QString &action)
  *
  * Note: the return will change once the TP Language has been set in store
  */
-void TPGPython::run(TPGSettings *settings, QString action)
+void TPGPython::run(Settings::TPGSettings *settings, ToolPath *toolpath, QString action)
 {
 	PyObject *inst = getInst();
 	if (inst != NULL)
 	{
         PyGILState_STATE state = PyGILState_Ensure();
+
+        // format other args
+        PyObject *toolpathArg = PyToolPath_New(toolpath);
+        PyObject *settingsArg = PyTPGSettings_New(settings);
 		PyObject *actionArg = QStringToPythonUC(action);
-		PyObject *settingsArg = PyList_New(0); //TODO: Populate the settings once the TPGSettings class is implemented
-		PyObject *result = PyObject_CallMethod(inst, "run", "(OO)", actionArg,
-				settingsArg);
+
+		// run python method
+		PyObject *result = PyObject_CallMethod(inst, "run", "(OOO)", settingsArg, toolpathArg, actionArg);
 		if (result != NULL)
 		{
 			Py_DecRef(result);
@@ -258,29 +326,31 @@ void TPGPython::run(TPGSettings *settings, QString action)
 			printf("Failed to run pyAction: %s\n",
 					action.toAscii().constData());
 
+		// cleanup
+        Py_XDECREF(toolpathArg);
+        Py_XDECREF(settingsArg);
 		Py_XDECREF(actionArg);
-		Py_XDECREF(settingsArg);
         PyGILState_Release(state);
 	}
 	//TODO: make error
 }
 
-/**
- * Returns the toolpath from the last (or current) tool-path run
- */
-ToolPath *TPGPython::getToolPath() {
-    PyObject *inst = getInst();
-    ToolPath *res = NULL;
-    if (inst != NULL) {
-        PyGILState_STATE state = PyGILState_Ensure();
-        PyObject *result = PyObject_CallMethod(inst, "getToolPath", "");
-        if (result != NULL) {
-            if (typeid(result) == typeid(cam_PyToolPath)) {
-                res = ((cam_PyToolPath*) result)->tp;
-            }
-            Py_DecRef(result);
-        }
-        PyGILState_Release(state);
-    }
-    return res;
-}
+///**
+// * Returns the toolpath from the last (or current) tool-path run
+// */
+//ToolPath *TPGPython::getToolPath() {
+//    PyObject *inst = getInst();
+//    ToolPath *res = NULL;
+//    if (inst != NULL) {
+//        PyGILState_STATE state = PyGILState_Ensure();
+//        PyObject *result = PyObject_CallMethod(inst, "getToolPath", "");
+//        if (result != NULL) {
+//            if (typeid(result) == typeid(cam_PyToolPath)) {
+//                res = ((cam_PyToolPath*) result)->tp;
+//            }
+//            Py_DecRef(result);
+//        }
+//        PyGILState_Release(state);
+//    }
+//    return res;
+//}

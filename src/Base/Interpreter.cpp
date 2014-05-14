@@ -72,8 +72,21 @@ PyException::PyException(void)
 
     _stackTrace = PP_last_error_trace;     /* exception traceback text */
 
+    // This should be done in the constructor because when doing
+    // in the destructor it's not always clear when it is called
+    // and thus may clear a Python exception when it should not.
+    PyGILStateLocker locker;
     PyErr_Clear(); // must be called to keep Python interpreter in a valid state (Werner)
+}
 
+PyException::~PyException() throw()
+{
+}
+
+void PyException::ReportException (void) const
+{
+    Base::Console().Error("%s%s: %s\n",
+        _stackTrace.c_str(), _errorType.c_str(), what());
 }
 
 // ---------------------------------------------------------
@@ -260,10 +273,13 @@ void InterpreterSingleton::runFile(const char*pxFileName, bool local)
             dict = PyDict_Copy(dict);
             if (PyDict_GetItemString(dict, "__file__") == NULL) {
                 PyObject *f = PyString_FromString(pxFileName);
-                if (f == NULL)
+                if (f == NULL) {
+                    fclose(fp);
                     return;
+                }
                 if (PyDict_SetItemString(dict, "__file__", f) < 0) {
                     Py_DECREF(f);
+                    fclose(fp);
                     return;
                 }
                 Py_DECREF(f);

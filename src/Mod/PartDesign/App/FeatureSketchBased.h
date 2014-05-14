@@ -86,6 +86,7 @@ protected:
     bool isEqualGeometry(const TopoDS_Shape&, const TopoDS_Shape&) const;
     bool isQuasiEqual(const TopoDS_Shape&, const TopoDS_Shape&) const;
     void remapSupportShape(const TopoDS_Shape&);
+    TopoDS_Shape refineShapeIfActive(const TopoDS_Shape&) const;
 
     /// Extract a face from a given LinkSub
     static void getUpToFaceFromLinkSub(TopoDS_Face& upToFace,
@@ -119,6 +120,8 @@ protected:
     /// Check whether the line crosses the face (line and face must be on the same plane)
     static const bool checkLineCrossesFace(const gp_Lin& line, const TopoDS_Face& face);
 
+private:
+    class Wire_Compare;
 };
 
 } //namespace PartDesign

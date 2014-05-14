@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
@@ -71,11 +71,14 @@ void TPGDescriptorCollection::add(TPGDescriptor* descriptor) {
  */
 
 void TPGDescriptorCollection::absorb(TPGDescriptorCollection *other) {
-    //TODO: make this thread-safe
-    size_t cnt = other->descriptors.size();
-    for (size_t i = 0; i < cnt; i++)
-        descriptors.push_back(other->descriptors.at(i));
-    other->descriptors.clear();
+	if (other)
+	{
+		//TODO: make this thread-safe
+		size_t cnt = other->descriptors.size();
+		for (size_t i = 0; i < cnt; i++)
+			descriptors.push_back(other->descriptors.at(i));
+		other->descriptors.clear();
+	}
 }
 
 /**

@@ -4,9 +4,14 @@
 
 #pragma once
 
+#include <PreCompiled.h>
+
 #include "Point.h"
 
-class Arc{
+namespace area
+{
+
+class LibAreaExport Arc{
 public:
 	Point m_s;
 	Point m_e;
@@ -22,3 +27,7 @@ public:
 	bool AlmostALine()const;
 	Point MidParam(double param)const;
 };
+
+
+} // End namespace area
+

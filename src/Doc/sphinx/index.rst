@@ -13,7 +13,12 @@ This is the complete python API reference of the FreeCAD appication
 
    FreeCAD.rst
    FreeCADGui.rst
+   Vector.rst
+   Placement.rst
+   Matrix.rst
    Document.rst
+   DocumentObject.rst
+   ViewProvider.rst
    Mesh.rst
    Part.rst
    Sketch.rst
@@ -23,6 +28,7 @@ This is the complete python API reference of the FreeCAD appication
    DraftGeomUtils.rst
    DraftTrackers.rst
    DraftSnap.rst
+   DraftWorkingPlane.rst
    Arch.rst
    Drawing.rst
    RayTracing.rst

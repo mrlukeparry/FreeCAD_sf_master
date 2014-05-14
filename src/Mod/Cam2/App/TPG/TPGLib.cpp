@@ -21,13 +21,13 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "../PreCompiled.h"
+#include <PreCompiled.h>
 #ifndef _PreComp_
 #endif
 
 #include <QString>
 
-#include "../TPGFeature.h"
+#include "../Features/TPGFeature.h"
 #include "TPGLib.h"
 
 using namespace Cam;

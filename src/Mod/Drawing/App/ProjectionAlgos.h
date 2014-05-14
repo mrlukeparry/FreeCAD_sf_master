@@ -39,24 +39,24 @@ class DrawingExport ProjectionAlgos
 {
 public:
     /// Constructor
-    ProjectionAlgos(const TopoDS_Shape &Input,const Base::Vector3f &Dir);
+    ProjectionAlgos(const TopoDS_Shape &Input,const Base::Vector3d &Dir);
     virtual ~ProjectionAlgos();
 
     void execute(void);
-    static TopoDS_Shape invertY(const TopoDS_Shape&);
+//    static TopoDS_Shape invertY(const TopoDS_Shape&);
 
-    enum ExtractionType { 
+    enum ExtractionType {
         Plain = 0,
         WithHidden = 1,
         WithSmooth = 2
     };
 
-    std::string getSVG(ExtractionType type, float scale, float tolerance);
-    std::string getDXF(ExtractionType type, float scale, float tolerance);//added by Dan Falck 2011/09/25
+    std::string getSVG(ExtractionType type, double scale=0.35, double tolerance=0.05, double hiddenscale=0.15);
+    std::string getDXF(ExtractionType type, double scale, double tolerance);//added by Dan Falck 2011/09/25
 
 
     const TopoDS_Shape &Input;
-    const Base::Vector3f &Direction;
+    const Base::Vector3d &Direction;
 
     TopoDS_Shape V ;// hard edge visibly
     TopoDS_Shape V1;// Smoth edges visibly

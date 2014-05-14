@@ -58,6 +58,10 @@ public:
         else
             return name;
     }
+    bool doNameMapping() const
+    {
+        return true;
+    }
 protected:
     void startElement(const XMLCh* const uri, const XMLCh* const localname,
                       const XMLCh* const qname,
@@ -69,7 +73,7 @@ protected:
 
         if (!propertyStack.empty()) {
             // replace the stored object name with the real one
-            if (LocalName == "Link" || (LocalName == "String" && propertyStack.top().first == "Label")) {
+            if (LocalName == "Link" || LocalName == "LinkSub" || (LocalName == "String" && propertyStack.top().first == "Label")) {
                 for (std::map<std::string, std::string>::iterator it = AttrMap.begin(); it != AttrMap.end(); ++it) {
                     std::map<std::string, std::string>::const_iterator jt = nameMap.find(it->second);
                     if (jt != nameMap.end())
@@ -199,5 +203,5 @@ void MergeDocuments::RestoreDocFile(Base::Reader & reader)
 
     // In the file GuiDocument.xml new data files might be added
     if (!xmlReader.getFilenames().empty())
-        xmlReader.readFiles(static_cast<zipios::ZipInputStream&>(reader));
+        xmlReader.readFiles(static_cast<zipios::ZipInputStream&>(reader.getStream()));
 }

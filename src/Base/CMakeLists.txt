@@ -14,6 +14,7 @@ include_directories(
     ${XERCESC_INCLUDE_DIR}
     ${QT_QTCORE_INCLUDE_DIR}
     ${ZLIB_INCLUDE_DIR}
+    ${PYCXX_INCLUDE_DIR}
 )
 
 if(MSVC)
@@ -62,6 +63,8 @@ generate_from_xml(MatrixPy)
 generate_from_xml(RotationPy)
 generate_from_xml(PlacementPy)
 generate_from_xml(AxisPy)
+generate_from_xml(UnitPy)
+generate_from_xml(QuantityPy)
 
 if(SWIG_FOUND)
     execute_process(COMMAND ${SWIG_EXECUTABLE} -python -external-runtime ${CMAKE_CURRENT_BINARY_DIR}/swigpyrun.h)
@@ -124,20 +127,7 @@ SET(zipios_SRCS
 SOURCE_GROUP("zipios" FILES ${zipios_SRCS})
 endif ()
 
-SET(pycxx_SRCS
-    ../CXX/Config.hxx
-    ../CXX/cxxextensions.c
-    ../CXX/cxx_extensions.cxx
-    ../CXX/cxxsupport.cxx
-    ../CXX/Exception.hxx
-    ../CXX/Extensions.hxx
-    ../CXX/IndirectPythonInterface.cxx
-    ../CXX/IndirectPythonInterface.hxx
-    ../CXX/Objects.hxx
-    ../CXX/Version.hxx
-    ../CXX/WrapPython.h
-)
-SOURCE_GROUP("pycxx" FILES ${pycxx_SRCS})
+SOURCE_GROUP("pycxx" FILES ${PYCXX_SOURCES})
 
 SET(FreeCADBase_XML_SRCS
     AxisPy.xml
@@ -148,6 +138,8 @@ SET(FreeCADBase_XML_SRCS
     PlacementPy.xml
     RotationPy.xml
     VectorPy.xml
+    QuantityPy.xml
+    UnitPy.xml
 )
 SOURCE_GROUP("XML" FILES ${FreeCADBase_XML_SRCS})
 
@@ -169,8 +161,15 @@ SET(FreeCADBase_UNITAPI_SRCS
     UnitsSchemaMKS.cpp
     UnitsSchemaImperial1.h
     UnitsSchemaImperial1.cpp
-    UnitsApi.y
-    UnitsApi.l
+    Quantity.h
+    Quantity.cpp
+    QuantityPyImp.cpp
+    QuantityParser.l
+    QuantityParser.y
+    Unit.h
+    Unit.cpp
+    UnitPyImp.cpp
+    
 )
 SOURCE_GROUP("Units" FILES ${FreeCADBase_UNITAPI_SRCS})
 
@@ -279,7 +278,7 @@ SET(FreeCADBase_HPP_SRCS
 )
 
 SET(FreeCADBase_SRCS
-    ${pycxx_SRCS}
+    ${PYCXX_SOURCES}
     ${FreeCADBase_CPP_SRCS}
     ${FreeCADBase_HPP_SRCS}
     ${FreeCADBase_XML_SRCS}
@@ -313,34 +312,22 @@ endif(FREECAD_USE_EXTERNAL_ZIPIOS)
 
 if(MSVC)
 add_definitions(-D_PreComp_)
-ADD_MSVC_PRECOMPILED_HEADER("PreCompiled.h" "PreCompiled.cpp" FreeCADBase_CPP_SRCS)
+ADD_MSVC_PRECOMPILED_HEADER(FreeCADBase PreCompiled.h PreCompiled.cpp FreeCADBase_CPP_SRCS)
 endif(MSVC)
 
 add_library(FreeCADBase SHARED ${FreeCADBase_SRCS})
 
 target_link_libraries(FreeCADBase ${FreeCADBase_LIBS})
 
-# Note this is IDE specific, not necessarily platform specific
-if(MSVC)
-    set_target_properties(FreeCADBase PROPERTIES DEBUG_OUTPUT_NAME "FreeCADBaseD")
-    set_target_properties(FreeCADBase PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    # dirty hack to avoid Debug/Release subdirectory
-    set_target_properties(FreeCADBase PROPERTIES PREFIX "../")
-elseif(MINGW)
-    set_target_properties(FreeCADBase PROPERTIES DEBUG_OUTPUT_NAME "FreeCADBaseD")
-    set_target_properties(FreeCADBase PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-else(MSVC)
-    set_target_properties(FreeCADBase PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-    set_target_properties(FreeCADBase PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
-endif(MSVC)
+SET_BIN_DIR(FreeCADBase FreeCADBase)
 
 if(WIN32)
     INSTALL(TARGETS FreeCADBase
         RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
 else(WIN32)
     INSTALL(TARGETS FreeCADBase
-        LIBRARY DESTINATION lib
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
 endif(WIN32)

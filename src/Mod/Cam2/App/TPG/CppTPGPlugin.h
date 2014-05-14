@@ -23,7 +23,10 @@
 #ifndef CPPTPGPLUGIN_H_
 #define CPPTPGPLUGIN_H_
 
+#include <PreCompiled.h>
 #include <vector>
+#include <QLibrary>
+#include <QString>
 
 namespace Cam {
 class CppTPGPlugin;
@@ -40,13 +43,13 @@ namespace Cam {
  * is one instance of this class per library file.  The library is only loaded
  * when it is needed.
  */
-class CppTPGPlugin {
+class CamExport CppTPGPlugin {
 public:
     int refcnt; ///< reference counter
 protected:
 
     QString filename; ///< the filename of the shared object file
-    void* library; ///< a pointer to the library when its open
+    QLibrary library; ///< a pointer to the library when its open
     getDescriptors_t* getDescriptorsPtr; ///< pointer to lib function
     getTPG_t* getTPGPtr; ///< pointer to lib function
 //    delDescriptors_t* delDescriptorsPtr; ///< pointer to lib function
@@ -68,6 +71,8 @@ protected:
 public:
     CppTPGPlugin(QString filename);
     virtual ~CppTPGPlugin();
+
+	QString FileName() const { return(this->filename); }
 
     QString error; ///< if there is a library error the result of dlerror() is stored here.
 
