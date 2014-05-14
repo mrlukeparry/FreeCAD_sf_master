@@ -75,9 +75,9 @@ SET(Inventor_SRCS
 )
 SOURCE_GROUP("Inventor" FILES ${Inventor_SRCS})
 
-fc_add_resources(resource_SRCS Resources/Mesh.qrc)
+qt4_add_resources(resource_SRCS Resources/Mesh.qrc)
 SET(resource_SRCS
-#   ${resource_SRCS}
+    ${resource_SRCS}
     Resources/Mesh.qrc
 )
 SOURCE_GROUP("resource" FILES ${resource_SRCS})
@@ -129,20 +129,7 @@ fc_target_copy_resource(MeshGui
     ${CMAKE_BINARY_DIR}/Mod/Mesh
     InitGui.py)
 
-if(MSVC)
-    set_target_properties(MeshGui PROPERTIES SUFFIX ".pyd")
-    set_target_properties(MeshGui PROPERTIES DEBUG_OUTPUT_NAME "MeshGui_d")
-    set_target_properties(MeshGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Mesh)
-    set_target_properties(MeshGui PROPERTIES PREFIX "../")
-elseif(MINGW)
-    set_target_properties(MeshGui PROPERTIES SUFFIX ".pyd")
-    set_target_properties(MeshGui PROPERTIES DEBUG_OUTPUT_NAME "MeshGui_d")
-    set_target_properties(MeshGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Mesh)
-    set_target_properties(MeshGui PROPERTIES PREFIX "")
-else(MSVC)
-    set_target_properties(MeshGui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Mesh)
-    set_target_properties(MeshGui PROPERTIES PREFIX "")
-    set_target_properties(MeshGui PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
-endif(MSVC)
+SET_BIN_DIR(MeshGui MeshGui /Mod/Mesh)
+SET_PYTHON_PREFIX_SUFFIX(MeshGui)
 
-INSTALL(TARGETS MeshGui DESTINATION lib)
+INSTALL(TARGETS MeshGui DESTINATION ${CMAKE_INSTALL_LIBDIR})

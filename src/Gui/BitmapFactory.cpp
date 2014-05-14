@@ -54,8 +54,6 @@
 
 #include "BitmapFactory.h"
 #include "Icons/images.cpp"
-#include "Icons/Feature.xpm"
-#include "Icons/Document.xpm"
 #include "Icons/BmpFactoryIcons.cpp"
 
 using namespace Gui;
@@ -196,6 +194,9 @@ bool BitmapFactoryInst::loadPixmap(const QString& filename, QPixmap& icon) const
 {
     QFileInfo fi(filename);
     if (fi.exists()) {
+        // There is a crash when using the Webkit engine in debug mode
+        // for a couple of SVG files. Thus, use the qsvg plugin.
+#if QT_VERSION < 0x040800 || !defined(_DEBUG)
         // first check if it's an SVG because Qt's qsvg4 module shouldn't be used therefore
         if (fi.suffix().toLower() == QLatin1String("svg")) {
             QFile svgFile(filename);
@@ -208,6 +209,9 @@ bool BitmapFactoryInst::loadPixmap(const QString& filename, QPixmap& icon) const
             // try with Qt plugins
             icon.load(filename);
         }
+#else
+        icon.load(filename);
+#endif
     }
 
     return !icon.isNull();
@@ -236,14 +240,12 @@ QPixmap BitmapFactoryInst::pixmap(const char* name) const
 
     // try to find it in the given directories
     if (icon.isNull()) {
-        bool found = false;
         QList<QByteArray> formats = QImageReader::supportedImageFormats();
         formats.prepend("SVG"); // check first for SVG to use special import mechanism
-        for (QStringList::ConstIterator pt = d->paths.begin(); pt != d->paths.end() && !found; ++pt) {
+        for (QStringList::ConstIterator pt = d->paths.begin(); pt != d->paths.end(); ++pt) {
             QDir d(*pt);
             QString fileName = d.filePath(fn);
             if (loadPixmap(fileName, icon)) {
-                found = true;
                 break;
             }
             else {
@@ -252,7 +254,6 @@ QPixmap BitmapFactoryInst::pixmap(const char* name) const
                     QString path = QString::fromAscii("%1.%2").arg(fileName).
                         arg(QString::fromAscii((*fm).toLower().constData()));
                     if (loadPixmap(path, icon)) {
-                        found = true;
                         break;
                     }
                 }
@@ -316,15 +317,20 @@ QPixmap BitmapFactoryInst::pixmapFromSvg(const QByteArray& contents, const QSize
     webView.setPalette(pal);
     webView.setContent(contents, QString::fromAscii("image/svg+xml"));
     QString node = QString::fromAscii("document.rootElement.nodeName");
-    QString root = webView.page()->mainFrame()->evaluateJavaScript(node).toString();
+    QWebFrame* frame = webView.page()->mainFrame();
+    if (!frame) {
+        return QPixmap();
+    }
+
+    QString root = frame->evaluateJavaScript(node).toString();
     if (root.isEmpty() || root.compare(QLatin1String("svg"), Qt::CaseInsensitive)) {
         return QPixmap();
     }
 
     QString w = QString::fromAscii("document.rootElement.width.baseVal.value");
     QString h = QString::fromAscii("document.rootElement.height.baseVal.value");
-    double ww = webView.page()->mainFrame()->evaluateJavaScript(w).toDouble();
-    double hh = webView.page()->mainFrame()->evaluateJavaScript(h).toDouble();
+    double ww = frame->evaluateJavaScript(w).toDouble();
+    double hh = frame->evaluateJavaScript(h).toDouble();
     if (ww == 0.0 || hh == 0.0)
         return QPixmap();
 #endif
@@ -343,7 +349,7 @@ QPixmap BitmapFactoryInst::pixmapFromSvg(const QByteArray& contents, const QSize
     p.setRenderHint(QPainter::TextAntialiasing);
     p.setRenderHint(QPainter::SmoothPixmapTransform);
     p.setOpacity(0); // important to keep transparent background
-    webView.page()->mainFrame()->render(&p);
+    frame->render(&p);
 #else
     // tmp. disable the report window to suppress some bothering warnings
     Base::Console().SetEnabledMsgType("ReportOutput", ConsoleMsgType::MsgType_Wrn, false);

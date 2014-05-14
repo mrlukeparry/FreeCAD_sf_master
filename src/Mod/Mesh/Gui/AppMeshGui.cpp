@@ -50,7 +50,6 @@
 #include "ViewProviderDefects.h"
 #include "ViewProviderPython.h"
 #include "Workbench.h"
-#include "qrc_Mesh.cpp"
 
 
 // use a different name to CreateCommand()
@@ -89,12 +88,7 @@ void MeshGuiExport initMeshGui()
     Base::Console().Log("Loading GUI of Mesh module... done\n");
 
     // Register icons
-    Gui::BitmapFactory().addXPM("curv_info", curv_info);
-    Gui::BitmapFactory().addXPM("import_mesh", import_mesh);
-    Gui::BitmapFactory().addXPM("export_mesh", export_mesh);
-    Gui::BitmapFactory().addXPM("solid_mesh", solid_mesh);
     Gui::BitmapFactory().addXPM("mesh_fillhole", mesh_fillhole);
-    Gui::BitmapFactory().addXPM("mesh_pipette", mesh_pipette);
 
     // instantiating the commands
     CreateMeshCommands();

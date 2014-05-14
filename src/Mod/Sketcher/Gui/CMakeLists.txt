@@ -5,6 +5,7 @@ else(MSVC)
 endif(MSVC)
 
 include_directories(
+    ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_BINARY_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -31,8 +32,10 @@ set(SketcherGui_MOC_HDRS
     TaskSketcherCreateCommands.h
     TaskSketcherGeneral.h
     TaskSketcherMessages.h
+    TaskSketcherValidation.h
     TaskDlgEditSketch.h
     SketchOrientationDialog.h
+    SketcherSettings.h
 )
 fc_wrap_cpp(SketcherGui_MOC_SRCS ${SketcherGui_MOC_HDRS})
 SOURCE_GROUP("Moc" FILES ${SketcherGui_MOC_SRCS})
@@ -43,8 +46,10 @@ set(SketcherGui_UIC_SRCS
     TaskSketcherConstrains.ui
     TaskSketcherGeneral.ui
     TaskSketcherMessages.ui
+    TaskSketcherValidation.ui
     InsertDatum.ui
     SketchOrientationDialog.ui
+    SketcherSettings.ui
 )
 qt4_wrap_ui(SketcherGui_UIC_HDRS ${SketcherGui_UIC_SRCS})
 
@@ -75,6 +80,9 @@ SET(SketcherGui_SRCS
     TaskSketcherMessages.ui
     TaskSketcherMessages.cpp
     TaskSketcherMessages.h
+    TaskSketcherValidation.ui
+    TaskSketcherValidation.cpp
+    TaskSketcherValidation.h
     ViewProviderSketch.cpp
     ViewProviderSketch.h
     DrawSketchHandler.cpp
@@ -85,6 +93,8 @@ SET(SketcherGui_SRCS
     EditDatumDialog.h
     SketchOrientationDialog.cpp
     SketchOrientationDialog.h
+    SketcherSettings.cpp
+    SketcherSettings.h
     TaskDlgEditSketch.cpp
     TaskDlgEditSketch.h
     ViewProviderPython.cpp
@@ -105,20 +115,7 @@ fc_target_copy_resource(SketcherGui
     ${CMAKE_BINARY_DIR}/Mod/Sketcher
     ${SketcherGui_Scripts})
 
-if(MSVC)
-    set_target_properties(SketcherGui PROPERTIES SUFFIX ".pyd")
-    set_target_properties(SketcherGui PROPERTIES DEBUG_OUTPUT_NAME "SketcherGui_d")
-    set_target_properties(SketcherGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Sketcher)
-    set_target_properties(SketcherGui PROPERTIES PREFIX "../")
-elseif(MINGW)
-    set_target_properties(SketcherGui PROPERTIES SUFFIX ".pyd")
-    set_target_properties(SketcherGui PROPERTIES DEBUG_OUTPUT_NAME "SketcherGui_d")
-    set_target_properties(SketcherGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Sketcher)
-    set_target_properties(SketcherGui PROPERTIES PREFIX "")
-else(MSVC)
-    set_target_properties(SketcherGui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Sketcher)
-    set_target_properties(SketcherGui PROPERTIES PREFIX "")
-    set_target_properties(SketcherGui PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
-endif(MSVC)
+SET_BIN_DIR(SketcherGui SketcherGui /Mod/Sketcher)
+SET_PYTHON_PREFIX_SUFFIX(SketcherGui)
 
-INSTALL(TARGETS SketcherGui DESTINATION lib)
+INSTALL(TARGETS SketcherGui DESTINATION ${CMAKE_INSTALL_LIBDIR})

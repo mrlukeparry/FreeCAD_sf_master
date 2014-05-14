@@ -53,6 +53,7 @@
 # include <Inventor/events/SoEvent.h>
 # include <Inventor/fields/SoSFString.h>
 # include <Inventor/fields/SoSFColor.h>
+# include <Inventor/Qt/SoQtBasic.h>
 #endif
 # include <QStackedWidget>
 
@@ -113,12 +114,25 @@ View3DInventor::View3DInventor(Gui::Document* pcDocument, QWidget* parent, Qt::W
 
     // create the inventor widget and set the defaults
 #if !defined (NO_USE_QT_MDI_AREA)
+#if SOQT_MAJOR_VERSION > 1 || (SOQT_MAJOR_VERSION == 1 && SOQT_MINOR_VERSION >= 5)
+    // #0000282: Window gets smaller on loading files
+    // #0001028: Main window resized when a document is opened
+    _viewer = new View3DInventorViewer(this);
+#else
     _viewer = new View3DInventorViewer(0);
+#endif
     _viewer->setDocument(this->_pcDocument);
     stack->addWidget(_viewer->getWidget());
+    // http://forum.freecadweb.org/viewtopic.php?f=3&t=6055&sid=150ed90cbefba50f1e2ad4b4e6684eba
+    // describes a minor error but trying to fix it leads to a major issue
+    // http://forum.freecadweb.org/viewtopic.php?f=3&t=6085&sid=3f4bcab8007b96aaf31928b564190fd7
+    // so the change is commented out
+    // By default, the wheel events are processed by the 3d view AND the mdi area.
+    //_viewer->getGLWidget()->setAttribute(Qt::WA_NoMousePropagation);
     setCentralWidget(stack);
 #else
     _viewer = new View3DInventorViewer(this);
+    _viewer->setDocument(this->_pcDocument);
 #endif
     // apply the user settings
     OnChange(*hGrp,"EyeDistance");
@@ -130,7 +144,7 @@ View3DInventor::View3DInventor(Gui::Document* pcDocument, QWidget* parent, Qt::W
     OnChange(*hGrp,"BackgroundColor3");
     OnChange(*hGrp,"BackgroundColor4");
     OnChange(*hGrp,"UseBackgroundColorMid");
-    OnChange(*hGrp,"UseAntialiasing");
+    OnChange(*hGrp,"AntiAliasing");
     OnChange(*hGrp,"ShowFPS");
     OnChange(*hGrp,"Orthographic");
     OnChange(*hGrp,"HeadlightColor");
@@ -144,6 +158,9 @@ View3DInventor::View3DInventor(Gui::Document* pcDocument, QWidget* parent, Qt::W
     OnChange(*hGrp,"OrbitStyle");
     OnChange(*hGrp,"Sensitivity");
     OnChange(*hGrp,"ResetCursorPosition");
+    OnChange(*hGrp,"DimensionsVisible");
+    OnChange(*hGrp,"Dimensions3dVisible");
+    OnChange(*hGrp,"DimensionsDeltaVisible");
 
     stopSpinTimer = new QTimer(this);
     connect(stopSpinTimer, SIGNAL(timeout()), this, SLOT(stopAnimating()));
@@ -316,31 +333,8 @@ void View3DInventor::OnChange(ParameterGrp::SubjectType &rCaller,ParameterGrp::M
     else if (strcmp(Reason,"Gradient") == 0) {
         _viewer->setGradientBackground((rGrp.GetBool("Gradient",true)));
     }
-    else if (strcmp(Reason,"UseAntialiasing") == 0) {
-        _viewer->getGLRenderAction()->setSmoothing(rGrp.GetBool("UseAntialiasing",false));
-    }
-    else if (strcmp(Reason,"SampleBuffers") == 0) {
-#if SOQT_MAJOR_VERSION > 1 || (SOQT_MAJOR_VERSION == 1 && SOQT_MINOR_VERSION >= 5)
-        _viewer->setSampleBuffers(rGrp.GetInt("SampleBuffers",4));
-#else
-        // http://stackoverflow.com/questions/4207506/where-is-gl-multisample-defined
-        //int sb = rGrp.GetInt("SampleBuffers",4);
-        //QGLWidget* gl = static_cast<QGLWidget*>(_viewer->getGLWidget());
-        //QGLFormat fmt = gl->format();
-        //if (sb > 0) {
-        //    fmt.setSampleBuffers(true);
-        //    fmt.setSamples(sb);
-        //    gl->setFormat(fmt);
-        //    gl->makeCurrent();
-        //    //glEnable(GL_MULTISAMPLE);
-        //}
-        //else {
-        //    fmt.setSampleBuffers(false);
-        //    gl->setFormat(fmt);
-        //    gl->makeCurrent();
-        //    //glDisable(GL_MULTISAMPLE);
-        //}
-#endif
+    else if (strcmp(Reason,"AntiAliasing") == 0) {
+        _viewer->setAntiAliasingMode(View3DInventorViewer::AntiAliasing(rGrp.GetInt("AntiAliasing",0)));
     }
     else if (strcmp(Reason,"ShowFPS") == 0) {
         _viewer->setEnabledFPSCounter(rGrp.GetBool("ShowFPS",false));
@@ -352,7 +346,28 @@ void View3DInventor::OnChange(ParameterGrp::SubjectType &rCaller,ParameterGrp::M
         else
             _viewer->setCameraType(SoPerspectiveCamera::getClassTypeId());
     }
-    else {
+    else if (strcmp(Reason, "DimensionsVisible") == 0)
+    {
+      if (rGrp.GetBool("DimensionsVisible", true))
+	_viewer->turnAllDimensionsOn();
+      else
+	_viewer->turnAllDimensionsOff();
+    }
+    else if (strcmp(Reason, "Dimensions3dVisible") == 0)
+    {
+      if (rGrp.GetBool("Dimensions3dVisible", true))
+	_viewer->turn3dDimensionsOn();
+      else
+	_viewer->turn3dDimensionsOff();
+    }
+    else if (strcmp(Reason, "DimensionsDeltaVisible") == 0)
+    {
+      if (rGrp.GetBool("DimensionsDeltaVisible", true))
+	_viewer->turnDeltaDimensionsOn();
+      else
+	_viewer->turnDeltaDimensionsOff();
+    }
+    else{
         unsigned long col1 = rGrp.GetUnsigned("BackgroundColor",3940932863UL);
         unsigned long col2 = rGrp.GetUnsigned("BackgroundColor2",859006463UL); // default color (dark blue)
         unsigned long col3 = rGrp.GetUnsigned("BackgroundColor3",2880160255UL); // default color (blue/grey)

@@ -30,10 +30,12 @@
 #include <Base/Interpreter.h>
 
 #include "Features/CamFeature.h"
-#include "Features/TPGFeature.h"
-#include "Features/ToolPathFeature.h"
+#include "Features/CamSettingsableFeature.h"
+#include "Features/MachineFeature.h"
 #include "Features/MachineProgramFeature.h"
-
+#include "Features/ToolFeature.h"
+#include "Features/ToolPathFeature.h"
+#include "Features/TPGFeature.h"
 
 #include "TPG/TPGFactory.h"
 #include "TPG/TPG.h"
@@ -120,11 +122,13 @@ void CamExport initCam()
     // This function is responsible for adding inherited slots from a type's base class.
 
     Cam::CamFeature             ::init();
-    Cam::TPGFeature             ::init();
-    Cam::ToolPathFeature        ::init();
+    Cam::Settings::Feature ::init();
+    Cam::MachineFeature         ::init();
     Cam::MachineProgramFeature  ::init();
-
-	Cam::Settings				::init();
+    Cam::Settings               ::init();
+    Cam::ToolFeature            ::init();
+    Cam::ToolPathFeature        ::init();
+    Cam::TPGFeature             ::init();
 
     // Perform initial scan to load all TPGDescriptors in the factory to ensure that documents can load these
     Cam::TPGFactory().scanPlugins();

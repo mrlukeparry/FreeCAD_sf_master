@@ -162,15 +162,16 @@ void MeshSelection::stopInteractiveCallback(Gui::View3DInventorViewer* viewer)
     }
 }
 
-void MeshSelection::prepareBrushSelection(bool add)
+void MeshSelection::prepareBrushSelection(bool add,SoEventCallbackCB *cb)
 {
     // a rubberband to select a rectangle area of the meshes
     Gui::View3DInventorViewer* viewer = this->getViewer();
     if (viewer) {
         stopInteractiveCallback(viewer);
-        startInteractiveCallback(viewer, selectGLCallback);
+        startInteractiveCallback(viewer, cb);
         // set cross cursor
         Gui::BrushSelection* brush = new Gui::BrushSelection();
+        brush->setClosed(true);
         brush->setColor(1.0f,0.0f,0.0f);
         brush->setLineWidth(3.0f);
         viewer->navigationStyle()->startSelection(brush);
@@ -186,12 +187,19 @@ void MeshSelection::prepareBrushSelection(bool add)
 
 void MeshSelection::startSelection()
 {
-    prepareBrushSelection(true);
+    prepareBrushSelection(true, selectGLCallback);
 }
 
 void MeshSelection::startDeselection()
 {
-    prepareBrushSelection(false);
+    prepareBrushSelection(false, selectGLCallback);
+}
+
+void MeshSelection::stopSelection()
+{
+    Gui::View3DInventorViewer* viewer = getViewer();
+    if (viewer)
+        stopInteractiveCallback(viewer);
 }
 
 void MeshSelection::fullSelection()
@@ -332,9 +340,19 @@ void MeshSelection::setCheckOnlyPointToUserTriangles(bool on)
     onlyPointToUserTriangles = on;
 }
 
+bool MeshSelection::isCheckedOnlyPointToUserTriangles() const
+{
+    return onlyPointToUserTriangles;
+}
+
 void MeshSelection::setCheckOnlyVisibleTriangles(bool on)
 {
     onlyVisibleTriangles = on;
+}
+
+bool MeshSelection::isCheckedOnlyVisibleTriangles() const
+{
+    return onlyVisibleTriangles;
 }
 
 void MeshSelection::setAddComponentOnClick(bool on)

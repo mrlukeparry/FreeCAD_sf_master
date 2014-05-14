@@ -32,16 +32,18 @@
 
 using namespace Part;
 
-App::PropertyFloatConstraint::Constraints Revolution::angleRangeU = {-360.0f,360.0f,1.0f};
+App::PropertyFloatConstraint::Constraints Revolution::angleRangeU = {-360.0,360.0,1.0};
 
 PROPERTY_SOURCE(Part::Revolution, Part::Feature)
 
 Revolution::Revolution()
 {
+    //*** why not ADD_PROPERTY_TYPE??
     ADD_PROPERTY(Source,(0));
-    ADD_PROPERTY(Base,(Base::Vector3f(0.0f,0.0f,0.0f)));
-    ADD_PROPERTY(Axis,(Base::Vector3f(0.0f,0.0f,1.0f)));
-    ADD_PROPERTY(Angle,(360.0f));
+    ADD_PROPERTY(Base,(Base::Vector3d(0.0,0.0,0.0)));
+    ADD_PROPERTY(Axis,(Base::Vector3d(0.0,0.0,1.0)));
+    ADD_PROPERTY(Angle,(360.0));
+    ADD_PROPERTY_TYPE(Solid,(false),"Base",App::Prop_None,"Make revolution a solid if possible");
     Angle.setConstraints(&angleRangeU);
 }
 
@@ -50,7 +52,8 @@ short Revolution::mustExecute() const
     if (Base.isTouched() ||
         Axis.isTouched() ||
         Angle.isTouched() ||
-        Source.isTouched())
+        Source.isTouched() ||
+        Solid.isTouched())
         return 1;
     return 0;
 }
@@ -64,15 +67,18 @@ App::DocumentObjectExecReturn *Revolution::execute(void)
         return new App::DocumentObjectExecReturn("Linked object is not a Part object");
     Part::Feature *base = static_cast<Part::Feature*>(Source.getValue());
 
-    Base::Vector3f b = Base.getValue();
-    Base::Vector3f v = Axis.getValue();
+    Base::Vector3d b = Base.getValue();
+    Base::Vector3d v = Axis.getValue();
     gp_Pnt pnt(b.x,b.y,b.z);
     gp_Dir dir(v.x,v.y,v.z);
+    Standard_Boolean isSolid = Solid.getValue() ? Standard_True : Standard_False;
 
     try {
         // Now, let's get the TopoDS_Shape
+        //TopoDS_Shape revolve = base->Shape.getShape().revolve(gp_Ax1(pnt, dir),
+        //    Angle.getValue()/180.0f*M_PI);
         TopoDS_Shape revolve = base->Shape.getShape().revolve(gp_Ax1(pnt, dir),
-            Angle.getValue()/180.0f*M_PI);
+            Angle.getValue()/180.0f*M_PI,isSolid);
         if (revolve.IsNull())
             return new App::DocumentObjectExecReturn("Resulting shape is null");
         this->Shape.setValue(revolve);

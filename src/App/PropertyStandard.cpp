@@ -24,6 +24,7 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
+# include <sstream>
 # include <boost/version.hpp>
 # include <boost/filesystem/path.hpp>
 #endif
@@ -478,10 +479,14 @@ void PropertyEnumeration::setPyObject(PyObject *value)
     }
     else if (PyString_Check(value)) {
         const char* str = PyString_AsString (value);
-        if (_EnumArray && isPartOf(str))
+        if (_EnumArray && isPartOf(str)) {
             setValue(PyString_AsString (value));
-        else
-            throw Base::ValueError("not part of the enum");
+        }
+        else {
+            std::stringstream out;
+            out << "'" << str << "' is not part of the enumeration";
+            throw Base::ValueError(out.str());
+        }
     }
     else if (PyList_Check(value)) {
         Py_ssize_t nSize = PyList_Size(value);
@@ -575,10 +580,41 @@ void PropertyIntegerConstraint::setPyObject(PyObject *value)
             else if(temp < _ConstStruct->LowerBound)
                 temp = _ConstStruct->LowerBound;
         }
+
         aboutToSetValue();
         _lValue = temp;
         hasSetValue();
-    } 
+    }
+    else if (PyTuple_Check(value) && PyTuple_Size(value) == 4) {
+        long values[4];
+        for (int i=0; i<4; i++) {
+            PyObject* item;
+            item = PyTuple_GetItem(value,i);
+            if (PyInt_Check(item))
+                values[i] = PyInt_AsLong(item);
+            else
+                throw Base::TypeError("Type in tuple must be int");
+        }
+
+        if (!_ConstStruct) {
+            Constraints* c = new Constraints();
+            c->LowerBound = values[1];
+            c->UpperBound = values[2];
+            c->StepSize = std::max<long>(1, values[3]);
+            if (values[0] > c->UpperBound)
+                values[0] = c->UpperBound;
+            else if (values[0] < c->LowerBound)
+                values[0] = c->LowerBound;
+            setConstraints(c);
+        }
+        else {
+            throw Base::RuntimeError("Cannot override limits of constraint");
+        }
+
+        aboutToSetValue();
+        _lValue = values[0];
+        hasSetValue();
+    }
     else {
         std::string error = std::string("type must be int, not ");
         error += value->ob_type->tp_name;
@@ -667,13 +703,13 @@ PyObject *PropertyIntegerList::getPyObject(void)
 
 void PropertyIntegerList::setPyObject(PyObject *value)
 { 
-    if (PyList_Check(value)) {
-        Py_ssize_t nSize = PyList_Size(value);
+    if (PySequence_Check(value)) {
+        Py_ssize_t nSize = PySequence_Size(value);
         std::vector<long> values;
         values.resize(nSize);
 
         for (Py_ssize_t i=0; i<nSize;++i) {
-            PyObject* item = PyList_GetItem(value, i);
+            PyObject* item =  PySequence_GetItem(value, i);
             if (!PyInt_Check(item)) {
                 std::string error = std::string("type in list must be int, not ");
                 error += item->ob_type->tp_name;
@@ -688,7 +724,7 @@ void PropertyIntegerList::setPyObject(PyObject *value)
         setValue(PyInt_AsLong(value));
     }
     else {
-        std::string error = std::string("type must be int or list of int, not ");
+        std::string error = std::string("type must be int or a sequence of int, not ");
         error += value->ob_type->tp_name;
         throw Base::TypeError(error);
     }
@@ -896,14 +932,14 @@ PropertyFloat::~PropertyFloat()
 //**************************************************************************
 // Base class implementer
 
-void PropertyFloat::setValue(float lValue)
+void PropertyFloat::setValue(double lValue)
 {
     aboutToSetValue();
     _dValue=lValue;
     hasSetValue();
 }
 
-float PropertyFloat::getValue(void) const
+double PropertyFloat::getValue(void) const
 {
     return _dValue;
 }
@@ -917,12 +953,12 @@ void PropertyFloat::setPyObject(PyObject *value)
 {
     if (PyFloat_Check(value)) {
         aboutToSetValue();
-        _dValue = (float) PyFloat_AsDouble(value);
+        _dValue = PyFloat_AsDouble(value);
         hasSetValue();
     }
     else if(PyInt_Check(value)) {
         aboutToSetValue();
-        _dValue = (float) PyInt_AsLong(value);
+        _dValue = PyInt_AsLong(value);
         hasSetValue();
     }
     else {
@@ -942,7 +978,7 @@ void PropertyFloat::Restore(Base::XMLReader &reader)
     // read my Element
     reader.readElement("Float");
     // get the value of my Attribute
-    setValue((float)reader.getAttributeAsFloat("value"));
+    setValue(reader.getAttributeAsFloat("value"));
 }
 
 Property *PropertyFloat::Copy(void) const
@@ -994,7 +1030,7 @@ const PropertyFloatConstraint::Constraints*  PropertyFloatConstraint::getConstra
 void PropertyFloatConstraint::setPyObject(PyObject *value)
 { 
     if (PyFloat_Check(value)) {
-        float temp = (float)PyFloat_AsDouble(value);
+        double temp = PyFloat_AsDouble(value);
         if (_ConstStruct) {
             if (temp > _ConstStruct->UpperBound)
                 temp = _ConstStruct->UpperBound;
@@ -1005,9 +1041,9 @@ void PropertyFloatConstraint::setPyObject(PyObject *value)
         aboutToSetValue();
         _dValue = temp;
         hasSetValue();
-    } 
+    }
     else if (PyInt_Check(value)) {
-        float temp = (float)PyInt_AsLong(value);
+        double temp = (double)PyInt_AsLong(value);
         if (_ConstStruct) {
             if (temp > _ConstStruct->UpperBound)
                 temp = _ConstStruct->UpperBound;
@@ -1018,7 +1054,39 @@ void PropertyFloatConstraint::setPyObject(PyObject *value)
         aboutToSetValue();
         _dValue = temp;
         hasSetValue();
-    } 
+    }
+    else if (PyTuple_Check(value) && PyTuple_Size(value) == 4) {
+        double values[4];
+        for (int i=0; i<4; i++) {
+            PyObject* item;
+            item = PyTuple_GetItem(value,i);
+            if (PyFloat_Check(item))
+                values[i] = PyFloat_AsDouble(item);
+            else if (PyInt_Check(item))
+                values[i] = PyInt_AsLong(item);
+            else
+                throw Base::TypeError("Type in tuple must be float or int");
+        }
+
+        if (!_ConstStruct) {
+            Constraints* c = new Constraints();
+            c->LowerBound = values[1];
+            c->UpperBound = values[2];
+            c->StepSize = std::max<double>(0.1, values[3]);
+            if (values[0] > c->UpperBound)
+                values[0] = c->UpperBound;
+            else if (values[0] < c->LowerBound)
+                values[0] = c->LowerBound;
+            setConstraints(c);
+        }
+        else {
+            throw Base::RuntimeError("Cannot override limits of constraint");
+        }
+
+        aboutToSetValue();
+        _dValue = values[0];
+        hasSetValue();
+    }
     else {
         std::string error = std::string("type must be float, not ");
         error += value->ob_type->tp_name;
@@ -1060,7 +1128,7 @@ int PropertyFloatList::getSize(void) const
     return static_cast<int>(_lValueList.size());
 }
 
-void PropertyFloatList::setValue(float lValue)
+void PropertyFloatList::setValue(double lValue)
 {
     aboutToSetValue();
     _lValueList.resize(1);
@@ -1068,7 +1136,7 @@ void PropertyFloatList::setValue(float lValue)
     hasSetValue();
 }
 
-void PropertyFloatList::setValues(const std::vector<float>& values)
+void PropertyFloatList::setValues(const std::vector<double>& values)
 {
     aboutToSetValue();
     _lValueList = values;
@@ -1087,7 +1155,7 @@ void PropertyFloatList::setPyObject(PyObject *value)
 { 
     if (PyList_Check(value)) {
         Py_ssize_t nSize = PyList_Size(value);
-        std::vector<float> values;
+        std::vector<double> values;
         values.resize(nSize);
 
         for (Py_ssize_t i=0; i<nSize;++i) {
@@ -1098,13 +1166,13 @@ void PropertyFloatList::setPyObject(PyObject *value)
                 throw Base::TypeError(error);
             }
             
-            values[i] = (float) PyFloat_AsDouble(item);
+            values[i] = PyFloat_AsDouble(item);
         }
 
         setValues(values);
     }
     else if (PyFloat_Check(value)) {
-        setValue((float) PyFloat_AsDouble(value));
+        setValue(PyFloat_AsDouble(value));
     } 
     else {
         std::string error = std::string("type must be float or list of float, not ");
@@ -1145,8 +1213,16 @@ void PropertyFloatList::SaveDocFile (Base::Writer &writer) const
     Base::OutputStream str(writer.Stream());
     uint32_t uCt = (uint32_t)getSize();
     str << uCt;
-    for (std::vector<float>::const_iterator it = _lValueList.begin(); it != _lValueList.end(); ++it) {
-        str << *it;
+    if (writer.getFileVersion() > 0) {
+        for (std::vector<double>::const_iterator it = _lValueList.begin(); it != _lValueList.end(); ++it) {
+            str << *it;
+        }
+    }
+    else {
+        for (std::vector<double>::const_iterator it = _lValueList.begin(); it != _lValueList.end(); ++it) {
+            float v = (float)*it;
+            str << v;
+        }
     }
 }
 
@@ -1155,9 +1231,18 @@ void PropertyFloatList::RestoreDocFile(Base::Reader &reader)
     Base::InputStream str(reader);
     uint32_t uCt=0;
     str >> uCt;
-    std::vector<float> values(uCt);
-    for (std::vector<float>::iterator it = values.begin(); it != values.end(); ++it) {
-        str >> *it;
+    std::vector<double> values(uCt);
+    if (reader.getFileVersion() > 0) {
+        for (std::vector<double>::iterator it = values.begin(); it != values.end(); ++it) {
+            str >> *it;
+        }
+    }
+    else {
+        for (std::vector<double>::iterator it = values.begin(); it != values.end(); ++it) {
+            float val;
+            str >> val;
+            (*it) = val;
+        }
     }
     setValues(values);
 }
@@ -1178,7 +1263,7 @@ void PropertyFloatList::Paste(const Property &from)
 
 unsigned int PropertyFloatList::getMemSize (void) const
 {
-    return static_cast<unsigned int>(_lValueList.size() * sizeof(float));
+    return static_cast<unsigned int>(_lValueList.size() * sizeof(double));
 }
 
 //**************************************************************************
@@ -1830,6 +1915,159 @@ void PropertyBool::Paste(const Property &from)
     aboutToSetValue();
     _lValue = dynamic_cast<const PropertyBool&>(from)._lValue;
     hasSetValue();
+}
+
+//**************************************************************************
+//**************************************************************************
+// PropertyBoolList
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+TYPESYSTEM_SOURCE(App::PropertyBoolList , App::PropertyLists);
+
+//**************************************************************************
+// Construction/Destruction
+
+
+PropertyBoolList::PropertyBoolList()
+{
+
+}
+
+PropertyBoolList::~PropertyBoolList()
+{
+
+}
+
+void PropertyBoolList::setSize(int newSize)
+{
+    _lValueList.resize(newSize);
+}
+
+int PropertyBoolList::getSize(void) const
+{
+    return static_cast<int>(_lValueList.size());
+}
+
+//**************************************************************************
+// Base class implementer
+
+void PropertyBoolList::setValue(bool lValue)
+{
+    aboutToSetValue();
+    _lValueList.resize(1);
+    _lValueList[0]=lValue;
+    hasSetValue();
+}
+
+void PropertyBoolList::set1Value(const int idx, bool value)
+{
+    aboutToSetValue();
+    _lValueList[idx]=value;
+    hasSetValue();
+}
+
+void PropertyBoolList::setValues(const boost::dynamic_bitset<>& values)
+{
+    aboutToSetValue();
+    _lValueList = values;
+    hasSetValue();
+}
+
+PyObject *PropertyBoolList::getPyObject(void)
+{
+    PyObject* tuple = PyTuple_New(getSize());
+    for(int i = 0;i<getSize(); i++) {
+        bool v = _lValueList[i];
+        if (v) {
+            Py_INCREF(Py_True);
+            PyTuple_SetItem(tuple, i, Py_True);
+        }
+        else {
+            Py_INCREF(Py_False);
+            PyTuple_SetItem(tuple, i, Py_False);
+        }
+    }
+    return tuple;
+}
+
+void PropertyBoolList::setPyObject(PyObject *value)
+{
+    // string is also a sequence and must be be treated differently
+    if (PyString_Check(value)) {
+        std::string str = PyString_AsString(value);
+        boost::dynamic_bitset<> values(str);
+        setValues(values);
+    }
+    else if (PySequence_Check(value)) {
+        Py_ssize_t nSize = PySequence_Size(value);
+        boost::dynamic_bitset<> values(nSize);
+
+        for (Py_ssize_t i=0; i<nSize;++i) {
+            PyObject* item =  PySequence_GetItem(value, i);
+            if (PyBool_Check(item)) {
+                values[i] = (PyObject_IsTrue(item) ? true : false);
+            }
+            else if (PyInt_Check(item)) {
+                values[i] = (PyInt_AsLong(item) ? true : false);
+            }
+            else {
+                std::string error = std::string("type in list must be bool or int, not ");
+                error += item->ob_type->tp_name;
+                throw Base::TypeError(error);
+            }
+        }
+
+        setValues(values);
+    }
+    else if (PyBool_Check(value)) {
+        setValue(PyObject_IsTrue(value) ? true : false);
+    }
+    else if (PyInt_Check(value)) {
+        setValue(PyInt_AsLong(value) ? true : false);
+    }
+    else {
+        std::string error = std::string("type must be bool or a sequence of bool, not ");
+        error += value->ob_type->tp_name;
+        throw Base::TypeError(error);
+    }
+}
+
+void PropertyBoolList::Save (Base::Writer &writer) const
+{
+    writer.Stream() << writer.ind() << "<BoolList value=\"" ;
+    std::string bitset;
+    boost::to_string(_lValueList, bitset);
+    writer.Stream() << bitset <<"\"/>" ;
+    writer.Stream() << std::endl;
+}
+
+void PropertyBoolList::Restore(Base::XMLReader &reader)
+{
+    // read my Element
+    reader.readElement("BoolList");
+    // get the value of my Attribute
+    string str = reader.getAttribute("value");
+    boost::dynamic_bitset<> bitset(str);
+    setValues(bitset);
+}
+
+Property *PropertyBoolList::Copy(void) const
+{
+    PropertyBoolList *p= new PropertyBoolList();
+    p->_lValueList = _lValueList;
+    return p;
+}
+
+void PropertyBoolList::Paste(const Property &from)
+{
+    aboutToSetValue();
+    _lValueList = dynamic_cast<const PropertyBoolList&>(from)._lValueList;
+    hasSetValue();
+}
+
+unsigned int PropertyBoolList::getMemSize (void) const
+{
+    return static_cast<unsigned int>(_lValueList.size());
 }
 
 //**************************************************************************

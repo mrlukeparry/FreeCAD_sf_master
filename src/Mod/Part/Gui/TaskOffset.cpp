@@ -41,6 +41,7 @@
 
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
+#include <Base/UnitsApi.h>
 #include <App/Application.h>
 #include <App/Document.h>
 #include <App/DocumentObject.h>
@@ -72,6 +73,7 @@ OffsetWidget::OffsetWidget(Part::Offset* offset, QWidget* parent)
 
     d->offset = offset;
     d->ui.setupUi(this);
+    d->ui.spinOffset->setDecimals(Base::UnitsApi::getDecimals());
     d->ui.spinOffset->setRange(-INT_MAX, INT_MAX);
     d->ui.spinOffset->setSingleStep(0.1);
     d->ui.spinOffset->setValue(d->offset->Value.getValue());
@@ -90,7 +92,7 @@ Part::Offset* OffsetWidget::getObject() const
 
 void OffsetWidget::on_spinOffset_valueChanged(double val)
 {
-    d->offset->Value.setValue((float)val);
+    d->offset->Value.setValue(val);
     if (d->ui.updateView->isChecked())
         d->offset->getDocument()->recomputeFeature(d->offset);
 }
@@ -104,7 +106,7 @@ void OffsetWidget::on_modeType_activated(int val)
 
 void OffsetWidget::on_joinType_activated(int val)
 {
-    d->offset->Join.setValue((float)val);
+    d->offset->Join.setValue((long)val);
     if (d->ui.updateView->isChecked())
         d->offset->getDocument()->recomputeFeature(d->offset);
 }

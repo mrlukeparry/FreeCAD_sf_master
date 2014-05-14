@@ -3,18 +3,21 @@
 // This program is released under the New BSD license. See the file COPYING for details.
 
 #pragma once
+
+#include <PreCompiled.h>
+
 #include <list>
 #include <set>
 
 namespace area
 {
 
-class CArea;
-class CCurve;
+class LibAreaExport CArea;
+class LibAreaExport CCurve;
 
-class CAreaOrderer;
+class LibAreaExport CAreaOrderer;
 
-class CInnerCurves
+class LibAreaExport CInnerCurves
 {
 	CInnerCurves* m_pOuter;
 	const area::CCurve* m_curve; // always empty if top level
@@ -31,7 +34,7 @@ public:
 	void Unite(const CInnerCurves* c);
 };
 
-class CAreaOrderer
+class LibAreaExport CAreaOrderer
 {
 public:
 	CInnerCurves* m_top_level;

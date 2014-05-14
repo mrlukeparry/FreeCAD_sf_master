@@ -137,13 +137,13 @@ public:
     { return Base::Vector3d(); }
     /** Get points from object with given accuracy */
     virtual void getPoints(std::vector<Base::Vector3d> &Points,
-        float Accuracy, uint16_t flags=0) const {};
+        float Accuracy, uint16_t flags=0) const {}
     /** Get lines from object with given accuracy */
     virtual void getLines(std::vector<Base::Vector3d> &Points,std::vector<Line> &lines,
-        float Accuracy, uint16_t flags=0) const {};
+        float Accuracy, uint16_t flags=0) const {}
     /** Get faces from object with given accuracy */
     virtual void getFaces(std::vector<Base::Vector3d> &Points,std::vector<Facet> &faces,
-        float Accuracy, uint16_t flags=0) const {};
+        float Accuracy, uint16_t flags=0) const {}
     //@}
 
 protected:
@@ -153,7 +153,6 @@ protected:
     {
         return getTransform() * Base::Vector3d(vec.x,vec.y,vec.z);
     }
-
     /// from local to inside
     inline Base::Vector3f transformToInside(const Base::Vector3d& vec) const
     {
@@ -162,8 +161,6 @@ protected:
         Base::Vector3d tmp = tmpM * vec;
         return Base::Vector3f((float)tmp.x,(float)tmp.y,(float)tmp.z);
     }
-
-    //Base::Matrix4D _Mtrx;
 };
 
 } //namespace App

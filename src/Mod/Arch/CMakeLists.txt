@@ -20,9 +20,13 @@ SET(Arch_SRCS
     ArchAxis.py
     ArchVRM.py
     ArchRoof.py
+    ArchStairs.py
     importWebGL.py
     ArchSpace.py
+    ArchRebar.py
     TestArch.py
+    ifcWriter.py
+    ArchFrame.py
 )
 SOURCE_GROUP("" FILES ${Arch_SRCS})
 

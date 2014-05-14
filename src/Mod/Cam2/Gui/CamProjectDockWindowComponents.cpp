@@ -33,6 +33,9 @@
 #include <QColor>
 #include <QColorDialog>
 #include <QPalette>
+#include <QListView>
+#include <QStringList>
+#include <QStringListModel>
 
 #include <Base/Console.h>
 
@@ -237,7 +240,7 @@ void CamTextBoxComponent::editingFinished() {
 		QString qvalue = widget->text();
 		Cam::Settings::Integer *pIntSetting = dynamic_cast<Cam::Settings::Integer *>(tpgsetting);
 		Cam::Settings::Double *pDoubleSetting = dynamic_cast<Cam::Settings::Double *>(tpgsetting);
-		Cam::Settings::ObjectNamesForType *pObjNamesForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(tpgsetting);
+		Cam::Settings::ObjectNamesForType *pObjNamesForTypeSetting = dynamic_cast<Cam::Settings::ObjectNamesForType *>(tpgsetting);
 		if (pIntSetting)
 		{
 			// Interpret the value using the Python interpreter.
@@ -274,28 +277,7 @@ void CamTextBoxComponent::editingFinished() {
 				widget->setText(tpgsetting->getValue());
 			}
 		}
-		else if (pObjNamesForType)
-		{
-			int position = 0;
-			if (pObjNamesForType->validate(widget->text(), position) == Cam::Settings::Definition::Acceptable)
-			{
-				pObjNamesForType->setByLabels(widget->text(), QString::fromAscii(","));
-			}
-			else
-			{
-				// Reinstate the original value.
-				std::ostringstream ossLabels;
-				QStringList labels = pObjNamesForType->GetLabels();
-				for (QStringList::const_iterator itLabel = labels.begin(); itLabel != labels.end(); itLabel++)
-				{
-					if (itLabel != labels.begin()) ossLabels << ",";
-					ossLabels << itLabel->toAscii().constData();
-				}
-				widget->setText( QString::fromStdString(ossLabels.str()) );
-			}
-		}
-		else
-		{
+		else {
 			if (!tpgsetting->setValue(qvalue))
 			{
 				Base::Console().Error("Saving failed: '%s'\n", tpgsetting->name.toStdString().c_str());
@@ -393,23 +375,6 @@ void CamLineEdit::refresh()
 		}
 		break;
 
-	case Cam::Settings::Definition::SettingType_ObjectNamesForType:
-		{
-			Cam::Settings::ObjectNamesForType *pObjNamesForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(this->tpgSetting);
-			if (pObjNamesForType)
-			{
-				std::ostringstream ossLabels;
-				QStringList labels = pObjNamesForType->GetLabels();
-				for (QStringList::const_iterator itLabel = labels.begin(); itLabel != labels.end(); itLabel++)
-				{
-					if (itLabel != labels.begin()) ossLabels << ",";
-					ossLabels << itLabel->toAscii().constData();
-				}
-				this->setText(QString::fromStdString(ossLabels.str()));
-			}
-		}
-		break;
-
 	default:
 		this->setText(this->tpgSetting->getValue());
 	}
@@ -419,7 +384,15 @@ void CamTextBoxComponent::refresh()
 {
 	if ((widget != NULL) && (tpgsetting != NULL))
 	{
-		widget->refresh();
+		Cam::Settings::ObjectNamesForType *pObjNamesForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(tpgsetting);
+		if (pObjNamesForType)
+		{
+			this->widget->setText( CamTextBoxComponent::GetLabels( pObjNamesForType ) );
+		}
+		else
+		{
+			widget->refresh();
+		}
 	}
 }
 
@@ -429,8 +402,42 @@ void CamTextBoxComponent::refresh()
 	within the CamTextBoxComponent::handleButton() method.  This
 	handler is called when the add_button is pressed.
  */
-void CamTextBoxComponent::handleAddObjectNameButton()
+void CamListViewsDialog::handleAddObjectLabelButton()
 {
+	if (this->possible_object_labels->currentIndex().row() >= 0)
+	{
+		QModelIndex from = this->possible_object_labels->currentIndex();
+		QStringList possibleLabels = possibleLabelsListModel->stringList();
+		QString label = possibleLabels.at(from.row());
+		possibleLabels.removeAt(from.row());
+		this->possibleLabelsListModel.reset( new QStringListModel(possibleLabels) );
+		this->possible_object_labels->setModel(this->possibleLabelsListModel.get());
+
+		QStringList selectedLabels = selectedLabelsListModel->stringList();
+		selectedLabels.append(label);
+
+		this->selectedLabelsListModel.reset( new QStringListModel(selectedLabels) );
+		this->selected_object_labels->setModel(this->selectedLabelsListModel.get());
+	}
+}
+
+void CamListViewsDialog::handleRemoveObjectLabelButton()
+{
+	if (this->selected_object_labels->currentIndex().row() >= 0)
+	{
+		QModelIndex from = this->selected_object_labels->currentIndex();
+		QStringList selectedLabels = selectedLabelsListModel->stringList();
+		QString label = selectedLabels.at(from.row());
+		selectedLabels.removeAt(from.row());
+		this->selectedLabelsListModel.reset( new QStringListModel(selectedLabels) );
+		this->selected_object_labels->setModel(this->selectedLabelsListModel.get());
+
+		QStringList possibleLabels = possibleLabelsListModel->stringList();
+		possibleLabels.append(label);
+
+		this->possibleLabelsListModel.reset( new QStringListModel(possibleLabels) );
+		this->possible_object_labels->setModel(this->possibleLabelsListModel.get());
+	}
 }
 
 /**
@@ -438,8 +445,119 @@ void CamTextBoxComponent::handleAddObjectNameButton()
 	within the CamTextBoxComponent::handleButton() method.  This
 	handler is called when the ok_button is pressed.
  */
-void CamTextBoxComponent::handleOKButton()
+void CamListViewsDialog::handleOKButton()
 {
+	if (this->tpgSetting)
+	{
+		Cam::Settings::ObjectNamesForType *pObjNamesForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(tpgSetting);
+		if (pObjNamesForType)
+		{
+			QStringList labels = selectedLabelsListModel->stringList();
+			QStringList names;
+			for (CamListViewsDialog::Objects_t::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
+			{
+				for (QStringList::iterator itLabel = labels.begin(); itLabel != labels.end(); itLabel++)
+				{
+					if (QString::fromAscii((*itObject)->Label.getValue()) == *itLabel)
+					{
+						names.push_back(QString::fromAscii((*itObject)->getNameInDocument()));
+					}
+				}
+			}
+			pObjNamesForType->SetNames(names);
+		}
+	}
+
+	this->ok_pressed = true;
+	this->dialog->close();
+}
+
+CamListViewsDialog::CamListViewsDialog( const CamListViewsDialog::Objects_t & objects, Cam::Settings::Definition *tpgSetting )
+{
+	std::copy( objects.begin(), objects.end(), std::inserter( this->objects, this->objects.begin() ) );
+
+	this->ok_pressed = false;
+	this->tpgSetting = tpgSetting->grab();
+
+	this->dialog.reset(new QDialog);
+	this->layout.reset(new QVBoxLayout);
+	this->add_button.reset(new QPushButton);
+	this->remove_button.reset(new QPushButton);
+	this->ok_button.reset(new QPushButton);
+	this->dummy_edit.reset(new QLineEdit);
+	this->possible_object_labels.reset(new QListView);
+	this->selected_object_labels.reset(new QListView);
+	this->possibleLabelsList.reset(new QStringList());
+
+	QStringList labels;
+	Cam::Settings::ObjectNamesForType *pObjNamesForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(this->tpgSetting);
+	if (pObjNamesForType)
+	{
+		QStringList names = pObjNamesForType->GetNames();
+		for (Objects_t::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
+		{
+			bool found = false;
+			for (QStringList::iterator itName = names.begin(); itName != names.end(); itName++)
+			{	
+				if (QString::fromAscii((*itObject)->getNameInDocument()) == *itName)
+				{
+					labels.push_back(QString::fromAscii((*itObject)->Label.getValue()));
+					found = true;
+				}
+			}
+			if (! found)
+			{
+				possibleLabelsList->append( QString::fromAscii((*itObject)->Label.getValue()) );
+			}
+		}
+		this->selectedLabelsListModel.reset( new QStringListModel(labels) );
+		selected_object_labels->setModel( this->selectedLabelsListModel.get() );
+
+		this->possibleLabelsListModel.reset( new QStringListModel(*possibleLabelsList, NULL) );
+		possible_object_labels->setModel( this->possibleLabelsListModel.get() );
+	}
+
+	this->add_button->setText(QString::fromAscii("Add"));
+	this->remove_button->setText(QString::fromAscii("Remove"));
+	this->ok_button->setText(QString::fromAscii("OK"));
+	this->dummy_edit->setText(QString::fromAscii("One day this dialog will present a list of all objects whose types match this setting and allow the object names to be selected"));
+
+	this->ok_button->connect( this->ok_button.get(), SIGNAL(clicked()), this, SLOT(handleOKButton()));
+	layout->addWidget(this->ok_button.get());
+
+	this->layout->addWidget(dummy_edit.get());
+
+	this->layout->addWidget(possible_object_labels.get());
+
+	this->add_button->connect( this->add_button.get(), SIGNAL(clicked()), this, SLOT(handleAddObjectLabelButton()));
+	this->layout->addWidget(this->add_button.get());
+
+	this->remove_button->connect( this->remove_button.get(), SIGNAL(clicked()), this, SLOT(handleRemoveObjectLabelButton()));
+	this->layout->addWidget(this->remove_button.get());
+
+	this->layout->addWidget(this->selected_object_labels.get());
+
+	this->dialog->setGeometry(0,0,200,100);
+	QString title = QString::fromAscii("Edit object names list");
+	this->dialog->setWindowTitle(title);
+	this->dialog->setLayout(layout.get());
+	this->dialog->setWindowFlags(Qt::Dialog);
+}
+
+CamListViewsDialog::~CamListViewsDialog()
+{
+	if (this->tpgSetting)
+	{
+		this->tpgSetting->release();
+		this->tpgSetting = NULL;
+	}
+}
+
+bool CamListViewsDialog::Show()
+{
+	this->dialog->show();
+	this->dialog->exec();
+	return(this->ok_pressed);
 }
 
 /**
@@ -464,33 +582,87 @@ void CamTextBoxComponent::handleButton()
 {
 	if (this->tpgsetting->type == Cam::Settings::Definition::SettingType_ObjectNamesForType)
 	{
-		boost::scoped_ptr<QDialog> dialog(new QDialog);
-		boost::scoped_ptr<QVBoxLayout> layout(new QVBoxLayout);
-		boost::scoped_ptr<QPushButton> add_button(new QPushButton);
-		boost::scoped_ptr<QPushButton> ok_button(new QPushButton);
-		boost::scoped_ptr<QLineEdit> dummy_edit(new QLineEdit);
+		Cam::Settings::ObjectNamesForType *pObjNamesForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(this->tpgsetting);
+		if (pObjNamesForType)
+		{
+			// We need to accumulate a list of object names whose types fall within the allowed list.
+			if (this->objects.size() == 0)
+			{
+				App::Document *doc = App::GetApplication().getActiveDocument();
+				if (doc != NULL)
+				{
+					QStringList types = pObjNamesForType->GetTypes();
+					for (QStringList::const_iterator itType = types.begin(); itType != types.end(); itType++)
+					{
+						Base::Type type = Base::Type::fromName( itType->toAscii().constData() );
+						if (type.isBad() == false)
+						{
+							std::vector<App::DocumentObject *> objects_of_type = doc->getObjectsOfType( type );
+							for (std::vector<App::DocumentObject *>::const_iterator itObject = objects_of_type.begin(); itObject != objects_of_type.end(); itObject++)
+							{
+								this->objects.push_back( *itObject );
+							}
+						}
+					}
+				}
+			}
 
-		add_button->setText(QString::fromAscii("Add"));
-		ok_button->setText(QString::fromAscii("OK"));
-		dummy_edit->setText(QString::fromAscii("One day this dialog will present a list of all objects whose types match this setting and allow the object names to be selected"));
+			CamListViewsDialog dialog(this->objects, this->tpgsetting);
+			if (dialog.Show())
+			{
+				// The user must have pressed the OK button.  Retrieve the final list and remember the object names.
+				this->refresh();
+			}
+		}
 
-		add_button->connect( add_button.get(), SIGNAL(clicked()), this, SLOT(handleAddObjectNameButton()));
-		layout->addWidget(add_button.get());
-
-		ok_button->connect( ok_button.get(), SIGNAL(clicked()), this, SLOT(handleOKButton()));
-		layout->addWidget(ok_button.get());
-
-		layout->addWidget(dummy_edit.get());
-
-		dialog->setGeometry(0,0,200,100);
-		QString title = QString::fromAscii("Edit object names list");
-		dialog->setWindowTitle(title);
-		dialog->setLayout(layout.get());
-		dialog->setWindowFlags(Qt::Dialog);		
-
-		dialog->show();
-		dialog->exec();
+		
 	}
+}
+
+/**
+	Retrieve the list of object names from this setting's value, lookup the object
+	pointers and return a comma separated list of object labels.  We also use this
+	method to retain the list of object pointers for use later on.
+ */
+QString CamTextBoxComponent::GetLabels( Cam::Settings::ObjectNamesForType *pObjNamesForType )
+{
+	QString labels;
+	if (objects.size() == 0)
+	{
+		// We need to accumulate a list of object names whose types fall within the allowed list.
+		App::Document *doc = App::GetApplication().getActiveDocument();
+		if (doc != NULL)
+		{
+			QStringList types = pObjNamesForType->GetTypes();
+			for (QStringList::const_iterator itType = types.begin(); itType != types.end(); itType++)
+			{
+				Base::Type type = Base::Type::fromName( itType->toAscii().constData() );
+				if (type.isBad() == false)
+				{
+					std::vector<App::DocumentObject *> objects_of_type = doc->getObjectsOfType( type );
+					for (std::vector<App::DocumentObject *>::const_iterator itObject = objects_of_type.begin(); itObject != objects_of_type.end(); itObject++)
+					{
+						this->objects.push_back( *itObject );
+					}
+				}
+			}
+		}
+	}
+	
+	QStringList names = pObjNamesForType->GetNames();
+	for (Objects_t::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
+	{
+		for (QStringList::const_iterator itName = names.begin(); itName != names.end(); itName++)
+		{
+			if (*itName == QString::fromAscii((*itObject)->getNameInDocument()))
+			{
+				if (labels.size() > 0) labels += QString::fromAscii(", ");
+				labels += QString::fromAscii((*itObject)->Label.getValue());
+			}
+		}
+	}
+
+	return(labels);
 }
 
 /**
@@ -541,18 +713,12 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 			{
 			case Cam::Settings::Definition::SettingType_ObjectNamesForType:
 				{
-					Cam::Settings::ObjectNamesForType *pObjNameForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(tpgsetting);
-					if (pObjNameForType)
+					Cam::Settings::ObjectNamesForType *pObjNamesForType = dynamic_cast<Cam::Settings::ObjectNamesForType *>(tpgsetting);
+					if (pObjNamesForType)
 					{
-						std::ostringstream ossValue;
-						QStringList labels = pObjNameForType->GetLabels();
-						for (QStringList::const_iterator itLabel = labels.begin(); itLabel != labels.end(); itLabel++)
-						{
-							if (itLabel != labels.begin()) ossValue << ",";
-							ossValue << itLabel->toStdString().c_str();
-						}
-
-						this->widget->setText(QString::fromStdString(ossValue.str()));
+						// Construct a list of labels to show in the user interface
+						this->widget->setText( this->GetLabels( pObjNamesForType ) );
+						this->widget->setReadOnly(true);	// must edit using the ... button rather than straight text editing by hand.
 					}
 				}
 				break;
@@ -572,7 +738,9 @@ bool CamTextBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLay
 			}
 
             this->widget->setToolTip(tpgsetting->helptext);
-			this->widget->setPlaceholderText(tpgsetting->helptext);
+			#if QT_VERSION >= 0x040700
+				this->widget->setPlaceholderText(tpgsetting->helptext);
+			#endif // QT_VERSION
 
 			this->validator = new Validator(tpgsetting->grab(), this->widget);
 			this->widget->setValidator(validator);
@@ -690,6 +858,10 @@ void CamLengthComponent::editingFinished()
 	}
 	else
 		Base::Console().Error("Saving a setting failed!\n");
+
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 void CamLengthComponent::refresh() 
@@ -843,7 +1015,9 @@ bool CamLengthComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayo
 				}
 
 				camLineEdit->setToolTip(tpgsetting->helptext);
-				camLineEdit->setPlaceholderText(tpgsetting->helptext);
+				#if QT_VERSION >= 0x040700
+					camLineEdit->setPlaceholderText(tpgsetting->helptext);
+				#endif // QT_VERSION
 				this->validator = new Validator(tpgsetting->grab(), camLineEdit);
 				camLineEdit->setValidator(validator);
 				// connect events
@@ -1051,7 +1225,9 @@ bool CamRateComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayout
 				ossValue << rate->get( rate->getUnits() );
 				camLineEdit->setText(QString::fromStdString(ossValue.str()));
 				camLineEdit->setToolTip(tpgsetting->helptext);
-				camLineEdit->setPlaceholderText(tpgsetting->helptext);
+				#if QT_VERSION >= 0x040700
+					camLineEdit->setPlaceholderText(tpgsetting->helptext);
+				#endif // QT_VERSION
 				this->validator = new Validator(tpgsetting->grab(), camLineEdit);
 				camLineEdit->setValidator(validator);
 				// connect events
@@ -1221,18 +1397,10 @@ bool CamRadioComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLayou
 /**
  * Saves the values on the UI to the TPGSetting instance
  */
-bool CamRadioComponent::close() {
-
-	//TODO: make this happen when radio buttons lose focus or different one is selected
-	QMap<QString, QRadioButton*>::const_iterator it = radios.constBegin();
-	for (; it != radios.constEnd(); ++it) {
-		if (it.value()->isChecked()) {
-			QString qvalue = it.key();
-			return tpgsetting->setValue(qvalue);
-		}
-	}
-
-    return false;
+bool CamRadioComponent::close() 
+{
+	// We don't need to save here as it was saved as soon as the clicked() method was called.
+    return true;
 }
 
 
@@ -1291,14 +1459,16 @@ bool CamComboBoxComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
 						std::vector<App::DocumentObject *> objects = doc->getObjectsOfType( type );
 						for (std::vector<App::DocumentObject *>::const_iterator itObject = objects.begin(); itObject != objects.end(); itObject++)
 						{
-							QString name = QString::fromAscii((*itObject)->getNameInDocument());
-							this->combo_box->addItem( name );
+							QString label = QString::fromAscii((*itObject)->Label.getValue());		// Name as displayed to user (can be changed)
+							QString name = QString::fromAscii((*itObject)->getNameInDocument());	// Unique name - does not change.
+
+							this->combo_box->addItem( label );	// Show the name as it's assigned by the user.
 							if (pSetting->GetName() == name)
 							{
 								this->combo_box->setCurrentIndex(index);
 							}
 
-							values.push_back( std::make_pair( name, name ));
+							values.push_back( std::make_pair( name, label ));
 							index++;
 						}
 					}
@@ -1355,7 +1525,7 @@ void CamComboBoxComponent::refresh()
 			{
 				for (::size_t i=0; i<values.size(); i++)
 				{
-					if (values[i].second == pSetting->GetName())
+					if (values[i].first == pSetting->GetName())
 					{
 						this->combo_box->setCurrentIndex(int(i));
 					}
@@ -1484,7 +1654,9 @@ bool CamFilenameComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormLa
             camLineEdit->setObjectName(qname);
             camLineEdit->setText(tpgsetting->getValue());
             camLineEdit->setToolTip(tpgsetting->helptext);
-			camLineEdit->setPlaceholderText(tpgsetting->helptext);
+			#if QT_VERSION >= 0x040700
+				camLineEdit->setPlaceholderText(tpgsetting->helptext);
+			#endif // QT_VERSION
 			camLineEdit->setVisible(tpgsetting->visible);
 			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
 			camLineEdit->setValidator(validator);
@@ -1582,6 +1754,10 @@ void CamDirectoryComponent::editingFinished() {
 	}
 	else
 		Base::Console().Error("Saving a setting failed!\n");
+
+	// Signal the parent dialog that we may have changed something so that it can let all the other
+	// CamComponent objects know to re-check their visible flags for changes too.
+	signalUpdated();
 }
 
 /**
@@ -1624,7 +1800,9 @@ bool CamDirectoryComponent::makeUI(Cam::Settings::Definition *tpgsetting, QFormL
             camLineEdit->setObjectName(qname);
             camLineEdit->setText(tpgsetting->getValue());
             camLineEdit->setToolTip(tpgsetting->helptext);
-			camLineEdit->setPlaceholderText(tpgsetting->helptext);
+			#if QT_VERSION >= 0x040700
+				camLineEdit->setPlaceholderText(tpgsetting->helptext);
+			#endif // QT_VERSION
 			this->validator = new Validator(tpgsetting->grab(), camLineEdit);
 			camLineEdit->setValidator(validator);
 			camLineEdit->setVisible(tpgsetting->visible);
@@ -1816,9 +1994,8 @@ void CamColorComponent::handleButton()
 			this->button->setFlat(true);
 
 			// Cast the setting pointer to a TPGColorSettingDefinition so that we can generate
-			// the verbose (string) represenation of the QColor for storage in the PropTPGSettings property
+			// the verbose (string) represenation of the QColor for storage in the Cam::Settings::Feature::Values property
 			// within the TPGFeature.
-
 			
 			pColorSetting->set( color.red(), color.green(), color.blue(), color.alpha() );
 		}

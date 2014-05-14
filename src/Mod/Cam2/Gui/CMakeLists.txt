@@ -42,12 +42,14 @@ set(CamGui_MOC_HDRS
     # TaskDialog/TaskDlgEditCamPartsList.h
     # TaskDialog/TaskDlgEditStockGeometry.h
     TaskDialog/TaskDlgEditTPGFeature.h
+    
     CamProjectDockWindow.h
     CamProjectDockWindowComponents.h
-    CamInspectorDockWindow.h
+    MachineProgramDockWindow.h
     TPGLibraryDockWindow.h
-    UIManager.h
     TPGListModel.h
+    ToolpathDockWindow.h
+    UIManager.h
 )
 
 set (CamGui_MOC_SRCS
@@ -57,8 +59,10 @@ set (CamGui_MOC_SRCS
 fc_wrap_cpp(CamGui_MOC_SRCS ${CamGui_MOC_HDRS})
 
 set(CamGui_UIC_SRCS
-    TPGLibraryDockWindow.ui
     CamProjectDockWindow.ui
+    MachineProgramDockWindow.ui
+    TPGLibraryDockWindow.ui
+    ToolpathDockWindow.ui
 )
 qt4_wrap_ui(CamGui_UIC_HDRS ${CamGui_UIC_SRCS})
 
@@ -80,19 +84,24 @@ SET(CamGui_SRCS
     ViewProviderCamFeature.h
     ViewProviderTPGFeature.cpp
     ViewProviderTPGFeature.h
+    ViewProviderToolFeature.cpp
+    ViewProviderToolFeature.h
     ViewProviderToolPathFeature.cpp
     ViewProviderToolPathFeature.h
+    ViewProviderMachineFeature.cpp
+    ViewProviderMachineFeature.h
     ViewProviderMachineProgramFeature.cpp
     ViewProviderMachineProgramFeature.h
     CamProjectDockWindow.cpp
     CamProjectDockWindow.h
     CamProjectDockWindowComponents.cpp
     CamProjectDockWindowComponents.h
-
-    CamInspectorDockWindow.cpp
-    CamInspectorDockWindow.h
+	MachineProgramDockWindow.cpp
+	MachineProgramDockWindow.h
     TPGLibraryDockWindow.cpp
     TPGLibraryDockWindow.h
+    ToolpathDockWindow.cpp
+    ToolpathDockWindow.h
     UIManager.cpp
     UIManager.h
     TPGListModel.cpp
@@ -115,17 +124,17 @@ fc_target_copy_resource(CamGui
 if(MSVC)
     set_target_properties(CamGui PROPERTIES SUFFIX ".pyd")
     set_target_properties(CamGui PROPERTIES DEBUG_OUTPUT_NAME "CamGui_d")
-    set_target_properties(CamGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam)
+    set_target_properties(CamGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Mod/Cam")
     set_target_properties(CamGui PROPERTIES PREFIX "../")
 elseif(MINGW)
     set_target_properties(CamGui PROPERTIES SUFFIX ".pyd")
     set_target_properties(CamGui PROPERTIES DEBUG_OUTPUT_NAME "CamGui_d")
-    set_target_properties(CamGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam)
+    set_target_properties(CamGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Mod/Cam")
     set_target_properties(CamGui PROPERTIES PREFIX "")
 else(MSVC)
-    set_target_properties(CamGui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam)
+    set_target_properties(CamGui PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Mod/Cam")
     set_target_properties(CamGui PROPERTIES PREFIX "")
-    SET_TARGET_PROPERTIES(CamGui PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
+    SET_TARGET_PROPERTIES(CamGui PROPERTIES INSTALL_RPATH "${INSTALL_RPATH}")
 endif(MSVC)
 
 INSTALL(TARGETS CamGui DESTINATION lib)

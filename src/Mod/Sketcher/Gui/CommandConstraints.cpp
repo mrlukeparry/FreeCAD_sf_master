@@ -26,6 +26,7 @@
 # include <QMessageBox>
 #endif
 
+#include <App/Application.h>
 #include <Gui/Application.h>
 #include <Gui/Document.h>
 #include <Gui/Selection.h>
@@ -73,10 +74,15 @@ void finishDistanceConstraint(Gui::Command* cmd, Sketcher::SketchObject* sketch)
         vp->draw(); // Redraw
     }
 
+    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher/General");
+    bool show = hGrp->GetBool("ShowDialogOnDistanceConstraint", true);
+
     // Ask for the value of the distance immediately
-    EditDatumDialog *editDatumDialog = new EditDatumDialog(sketch, ConStr.size() - 1);
-    editDatumDialog->exec(false);
-    delete editDatumDialog;
+    if (show) {
+        EditDatumDialog *editDatumDialog = new EditDatumDialog(sketch, ConStr.size() - 1);
+        editDatumDialog->exec(false);
+        delete editDatumDialog;
+    }
 
     //updateActive();
     cmd->getSelection().clearSelection();
@@ -102,7 +108,7 @@ void getIdsFromName(const std::string &name, const Sketcher::SketchObject* Obj,
     PosId = Sketcher::none;
 
     if (name.size() > 4 && name.substr(0,4) == "Edge") {
-        GeoId = std::atoi(name.substr(4,4000).c_str());
+        GeoId = std::atoi(name.substr(4,4000).c_str()) - 1;
     }
     else if (name.size() == 9 && name.substr(0,9) == "RootPoint") {
         GeoId = -1;
@@ -113,9 +119,9 @@ void getIdsFromName(const std::string &name, const Sketcher::SketchObject* Obj,
     else if (name.size() == 6 && name.substr(0,6) == "V_Axis")
         GeoId = -2;
     else if (name.size() > 12 && name.substr(0,12) == "ExternalEdge")
-        GeoId = -3 - std::atoi(name.substr(12,4000).c_str());
+        GeoId = -2 - std::atoi(name.substr(12,4000).c_str());
     else if (name.size() > 6 && name.substr(0,6) == "Vertex") {
-        int VtId = std::atoi(name.substr(6,4000).c_str());
+        int VtId = std::atoi(name.substr(6,4000).c_str()) - 1;
         Obj->getGeoVertexIndex(VtId,GeoId,PosId);
     }
 }
@@ -270,7 +276,7 @@ void CmdSketcherConstrainHorizontal::activated(int iMsg)
     for (std::vector<std::string>::const_iterator it=SubNames.begin(); it != SubNames.end(); ++it) {
         // only handle edges
         if (it->size() > 4 && it->substr(0,4) == "Edge") {
-            int GeoId=std::atoi(it->substr(4,4000).c_str());
+            int GeoId = std::atoi(it->substr(4,4000).c_str()) - 1;
 
             const Part::Geometry *geo = Obj->getGeometry(GeoId);
             if (geo->getTypeId() != Part::GeomLineSegment::getClassTypeId()) {
@@ -362,9 +368,9 @@ void CmdSketcherConstrainVertical::activated(int iMsg)
     for (std::vector<std::string>::const_iterator it=SubNames.begin();it!=SubNames.end();++it) {
         // only handle edges
         if (it->size() > 4 && it->substr(0,4) == "Edge") {
-            int index=std::atoi(it->substr(4,4000).c_str());
+            int GeoId = std::atoi(it->substr(4,4000).c_str()) - 1;
 
-            const Part::Geometry *geo = Obj->getGeometry(index);
+            const Part::Geometry *geo = Obj->getGeometry(GeoId);
             if (geo->getTypeId() != Part::GeomLineSegment::getClassTypeId()) {
                 QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Impossible constraint"),
                                      QObject::tr("The selected edge is not a line segment"));
@@ -374,18 +380,18 @@ void CmdSketcherConstrainVertical::activated(int iMsg)
             // check if the edge has already a Horizontal or Vertical constraint
             for (std::vector< Sketcher::Constraint * >::const_iterator it= vals.begin();
                  it != vals.end(); ++it) {
-                if ((*it)->Type == Sketcher::Horizontal && (*it)->First == index) {
+                if ((*it)->Type == Sketcher::Horizontal && (*it)->First == GeoId) {
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Impossible constraint"),
                         QObject::tr("The selected edge has already a horizontal constraint!"));
                     return;
                 }
-                if ((*it)->Type == Sketcher::Vertical && (*it)->First == index) {
+                if ((*it)->Type == Sketcher::Vertical && (*it)->First == GeoId) {
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Double constraint"),
                         QObject::tr("The selected edge has already a vertical constraint!"));
                     return;
                 }
             }
-            ids.push_back(index);
+            ids.push_back(GeoId);
         }
     }
 
@@ -520,28 +526,35 @@ void CmdSketcherConstrainCoincident::activated(int iMsg)
     const std::vector<std::string> &SubNames = selection[0].getSubNames();
     Sketcher::SketchObject* Obj = dynamic_cast<Sketcher::SketchObject*>(selection[0].getObject());
 
-    if (SubNames.size() != 2) {
+    if (SubNames.size() < 2) {
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("Select exactly two vertexes from the sketch."));
+            QObject::tr("Select two or more vertexes from the sketch."));
         return;
+    }
+
+    for (std::vector<std::string>::const_iterator it = SubNames.begin(); it != SubNames.end(); ++it) {
+        int GeoId;
+        Sketcher::PointPos PosId;
+        getIdsFromName(*it, Obj, GeoId, PosId);
+        if (isEdge(GeoId,PosId)) {
+            QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
+                QObject::tr("Select two or more vertexes from the sketch."));
+            return;
+        }
     }
 
     int GeoId1, GeoId2;
     Sketcher::PointPos PosId1, PosId2;
     getIdsFromName(SubNames[0], Obj, GeoId1, PosId1);
-    getIdsFromName(SubNames[1], Obj, GeoId2, PosId2);
-
-    if (isEdge(GeoId1,PosId1) || isEdge(GeoId2,PosId2)) {
-        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("Select exactly two vertexes from the sketch."));
-        return;
-    }
 
     // undo command open
     openCommand("add coincident constraint");
-    Gui::Command::doCommand(
-        Doc,"App.ActiveDocument.%s.addConstraint(Sketcher.Constraint('Coincident',%d,%d,%d,%d)) ",
-        selection[0].getFeatName(),GeoId1,PosId1,GeoId2,PosId2);
+    for (std::size_t i=1; i<SubNames.size(); i++) {
+        getIdsFromName(SubNames[i], Obj, GeoId2, PosId2);
+        Gui::Command::doCommand(
+            Doc,"App.ActiveDocument.%s.addConstraint(Sketcher.Constraint('Coincident',%d,%d,%d,%d)) ",
+            selection[0].getFeatName(),GeoId1,PosId1,GeoId2,PosId2);
+    }
 
     // finish the transaction and update
     commitCommand();
@@ -1153,7 +1166,7 @@ CmdSketcherConstrainPerpendicular::CmdSketcherConstrainPerpendicular()
     sAppModule      = "Sketcher";
     sGroup          = QT_TR_NOOP("Sketcher");
     sMenuText       = QT_TR_NOOP("Constrain perpendicular");
-    sToolTipText    = QT_TR_NOOP("Create a Perpendicular constraint between two lines");
+    sToolTipText    = QT_TR_NOOP("Create a perpendicular constraint between two lines");
     sWhatsThis      = sToolTipText;
     sStatusTip      = sToolTipText;
     sPixmap         = "Constraint_Perpendicular";
@@ -1440,7 +1453,7 @@ void CmdSketcherConstrainRadius::activated(int iMsg)
     }
 
     if (SubNames[0].size() > 4 && SubNames[0].substr(0,4) == "Edge") {
-        int GeoId = std::atoi(SubNames[0].substr(4,4000).c_str());
+        int GeoId = std::atoi(SubNames[0].substr(4,4000).c_str()) - 1;
 
         const Part::Geometry *geom = Obj->getGeometry(GeoId);
         if (geom->getTypeId() == Part::GeomArcOfCircle::getClassTypeId()) {
@@ -1737,7 +1750,7 @@ CmdSketcherConstrainSymmetric::CmdSketcherConstrainSymmetric()
     sAppModule      = "Sketcher";
     sGroup          = QT_TR_NOOP("Sketcher");
     sMenuText       = QT_TR_NOOP("Constrain symmetrical");
-    sToolTipText    = QT_TR_NOOP("Create an symmetry constraint between two points with respect to a line");
+    sToolTipText    = QT_TR_NOOP("Create a symmetry constraint between two points with respect to a line or a third point");
     sWhatsThis      = sToolTipText;
     sStatusTip      = sToolTipText;
     sPixmap         = "Constraint_Symmetric";
@@ -1902,4 +1915,4 @@ void CreateSketcherCommandsConstraints(void)
     rcCmdMgr.addCommand(new CmdSketcherConstrainEqual());
     rcCmdMgr.addCommand(new CmdSketcherConstrainPointOnObject());
     rcCmdMgr.addCommand(new CmdSketcherConstrainSymmetric());
- }
+}

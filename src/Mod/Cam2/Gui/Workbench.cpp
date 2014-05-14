@@ -35,8 +35,9 @@
 #include <Gui/DockWindowManager.h>
 
 #include "CamProjectDockWindow.h"
-#include "CamInspectorDockWindow.h"
+#include "MachineProgramDockWindow.h"
 #include "TPGLibraryDockWindow.h"
+#include "ToolpathDockWindow.h"
 #include "UIManager.h"
 
 using namespace CamGui;
@@ -55,17 +56,23 @@ Workbench::Workbench()
   pcCamProjectView->setMinimumWidth(150);
   pDockMgr->registerDockWindow("Cam_CamSettingsDockWindow", pcCamProjectView);
 
-  // Add Cam Inspector Dock Window
-  CamInspectorDockWindow* pcCIView = new CamInspectorDockWindow(0, pMainWindow);
-  pcCIView->setObjectName(QString::fromUtf8("Cam inspector"));
-  pcCIView->setMinimumWidth(150);
-  pDockMgr->registerDockWindow("Cam_CamInspectorDockWindow", pcCIView);
+  // Add Toolpath Dock Window
+  MachineProgramDockWindow* pcMPView = new MachineProgramDockWindow(0, pMainWindow);
+  pcMPView->setObjectName(QString::fromUtf8("Machine program"));
+  pcMPView->setMinimumWidth(150);
+  pDockMgr->registerDockWindow("Cam_MachineProgramDockWindow", pcMPView);
 
   // Add TPGLibrary Dock Window
   TPGLibraryDockWindow* pcTPGLibView = new TPGLibraryDockWindow(0, pMainWindow);
   pcTPGLibView->setObjectName(QString::fromUtf8("TPG library"));
   pcTPGLibView->setMinimumWidth(150);
   pDockMgr->registerDockWindow("Cam_TPGLibraryDockWindow", pcTPGLibView);
+
+  // Add Toolpath Dock Window
+  ToolpathDockWindow* pcTPView = new ToolpathDockWindow(0, pMainWindow);
+  pcTPView->setObjectName(QString::fromUtf8("Toolpath"));
+  pcTPView->setMinimumWidth(150);
+  pDockMgr->registerDockWindow("Cam_ToolpathDockWindow", pcTPView);
 
   UIManager(); // get singleton so it makes connections
 }
@@ -85,6 +92,9 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     cam->setCommand("Cam");
     *cam << "Cam_CamFeature";
 	*cam << "Cam_TPGFeature";
+    *cam << "Separator";
+    *cam << "Cam_ToolFeature";
+    *cam << "Cam_MachineFeature";
 	*cam << "Separator";
 	*cam << "Cam_RunTPG";
 	*cam << "Cam_PostProcess";
@@ -100,6 +110,9 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     cam->setCommand("Cam");
     *cam << "Cam_CamFeature";
 	*cam << "Cam_TPGFeature";
+    *cam << "Separator";
+    *cam << "Cam_ToolFeature";
+    *cam << "Cam_MachineFeature";
 	*cam << "Separator";
 	*cam << "Cam_RunTPG";
 	*cam << "Cam_PostProcess";
@@ -118,8 +131,9 @@ Gui::DockWindowItems* Workbench::setupDockWindows() const
 {
     Gui::DockWindowItems* root = Gui::StdWorkbench::setupDockWindows();
     root->addDockWidget("Cam_CamSettingsDockWindow", Qt::LeftDockWidgetArea, true, false);
-    root->addDockWidget("Cam_CamInspectorDockWindow", Qt::BottomDockWidgetArea, true, false);
+    root->addDockWidget("Cam_MachineProgramDockWindow", Qt::BottomDockWidgetArea, true, false);
     root->addDockWidget("Cam_TPGLibraryDockWindow", Qt::RightDockWidgetArea, true, false);
+    root->addDockWidget("Cam_ToolpathDockWindow", Qt::BottomDockWidgetArea, true, false);
 //    root->setVisibility(false); // hide all dock windows by default
 //    root->setVisibility("Std_CombiView",true); // except of the combi view
 //    root->setVisibility("Cam_ToolPathDockWindow",true); // Show ToolPathDockWindow

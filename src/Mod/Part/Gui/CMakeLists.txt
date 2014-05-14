@@ -5,6 +5,7 @@ else(MSVC)
 endif(MSVC)
 
 include_directories(
+    ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_BINARY_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -45,12 +46,13 @@ set(PartGui_MOC_HDRS
     TaskOffset.h
     TaskSweep.h
     TaskThickness.h
+    TaskDimension.h
     TaskCheckGeometry.h
 )
 fc_wrap_cpp(PartGui_MOC_SRCS ${PartGui_MOC_HDRS})
 SOURCE_GROUP("Moc" FILES ${PartGui_MOC_SRCS})
 
-fc_add_resources(PartGui_QRC_SRCS Resources/Part.qrc)
+qt4_add_resources(PartGui_QRC_SRCS Resources/Part.qrc)
 
 set(PartGui_UIC_SRCS
     CrossSections.ui
@@ -77,7 +79,7 @@ set(PartGui_UIC_SRCS
 qt4_wrap_ui(PartGui_UIC_HDRS ${PartGui_UIC_SRCS})
 
 SET(PartGui_SRCS
-#   ${PartGui_QRC_SRCS}
+    ${PartGui_QRC_SRCS}
     ${PartGui_UIC_HDRS}
     AppPartGui.cpp
     Command.cpp
@@ -131,10 +133,12 @@ SET(PartGui_SRCS
     PreCompiled.h
     SoFCShapeObject.cpp
     SoFCShapeObject.h
-    SoBrepShape.cpp
-    SoBrepShape.h
+    SoBrepEdgeSet.cpp
+    SoBrepEdgeSet.h
     SoBrepFaceSet.cpp
     SoBrepFaceSet.h
+    SoBrepPointSet.cpp
+    SoBrepPointSet.h
     ViewProvider.cpp
     ViewProvider.h
     ViewProviderExt.cpp
@@ -163,10 +167,16 @@ SET(PartGui_SRCS
     ViewProviderCylinderParametric.h
     ViewProviderConeParametric.cpp
     ViewProviderConeParametric.h
+    ViewProviderPrism.cpp
+    ViewProviderPrism.h
+    ViewProviderRegularPolygon.cpp
+    ViewProviderRegularPolygon.h
     ViewProviderTorusParametric.cpp
     ViewProviderTorusParametric.h
     ViewProviderCurveNet.cpp
     ViewProviderCurveNet.h
+    ViewProviderSpline.cpp
+    ViewProviderSpline.h
     ViewProviderImport.cpp
     ViewProviderImport.h
     ViewProviderExtrusion.cpp
@@ -200,6 +210,8 @@ SET(PartGui_SRCS
     TaskSweep.ui
     TaskThickness.cpp
     TaskThickness.h
+    TaskDimension.cpp
+    TaskDimension.h
     TaskCheckGeometry.cpp
     TaskCheckGeometry.h
 )
@@ -219,20 +231,7 @@ fc_target_copy_resource(PartGui
     ${CMAKE_BINARY_DIR}/Mod/Part
     ${PartGui_Scripts})
 
-if(MSVC)
-    set_target_properties(PartGui PROPERTIES SUFFIX ".pyd")
-    set_target_properties(PartGui PROPERTIES DEBUG_OUTPUT_NAME "PartGui_d")
-    set_target_properties(PartGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Part)
-    set_target_properties(PartGui PROPERTIES PREFIX "../")
-elseif(MINGW)
-    set_target_properties(PartGui PROPERTIES SUFFIX ".pyd")
-    set_target_properties(PartGui PROPERTIES DEBUG_OUTPUT_NAME "PartGui_d")
-    set_target_properties(PartGui PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Part)
-    set_target_properties(PartGui PROPERTIES PREFIX "")
-else(MSVC)
-    set_target_properties(PartGui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Part)
-    set_target_properties(PartGui PROPERTIES PREFIX "")
-    set_target_properties(PartGui PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
-endif(MSVC)
+SET_BIN_DIR(PartGui PartGui /Mod/Part)
+SET_PYTHON_PREFIX_SUFFIX(PartGui)
 
-INSTALL(TARGETS PartGui DESTINATION lib)
+INSTALL(TARGETS PartGui DESTINATION ${CMAKE_INSTALL_LIBDIR})

@@ -42,6 +42,8 @@
 
 #include <Base/Exception.h>
 #include <Base/Placement.h>
+#include <Base/Console.h>
+#include <Base/Reader.h>
 #include <App/Document.h>
 
 #include "FeaturePad.h"
@@ -55,11 +57,11 @@ PROPERTY_SOURCE(PartDesign::Pad, PartDesign::Additive)
 
 Pad::Pad()
 {
-    ADD_PROPERTY(Type,((long)0));
+    ADD_PROPERTY_TYPE(Type,((long)0),"Pad",App::Prop_None,"Pad type");
     Type.setEnums(TypeEnums);
-    ADD_PROPERTY(Length,(100.0));
-    ADD_PROPERTY(Length2,(100.0));
-    ADD_PROPERTY_TYPE(UpToFace,(0),"Pad",(App::PropertyType)(App::Prop_None),"Face where feature will end");
+    ADD_PROPERTY_TYPE(Length,(100.0),"Pad",App::Prop_None,"Pad length");
+    ADD_PROPERTY_TYPE(Length2,(100.0),"Pad",App::Prop_None,"P");
+    ADD_PROPERTY_TYPE(UpToFace,(0),"Pad",App::Prop_None,"Face where pad will end");
 }
 
 short Pad::mustExecute() const
@@ -160,6 +162,7 @@ App::DocumentObjectExecReturn *Pad::execute(void)
             return new App::DocumentObjectExecReturn("Pad: Resulting shape is empty");
 
         // set the additive shape property for later usage in e.g. pattern
+        prism = refineShapeIfActive(prism);
         this->AddShape.setValue(prism);
 
         // if the sketch has a support fuse them to get one result object
@@ -175,6 +178,7 @@ App::DocumentObjectExecReturn *Pad::execute(void)
             // lets check if the result is a solid
             if (solRes.IsNull())
                 return new App::DocumentObjectExecReturn("Pad: Resulting shape is not a solid");
+            solRes = refineShapeIfActive(solRes);
             this->Shape.setValue(solRes);
         } else {
             this->Shape.setValue(prism);

@@ -93,6 +93,14 @@ public:
    */
   bool TPGFeature();
   /**
+   * Used by the CamToolFeature GUI Command to do the work required to add a ToolFeature
+   */
+  bool ToolFeature();
+  /**
+   * Used by the CamMachineFeature GUI Command to do the work required to add a MachineFeature
+   */
+  bool MachineFeature();
+  /**
    * Executes the selected TPG(s) to (re)produce its Tool Path.
    */
   bool RunTPG();
@@ -127,7 +135,7 @@ public Q_SLOTS:
 Q_SIGNALS:
   void updatedTPGList(TPGListModel *model);
 
-  void updatedTPGSelection(Cam::TPGFeature* tpg);
+  void updatedTPGSelection(Cam::Settings::Feature* feature);
   void updatedToolPathSelection(Cam::ToolPathFeature* toolpath);
   void updatedMachineProgramSelection(Cam::MachineProgramFeature* machineProgram);
 

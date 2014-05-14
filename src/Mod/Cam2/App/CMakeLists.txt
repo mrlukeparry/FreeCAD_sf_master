@@ -46,10 +46,16 @@ SOURCE_GROUP("Graphics" FILES ${Graphics_SRCS})
 SET(Features_SRCS
     Features/CamFeature.cpp
     Features/CamFeature.h
+    Features/CamSettingsableFeature.cpp
+    Features/CamSettingsableFeature.h
     Features/Feature.cpp
     Features/Feature.h
+    Features/MachineFeature.cpp
+    Features/MachineFeature.h
     Features/MachineProgramFeature.cpp
     Features/MachineProgramFeature.h
+    Features/ToolFeature.cpp
+    Features/ToolFeature.h
     Features/ToolPathFeature.cpp
     Features/ToolPathFeature.h
     Features/TPGFeature.cpp
@@ -215,18 +221,18 @@ fc_target_copy_resource(Cam
 if(MSVC)
     set_target_properties(Cam PROPERTIES SUFFIX ".pyd")
     set_target_properties(Cam PROPERTIES DEBUG_OUTPUT_NAME "Cam_d")
-    set_target_properties(Cam PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam)
+    set_target_properties(Cam PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Mod/Cam")
     set_target_properties(Cam PROPERTIES PREFIX "../")
 
 elseif(MINGW)
     set_target_properties(Cam PROPERTIES SUFFIX ".pyd")
     set_target_properties(Cam PROPERTIES DEBUG_OUTPUT_NAME "Cam_d")
-    set_target_properties(Cam PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam)
+    set_target_properties(Cam PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Mod/Cam")
     set_target_properties(Cam PROPERTIES PREFIX "")
 else(MSVC)
-    set_target_properties(Cam PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam)
+    set_target_properties(Cam PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Mod/Cam")
     set_target_properties(Cam PROPERTIES PREFIX "")
-    set_target_properties(Cam PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
+    set_target_properties(Cam PROPERTIES INSTALL_RPATH "${INSTALL_RPATH}")
 endif(MSVC)
 
 add_definitions(-DCAM_BINARY_DIR="${CMAKE_BINARY_DIR}")

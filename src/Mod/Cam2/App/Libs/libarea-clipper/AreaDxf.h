@@ -4,16 +4,18 @@
 
 #pragma once
 
+#include <PreCompiled.h>
+
 #include "dxf.h"
 
 namespace area
 {
 
-class CSketch;
-class CArea;
-class CCurve;
+class LibAreaExport CSketch;
+class LibAreaExport CArea;
+class LibAreaExport CCurve;
 
-class AreaDxfRead : public CDxfRead{
+class LibAreaExport AreaDxfRead : public CDxfRead{
 	void StartCurveIfNecessary(const double* s);
 
 public:

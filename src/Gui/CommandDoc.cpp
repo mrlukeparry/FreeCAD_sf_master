@@ -23,11 +23,10 @@
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
+# include <QApplication>
 # include <QClipboard>
 # include <QEventLoop>
 # include <QFileDialog>
-# include <QGraphicsScene>
-# include <QGraphicsView>
 # include <QLabel>
 # include <QStatusBar>
 # include <QPointer>
@@ -66,6 +65,7 @@
 #include <Gui/View3DInventorViewer.h>
 #include "MergeDocuments.h"
 #include "NavigationStyle.h"
+#include "GraphvizView.h"
 
 using namespace Gui;
 
@@ -325,28 +325,6 @@ bool StdCmdMergeProjects::isActive(void)
 // Std_ExportGraphviz
 //===========================================================================
 
-namespace Gui {
-class ImageView : public MDIView
-{
-public:
-    ImageView(const QPixmap& p, QWidget* parent=0) : MDIView(0, parent)
-    {
-        scene = new QGraphicsScene();
-        scene->addPixmap(p);
-        view = new QGraphicsView(scene, this);
-        view->show();
-        setCentralWidget(view);
-    }
-    ~ImageView()
-    {
-        delete scene;
-        delete view;
-    }
-    QGraphicsScene* scene;
-    QGraphicsView* view;
-};
-}
-
 DEF_STD_CMD_A(StdCmdExportGraphviz);
 
 StdCmdExportGraphviz::StdCmdExportGraphviz()
@@ -419,7 +397,8 @@ void StdCmdExportGraphviz::activated(int iMsg)
 
     QPixmap px;
     if (px.loadFromData(proc.readAll(), "PNG")) {
-        Gui::ImageView* view = new Gui::ImageView(px);
+        Gui::GraphvizView* view = new Gui::GraphvizView(px);
+        view->setDependencyGraph(str.str());
         view->setWindowTitle(qApp->translate("Std_ExportGraphviz","Dependency graph"));
         getMainWindow()->addWindow(view);
     }
@@ -444,18 +423,21 @@ DEF_STD_CMD(StdCmdNew);
 StdCmdNew::StdCmdNew()
   :Command("Std_New")
 {
-  sGroup        = QT_TR_NOOP("File");
-  sMenuText     = QT_TR_NOOP("&New");
-  sToolTipText  = QT_TR_NOOP("Create a new empty document");
-  sWhatsThis    = "Std_New";
-  sStatusTip    = QT_TR_NOOP("Create a new empty document");
-  sPixmap       = "document-new";
-  sAccel        = keySequenceToAccel(QKeySequence::New);
+    sGroup        = QT_TR_NOOP("File");
+    sMenuText     = QT_TR_NOOP("&New");
+    sToolTipText  = QT_TR_NOOP("Create a new empty document");
+    sWhatsThis    = "Std_New";
+    sStatusTip    = QT_TR_NOOP("Create a new empty document");
+    sPixmap       = "document-new";
+    sAccel        = keySequenceToAccel(QKeySequence::New);
 }
 
 void StdCmdNew::activated(int iMsg)
 {
-  doCommand(Command::Doc,"App.newDocument()");
+    QString cmd;
+    cmd = QString::fromAscii("App.newDocument(\"%1\")")
+        .arg(qApp->translate("StdCmdNew","Unnamed"));
+    doCommand(Command::Doc,(const char*)cmd.toUtf8());
 }
 
 //===========================================================================
@@ -1060,6 +1042,7 @@ void StdCmdDelete::activated(int iMsg)
                     doDeletion = true;
             }
             if (doDeletion) {
+                Gui::getMainWindow()->setUpdatesEnabled(false);
                 (*it)->openTransaction("Delete");
                 for (std::vector<Gui::SelectionObject>::iterator ft = sel.begin(); ft != sel.end(); ++ft) {
                     Gui::ViewProvider* vp = pGuiDoc->getViewProvider(ft->getObject());
@@ -1071,6 +1054,8 @@ void StdCmdDelete::activated(int iMsg)
                     }
                 }
                 (*it)->commitTransaction();
+                Gui::getMainWindow()->setUpdatesEnabled(true);
+                Gui::getMainWindow()->update();
             }
         }
     }

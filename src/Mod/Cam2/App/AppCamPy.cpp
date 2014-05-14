@@ -106,7 +106,7 @@ static PyObject * _registerPyTPGFactory_(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &obj)) { //, &method
 		char *error = new char[120];
 		error[0] = 0;
-		sprintf(error, "Cam._registerTPGManagerCallback_() expects 1 parameters, but given %i", PyTuple_Size(args));
+		sprintf(error, "Cam._registerTPGManagerCallback_() expects 1 parameters, but given %i", int(PyTuple_Size(args)));
 		PyErr_SetString(PyExc_TypeError, error);
 		return NULL;
 	}
@@ -151,7 +151,7 @@ static PyObject *updateProgressPyTPG(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ss|i", &tpgid, &status, &progress)) {
 		char *error = new char[120];
 		error[0] = 0;
-		sprintf(error, "Cam.updateProgressPyTPG() expects 2 or 3 parameters (str, str, int), but given %i", PyTuple_Size(args));
+		sprintf(error, "Cam.updateProgressPyTPG() expects 2 or 3 parameters (str, str, int), but given %i", int(PyTuple_Size(args)));
 		PyErr_SetString(PyExc_TypeError, error);
 		return NULL;
 	}
@@ -219,7 +219,7 @@ static PyObject *test1(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &str)) {
 		char *error = new char[120];
 		error[0] = 0;
-		sprintf(error, "Cam.test1() expects 1 parameters, but given %i", PyTuple_Size(args));
+		sprintf(error, "Cam.test1() expects 1 parameters, but given %i", int(PyTuple_Size(args)));
 		PyErr_SetString(PyExc_TypeError, error);
 		return NULL;
 	}

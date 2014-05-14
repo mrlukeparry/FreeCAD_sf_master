@@ -35,7 +35,7 @@ using namespace Base;
 
 Matrix4D::Matrix4D (void)
 {
-  setToUnity();
+    setToUnity();
 }
 
 Matrix4D::Matrix4D (float a11, float a12, float a13, float a14, 
@@ -43,10 +43,10 @@ Matrix4D::Matrix4D (float a11, float a12, float a13, float a14,
                     float a31, float a32, float a33, float a34,
                     float a41, float a42, float a43, float a44 )
 {
-  dMtrx4D[0][0] = a11; dMtrx4D[0][1] = a12; dMtrx4D[0][2] = a13; dMtrx4D[0][3] = a14;
-  dMtrx4D[1][0] = a21; dMtrx4D[1][1] = a22; dMtrx4D[1][2] = a23; dMtrx4D[1][3] = a24;
-  dMtrx4D[2][0] = a31; dMtrx4D[2][1] = a32; dMtrx4D[2][2] = a33; dMtrx4D[2][3] = a34;
-  dMtrx4D[3][0] = a41; dMtrx4D[3][1] = a42; dMtrx4D[3][2] = a43; dMtrx4D[3][3] = a44;
+    dMtrx4D[0][0] = a11; dMtrx4D[0][1] = a12; dMtrx4D[0][2] = a13; dMtrx4D[0][3] = a14;
+    dMtrx4D[1][0] = a21; dMtrx4D[1][1] = a22; dMtrx4D[1][2] = a23; dMtrx4D[1][3] = a24;
+    dMtrx4D[2][0] = a31; dMtrx4D[2][1] = a32; dMtrx4D[2][2] = a33; dMtrx4D[2][3] = a34;
+    dMtrx4D[3][0] = a41; dMtrx4D[3][1] = a42; dMtrx4D[3][2] = a43; dMtrx4D[3][3] = a44;
 }
 
 Matrix4D::Matrix4D (double a11, double a12, double a13, double a14, 
@@ -54,38 +54,38 @@ Matrix4D::Matrix4D (double a11, double a12, double a13, double a14,
                     double a31, double a32, double a33, double a34,
                     double a41, double a42, double a43, double a44 )
 {
-  dMtrx4D[0][0] = a11; dMtrx4D[0][1] = a12; dMtrx4D[0][2] = a13; dMtrx4D[0][3] = a14;
-  dMtrx4D[1][0] = a21; dMtrx4D[1][1] = a22; dMtrx4D[1][2] = a23; dMtrx4D[1][3] = a24;
-  dMtrx4D[2][0] = a31; dMtrx4D[2][1] = a32; dMtrx4D[2][2] = a33; dMtrx4D[2][3] = a34;
-  dMtrx4D[3][0] = a41; dMtrx4D[3][1] = a42; dMtrx4D[3][2] = a43; dMtrx4D[3][3] = a44;
+    dMtrx4D[0][0] = a11; dMtrx4D[0][1] = a12; dMtrx4D[0][2] = a13; dMtrx4D[0][3] = a14;
+    dMtrx4D[1][0] = a21; dMtrx4D[1][1] = a22; dMtrx4D[1][2] = a23; dMtrx4D[1][3] = a24;
+    dMtrx4D[2][0] = a31; dMtrx4D[2][1] = a32; dMtrx4D[2][2] = a33; dMtrx4D[2][3] = a34;
+    dMtrx4D[3][0] = a41; dMtrx4D[3][1] = a42; dMtrx4D[3][2] = a43; dMtrx4D[3][3] = a44;
 }
 
 
 Matrix4D::Matrix4D (const Matrix4D& rclMtrx)
 {
-  (*this) = rclMtrx;
+    (*this) = rclMtrx;
 }
 
 Matrix4D::Matrix4D (const Vector3f& rclBase, const Vector3f& rclDir, float fAngle)
 {
-  setToUnity();
-  this->rotLine(rclBase,rclDir,fAngle);
+    setToUnity();
+    this->rotLine(rclBase,rclDir,fAngle);
 }
 
 void Matrix4D::setToUnity (void)
 {
-  dMtrx4D[0][0] = 1.0; dMtrx4D[0][1] = 0.0; dMtrx4D[0][2] = 0.0; dMtrx4D[0][3] = 0.0;
-  dMtrx4D[1][0] = 0.0; dMtrx4D[1][1] = 1.0; dMtrx4D[1][2] = 0.0; dMtrx4D[1][3] = 0.0;
-  dMtrx4D[2][0] = 0.0; dMtrx4D[2][1] = 0.0; dMtrx4D[2][2] = 1.0; dMtrx4D[2][3] = 0.0;
-  dMtrx4D[3][0] = 0.0; dMtrx4D[3][1] = 0.0; dMtrx4D[3][2] = 0.0; dMtrx4D[3][3] = 1.0;
+    dMtrx4D[0][0] = 1.0; dMtrx4D[0][1] = 0.0; dMtrx4D[0][2] = 0.0; dMtrx4D[0][3] = 0.0;
+    dMtrx4D[1][0] = 0.0; dMtrx4D[1][1] = 1.0; dMtrx4D[1][2] = 0.0; dMtrx4D[1][3] = 0.0;
+    dMtrx4D[2][0] = 0.0; dMtrx4D[2][1] = 0.0; dMtrx4D[2][2] = 1.0; dMtrx4D[2][3] = 0.0;
+    dMtrx4D[3][0] = 0.0; dMtrx4D[3][1] = 0.0; dMtrx4D[3][2] = 0.0; dMtrx4D[3][3] = 1.0;
 }
 
 void Matrix4D::nullify(void)
 {
-  dMtrx4D[0][0] = 0.0; dMtrx4D[0][1] = 0.0; dMtrx4D[0][2] = 0.0; dMtrx4D[0][3] = 0.0;
-  dMtrx4D[1][0] = 0.0; dMtrx4D[1][1] = 0.0; dMtrx4D[1][2] = 0.0; dMtrx4D[1][3] = 0.0;
-  dMtrx4D[2][0] = 0.0; dMtrx4D[2][1] = 0.0; dMtrx4D[2][2] = 0.0; dMtrx4D[2][3] = 0.0;
-  dMtrx4D[3][0] = 0.0; dMtrx4D[3][1] = 0.0; dMtrx4D[3][2] = 0.0; dMtrx4D[3][3] = 0.0;
+    dMtrx4D[0][0] = 0.0; dMtrx4D[0][1] = 0.0; dMtrx4D[0][2] = 0.0; dMtrx4D[0][3] = 0.0;
+    dMtrx4D[1][0] = 0.0; dMtrx4D[1][1] = 0.0; dMtrx4D[1][2] = 0.0; dMtrx4D[1][3] = 0.0;
+    dMtrx4D[2][0] = 0.0; dMtrx4D[2][1] = 0.0; dMtrx4D[2][2] = 0.0; dMtrx4D[2][3] = 0.0;
+    dMtrx4D[3][0] = 0.0; dMtrx4D[3][1] = 0.0; dMtrx4D[3][2] = 0.0; dMtrx4D[3][3] = 0.0;
 }
 
 double Matrix4D::determinant() const
@@ -106,186 +106,135 @@ double Matrix4D::determinant() const
     return fDet;
 }
 
-/*
-void Matrix4D::setMoveX (float fMove)
-{
-  Matrix4D clMat;
-
-  clMat.dMtrx4D[0][3] = fMove;
-  (*this) *= clMat;
-}
-
-void Matrix4D::setMoveY (float fMove)
-{
-  Matrix4D clMat;
-
-  clMat.dMtrx4D[1][3] = fMove;
-  (*this) *= clMat;
-}
-
-void Matrix4D::setMoveZ (float fMove)
-{
-  Matrix4D clMat;
-
-  clMat.dMtrx4D[2][3] = fMove;
-  (*this) *= clMat;
-}
-*/
 void Matrix4D::move (const Vector3f& rclVct)
 {
-  Matrix4D clMat;
-
-  clMat.dMtrx4D[0][3] = rclVct.x;
-  clMat.dMtrx4D[1][3] = rclVct.y;
-  clMat.dMtrx4D[2][3] = rclVct.z;
-  (*this) *= clMat;
+    dMtrx4D[0][3] += rclVct.x;
+    dMtrx4D[1][3] += rclVct.y;
+    dMtrx4D[2][3] += rclVct.z;
 }
+
 void Matrix4D::move (const Vector3d& rclVct)
 {
-  Matrix4D clMat;
-
-  clMat.dMtrx4D[0][3] = rclVct.x;
-  clMat.dMtrx4D[1][3] = rclVct.y;
-  clMat.dMtrx4D[2][3] = rclVct.z;
-  (*this) *= clMat;
+    dMtrx4D[0][3] += rclVct.x;
+    dMtrx4D[1][3] += rclVct.y;
+    dMtrx4D[2][3] += rclVct.z;
 }
-/*
-void Matrix4D::setScaleX (float fScale)
-{
-  Matrix4D clMat;
-
-  clMat.dMtrx4D[0][0] = fScale;
-  
-  (*this) *= clMat;
-}
-
-void Matrix4D::setScaleY (float fScale)
-{
-  Matrix4D clMat;
-
-  clMat.dMtrx4D[1][1] = fScale;
-  (*this) *= clMat;
-}
-
-void Matrix4D::setScaleZ (float fScale)
-{
-  Matrix4D clMat;
-
-  clMat.dMtrx4D[2][2] = fScale;
-  (*this) *= clMat;
-}
-*/
 
 void Matrix4D::scale (const Vector3f& rclVct)
 {
-  Matrix4D clMat;
+    Matrix4D clMat;
 
-  clMat.dMtrx4D[0][0] = rclVct.x;
-  clMat.dMtrx4D[1][1] = rclVct.y;
-  clMat.dMtrx4D[2][2] = rclVct.z;
-  (*this) *= clMat;
+    clMat.dMtrx4D[0][0] = rclVct.x;
+    clMat.dMtrx4D[1][1] = rclVct.y;
+    clMat.dMtrx4D[2][2] = rclVct.z;
+    (*this) = clMat * (*this);
 }
+
 void Matrix4D::scale (const Vector3d& rclVct)
 {
-  Matrix4D clMat;
+    Matrix4D clMat;
 
-  clMat.dMtrx4D[0][0] = rclVct.x;
-  clMat.dMtrx4D[1][1] = rclVct.y;
-  clMat.dMtrx4D[2][2] = rclVct.z;
-  (*this) *= clMat;
+    clMat.dMtrx4D[0][0] = rclVct.x;
+    clMat.dMtrx4D[1][1] = rclVct.y;
+    clMat.dMtrx4D[2][2] = rclVct.z;
+    (*this) = clMat * (*this);
 }
 
 void Matrix4D::rotX (double fAngle)
 {
-  Matrix4D clMat;
-  double fsin, fcos;
- 
-  fsin = sin (fAngle);
-  fcos = cos (fAngle);
-  clMat.dMtrx4D[1][1] =  fcos;  clMat.dMtrx4D[2][2] = fcos;
-  clMat.dMtrx4D[1][2] = -fsin;  clMat.dMtrx4D[2][1] = fsin;
-  
-  (*this) *= clMat;
+    Matrix4D clMat;
+    double fsin, fcos;
+
+    fsin = sin (fAngle);
+    fcos = cos (fAngle);
+    clMat.dMtrx4D[1][1] =  fcos;  clMat.dMtrx4D[2][2] = fcos;
+    clMat.dMtrx4D[1][2] = -fsin;  clMat.dMtrx4D[2][1] = fsin;
+
+    (*this) = clMat * (*this);
 }
 
 void Matrix4D::rotY (double fAngle)
 {
-  Matrix4D clMat;
-  double fsin, fcos;
- 
-  fsin = sin (fAngle);
-  fcos = cos (fAngle);
-  clMat.dMtrx4D[0][0] =  fcos;  clMat.dMtrx4D[2][2] = fcos;
-  clMat.dMtrx4D[2][0] = -fsin;  clMat.dMtrx4D[0][2] = fsin;
-  
-  (*this) *= clMat;
+    Matrix4D clMat;
+    double fsin, fcos;
+
+    fsin = sin (fAngle);
+    fcos = cos (fAngle);
+    clMat.dMtrx4D[0][0] =  fcos;  clMat.dMtrx4D[2][2] = fcos;
+    clMat.dMtrx4D[2][0] = -fsin;  clMat.dMtrx4D[0][2] = fsin;
+
+    (*this) = clMat * (*this);
 }
 
 void Matrix4D::rotZ (double fAngle)
 {
-  Matrix4D clMat;
-  double fsin, fcos;
- 
-  fsin = sin (fAngle);
-  fcos = cos (fAngle);
-  clMat.dMtrx4D[0][0] =  fcos;  clMat.dMtrx4D[1][1] = fcos;
-  clMat.dMtrx4D[0][1] = -fsin;  clMat.dMtrx4D[1][0] = fsin;
-  
-  (*this) *= clMat;
+    Matrix4D clMat;
+    double fsin, fcos;
+
+    fsin = sin (fAngle);
+    fcos = cos (fAngle);
+    clMat.dMtrx4D[0][0] =  fcos;  clMat.dMtrx4D[1][1] = fcos;
+    clMat.dMtrx4D[0][1] = -fsin;  clMat.dMtrx4D[1][0] = fsin;
+
+    (*this) = clMat * (*this);
 }
 
-void Matrix4D::rotLine (const Vector3d& rclVct, double fAngle)
+void Matrix4D::rotLine(const Vector3d& rclVct, double fAngle)
 {
-  // **** algorithm was taken from a math book
-  Matrix4D  clMA, clMB, clMC, clMRot;
-  Vector3d  clRotAxis(rclVct);
-  short iz, is;
-  double fcos, fsin;
+    // **** algorithm was taken from a math book
+    Matrix4D  clMA, clMB, clMC, clMRot;
+    Vector3d  clRotAxis(rclVct);
+    short iz, is;
+    double fcos, fsin;
 
-  // set all entries to "0"
-  for (iz = 0; iz < 4; iz++)
-    for (is = 0; is < 4; is++)  {
-      clMA.dMtrx4D[iz][is] = 0;
-      clMB.dMtrx4D[iz][is] = 0;
-      clMC.dMtrx4D[iz][is] = 0;
+    // set all entries to "0"
+    for (iz = 0; iz < 4; iz++) {
+        for (is = 0; is < 4; is++)  {
+            clMA.dMtrx4D[iz][is] = 0;
+            clMB.dMtrx4D[iz][is] = 0;
+            clMC.dMtrx4D[iz][is] = 0;
+        }
     }
 
-  // ** normalize the rotation axis
-  clRotAxis.Normalize();
-  
-  // ** set the rotation matrix (formula taken from a math book) */
-  fcos = cos(fAngle);
-  fsin = sin(fAngle);
-  
-  clMA.dMtrx4D[0][0] = (1-fcos) * clRotAxis.x * clRotAxis.x;
-  clMA.dMtrx4D[0][1] = (1-fcos) * clRotAxis.x * clRotAxis.y;
-  clMA.dMtrx4D[0][2] = (1-fcos) * clRotAxis.x * clRotAxis.z;
-  clMA.dMtrx4D[1][0] = (1-fcos) * clRotAxis.x * clRotAxis.y;
-  clMA.dMtrx4D[1][1] = (1-fcos) * clRotAxis.y * clRotAxis.y;
-  clMA.dMtrx4D[1][2] = (1-fcos) * clRotAxis.y * clRotAxis.z;
-  clMA.dMtrx4D[2][0] = (1-fcos) * clRotAxis.x * clRotAxis.z;
-  clMA.dMtrx4D[2][1] = (1-fcos) * clRotAxis.y * clRotAxis.z;
-  clMA.dMtrx4D[2][2] = (1-fcos) * clRotAxis.z * clRotAxis.z;
+    // ** normalize the rotation axis
+    clRotAxis.Normalize();
 
-  clMB.dMtrx4D[0][0] = fcos;
-  clMB.dMtrx4D[1][1] = fcos;
-  clMB.dMtrx4D[2][2] = fcos;
+    // ** set the rotation matrix (formula taken from a math book) */
+    fcos = cos(fAngle);
+    fsin = sin(fAngle);
 
-  clMC.dMtrx4D[0][1] = -fsin * clRotAxis.z;
-  clMC.dMtrx4D[0][2] =  fsin * clRotAxis.y;
-  clMC.dMtrx4D[1][0] =  fsin * clRotAxis.z;
-  clMC.dMtrx4D[1][2] = -fsin * clRotAxis.x;
-  clMC.dMtrx4D[2][0] = -fsin * clRotAxis.y;
-  clMC.dMtrx4D[2][1] =  fsin * clRotAxis.x;
+    clMA.dMtrx4D[0][0] = (1-fcos) * clRotAxis.x * clRotAxis.x;
+    clMA.dMtrx4D[0][1] = (1-fcos) * clRotAxis.x * clRotAxis.y;
+    clMA.dMtrx4D[0][2] = (1-fcos) * clRotAxis.x * clRotAxis.z;
+    clMA.dMtrx4D[1][0] = (1-fcos) * clRotAxis.x * clRotAxis.y;
+    clMA.dMtrx4D[1][1] = (1-fcos) * clRotAxis.y * clRotAxis.y;
+    clMA.dMtrx4D[1][2] = (1-fcos) * clRotAxis.y * clRotAxis.z;
+    clMA.dMtrx4D[2][0] = (1-fcos) * clRotAxis.x * clRotAxis.z;
+    clMA.dMtrx4D[2][1] = (1-fcos) * clRotAxis.y * clRotAxis.z;
+    clMA.dMtrx4D[2][2] = (1-fcos) * clRotAxis.z * clRotAxis.z;
 
-  for (iz = 0; iz < 3; iz++)
-    for (is = 0; is < 3; is++)
-      clMRot.dMtrx4D[iz][is] = clMA.dMtrx4D[iz][is]  + clMB.dMtrx4D[iz][is] +
-                               clMC.dMtrx4D[iz][is];
-  (*this) *= clMRot;
+    clMB.dMtrx4D[0][0] = fcos;
+    clMB.dMtrx4D[1][1] = fcos;
+    clMB.dMtrx4D[2][2] = fcos;
+
+    clMC.dMtrx4D[0][1] = -fsin * clRotAxis.z;
+    clMC.dMtrx4D[0][2] =  fsin * clRotAxis.y;
+    clMC.dMtrx4D[1][0] =  fsin * clRotAxis.z;
+    clMC.dMtrx4D[1][2] = -fsin * clRotAxis.x;
+    clMC.dMtrx4D[2][0] = -fsin * clRotAxis.y;
+    clMC.dMtrx4D[2][1] =  fsin * clRotAxis.x;
+
+    for (iz = 0; iz < 3; iz++) {
+        for (is = 0; is < 3; is++)
+            clMRot.dMtrx4D[iz][is] = clMA.dMtrx4D[iz][is] +
+                                     clMB.dMtrx4D[iz][is] +
+                                     clMC.dMtrx4D[iz][is];
+    }
+
+    (*this) = clMRot * (*this);
 }
 
-void Matrix4D::rotLine (const Vector3f& rclVct, float fAngle)
+void Matrix4D::rotLine(const Vector3f& rclVct, float fAngle)
 {
     Vector3d tmp(rclVct.x,rclVct.y,rclVct.z);
     rotLine(tmp,fAngle);
@@ -293,30 +242,16 @@ void Matrix4D::rotLine (const Vector3f& rclVct, float fAngle)
 
 void Matrix4D::rotLine(const Vector3d& rclBase, const Vector3d& rclDir, double fAngle)
 {
-  Matrix4D  clMT, clMRot, clMInvT, clM;
-  Vector3d clBase(rclBase);
-  
-  clMT.move(clBase);            // Translation
-  clMInvT.move(clBase *= (-1.0f));  // inverse Translation
-  clMRot.rotLine(rclDir, fAngle);
-
-  clM = clMRot * clMInvT;
-  clM = clMT * clM; 
-  (*this) *= clM;  
+    Matrix4D clMRot;
+    clMRot.rotLine(rclDir, fAngle);
+    transform(rclBase, clMRot);
 }
 
-void Matrix4D::rotLine   (const Vector3f& rclBase, const Vector3f& rclDir, float fAngle)
+void Matrix4D::rotLine(const Vector3f& rclBase, const Vector3f& rclDir, float fAngle)
 {
-  Matrix4D  clMT, clMRot, clMInvT, clM;
-  Vector3f clBase(rclBase);
-  
-  clMT.move(clBase);            // Translation
-  clMInvT.move(clBase *= (-1.0f));  // inverse Translation
-  clMRot.rotLine(rclDir, fAngle);
-
-  clM = clMRot * clMInvT;
-  clM = clMT * clM; 
-  (*this) *= clM;  
+    Vector3d pnt(rclBase.x,rclBase.y,rclBase.z);
+    Vector3d dir(rclDir.x,rclDir.y,rclDir.z);
+    rotLine(pnt,dir,fAngle);
 }
 
 /**
@@ -457,18 +392,145 @@ bool Matrix4D::toAxisAngle (Vector3f& rclBase, Vector3f& rclDir, float& rfAngle,
   return true;
 }
 
+bool Matrix4D::toAxisAngle (Vector3d& rclBase, Vector3d& rclDir, double& rfAngle, double& fTranslation) const
+{
+  // First check if the 3x3 submatrix is orthogonal
+  for ( int i=0; i<3; i++ ) {
+    // length must be one
+    if ( fabs(dMtrx4D[0][i]*dMtrx4D[0][i]+dMtrx4D[1][i]*dMtrx4D[1][i]+dMtrx4D[2][i]*dMtrx4D[2][i]-1.0) > 0.01 )
+      return false;
+    // scalar product with other rows must be zero
+    if ( fabs(dMtrx4D[0][i]*dMtrx4D[0][(i+1)%3]+dMtrx4D[1][i]*dMtrx4D[1][(i+1)%3]+dMtrx4D[2][i]*dMtrx4D[2][(i+1)%3]) > 0.01 )
+      return false;
+  }
+
+  // Okay, the 3x3 matrix is orthogonal.
+  // Note: The section to get the rotation axis and angle was taken from WildMagic Library.
+  //
+  // Let (x,y,z) be the unit-length axis and let A be an angle of rotation.
+  // The rotation matrix is R = I + sin(A)*P + (1-cos(A))*P^2 where
+  // I is the identity and
+  //
+  //       +-        -+
+  //   P = |  0 -z +y |
+  //       | +z  0 -x |
+  //       | -y +x  0 |
+  //       +-        -+
+  //
+  // If A > 0, R represents a counterclockwise rotation about the axis in
+  // the sense of looking from the tip of the axis vector towards the
+  // origin.  Some algebra will show that
+  //
+  //   cos(A) = (trace(R)-1)/2  and  R - R^t = 2*sin(A)*P
+  //
+  // In the event that A = pi, R-R^t = 0 which prevents us from extracting
+  // the axis through P.  Instead note that R = I+2*P^2 when A = pi, so
+  // P^2 = (R-I)/2.  The diagonal entries of P^2 are x^2-1, y^2-1, and
+  // z^2-1.  We can solve these for axis (x,y,z).  Because the angle is pi,
+  // it does not matter which sign you choose on the square roots.
+  //
+  // For more details see also http://www.math.niu.edu/~rusin/known-math/97/rotations
+
+  double fTrace = dMtrx4D[0][0] + dMtrx4D[1][1] + dMtrx4D[2][2];
+  double fCos = 0.5*(fTrace-1.0);
+  rfAngle = acos(fCos);  // in [0,PI]
+
+  if ( rfAngle > 0.0f )
+  {
+    if ( rfAngle < F_PI )
+    {
+      rclDir.x = (dMtrx4D[2][1]-dMtrx4D[1][2]);
+      rclDir.y = (dMtrx4D[0][2]-dMtrx4D[2][0]);
+      rclDir.z = (dMtrx4D[1][0]-dMtrx4D[0][1]);
+      rclDir.Normalize();
+    }
+    else
+    {
+      // angle is PI
+      double fHalfInverse;
+      if ( dMtrx4D[0][0] >= dMtrx4D[1][1] )
+      {
+        // r00 >= r11
+        if ( dMtrx4D[0][0] >= dMtrx4D[2][2] )
+        {
+          // r00 is maximum diagonal term
+          rclDir.x = (0.5*sqrt(dMtrx4D[0][0] - dMtrx4D[1][1] - dMtrx4D[2][2] + 1.0));
+          fHalfInverse = 0.5/rclDir.x;
+          rclDir.y = (fHalfInverse*dMtrx4D[0][1]);
+          rclDir.z = (fHalfInverse*dMtrx4D[0][2]);
+        }
+        else
+        {
+          // r22 is maximum diagonal term
+          rclDir.z = (0.5*sqrt(dMtrx4D[2][2] - dMtrx4D[0][0] - dMtrx4D[1][1] + 1.0));
+          fHalfInverse = 0.5/rclDir.z;
+          rclDir.x = (fHalfInverse*dMtrx4D[0][2]);
+          rclDir.y = (fHalfInverse*dMtrx4D[1][2]);
+        }
+      }
+      else
+      {
+        // r11 > r00
+        if ( dMtrx4D[1][1] >= dMtrx4D[2][2] )
+        {
+          // r11 is maximum diagonal term
+          rclDir.y = (0.5*sqrt(dMtrx4D[1][1] - dMtrx4D[0][0] - dMtrx4D[2][2] + 1.0));
+          fHalfInverse  = 0.5/rclDir.y;
+          rclDir.x = (fHalfInverse*dMtrx4D[0][1]);
+          rclDir.z = (fHalfInverse*dMtrx4D[1][2]);
+        }
+        else
+        {
+          // r22 is maximum diagonal term
+          rclDir.z = (0.5*sqrt(dMtrx4D[2][2] - dMtrx4D[0][0] - dMtrx4D[1][1] + 1.0));
+          fHalfInverse = 0.5/rclDir.z;
+          rclDir.x = (fHalfInverse*dMtrx4D[0][2]);
+          rclDir.y = (fHalfInverse*dMtrx4D[1][2]);
+        }
+      }
+    }
+  }
+  else
+  {
+    // The angle is 0 and the matrix is the identity.  Any axis will
+    // work, so just use the x-axis.
+    rclDir.x = 1.0;
+    rclDir.y = 0.0;
+    rclDir.z = 0.0;
+    rclBase.x = 0.0;
+    rclBase.y = 0.0;
+    rclBase.z = 0.0;
+  }
+
+  // This is the translation part in axis direction
+  fTranslation = (dMtrx4D[0][3]*rclDir.x+dMtrx4D[1][3]*rclDir.y+dMtrx4D[2][3]*rclDir.z);
+  Vector3d cPnt(dMtrx4D[0][3],dMtrx4D[1][3],dMtrx4D[2][3]);
+  cPnt = cPnt - fTranslation * rclDir;
+
+  // This is the base point of the rotation axis
+  if ( rfAngle > 0.0f )
+  {
+    double factor = 0.5*(1.0+fTrace)/sin(rfAngle);
+    rclBase.x = (0.5*(cPnt.x+factor*(rclDir.y*cPnt.z-rclDir.z*cPnt.y)));
+    rclBase.y = (0.5*(cPnt.y+factor*(rclDir.z*cPnt.x-rclDir.x*cPnt.z)));
+    rclBase.z = (0.5*(cPnt.z+factor*(rclDir.x*cPnt.y-rclDir.y*cPnt.x)));
+  }
+
+  return true;
+}
+
 void Matrix4D::transform (const Vector3f& rclVct, const Matrix4D& rclMtrx)
 {
-  move(-rclVct);
-  (*this) *= rclMtrx;
-  move(rclVct);
+    move(-rclVct);
+    (*this) = rclMtrx * (*this);
+    move(rclVct);
 }
 
 void Matrix4D::transform (const Vector3d& rclVct, const Matrix4D& rclMtrx)
 {
-  move(-rclVct);
-  (*this) *= rclMtrx;
-  move(rclVct);
+    move(-rclVct);
+    (*this) = rclMtrx * (*this);
+    move(rclVct);
 }
 
 void Matrix4D::inverse (void)
@@ -658,15 +720,14 @@ void Matrix4D::setGLMatrix (const double dMtrx[16])
 
 unsigned long Matrix4D::getMemSpace (void)
 {
-  return sizeof(Matrix4D);
+    return sizeof(Matrix4D);
 }
 
 void Matrix4D::Print (void) const
 {
-  short i;
-
-  for (i = 0; i < 4; i++)
-    printf("%9.3f %9.3f %9.3f %9.3f\n", dMtrx4D[i][0], dMtrx4D[i][1], dMtrx4D[i][2], dMtrx4D[i][3]);
+    short i;
+    for (i = 0; i < 4; i++)
+        printf("%9.3f %9.3f %9.3f %9.3f\n", dMtrx4D[i][0], dMtrx4D[i][1], dMtrx4D[i][2], dMtrx4D[i][3]);
 }
 
 void Matrix4D::transpose (void)

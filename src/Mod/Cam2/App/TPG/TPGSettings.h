@@ -66,7 +66,8 @@ namespace Cam
 {
 	namespace Settings 
 	{
-class CamExport TPGFeature; // Forward declaration so that the TPGFeature and the TPGSettings classes can both refer to each other.
+
+class CamExport Feature; // Forward declaration so that the Cam::Settings::Feature and the TPGSettings classes can both refer to each other.
 
 
 /**
@@ -128,16 +129,16 @@ public:
 	that remains the same throughout all instances of FreeCAD).  This reference information is not
 	stored away with the data file.  There are a couple of pieces of information that are stored
 	away with the data file.  Such pieces of information MUST be encoded into the 'value' which is
-	stored in the TPGFeature::PropTPGSettings map.  This Definition class and its owning TPGSettings
+	stored in the Cam::Settings::Feature::Values map.  This Definition class and its owning TPGSettings
 	class have references back to the TPGFeature to which they belong.  The TPGFeature class
 	inherits from the DocumentObject class which means its direct contents are written to the data
 	file and restored when the file is subsequently reopenned.
 
-	Many of the setting types have a single value which can easily be stored in the PropTPGSettings
+	Many of the setting types have a single value which can easily be stored in the Cam::Settings::Feature::Values
 	map.  Other setting types require more than one 'value' to be saved/restored in order to function
 	correctly.  eg: A Length setting only makes sense when we know both the 'value' and the 'units'.
 	Such values must encode all such information into a single string representation for storage
-	in the PropTPGSettings map (and thus into the data file).  We define a series of 'wrapper classes'
+	in the Cam::Settings::Feature::Values map (and thus into the data file).  We define a series of 'wrapper classes'
 	that perform such acts in a manner specific to their setting type.  By using these wrapper classes
 	we can get/set all the various values required for their setting type and such values are
 	written to the data file and re-instated when that data file is re-openned.  To that end, adding
@@ -165,8 +166,8 @@ public:
 	 */
 	typedef enum
 	{
-		SettingType_Text = 0,	// Values of this type are stored in TPGFeature::PropTPGSettings
-		SettingType_Radio,		// Values of this type are stored in TPGFeature::PropTPGSettings
+		SettingType_Text = 0,	// Values of this type are stored in Cam::Settings::Feature::Values
+		SettingType_Radio,		// Values of this type are stored in Cam::Settings::Feature::Values
 		SettingType_ObjectNamesForType,	// Object names whose types are included in the list of options.
 		SettingType_SingleObjectNameForType,	// Object name whose type is defined within the list of options.
 		SettingType_Enumeration,	// Produces a combo-box whose values include the verbose forms of the enumerated type.
@@ -367,7 +368,7 @@ public:
 	This class mostly just holds a map of Definition objects.
 	The Definition objects hold data 'about' the setting but
 	the value itself is stored in one of the member variables contained
-	within the owning TPGFeature object.
+	within the owning Cam::Settings::Feature object.
  */
 class CamExport TPGSettings
 {
@@ -377,14 +378,6 @@ public:
 
     void initialise() {};
     void loadSettings() {};
-
-	/**
-		called when any one of the settings contained within the TPGFeature::PropTPGSettings 
-		member variable changes.  These are called from the TPGFeature::onBeforeChange() and
-		TPGFeature::onChanged() methods respectively.
-	 */
-	void onBeforePropTPGSettingsChange(const App::PropertyMap* prop);
-	void onPropTPGSettingsChanged(const App::PropertyMap* prop);
 
 	/**
 	 * Perform a deep copy of this class
@@ -446,7 +439,7 @@ public:
     /**
      * Sets the TPGFeature that the value will be saved-to/read-from.
      */
-    void setTPGFeature(Cam::TPGFeature *tpgFeature);
+	void setFeature(Cam::Settings::Feature *feature);
 
     /**
      * Increases reference count
@@ -470,6 +463,7 @@ public:
 	bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 
 	Settings::Definition *getDefinition(const QString action, const QString name) const;
+	Settings::Definition *getDefinition(const QString key) const;
 
 	// These methods find a setting by name and return a pointer to that object's wrapper
 	// class based on the setting's type.  If the name doesn't match the type requested then
@@ -500,17 +494,10 @@ protected:
     /// reference counter
     int refcnt;
     /// the tpgFeature to which these settings belong
-	Cam::TPGFeature *tpgFeature;
+	Cam::Settings::Feature *feature;
 
     /// make a namespaced name (from <action>::<name>)
-    QString makeName(QString action, QString name) const;
-
-private:
-	// NOTE: ONLY used to determine which properties changed in a single update.  i.e. this
-	// value is quite transient.  It only makes sense when comparing the values written
-	// between the onBeforePropTPGSettingsChange() and onPropTPGSettingsChanged() method
-	// calls.
-	std::map<std::string,std::string>	previous_tpg_properties_version;
+    QString makeKey(QString action, QString name) const;
 
 public:
 	friend QString & operator<< ( QString & qs, const TPGSettings & settings )
@@ -544,12 +531,12 @@ public:
 	The Color setting requires four integers to be retained within the data
 	file.  To this end it uses the boost::property_tree class to encode
 	all such values into a single string which is stored in the
-	PropTPGSettings map of the owning TPGFeature object.  This wrapper class
+	Cam::Settings::Feature::Values map of the owning TPGFeature object.  This wrapper class
 	supports the encoding/decoding mechanisms required for this to occur.
 
 	No validation method is provided as the QColorPicker class ensures
 	the values are always valid.  i.e. the user doesn't get a chance to
-	change the values to somethat that can't be used.  This means we end up
+	change the values to something that can't be used.  This means we end up
 	using the Definition::validate() method which always returns Acceptable.
  */
 class CamExport Color : public Definition
@@ -577,6 +564,11 @@ public:
 	{
 	}
 
+	Color(const char *name):
+	  Definition(name, name, SettingType_Color, "", "", name)
+	{
+	}
+
 	bool get(int &red, int &green, int &blue, int &alpha) const;
 	void set(const int red, const int green, const int blue, const int alpha);
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
@@ -588,7 +580,7 @@ public:
 	to be retained within the datafile.  To this end it uses the
 	boost::property_tree class to encode
 	all such values into a single string which is stored in the
-	PropTPGSettings map of the owning TPGFeature object.  This wrapper class
+	Cam::Settings::Feature::Values map of the owning TPGFeature object.  This wrapper class
 	supports the encoding/decoding mechanisms required for this to occur.
 
 	This class allows the value to be interpreted as a Python script so that
@@ -628,6 +620,13 @@ public:
 			const double default_value,
 			const Definition::Units_t units );
 
+	Length(	const char *name,
+			const double default_value,
+			const Definition::Units_t units );
+
+	Length( const double default_value,
+		const Definition::Units_t units );
+
 	bool Evaluate( const char *entered_value, double *pResult ) const;
 	virtual ValidationState validate(QString & input,int & position) const;
 
@@ -644,6 +643,10 @@ public:
 	double get(const Definition::Units_t requested_units) const;
 	void   set(const double value);
 	void   set(const double value, const Settings::Definition::Units_t units);
+
+	bool operator< ( const Length & rhs ) const;
+	bool operator> ( const Length & rhs ) const;
+	bool operator== ( const Length & rhs ) const;
 };
 
 
@@ -652,7 +655,7 @@ public:
 	to be retained within the datafile.  To this end it uses the
 	boost::property_tree class to encode
 	all such values into a single string which is stored in the
-	PropTPGSettings map of the owning TPGFeature object.  This wrapper class
+	Cam::Settings::Feature::Values map of the owning TPGFeature object.  This wrapper class
 	supports the encoding/decoding mechanisms required for this to occur.
 
 	This class allows the value to be interpreted as a Python script so that
@@ -687,6 +690,10 @@ public:
 			const double default_value,
 			const Definition::Units_t units );
 
+	Rate(	const char *name, 
+			const double default_value,
+			const Definition::Units_t units );
+
 	bool Evaluate( const char *entered_value, double *pResult ) const;
 	virtual ValidationState validate(QString & input,int & position) const;
 
@@ -716,17 +723,21 @@ class CamExport Double : public Definition
 {
 public:
 	Double(	const char *name, 
-								const char *label, 
-								const char *helptext,
-								const double default_value,
-								const double minimum, 
-								const double maximum, 
-								const char *units );
+			const char *label, 
+			const char *helptext,
+			const double default_value,
+			const double minimum, 
+			const double maximum, 
+			const char *units );
 	Double(	const char *name, 
-								const char *label, 
-								const char *helptext,
-								const double default_value,
-								const char *units );
+			const char *label, 
+			const char *helptext,
+			const double default_value,
+			const char *units );
+
+	Double(	const char *name, 
+			const double default_value,
+			const char *units );
 
 	bool Evaluate( const char *entered_value, double *pResult ) const;
 	virtual ValidationState validate(QString & input,int & position) const;
@@ -753,28 +764,24 @@ public:
 class CamExport ObjectNamesForType : public Definition
 {
 public:
-	typedef int Number_t;
-	typedef std::string Name_t;
-
-	typedef std::list< Name_t > Encode_t;
+	typedef QStringList Encode_t;
 
 	QString encode(const Encode_t data) const;
 	Encode_t decode() const;
 
+public:
 	ObjectNamesForType(	const char *name, 
 								const char *label, 
 								const char *helptext,
-								const char *delimiters,
 								const char *object_type );
 
 	void Add(const char * object_type);
-	void SetDelimiters(const char * object_type);
 	virtual ValidationState validate(QString & input,int & position) const;
 
-	void setByLabels(const QString verbose_list_of_labels, const QString delimiter);
 	QStringList GetTypes() const;
 	QStringList GetNames() const;
-	QStringList GetLabels() const;	// This is the App::DocumentObject::Label (which may change while the App::DocumentObject::nameInDocument does not.
+	void SetNames(const QStringList names);
+
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 
@@ -791,7 +798,6 @@ public:
 
 	QString GetType() const;
 	QString GetName() const;
-	QString GetLabel() const;	// This is the App::DocumentObject::Label (which may change while the App::DocumentObject::nameInDocument does not.
 	virtual bool AddToPythonDictionary(PyObject *dictionary, const QString requested_units, const QString prefix) const;
 };
 

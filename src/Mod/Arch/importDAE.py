@@ -22,11 +22,15 @@
 #***************************************************************************
 
 import FreeCAD, Mesh, os, numpy
-from DraftTools import translate
+if FreeCAD.GuiUp:
+    from DraftTools import translate
+else:
+    def translate(context,text):
+        return text
 
 __title__="FreeCAD Collada importer"
 __author__ = "Yorik van Havre"
-__url__ = "http://free-cad.sourceforge.net"
+__url__ = "http://www.freecadweb.org"
 
 DEBUG = True
 
@@ -37,14 +41,15 @@ def checkCollada():
     try:
         import collada
     except:
-        FreeCAD.Console.PrintError(str(translate("Arch","pycollada not found, no collada support.\n")))
+        FreeCAD.Console.PrintError(translate("Arch","pycollada not found, collada support is disabled.\n"))
         return False
     else:
         return True
     
 def open(filename):
     "called when freecad wants to open a file"
-    if not checkCollada(): return
+    if not checkCollada(): 
+        return
     docname = os.path.splitext(os.path.basename(filename))[0]
     doc = FreeCAD.newDocument(docname)
     doc.Label = decode(docname)
@@ -54,7 +59,8 @@ def open(filename):
 
 def insert(filename,docname):
     "called when freecad wants to import a file"
-    if not checkCollada(): return
+    if not checkCollada(): 
+        return
     try:
         doc = FreeCAD.getDocument(docname)
     except:
@@ -71,18 +77,21 @@ def decode(name):
         try:
             decodedName = (name.decode("latin1"))
         except UnicodeDecodeError:
-            FreeCAD.Console.PrintError(str(translate("Arch","Error: Couldn't determine character encoding")))
+            FreeCAD.Console.PrintError(translate("Arch","Error: Couldn't determine character encoding"))
             decodedName = name
     return decodedName
 
 def read(filename):
     global col
     col = collada.Collada(filename, ignore=[collada.DaeUnsupportedError])
+    # Read the unitmeter info from dae file and compute unit to convert to mm
+    unitmeter = col.assetInfo.unitmeter or 1
+    unit = unitmeter / 0.001
     for geom in col.scene.objects('geometry'):
     #for geom in col.geometries:
         for prim in geom.primitives():
         #for prim in geom.primitives:
-            print prim, dir(prim)
+            #print prim, dir(prim)
             meshdata = []
             if hasattr(prim,"triangles"):
                 tset = prim.triangles()
@@ -91,17 +100,20 @@ def read(filename):
             for tri in tset:
                 face = []
                 for v in tri.vertices:
+                    v = [x * unit for x in v]
                     face.append([v[0],v[1],v[2]])
                 meshdata.append(face)
-            print meshdata
+            #print meshdata
             newmesh = Mesh.Mesh(meshdata)
-            print newmesh
+            #print newmesh
             obj = FreeCAD.ActiveDocument.addObject("Mesh::Feature","Mesh")
             obj.Mesh = newmesh
 
 def export(exportList,filename):
     "called when freecad exports a file"
     if not checkCollada(): return
+    p = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Arch")
+    scale = p.GetFloat("ColladaScalingFactor",1.0)
     colmesh = collada.Collada()
     colmesh.assetInfo.upaxis = collada.asset.UP_AXIS.Z_UP
     effect = collada.material.Effect("effect0", [], "phong", diffuse=(.7,.7,.7), specular=(1,1,1))
@@ -119,7 +131,7 @@ def export(exportList,filename):
             findex = []
             # vertex indices
             for v in m[0]:
-                vindex.extend([v.x,v.y,v.z])
+                vindex.extend([v.x*scale,v.y*scale,v.z*scale])
             # normals
             for f in obj.Shape.Faces:
                 n = f.normalAt(0,0)
@@ -137,7 +149,7 @@ def export(exportList,filename):
             findex = []
             # vertex indices
             for v in m.Topology[0]:
-                vindex.extend([v.x,v.y,v.z])
+                vindex.extend([v.x*scale,v.y*scale,v.z*scale])
             # normals
             for f in m.Facets:
                 n = f.Normal
@@ -165,4 +177,4 @@ def export(exportList,filename):
     colmesh.scenes.append(myscene)
     colmesh.scene = myscene
     colmesh.write(filename)
-    FreeCAD.Console.PrintMessage(str(translate("Arch","file %s successfully created.")) % filename)
+    FreeCAD.Console.PrintMessage(translate("Arch","file %s successfully created.") % filename)

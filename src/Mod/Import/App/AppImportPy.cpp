@@ -183,8 +183,8 @@ static PyObject * exporter(PyObject *self, PyObject *args)
         hApp->NewDocument(TCollection_ExtendedString("MDTV-CAF"), hDoc);
         Import::ExportOCAF ocaf(hDoc);
 
-        Py::List list(object);
-        for (Py::List::iterator it = list.begin(); it != list.end(); ++it) {
+        Py::Sequence list(object);
+        for (Py::Sequence::iterator it = list.begin(); it != list.end(); ++it) {
             PyObject* item = (*it).ptr();
             if (PyObject_TypeCheck(item, &(App::DocumentObjectPy::Type))) {
                 App::DocumentObject* obj = static_cast<App::DocumentObjectPy*>(item)->getDocumentObjectPtr();
@@ -233,13 +233,21 @@ static PyObject * exporter(PyObject *self, PyObject *args)
             makeHeader.SetOrganizationValue (1, new TCollection_HAsciiString("FreeCAD"));
             makeHeader.SetOriginatingSystem(new TCollection_HAsciiString("FreeCAD"));
             makeHeader.SetDescriptionValue(1, new TCollection_HAsciiString("FreeCAD Model"));
-            writer.Write(filename);
+            IFSelect_ReturnStatus ret = writer.Write(filename);
+            if (ret == IFSelect_RetError || ret == IFSelect_RetFail || ret == IFSelect_RetStop) {
+                PyErr_Format(PyExc_IOError, "Cannot open file '%s'", filename);
+                return 0;
+            }
         }
         else if (file.hasExtension("igs") || file.hasExtension("iges")) {
             IGESControl_Controller::Init();
             IGESCAFControl_Writer writer;
             writer.Transfer(hDoc);
-            writer.Write(filename);
+            Standard_Boolean ret = writer.Write(filename);
+            if (!ret) {
+                PyErr_Format(PyExc_IOError, "Cannot open file '%s'", filename);
+                return 0;
+            }
         }
     }
     catch (Standard_Failure) {

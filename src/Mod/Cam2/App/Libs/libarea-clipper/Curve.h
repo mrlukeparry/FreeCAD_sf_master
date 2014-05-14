@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <PreCompiled.h>
+
 #include <vector>
 #include <list>
 #include <math.h>
@@ -13,7 +15,7 @@
 namespace area 
 {
 
-class Line{
+class LibAreaExport Line{
 public:
 	Point p0;
 	Point v;
@@ -24,9 +26,9 @@ public:
 	double Dist(const Point& p)const;
 };
 
-class Arc;
+class LibAreaExport Arc;
 
-class CVertex
+class LibAreaExport CVertex
 {
 public:
 	int m_type; // 0 - line ( or start point ), 1 - anti-clockwise arc, -1 - clockwise arc
@@ -39,7 +41,7 @@ public:
 	CVertex(const Point& p, int user_data = 0);
 };
 
-class Span
+class LibAreaExport Span
 {
 	Point NearestPointNotOnSpan(const Point& p)const;
 	double Parameter(const Point& p)const;
@@ -66,7 +68,7 @@ public:
 	Point GetVector(double fraction)const;
 };
 
-class CCurve
+class LibAreaExport CCurve
 {
 	// a closed curve, please make sure you add an end point, the same as the start point
 
@@ -101,6 +103,6 @@ public:
 	void operator+=(const area::CCurve& p);
 };
 
-void tangential_arc(const Point &p0, const Point &p1, const Point &v0, Point &c, int &dir);
+void LibAreaExport tangential_arc(const Point &p0, const Point &p1, const Point &v0, Point &c, int &dir);
 
 } // End namespace area

@@ -48,6 +48,7 @@ class SbBox2s;
 class SoVectorizeAction;
 class QGLFramebufferObject;
 class QImage;
+class SoGroup;
 
 namespace Gui {
 
@@ -58,6 +59,7 @@ class SoFCUnifiedSelection;
 class Document;
 class SoFCUnifiedSelection;
 class GLGraphicsItem;
+class SoShapeScale;
 
 /** The Inventor viewer
  *
@@ -94,6 +96,22 @@ public:
         DisallowRotation=8,/**< switch of the rotation. */
         DisallowPanning=16,/**< switch of the panning. */
         DisallowZooming=32,/**< switch of the zooming. */
+    };
+    //@}
+    
+    /** @name Anti-Aliasing modes of the rendered 3D scene
+      * Here you can switch between different methods for anti aliasing wich provide quite different results
+      * at different runtime impact. 
+      * - Smoothing enables openGL line and vertex smoothing which is basicly deprecadet
+      * - MSAA is hardeware multi sampling (with 2, 4 or 8 passes), a quite commom and efficient AA technique
+      */
+    //@{
+    enum AntiAliasing {
+        None,
+        Smoothing,
+        MSAA2x,
+        MSAA4x,
+        MSAA8x
     };
     //@}
 
@@ -157,6 +175,10 @@ public:
     SbBool isEditingViewProvider() const;
     /// reset from edit mode
     void resetEditingViewProvider();
+    /// display override mode
+    void setOverrideMode(const std::string &mode);
+    void updateOverrideMode(const std::string &mode);
+    std::string getOverrideMode() {return overrideMode;}
     //@}
 
     /** @name Making pictures */
@@ -200,6 +222,7 @@ public:
     // calls a PickAction on the scene graph
     bool pickPoint(const SbVec2s& pos,SbVec3f &point,SbVec3f &norm) const;
     SoPickedPoint* pickPoint(const SbVec2s& pos) const;
+    const SoPickedPoint* getPickedPoint(SoEventCallback * n) const;
     SbBool pubSeekToPoint(const SbVec2s& pos);
     void pubSeekToPoint(const SbVec3f& pos);
     //@}
@@ -223,6 +246,8 @@ public:
     SbVec3f getViewDirection() const;
     /** Returns the up direction */
     SbVec3f getUpDirection() const;
+    /** Returns the orientation of the camera. */
+    SbRotation getCameraOrientation() const; 
     /** Returns the 3d point on the focal plane to the given 2d point. */
     SbVec3f getPointOnScreen(const SbVec2s&) const;
     /** Returns the near plane represented by its normal and base point. */
@@ -237,6 +262,32 @@ public:
     SbVec3f projectOnNearPlane(const SbVec2f&) const;
     /** Project the given normalized 2d point onto the far plane */
     SbVec3f projectOnFarPlane(const SbVec2f&) const;
+    //@}
+    
+    /** @name Dimension controls
+     * the "turn*" functions are wired up to parameter groups through view3dinventor.
+     * don't call them directly. instead set the parameter groups.
+     * @see TaskDimension
+     */
+    //@{
+    void turnAllDimensionsOn();
+    void turnAllDimensionsOff();
+    void turn3dDimensionsOn();
+    void turn3dDimensionsOff();
+    void turnDeltaDimensionsOn();
+    void turnDeltaDimensionsOff();
+    void eraseAllDimensions();
+    void addDimension3d(SoNode *node);
+    void addDimensionDelta(SoNode *node);
+    //@}
+    
+    /** @name Anti-Aliasing Control
+     * the anti-aliasing mode is controled by parameters through view3dinventor.
+     * don't call them directly. Instead set the parameter View/AntiAliasing.
+     */
+    //@{
+    void setAntiAliasingMode(AntiAliasing mode);
+    AntiAliasing getAntiAliasingMode() const;
     //@}
 
     /**
@@ -272,6 +323,10 @@ public:
                                     const SbColor& midColor);
     void setEnabledFPSCounter(bool b);
     void setNavigationType(Base::Type);
+
+    void setAxisCross(bool b);
+    bool hasAxisCross(void);
+
     NavigationStyle* navigationStyle() const;
 
     void setDocument(Gui::Document *pcDocument);
@@ -279,6 +334,7 @@ public:
 protected:
     void renderScene();
     void renderFramebuffer();
+    void animatedViewAll(int steps, int ms);
     virtual void actualRedraw(void);
     virtual void setSeekMode(SbBool enable);
     virtual void afterRealizeHook(void);
@@ -304,6 +360,7 @@ private:
     static void drawArrow(void);
     void setCursorRepresentation(int mode);
 
+
 private:
     std::set<ViewProvider*> _ViewProviderSet;
     std::map<SoSeparator*,ViewProvider*> _ViewProviderMap;
@@ -312,7 +369,6 @@ private:
     SoFCBackgroundGradient *pcBackGround;
     SoSeparator * backgroundroot;
     SoSeparator * foregroundroot;
-    SoRotationXYZ * arrowrotation;
     SoDirectionalLight* backlight;
 
     SoSeparator * pcViewProviderRoot;
@@ -320,14 +376,22 @@ private:
     NavigationStyle* navigation;
     SoFCUnifiedSelection* selectionRoot;
     QGLFramebufferObject* framebuffer;
+    SoSwitch *dimensionRoot;
 
+    // small axis cross in the corner
     SbBool axiscrossEnabled;
     int axiscrossSize;
+    // big one in the middle
+    SoShapeScale* axisCross;
+    SoGroup* axisGroup;
+
 
     SbBool editing;
     QCursor editCursor;
     SbBool redirected;
     SbBool allowredir;
+
+    std::string overrideMode;
 
     // friends
     friend class NavigationStyle;

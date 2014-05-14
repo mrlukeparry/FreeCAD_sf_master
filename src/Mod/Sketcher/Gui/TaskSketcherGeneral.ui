@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>153</width>
-    <height>112</height>
+    <height>115</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -34,99 +34,26 @@
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="comboBoxGridSize">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="currentIndex">
-        <number>6</number>
-       </property>
-       <item>
-        <property name="text">
-         <string notr="true">0.1 mm</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">0.2 mm</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">0.5 mm</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">1 mm</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">2 mm</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">5 mm</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">10 mm</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">20 mm</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">50 mm</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">100 mm</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">200 mm</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">500 mm</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">1 m</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">2 m</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">5 m</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">10 m</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string notr="true">20 m</string>
-        </property>
-       </item>
-      </widget>
+       <widget class="Gui::InputField" name="gridSize">
+         <property name="unit" stdset="0">
+           <string>mm</string>
+         </property>
+         <property name="decimals" stdset="0">
+           <number>3</number>
+         </property>
+         <property name="maximum" stdset="0">
+           <double>99999999.0</double>
+         </property>
+         <property name="minimum" stdset="0">
+           <double>0.2</double>
+         </property>
+         <property name="singleStep" stdset="0">
+           <double>1.000000000000000</double>
+         </property>
+         <property name="value" stdset="0">
+           <double>0.0000001</double>
+         </property>
+       </widget>
      </item>
     </layout>
    </item>
@@ -156,5 +83,13 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+  <customwidgets>
+    <customwidget>
+      <class>Gui::InputField</class>
+      <extends>QLineEdit</extends>
+      <header>Gui/InputField.h</header>
+    </customwidget>
+  </customwidgets>
+
+  <connections/>
 </ui>

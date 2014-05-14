@@ -10,6 +10,9 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
+
+#include <PreCompiled.h>
+
 #ifdef WIN32
 #pragma warning( disable : 4996 )
 #ifndef WINVER
@@ -45,15 +48,15 @@ namespace geoff_geometry {
 		};
 
 
-	class Vector2d;
-	class Vector3d;
-	class Point;
-	class Point3d;
-	class CLine;
-	class Circle;
-	class Span;
-	class Kurve;
-	class Line;
+	class LibAreaExport Vector2d;
+	class LibAreaExport Vector3d;
+	class LibAreaExport Point;
+	class LibAreaExport Point3d;
+	class LibAreaExport CLine;
+	class LibAreaExport Circle;
+	class LibAreaExport Span;
+	class LibAreaExport Kurve;
+	class LibAreaExport Line;
 
 
 	enum UNITS_TYPE{
@@ -72,8 +75,8 @@ namespace geoff_geometry {
 	extern double COS_SMALL_ANGLE;
 	extern double RESOLUTION;				// CNC resolution
 
-	void set_Tolerances(int mode);
-	double mm(double value);				// convert to current units from mm
+	void LibAreaExport set_Tolerances(int mode);
+	double LibAreaExport  mm(double value);				// convert to current units from mm
 
 inline bool FEQ(double a, double b, double tolerance = TOLERANCE) {return fabs(a - b) <= tolerance;}
 inline bool FNE(double a, double b, double tolerance = TOLERANCE) {return fabs(a - b) > tolerance;}
@@ -148,7 +151,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 	};
 
 	// homogenous 4 x 4 Matrix class
-	class Matrix{
+	class LibAreaExport Matrix{
 	protected:
 	public:
 		double e[16];
@@ -202,7 +205,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 
 
 	// 2d Point class
-	class Point {
+	class LibAreaExport Point {
 		friend wostream& operator << (wostream& op, Point& p);
 
 	public:
@@ -245,7 +248,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 #define INVALID_CIRCLE	Circle(INVALID_POINT, 0, false)
 
 	// 3d point class
-	class Point3d {
+	class LibAreaExport Point3d {
 		friend wostream& operator <<(wostream& op, Point3d& p);
 	public:
 //		bool	ok;																// true if this point is defined correctly	
@@ -290,7 +293,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 	};
 
 	// 2d vector class
-	class Vector2d{
+	class LibAreaExport Vector2d{
 		friend wostream& operator <<(wostream& op, Vector2d& v);
 	private:
 		double dx, dy;		
@@ -358,7 +361,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 
 
 	// 3d vector class
-	class Vector3d{
+	class LibAreaExport Vector3d{
 		friend wostream& operator <<(wostream& op, Vector3d& v);
 	private:
 		double dx, dy, dz;
@@ -430,7 +433,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 #define X_VECTOR Vector3d(1,0,0)
 
 	// 2D cline x = x0 + t * dx;    y = y0 + t * dy
-	class CLine{
+	class LibAreaExport CLine{
 		friend wostream& operator <<(wostream& op, CLine& cl);
 	public:
 		bool ok;
@@ -470,7 +473,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 
 
 	// 2D circle 
-	class Circle{
+	class LibAreaExport Circle{
 		friend wostream& operator <<(wostream& op, Circle& c);
 	public:
 		bool ok;
@@ -500,7 +503,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 	};
 
 	// 2d box class
-	class Box{
+	class LibAreaExport Box{
 	public:
 		Point min;
 		Point max;
@@ -514,7 +517,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 	};
 
 	// 3d box class
-	class Box3d{
+	class LibAreaExport Box3d{
 	public:
 		Point3d min;
 		Point3d max;
@@ -547,7 +550,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 
 
 	// 2D line arc span
-	class Span{
+	class LibAreaExport Span{
 		friend wostream& operator <<(wostream& op, Span& span);
 	public:
 		Point p0;			// start
@@ -600,90 +603,90 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 	};
 
 	// general
-	double	atn360(double dx, double dy);									// angle 0 to 2pi
+	double	LibAreaExport atn360(double dx, double dy);									// angle 0 to 2pi
 
 	// distance functions
 	//double Dist(double px, double py, double p1x, double p1y);				// diatance between 2 points (2d)
 	//double Dist(Point& p0, Point& p1);										// distance between 2 points (3d)
 	//double Dist(CLine& s, Point& p1);											// distance between cline & point
 
-	double Dist(const Point3d *p, const Vector3d *vl, const Point3d *pf);							// distance from line (p, vl) and pf
-	double DistSq(const Point3d *p, const Vector3d *vl, const Point3d *pf);						// distance squared from line (p, vl) and pf
-	double Dist(const Circle& c, const Point& p);											// distance between c & p
-	double Dist(const Point& p0, const Circle& c, const Point& p1);								// clockwise distance around c from p0 to p1
-	double Dist(const CLine& s, const Circle& c);											// distance between line and circle
-	double Dist(const Circle& c0, const Circle& c1);										// distance between 2 circles
-	double IncludedAngle(const Vector2d& v0, const Vector2d& v1, int dir = 1);				// angle between 2 vectors
-	double IncludedAngle(const Vector3d& v0, const Vector3d& v1, const Vector3d& normal, int dir = 1);
+	double LibAreaExport Dist(const Point3d *p, const Vector3d *vl, const Point3d *pf);							// distance from line (p, vl) and pf
+	double LibAreaExport DistSq(const Point3d *p, const Vector3d *vl, const Point3d *pf);						// distance squared from line (p, vl) and pf
+	double LibAreaExport Dist(const Circle& c, const Point& p);											// distance between c & p
+	double LibAreaExport Dist(const Point& p0, const Circle& c, const Point& p1);								// clockwise distance around c from p0 to p1
+	double LibAreaExport Dist(const CLine& s, const Circle& c);											// distance between line and circle
+	double LibAreaExport Dist(const Circle& c0, const Circle& c1);										// distance between 2 circles
+	double LibAreaExport IncludedAngle(const Vector2d& v0, const Vector2d& v1, int dir = 1);				// angle between 2 vectors
+	double LibAreaExport IncludedAngle(const Vector3d& v0, const Vector3d& v1, const Vector3d& normal, int dir = 1);
 	inline	double IncludedAngle(const CLine& s0, const CLine& s1, int dir = 1) {			// angle between 2 Clines
 		return IncludedAngle(s0.v, s1.v, dir);
 	}
 
 
 	// point definitions
-	Point	Mid(const Point& p0, const Point& p1, double factor = 0.5);					//// midpoint
-	Point	Mid(const Span& sp);													//// midpoint of a span
-	Point	Rel(const Point& p, double x, double y);								// relative point
-	Point	Polar(const Point& p, double angle, double r);						// polar from this point
-	Point	AtAngle(const Circle& c, double angle);								// Point at angle on a circle
-	Point	XonCLine(const CLine& s, double xval);								// returns point that has X on this line
-	Point	YonCLine(const CLine& s, double yval);								// returns point that has Y on this line
-	Point	Intof(const CLine& s0, const CLine& s1);									//// intof 2 clines
-	Point	Intof(int NF, const CLine& s, const Circle& c);								//// intof of circle & a cline
-	Point	Intof(int NF, const CLine& s, const Circle& c, Point& otherInters);			//// intof of circle & a cline (returns the other intersection)
-	Point	Intof(int LR, const Circle& c0, const Circle& c1);							//// intof 2 circles
-	Point	Intof(int LR, const Circle& c0, const Circle& c1, Point& otherInters);		//// intof 2 circles, (returns the other intersection)
-	int		Intof(const Circle& c0, const Circle& c1, Point& pLeft, Point& pRight);		////    ditto
-	Point	Along(const CLine& s, double d);										// distance along Cline
-	Point	Along(const CLine& s, double d, const Point& p);								// distance along Cline from point
-	Point	Around(const Circle& c, double d, const Point& p);								// distance around a circle from point
-	Point	On(const CLine& s,  const Point& p);											// returns a point on s nearest to p
-	Point	On(const Circle& c, const Point& p);											// returns a point on c nearest to p
+	Point	LibAreaExport Mid(const Point& p0, const Point& p1, double factor = 0.5);					//// midpoint
+	Point	LibAreaExport Mid(const Span& sp);													//// midpoint of a span
+	Point	LibAreaExport Rel(const Point& p, double x, double y);								// relative point
+	Point	LibAreaExport Polar(const Point& p, double angle, double r);						// polar from this point
+	Point	LibAreaExport AtAngle(const Circle& c, double angle);								// Point at angle on a circle
+	Point	LibAreaExport XonCLine(const CLine& s, double xval);								// returns point that has X on this line
+	Point	LibAreaExport YonCLine(const CLine& s, double yval);								// returns point that has Y on this line
+	Point	LibAreaExport Intof(const CLine& s0, const CLine& s1);									//// intof 2 clines
+	Point	LibAreaExport Intof(int NF, const CLine& s, const Circle& c);								//// intof of circle & a cline
+	Point	LibAreaExport Intof(int NF, const CLine& s, const Circle& c, Point& otherInters);			//// intof of circle & a cline (returns the other intersection)
+	Point	LibAreaExport Intof(int LR, const Circle& c0, const Circle& c1);							//// intof 2 circles
+	Point	LibAreaExport Intof(int LR, const Circle& c0, const Circle& c1, Point& otherInters);		//// intof 2 circles, (returns the other intersection)
+	int		LibAreaExport Intof(const Circle& c0, const Circle& c1, Point& pLeft, Point& pRight);		////    ditto
+	Point	LibAreaExport Along(const CLine& s, double d);										// distance along Cline
+	Point	LibAreaExport Along(const CLine& s, double d, const Point& p);								// distance along Cline from point
+	Point	LibAreaExport Around(const Circle& c, double d, const Point& p);								// distance around a circle from point
+	Point	LibAreaExport On(const CLine& s,  const Point& p);											// returns a point on s nearest to p
+	Point	LibAreaExport On(const Circle& c, const Point& p);											// returns a point on c nearest to p
 
 	// cline definitons
 
-	CLine	AtAngle(double angle, const Point& p, const CLine& s = HORIZ_CLINE);		// cline at angle to line thro' point
-	CLine	Tanto(int AT, const Circle& c,  double angle, const CLine& s0 = HORIZ_CLINE);//// cline tanto circle at angle to optional cline
-	CLine	Tanto(int AT, const Circle& c, const Point& p);								// cline tanto circle thro' a point
-	CLine	Tanto(int AT0, const Circle& c0, int AT1, const Circle& c1);					// cline tanto 2 circles
-	CLine	Normal(const CLine& s);													// noirmal to cline
-	CLine	Normal(const CLine& s, const Point& p);										// normal to cline thro' p
-	CLine	Parallel(int LR, const CLine& s, double distance);						// parallel to cline by distance
-	CLine	Parallel(const CLine& cl, const Point& p);										// parallel to cline thro' a point
+	CLine	LibAreaExport AtAngle(double angle, const Point& p, const CLine& s = HORIZ_CLINE);		// cline at angle to line thro' point
+	CLine	LibAreaExport Tanto(int AT, const Circle& c,  double angle, const CLine& s0 = HORIZ_CLINE);//// cline tanto circle at angle to optional cline
+	CLine	LibAreaExport Tanto(int AT, const Circle& c, const Point& p);								// cline tanto circle thro' a point
+	CLine	LibAreaExport Tanto(int AT0, const Circle& c0, int AT1, const Circle& c1);					// cline tanto 2 circles
+	CLine	LibAreaExport Normal(const CLine& s);													// noirmal to cline
+	CLine	LibAreaExport Normal(const CLine& s, const Point& p);										// normal to cline thro' p
+	CLine	LibAreaExport Parallel(int LR, const CLine& s, double distance);						// parallel to cline by distance
+	CLine	LibAreaExport Parallel(const CLine& cl, const Point& p);										// parallel to cline thro' a point
 
 
 	// circle definitions
-	Circle	Thro(const Point& p0, const Point& p1);										// circle thro 2 points (diametric)
-	Circle	Thro(const Point& p0, const Point& p1, const Point& p2);							// circle thro 3 points
-	Circle	Tanto(int NF, const CLine& s0, const Point& p, double rad);					// circle tanto a CLine thro' a point with radius
-	Circle	Thro(int LR, const Point& p0, const Point& p1, double rad);					// circle thro' 2 points with radius
-	Circle	Tanto(int AT1, const CLine& s1, int AT2, const CLine& s2, double rad);		// circle tanto 2 clines with radius
-	Circle	Tanto(int AT1, const CLine& s1, int AT2, const CLine& s2, int AT3, const CLine& s3);	// circle tanto 3 clines
-	Circle	Tanto(int LR, int AT, const Circle& c, const Point& p, double rad);			// circle tanto circle & thro' a point
-	Circle	Tanto(int NF, int AT0, const CLine& s0, int AT1, const Circle& c1, double rad);// circle tanto cline & circle with radius
-	Circle	Tanto(int LR, int AT0, const Circle& c0, int AT1, const Circle& c1, double rad);// circle tanto 2 circles with radius
-	Circle	Tanto(int LR, int AT1 , const Circle& c1 , int AT2 , const Circle& c2, int AT3 , const Circle c3); // tanto 3 circles
-	int		apolloniusProblem(int AT1 , const Circle& c1 , int AT2 , const Circle& c2, int AT3 , const Circle& c3, Circle& Solution1, Circle& Solution2);
-	int		apolloniusProblem(int AT1 , const Circle& c1 , int AT2 , const Circle& c2, int AT3 , const CLine& cl3, Circle& Solution1, Circle& Solution2);
-	int		apolloniusProblem(int AT1 , const Circle& c1 , int AT2 , const CLine& cl2, int AT3 , const CLine& cl3, Circle& Solution1, Circle& Solution2);
+	Circle	LibAreaExport Thro(const Point& p0, const Point& p1);										// circle thro 2 points (diametric)
+	Circle	LibAreaExport Thro(const Point& p0, const Point& p1, const Point& p2);							// circle thro 3 points
+	Circle	LibAreaExport Tanto(int NF, const CLine& s0, const Point& p, double rad);					// circle tanto a CLine thro' a point with radius
+	Circle	LibAreaExport Thro(int LR, const Point& p0, const Point& p1, double rad);					// circle thro' 2 points with radius
+	Circle	LibAreaExport Tanto(int AT1, const CLine& s1, int AT2, const CLine& s2, double rad);		// circle tanto 2 clines with radius
+	Circle	LibAreaExport Tanto(int AT1, const CLine& s1, int AT2, const CLine& s2, int AT3, const CLine& s3);	// circle tanto 3 clines
+	Circle	LibAreaExport Tanto(int LR, int AT, const Circle& c, const Point& p, double rad);			// circle tanto circle & thro' a point
+	Circle	LibAreaExport Tanto(int NF, int AT0, const CLine& s0, int AT1, const Circle& c1, double rad);// circle tanto cline & circle with radius
+	Circle	LibAreaExport Tanto(int LR, int AT0, const Circle& c0, int AT1, const Circle& c1, double rad);// circle tanto 2 circles with radius
+	Circle	LibAreaExport Tanto(int LR, int AT1 , const Circle& c1 , int AT2 , const Circle& c2, int AT3 , const Circle c3); // tanto 3 circles
+	int		LibAreaExport apolloniusProblem(int AT1 , const Circle& c1 , int AT2 , const Circle& c2, int AT3 , const Circle& c3, Circle& Solution1, Circle& Solution2);
+	int		LibAreaExport apolloniusProblem(int AT1 , const Circle& c1 , int AT2 , const Circle& c2, int AT3 , const CLine& cl3, Circle& Solution1, Circle& Solution2);
+	int		LibAreaExport apolloniusProblem(int AT1 , const Circle& c1 , int AT2 , const CLine& cl2, int AT3 , const CLine& cl3, Circle& Solution1, Circle& Solution2);
 
 	//		Circle	Tanto(int AT0, int NF, int AT1, CLine s1, int AT2, CLine s2);	// circle tanto circle, and 2 clines
-	Circle	Parallel(int LR, const Circle& c, double distance);					// parallel to circle by a distance
+	Circle	LibAreaExport Parallel(int LR, const Circle& c, double distance);					// parallel to circle by a distance
 
 
 	// misc
 	inline double Radians(double degrees) {return degrees * PI / 180;}
 	inline double Degrees(double radians) { return radians * 180 / PI;}
-	int quadratic(double a, double b, double c, double& x0, double& x1);	// solve quadratic
+	int LibAreaExport quadratic(double a, double b, double c, double& x0, double& x1);	// solve quadratic
 
-	int corner(const Vector2d& v0, const Vector2d& v1, double cpTol = CPTANGENTTOL);	// corner (TANGENT, LEFT, RIGHT)
+	int LibAreaExport corner(const Vector2d& v0, const Vector2d& v1, double cpTol = CPTANGENTTOL);	// corner (TANGENT, LEFT, RIGHT)
 	inline	int corner(const Span& span, const Span& next, double cpTol = CPTANGENTTOL) {
 		return corner((Vector2d)span.ve, (Vector2d)next.vs, cpTol);}
 
-	Line IsPtsLine(const double* a, int n, double tolerance, double* deviation);
+	Line LibAreaExport IsPtsLine(const double* a, int n, double tolerance, double* deviation);
 //	Span3d IsPtsSpan3d(const double* a, int n, double tolerance, double* deviation);
 
-	class Plane {
+	class LibAreaExport Plane {
 		friend wostream& operator <<(wostream& op, Plane& pl);
 
 	public:						// ax + by + cz + d = 0
@@ -710,7 +713,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 
 #define SPANSTORAGE 32			// lessens number of object pointers
 
-	class spVertex {
+	class LibAreaExport spVertex {
 		friend wostream& operator <<(wostream& op, spVertex& sp);
 
 	public:
@@ -736,7 +739,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 	};
 
 
-	class SpanDataObject {
+	class LibAreaExport SpanDataObject {
 		// holds everything needed for Post-Processing/Simulation
 	public:
 		int method;	// holds method type
@@ -745,7 +748,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 		SpanDataObject(const SpanDataObject* obj){method = obj->method;};
 	};
 
-	class SpanVertex{
+	class LibAreaExport SpanVertex{
 	public:
 		int type[SPANSTORAGE];							// LINEAR CW or ACW																// 0 straight (cw = -1 (T)   acw = 1 (A) )
 		int spanid[SPANSTORAGE];						// identification (eg wire offset span info)
@@ -775,7 +778,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 #pragma warning(disable:4522)
 #endif
 
-	class Kurve : public Matrix{
+	class LibAreaExport Kurve : public Matrix{
 	friend wofstream& operator << (wofstream& op, Kurve& k);
 	friend wifstream& operator >> (wifstream& op, Kurve& k);
 		
@@ -905,13 +908,13 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 #pragma warning(default:4522)
 #endif
 
-	void tangential_arc(const Point &p0, const Point &p1, const Vector2d &v0, Point &c, int &dir);
+	void LibAreaExport tangential_arc(const Point &p0, const Point &p1, const Vector2d &v0, Point &c, int &dir);
 
-	int		EqualiseSpanCount(Kurve& k1, Kurve& k2, Kurve& k1equal, Kurve& k2equal, bool equalise_same_span_count);		// span count equalisation
-	void	EqualiseSpanCountAfterOffset(Kurve& k1, Kurve&k2, Kurve& k1Out, Kurve& k2Out);// span equalisation after offset
-	void	EqualiseSpanCountAfterOffsetFromRollAround(Kurve& k1, Kurve&k2, Kurve& k1Out, Kurve& k2Out/*, double offset, int arc_direction*/);// span equalisation after offset
+	int		LibAreaExport EqualiseSpanCount(Kurve& k1, Kurve& k2, Kurve& k1equal, Kurve& k2equal, bool equalise_same_span_count);		// span count equalisation
+	void	LibAreaExport EqualiseSpanCountAfterOffset(Kurve& k1, Kurve&k2, Kurve& k1Out, Kurve& k2Out);// span equalisation after offset
+	void	LibAreaExport EqualiseSpanCountAfterOffsetFromRollAround(Kurve& k1, Kurve&k2, Kurve& k1Out, Kurve& k2Out/*, double offset, int arc_direction*/);// span equalisation after offset
 
-	Point IntofIso(Span& one, Span& two, Span& three);				// for iso blend radiuses - calc intersection
+	Point LibAreaExport IntofIso(Span& one, Span& two, Span& three);				// for iso blend radiuses - calc intersection
 
 	inline double CPTOL(double offset, double maxOffset) {
 		// this returns a suitable tolerance for a cross product
@@ -929,28 +932,28 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 
 
 	// finite Span routines
-	int Intof(const Span& sp0 , const Span& sp1, Point& p0, Point& p1, double t[4]);
-	int	LineLineIntof(const Span& L0 , const Span& L1, Point& p, double t[2]);
-	int LineArcIntof(const Span& line, const Span& arc, Point& p0, Point& p1, double t[4]);
-	int ArcArcIntof(const Span& arc0, const Span& arc1, Point& pLeft, Point& pRight, double t[4]);
+	int LibAreaExport Intof(const Span& sp0 , const Span& sp1, Point& p0, Point& p1, double t[4]);
+	int	LibAreaExport LineLineIntof(const Span& L0 , const Span& L1, Point& p, double t[2]);
+	int LibAreaExport LineArcIntof(const Span& line, const Span& arc, Point& p0, Point& p1, double t[4]);
+	int LibAreaExport ArcArcIntof(const Span& arc0, const Span& arc1, Point& pLeft, Point& pRight, double t[4]);
 
-	bool OnSpan(const Span& sp, const Point& p);
-	bool OnSpan(const Span& sp, const Point& p, bool nearPoints, Point& pNear, Point& pOnSpan);	// function returns true if pNear == pOnSpan
+	bool LibAreaExport OnSpan(const Span& sp, const Point& p);
+	bool LibAreaExport OnSpan(const Span& sp, const Point& p, bool nearPoints, Point& pNear, Point& pOnSpan);	// function returns true if pNear == pOnSpan
 	//			pNear (nearest on unbound span)
 	//			pOnSpan (nearest on finite span)
 
 
-	int Intof(const Line& v0, const Line& v1, Point3d& intof);							// intof 2 lines
-	double Dist(const Line& l, const Point3d& p, Point3d& pnear, double& t);			// distance from a point to a line
-	Point3d Near(const Line& l, const Point3d& p, double& t );							// near point to a line & t in 0-length range
-	double Dist(const Span& sp, const Point& p , Point& pnear );						// distance from p to sp, nearpoint returned as pnear
+	int LibAreaExport Intof(const Line& v0, const Line& v1, Point3d& intof);							// intof 2 lines
+	double LibAreaExport Dist(const Line& l, const Point3d& p, Point3d& pnear, double& t);			// distance from a point to a line
+	Point3d LibAreaExport Near(const Line& l, const Point3d& p, double& t );							// near point to a line & t in 0-length range
+	double LibAreaExport Dist(const Span& sp, const Point& p , Point& pnear );						// distance from p to sp, nearpoint returned as pnear
 
 //	Kurve splineUsingBiarc(CLine& cl0, CLine& cl1, std::vector<pts>);
 
-	int biarc(CLine& cl0, CLine& cl1, Span* sp0, Span* sp1 );
+	int LibAreaExport biarc(CLine& cl0, CLine& cl1, Span* sp0, Span* sp1 );
 
 	// 3d line segment
-	class Line{
+	class LibAreaExport Line{
 	public:
 		Point3d p0;				// start
 		Vector3d v;				// vector (not normalised)
@@ -973,7 +976,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 	};
 
 
-class Triangle3d {
+class LibAreaExport Triangle3d {
 		Point3d vert1;    // first vertex
 		Point3d vert2;    // second vertex
 		Point3d vert3;    // third vertex

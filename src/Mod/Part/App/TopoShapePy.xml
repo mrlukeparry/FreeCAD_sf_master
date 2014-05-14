@@ -48,6 +48,11 @@ Sub-elements such as vertices, edges or faces are accessible as:
         <UserDocu>Export the content of this shape to a string in BREP format. BREP is a CasCade native format.</UserDocu>
       </Documentation>
     </Methode>
+    <Methode Name="dumpToString" Const="true">
+      <Documentation>
+        <UserDocu>Dump information about the shape to a string.</UserDocu>
+      </Documentation>
+    </Methode>
     <Methode Name="exportStl" Const="true">
       <Documentation>
         <UserDocu>Export the content of this shape to an STL mesh file.</UserDocu>
@@ -70,8 +75,40 @@ Sub-elements such as vertices, edges or faces are accessible as:
     </Methode>
     <Methode Name="revolve" Const="true">
       <Documentation>
-        <UserDocu>Revolve the shape around a Axis to a given degree.
-Part.revolve(Vector(0,0,0),Vector(0,0,1),360) - revolves the shape around the Z Axis 360 degree. 
+        <UserDocu>Revolve the shape around an Axis to a given degree.
+Part.revolve(Vector(0,0,0),Vector(0,0,1),360) - revolves the shape around the Z Axis 360 degree.
+
+Hints: Sometimes you want to create a rotation body out of a closed edge or wire.
+Example:
+from FreeCAD import Base
+import Part
+V=Base.Vector
+
+e=Part.Ellipse()
+s=e.toShape()
+r=s.revolve(V(0,0,0),V(0,1,0), 360)
+Part.show(r)
+
+However, you may possibly realize some rendering artifacts or that the mesh
+creation seems to hang. This is because this way the surface is created twice.
+Since the curve is a full ellipse it is sufficient to do a rotation of 180 degree
+only, i.e. r=s.revolve(V(0,0,0),V(0,1,0), 180)
+
+Now when rendering this object you may still see some artifacts at the poles. Now the
+problem seems to be that the meshing algorithm doesn't like to rotate around a point
+where there is no vertex.
+
+The idea to fix this issue is that you create only half of the ellipse so that its shape
+representation has vertexes at its start and end point.
+
+from FreeCAD import Base
+import Part
+V=Base.Vector
+
+e=Part.Ellipse()
+s=e.toShape(e.LastParameter/4,3*e.LastParameter/4)
+r=s.revolve(V(0,0,0),V(0,1,0), 360)
+Part.show(r)
         </UserDocu>
       </Documentation>
     </Methode>
@@ -134,7 +171,8 @@ The plane is given with its base point and its normal direction.</UserDocu>
     </Methode>
     <Methode Name="transformGeometry" Const="true">
       <Documentation>
-        <UserDocu>Apply geometric transformation on a copy of the shape.
+        <UserDocu>Apply geometric transformation on this or a copy the shape.
+This method returns a new shape.
 The transformation to be applied is defined as a 4x4 matrix.
 The underlying geometry of the following shapes may change:
 - a curve which supports an edge of the shape, or
@@ -150,13 +188,16 @@ The transformation is applied to:
 
 Note: If you want to transform a shape without changing the
 underlying geometry then use the methods translate or rotate.
+
+transformGeometry(Matrix) -> Shape
 </UserDocu>
       </Documentation>
     </Methode>
     <Methode Name="transformShape">
       <Documentation>
         <UserDocu>Apply transformation on a shape without changing
-the underlying geometry.</UserDocu>
+the underlying geometry.
+transformShape(Matrix,[boolean copy=False]) -> None</UserDocu>
       </Documentation>
     </Methode>
     <Methode Name="translate">
@@ -195,7 +236,7 @@ which are to be removed. The remaining faces of the solid become the walls of
 the hollowed solid, their thickness defined at the time of construction.</UserDocu>
       </Documentation>
     </Methode>
-    <Methode Name="makeOffsetShape" Const="true">
+    <Methode Name="makeOffsetShape" Const="true"  Keyword="true">
       <Documentation> 
         <UserDocu>Offset a given shape</UserDocu>
       </Documentation>
@@ -274,6 +315,20 @@ Orientation is not taken into account.</UserDocu>
         <UserDocu>Project a shape on this shape</UserDocu>
       </Documentation>
     </Methode>
+    <Methode Name="makeParallelProjection" Const="true">
+      <Documentation>
+        <UserDocu>Parallel projection of an edge or wire on this shape
+makeParallelProjection(shape, dir)
+        </UserDocu>
+      </Documentation>
+    </Methode>
+    <Methode Name="makePerspectiveProjection" Const="true">
+      <Documentation>
+        <UserDocu>Perspective projection of an edge or wire on this shape
+makePerspectiveProjection(shape, pnt)
+        </UserDocu>
+      </Documentation>
+    </Methode>
     <Methode Name="makeShapeFromMesh">
       <Documentation>
         <UserDocu>Make a compund shape out of mesh data.
@@ -320,7 +375,19 @@ Boolean indicates if the point lying directly on a face is considered to be insi
         <UserDocu>Removes redundant edges from the B-REP model</UserDocu>
       </Documentation>
     </Methode>
-<!--
+	<Methode Name="distToShape" Const="true">
+      <Documentation>
+		<UserDocu>Find the minimum distance to another shape.
+distToShape(Shape s):  Returns a list of minimum distance and solution point pairs - [mindist, (pointonthis,supporttype,
+pointons,supporttype),(...),...]</UserDocu>
+	  </Documentation>
+	</Methode>
+    <Methode Name="getElement" Const="true">
+      <Documentation>
+        <UserDocu>Returns a SubElement</UserDocu>
+      </Documentation>
+    </Methode>
+    <!--
     <Attribute Name="Location" ReadOnly="false">
       <Documentation>
         <UserDocu>Gets or sets the local coordinate system of this shape.</UserDocu>

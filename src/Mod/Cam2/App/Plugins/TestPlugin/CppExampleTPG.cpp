@@ -138,7 +138,8 @@ CppExampleTPG::~CppExampleTPG() {
 	if (retract_mode) retract_mode->release();
 	if (clearance_height) clearance_height->release();
 	if (spindle_speed) spindle_speed->release();
-	if (feed_rate) feed_rate->release();    
+	if (feed_rate) feed_rate->release();
+	if (sometimes_hidden) sometimes_hidden->release();
 }
 
 
@@ -155,27 +156,17 @@ CppExampleTPG::~CppExampleTPG() {
 
 
 		// We should have a settings pointer by now due to the CppTPG::initialise() call
-		this->depth = new Settings::Length(	"Relative Depth", 
-											 "Relative Depth",
-											 "Distance from the current Z location to the bottom of the hole.  Must be positive",
-											 5.0,
-											 Settings::Definition::Metric );
+		this->depth = new Settings::Length(	"Relative Depth", 5.0, Settings::Definition::Metric );
+		this->depth->helptext = QString::fromAscii("Distance from the current Z location to the bottom of the hole.  Must be positive");
 		depth->Minimum(0.0);	// must be positive.  No maximum.
 		settings->addSettingDefinition(qaction, depth);
 
-		this->standoff = new Settings::Length(	"Standoff", 
-												"Standoff",
-												"Distance above the drilling point location to retract to following the drilling cycle.",
-												5.0,
-												Settings::Definition::Metric );
-
+		this->standoff = new Settings::Length(	"Standoff", 5.0, Settings::Definition::Metric );
+		this->standoff->helptext = QString::fromAscii("Distance above the drilling point location to retract to following the drilling cycle.");
 		settings->addSettingDefinition(qaction, standoff);
 
-		this->dwell = new Settings::Double(	"Dwell", 
-											"Dwell",
-											"Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'",
-											0.0,
-											"seconds" );
+		this->dwell = new Settings::Double(	"Dwell", 0.0, "seconds" );
+		this->dwell->helptext = QString::fromAscii("Time (in seconds) for which the machine pauses at the bottom of a drilling cycle to break 'stringers'");
 		this->dwell->Minimum(0.0);
 		
 		settings->addSettingDefinition(qaction, this->dwell);
@@ -184,11 +175,8 @@ CppExampleTPG::~CppExampleTPG() {
 
 
 	
-		this->peck_depth = new Settings::Length( "Peck Depth", 
-												 "Peck Depth",
-												 "Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled.",
-												 5.0,
-												 Settings::Definition::Metric);
+		this->peck_depth = new Settings::Length( "Peck Depth", 5.0, Settings::Definition::Metric);
+		this->peck_depth->helptext = QString::fromAscii("Distance used for itterative movements down into the hole with retractions between each.  If this is zero then peck drilling is disabled.");
 		settings->addSettingDefinition(qaction, this->peck_depth);
 
 		this->retract_mode = new Settings::Enumeration(	 "Retract Mode", 
@@ -228,25 +216,14 @@ CppExampleTPG::~CppExampleTPG() {
 		}
 
 
-		this->clearance_height = new Settings::Length(	 "Clearance Relative Height", 
-														 "Clearance Relative Height",
-														 "Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece.",
-														 30.0,
-														 Settings::Definition::Metric );
+		this->clearance_height = new Settings::Length(	 "Clearance Relative Height", 30.0, Settings::Definition::Metric );
+		this->clearance_height->helptext = QString::fromAscii("Relative distance in Z to move to between holes to ensure the tool does not interfere with fixtures or other parts of the workpiece.");
 		settings->addSettingDefinition(qaction, this->clearance_height);
 
-		this->spindle_speed = new Settings::Double(	"Spindle Speed", 
-													"Spindle Speed",
-													"Spindle Speed.", 
-													700.0,
-													"RPM" );
+		this->spindle_speed = new Settings::Double(	"Spindle Speed", 700.0, "RPM" );
 		settings->addSettingDefinition(qaction, this->spindle_speed);
 
-		this->feed_rate = new Settings::Rate(	"Feed Rate", 
-												"Feed Rate",
-												"Feed Rate.", 
-												55.0,
-												Settings::Definition::Metric );
+		this->feed_rate = new Settings::Rate(	"Feed Rate", 55.0, Settings::Definition::Metric );
 		settings->addSettingDefinition(qaction, this->feed_rate);
 
 		this->speed = new Settings::Radio("speed", "Speed", "normal", "The speed of the algorithm.  Faster will use less accurate algorithm.");

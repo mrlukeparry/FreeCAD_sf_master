@@ -4,12 +4,14 @@
 
 #pragma once
 
+#include <PreCompiled.h>
+
 #include "Point.h"
 
 namespace area
 {
 
-class Arc{
+class LibAreaExport Arc{
 public:
 	Point m_s;
 	Point m_e;

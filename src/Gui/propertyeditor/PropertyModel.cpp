@@ -83,6 +83,7 @@ bool PropertyModel::setData(const QModelIndex& index, const QVariant & value, in
         if (data.type() == QVariant::Double && value.type() == QVariant::Double) {
             // since we store some properties as floats we get some round-off
             // errors here. Thus, we use an epsilon here.
+            // NOTE: Since 0.14 PropertyFloat uses double precision, so this is maybe unnecessary now?
             double d = data.toDouble();
             double v = value.toDouble();
             if (fabs(d-v) > FLT_EPSILON)
@@ -198,15 +199,14 @@ QModelIndex PropertyModel::propertyIndexFromPath(const QStringList& path) const
     return parent;
 }
 
-void PropertyModel::buildUp(const std::map<std::string, std::vector<App::Property*> >& props)
+void PropertyModel::buildUp(const PropertyModel::PropertyList& props)
 {
     // fill up the listview with the properties
     rootItem->reset();
 
     // sort the properties into their groups
     std::map<std::string, std::vector<std::vector<App::Property*> > > propGroup;
-    std::map<std::string, std::vector<App::Property*> >
-        ::const_iterator jt;
+    PropertyModel::PropertyList::const_iterator jt;
     for (jt = props.begin(); jt != props.end(); ++jt) {
         App::Property* prop = jt->second.front();
         const char* group = prop->getGroup();

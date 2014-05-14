@@ -245,7 +245,7 @@ namespace Cam
 		area::CCurve AreaCurve() const;
 
 		void Transform( const gp_Trsf transformation );
-		void Split( const Cam::Paths &areas, Cam::Paths *pInside, Cam::Paths *pOutside ) const;
+		double DistanceAlong( const Standard_Real u ) const;
 
 		QString KiCadBoardOutline(const int layer, const int trace_width) const;
 
@@ -294,9 +294,9 @@ namespace Cam
 		bool Surrounds( const Cam::Point point ) const;
 		bool Surrounds( const ContiguousPath & rhs ) const;
 		TopoDS_Wire Wire() const;
-		std::pair<gp_Pnt, gp_Vec> Nearest(const gp_Pnt reference_location) const;
+		std::pair<gp_Pnt, gp_Vec> Nearest(const gp_Pnt reference_location, Standard_Real *pDistanceAlong = NULL);
 		gp_Pln Plane() const;
-		ContiguousPath Section( const Standard_Real start_distance, const Standard_Real end_distance );
+		ContiguousPath Section( const Standard_Real start_distance, const Standard_Real end_distance ) const;
 		ContiguousPath InterpolateLines(const double max_deviation, const bool retain_simple_curve_types = false) const;
 		gp_Pnt Centroid() const;
 		std::set<Cam::Point> Intersect( const ContiguousPath & rhs, const bool stop_after_first_point = false ) const;
@@ -333,7 +333,7 @@ namespace Cam
 		#endif // HEEKSCNC
 
 		std::vector<Path> Paths();
-		void Split( const Cam::Paths &areas, Cam::Paths *pInside, Cam::Paths *pOutside ) const;
+		std::list<ContiguousPath> Split( const Cam::Paths &rhs );
 
 		area::CCurve AreaCurve();
 
@@ -348,8 +348,9 @@ namespace Cam
 		static Id_t s_next_available_id;
 		mutable Ids_t		m_paths_that_we_surround;
 		mutable Ids_t		m_paths_that_surround_us;
-		mutable std::auto_ptr<gp_Pln>	m_plane;
+		mutable std::auto_ptr<gp_Pln>	m_plane;		// cache to save re-calculation when possible.
 		mutable std::auto_ptr<Bnd_Box> m_pBoundingBox;
+		mutable std::auto_ptr<TopoDS_Wire> m_wire;		// cache to save re-calculation when possible.
 
 	public:
 		friend QString & operator<< ( QString & str, const ContiguousPath & path );
@@ -394,6 +395,7 @@ namespace Cam
 		Bnd_Box BoundingBox() const;
 
 		void Split( const Cam::Paths &areas, Cam::Paths *pInside, Cam::Paths *pOutside ) const;
+		std::list<ContiguousPath> Split( const Cam::Paths &rhs ) const;
 		std::set<int> GetConcentricities() const;
 		QString KiCadBoardOutline(const int layer = 28, const int trace_width = 150) const;
 

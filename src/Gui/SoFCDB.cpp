@@ -113,7 +113,6 @@ void Gui::SoFCDB::init()
     PropertyAngleItem               ::init();
     PropertyBoolItem                ::init();
     PropertyVectorItem              ::init();
-    PropertyDoubleVectorItem        ::init();
     PropertyMatrixItem              ::init();
     PropertyPlacementItem           ::init();
     PropertyEnumItem                ::init();
@@ -136,6 +135,7 @@ void Gui::SoFCDB::init()
 
     qRegisterMetaType<Base::Vector3f>("Base::Vector3f");
     qRegisterMetaType<Base::Vector3d>("Base::Vector3d");
+    qRegisterMetaType<Base::Quantity>("Base::Quantity");
     init_done = TRUE;
 }
 

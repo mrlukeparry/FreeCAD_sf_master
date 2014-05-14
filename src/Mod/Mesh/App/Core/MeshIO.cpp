@@ -36,9 +36,10 @@
 #include <Base/FileInfo.h>
 #include <Base/Sequencer.h>
 #include <Base/Stream.h>
+#include <Base/Placement.h>
 #include <zipios++/gzipoutputstream.h>
 
-#include <math.h>
+#include <cmath>
 #include <sstream>
 #include <iomanip>
 #include <boost/regex.hpp>
@@ -369,7 +370,7 @@ bool MeshInput::LoadSTL (std::istream &rstrIn)
     if (ulCt > 1)
         ulBytes = 100;
     // Either it's really an invalid STL file or it's just empty. In this case the number of facets must be 0.
-    if (rstrIn.read(szBuf, ulBytes) == false)
+    if (!rstrIn.read(szBuf, ulBytes))
         return (ulCt==0);
     szBuf[ulBytes] = 0;
     upper(szBuf);
@@ -665,8 +666,10 @@ bool MeshInput::LoadPLY (std::istream &inp)
     if ((ply[0] != 'p') || (ply[1] != 'l') || (ply[2] != 'y'))
         return false; // wrong header
 
+    std::vector<int> face_props;
     std::string line, element;
     bool xyz_float=false,xyz_double=false;
+    int xyz_coords=0;
     MeshIO::Binding rgb_value = MeshIO::OVERALL;
     while (std::getline(inp, line)) {
         std::istringstream str(line);
@@ -738,10 +741,17 @@ bool MeshInput::LoadPLY (std::istream &inp)
                 str >> space >> std::ws
                     >> type >> space >> std::ws >> name >> std::ws;
                 if (name == "x") {
+                    xyz_coords++;
                     if (type == "float" || type == "float32")
                         xyz_float = true;
                     else if (type == "double" || type == "float64")
                         xyz_double = true;
+                }
+                else if (name == "y") {
+                    xyz_coords++;
+                }
+                else if (name == "z") {
+                    xyz_coords++;
                 }
                 else if (name == "red") {
                     rgb_value = MeshIO::PER_VERTEX;
@@ -752,12 +762,26 @@ bool MeshInput::LoadPLY (std::istream &inp)
                 }
             }
             else if (element == "face") {
+                std::string list, uchr;
+                str >> space >> std::ws
+                    >> list >> std::ws >> uchr >> std::ws
+                    >> type >> std::ws >> name >> std::ws;
+                if (name != "vertex_indices") {
+                    if (type == "float" || type == "float32")
+                        face_props.push_back(4);
+                    else if (type == "double" || type == "float64")
+                        face_props.push_back(8);
+                }
             }
         }
         else if (kw == "end_header") {
             break; // end of the header, now read the data
         }
     }
+
+    // not 3d points
+    if (xyz_coords != 3)
+        return false;
 
     if (format == ascii) {
         boost::regex rx_p("^([-+]?[0-9]*)\\.?([0-9]+([eE][-+]?[0-9]+)?)"
@@ -767,7 +791,7 @@ bool MeshInput::LoadPLY (std::istream &inp)
                           "\\s+([-+]?[0-9]*)\\.?([0-9]+([eE][-+]?[0-9]+)?)"
                           "\\s+([-+]?[0-9]*)\\.?([0-9]+([eE][-+]?[0-9]+)?)"
                           "\\s+([0-9]{1,3})\\s+([0-9]{1,3})\\s+([0-9]{1,3})\\s*$");
-        boost::regex rx_f("^\\s*3\\s+([0-9]+)\\s+([0-9]+)\\s+([0-9]+)\\s*$");
+        boost::regex rx_f("^\\s*3\\s+([0-9]+)\\s+([0-9]+)\\s+([0-9]+)\\s*");
         boost::cmatch what;
         Base::Vector3f pt;
 
@@ -809,7 +833,7 @@ bool MeshInput::LoadPLY (std::istream &inp)
         }
         int f1, f2, f3;
         for (std::size_t i = 0; i < f_count && std::getline(inp, line); i++) {
-            if (boost::regex_match(line.c_str(), what, rx_f)) {
+            if (boost::regex_search(line.c_str(), what, rx_f)) {
                 f1 = std::atoi(what[1].first);
                 f2 = std::atoi(what[2].first);
                 f3 = std::atoi(what[3].first);
@@ -858,12 +882,27 @@ bool MeshInput::LoadPLY (std::istream &inp)
             }
         }
         unsigned char n;
-        int f1, f2, f3;
+        uint32_t f1, f2, f3;
         for (std::size_t i = 0; i < f_count; i++) {
             is >> n;
             if (n==3) {
                 is >> f1 >> f2 >> f3;
-                meshFacets.push_back(MeshFacet(f1,f2,f3));
+                if (f1 < v_count && f2 < v_count && f3 < v_count)
+                    meshFacets.push_back(MeshFacet(f1,f2,f3));
+                for (std::vector<int>::iterator it = face_props.begin(); it != face_props.end(); ++it) {
+                    if (*it == 4) {
+                        is >> n;
+                        float f;
+                        for (unsigned char j=0; j<n; j++)
+                            is >> f;
+                    }
+                    else if (*it == 8) {
+                        is >> n;
+                        double d;
+                        for (unsigned char j=0; j<n; j++)
+                            is >> d;
+                    }
+                }
             }
         }
     }
@@ -1196,7 +1235,6 @@ bool MeshInput::LoadInventor (std::istream &rstrIn)
         else if (points && line.find("INDEXEDFACESET {") != std::string::npos) {
             unsigned long ulPoints[3];
             facets = true;
-            flag = true;
             unsigned long ulCt = 0;
             // Get the next line and check for the index field which might begin
             // with the first index already.
@@ -1431,6 +1469,9 @@ bool MeshOutput::SaveAny(const char* FileName, MeshIO::Format format) const
         else if (fi.hasExtension("iv")) {
             fileformat = MeshIO::IV;
         }
+        else if (fi.hasExtension("x3d")) {
+            fileformat = MeshIO::X3D;
+        }
         else if (fi.hasExtension("py")) {
             fileformat = MeshIO::PY;
         }
@@ -1463,6 +1504,7 @@ bool MeshOutput::SaveAny(const char* FileName, MeshIO::Format format) const
     }
     else if (fileformat == MeshIO::ASTL) {
         MeshOutput aWriter(_rclMesh);
+        aWriter.SetObjectName(objectName);
         aWriter.Transform(this->_transform);
 
         // write file
@@ -1496,6 +1538,11 @@ bool MeshOutput::SaveAny(const char* FileName, MeshIO::Format format) const
         // write file
         if (!SaveInventor(str))
             throw Base::FileException("Export of Inventor mesh failed",FileName);
+    }
+    else if (fileformat == MeshIO::X3D) {
+        // write file
+        if (!SaveX3D(str))
+            throw Base::FileException("Export of X3D failed",FileName);
     }
     else if (fileformat == MeshIO::PY) {
         // write file
@@ -1548,7 +1595,10 @@ bool MeshOutput::SaveAsciiSTL (std::ostream &rstrOut) const
     rstrOut.setf(std::ios::fixed | std::ios::showpoint);
     Base::SequencerLauncher seq("saving...", _rclMesh.CountFacets() + 1);
 
-    rstrOut << "solid Mesh" << std::endl;
+    if (this->objectName.empty())
+        rstrOut << "solid Mesh" << std::endl;
+    else
+        rstrOut << "solid " << this->objectName << std::endl;
 
     clIter.Begin();
     clEnd.End();
@@ -1719,7 +1769,7 @@ bool MeshOutput::SaveBinaryPLY (std::ostream &out) const
         && _material->diffuseColor.size() == rPoints.size());
     out << "ply" << std::endl
         << "format binary_little_endian 1.0" << std::endl
-        << "comment Created by FreeCAD <http://free-cad.sourceforge.net>" << std::endl
+        << "comment Created by FreeCAD <http://www.freecadweb.org>" << std::endl
         << "element vertex " << v_count << std::endl
         << "property float32 x" << std::endl
         << "property float32 y" << std::endl
@@ -1780,7 +1830,7 @@ bool MeshOutput::SaveAsciiPLY (std::ostream &out) const
         && _material->diffuseColor.size() == rPoints.size());
     out << "ply" << std::endl
         << "format ascii 1.0" << std::endl
-        << "comment Created by FreeCAD <http://free-cad.sourceforge.net>" << std::endl
+        << "comment Created by FreeCAD <http://www.freecadweb.org>" << std::endl
         << "element vertex " << v_count << std::endl
         << "property float32 x" << std::endl
         << "property float32 y" << std::endl
@@ -1950,7 +2000,7 @@ bool MeshOutput::SaveInventor (std::ostream &rstrOut) const
 
     // Header info
     rstrOut << "#Inventor V2.1 ascii\n" << std::endl;
-    rstrOut << "# Created by FreeCAD <http://free-cad.sourceforge.net>" << std::endl;
+    rstrOut << "# Created by FreeCAD <http://www.freecadweb.org>" << std::endl;
     rstrOut << "# Triangle mesh contains " << _rclMesh.CountPoints() << " vertices"
             << " and " << _rclMesh.CountFacets() << " faces" << std::endl;
     rstrOut << "Separator {\n" << std::endl;
@@ -2035,6 +2085,76 @@ bool MeshOutput::SaveInventor (std::ostream &rstrOut) const
 
     rstrOut << " ]\n\n  }" << std::endl;
     rstrOut << "#End of triangle mesh \n}\n" << std::endl;
+
+    return true;
+}
+
+/** Writes an X3D file. */
+bool MeshOutput::SaveX3D (std::ostream &out) const
+{
+    if ((!out) || (out.bad() == true) || (_rclMesh.CountFacets() == 0))
+        return false;
+
+    const MeshPointArray& pts = _rclMesh.GetPoints();
+    const MeshFacetArray& fts = _rclMesh.GetFacets();
+
+    Base::SequencerLauncher seq("Saving...", _rclMesh.CountFacets() + 1);
+    out.precision(6);
+    out.setf(std::ios::fixed | std::ios::showpoint);
+
+    // Header info
+    out << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
+    out << "<X3D profile=\"Immersive\" version=\"3.2\" xmlns:xsd="
+        << "\"http://www.w3.org/2001/XMLSchema-instance\" xsd:noNamespaceSchemaLocation="
+        << "\"http://www.web3d.org/specifications/x3d-3.2.xsd\">" << std::endl;
+    out << "  <head>" << std::endl
+        << "    <meta name=\"generator\" content=\"FreeCAD\"/>" << std::endl
+        << "    <meta name=\"author\" content=\"\"/> " << std::endl
+        << "    <meta name=\"company\" content=\"\"/>" << std::endl
+        << "  </head>" << std::endl;
+
+    // Beginning
+    out << "  <Scene>" << std::endl;
+    if (apply_transform) {
+        Base::Placement p(_transform);
+        const Base::Vector3d& v = p.getPosition();
+        const Base::Rotation& r = p.getRotation();
+        Base::Vector3d axis; double angle;
+        r.getValue(axis, angle);
+        out << "    <Transform "
+            << "translation='"
+            << v.x << " "
+            << v.y << " "
+            << v.z << "' "
+            << "rotation='"
+            << axis.x << " "
+            << axis.y << " "
+            << axis.z << " "
+            << angle << "'>" << std::endl;
+    }
+    else {
+        out << "    <Transform>" << std::endl;
+    }
+    out << "      <Shape>" << std::endl;
+
+    out << "        <IndexedFaceSet solid=\"false\" coordIndex=\"";
+    for (MeshFacetArray::_TConstIterator it = fts.begin(); it != fts.end(); ++it) {
+        out << it->_aulPoints[0] << " " << it->_aulPoints[1] << " " << it->_aulPoints[2] << " -1 ";
+    }
+    out << "\">" << std::endl;
+
+    out << "          <Coordinate point=\"";
+    for (MeshPointArray::_TConstIterator it = pts.begin(); it != pts.end(); ++it) {
+        out << it->x << " " << it->y << " " << it->z << ", ";
+    }
+    out << "\"/>" << std::endl;
+
+    // End
+    out << "        </IndexedFaceSet>" << std::endl
+        << "      </Shape>" << std::endl
+        << "    </Transform>" << std::endl
+        << "  </Scene>" << std::endl
+        << "</X3D>" << std::endl;
 
     return true;
 }
@@ -2184,7 +2304,7 @@ bool MeshVRML::Save (std::ostream &rstrOut, const std::vector<App::Color> &raclC
         rstrOut << "WorldInfo {\n"
                 << "  title \"Exported tringle mesh to VRML97\"\n"
                 << "  info [\"Created by FreeCAD\"\n"
-                << "        \"<http://free-cad.sourceforge.net>\"]\n"
+                << "        \"<http://www.freecadweb.org>\"]\n"
                 << "}\n";
 
     // Write background

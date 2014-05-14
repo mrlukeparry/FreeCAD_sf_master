@@ -247,8 +247,8 @@ int TopoShapeFacePy::PyInit(PyObject* args, PyObject* /*kwd*/)
 
 PyObject* TopoShapeFacePy::makeOffset(PyObject *args)
 {
-    float dist;
-    if (!PyArg_ParseTuple(args, "f",&dist))
+    double dist;
+    if (!PyArg_ParseTuple(args, "d",&dist))
         return 0;
     const TopoDS_Face& f = TopoDS::Face(getTopoShapePtr()->_Shape);
 
@@ -281,7 +281,7 @@ PyObject* TopoShapeFacePy::normalAt(PyObject *args)
     const TopoDS_Face& f = TopoDS::Face(getTopoShapePtr()->_Shape);
     BRepAdaptor_Surface adapt(f);
 
-    BRepLProp_SLProps prop(adapt,u,v,1,Precision::Confusion());
+    BRepLProp_SLProps prop(adapt,u,v,2,Precision::Confusion());
     if (prop.IsNormalDefined()) {
         gp_Pnt pnt; gp_Vec vec;
         // handles the orientation state of the shape
@@ -305,7 +305,7 @@ PyObject* TopoShapeFacePy::tangentAt(PyObject *args)
     const TopoDS_Face& f = TopoDS::Face(getTopoShapePtr()->_Shape);
     BRepAdaptor_Surface adapt(f);
 
-    BRepLProp_SLProps prop(adapt,u,v,1,Precision::Confusion());
+    BRepLProp_SLProps prop(adapt,u,v,2,Precision::Confusion());
     if (prop.IsTangentUDefined()) {
         prop.TangentU(dir);
         tuple.setItem(0, Py::Vector(Base::Vector3d(dir.X(),dir.Y(),dir.Z())));

@@ -21,14 +21,19 @@
 #*                                                                         *
 #***************************************************************************
 
-import FreeCAD,FreeCADGui,Draft,ArchComponent,DraftVecUtils
+import FreeCAD,Draft,ArchComponent,DraftVecUtils
 from FreeCAD import Vector
-from PyQt4 import QtCore
-from DraftTools import translate
+if FreeCAD.GuiUp:
+    import FreeCADGui
+    from PySide import QtGui,QtCore
+    from DraftTools import translate
+else:
+    def translate(ctxt,txt):
+        return txt
 
 __title__="FreeCAD Arch Commands"
 __author__ = "Yorik van Havre"
-__url__ = "http://free-cad.sourceforge.net"
+__url__ = "http://www.freecadweb.org"
 
 # module functions ###############################################
 
@@ -53,6 +58,8 @@ def getDefaultColor(objectType):
         c = p.GetUnsigned("StructureColor",2847259391)
     elif objectType == "WindowGlass":
         c = p.GetUnsigned("WindowGlassColor",1772731135)
+    elif objectType == "Rebar":
+        c = p.GetUnsigned("RebarColor",3111475967)
     else:
         c = p.GetUnsigned("WindowsColor",810781695)
     r = float((c>>24)&0xFF)/255.0
@@ -74,22 +81,23 @@ def addComponents(objectsList,host):
             if not o in c:
                 c.append(o)
         host.Group = c
-    elif hostType in ["Wall","Structure","Window","Roof"]:
+    elif hostType in ["Wall","Structure","Window","Roof","Stairs","StructuralSystem"]:
         import DraftGeomUtils
         a = host.Additions
         if hasattr(host,"Axes"):
             x = host.Axes
         for o in objectsList:
-            if DraftGeomUtils.isValidPath(o.Shape) and (hostType == "Structure"):
-                if o.Support == host:
-                    o.Support = None
-                host.Tool = o
-            elif Draft.getType(o) == "Axis":
-                if not o in x:
-                    x.append(o) 
-            elif not o in a:
-                if hasattr(o,"Shape"):
-                    a.append(o)
+            if o.isDerivedFrom("Part::Feature"):
+                if DraftGeomUtils.isValidPath(o.Shape) and (hostType == "Structure"):
+                    if o.Support == host:
+                        o.Support = None
+                    host.Tool = o
+                elif Draft.getType(o) == "Axis":
+                    if not o in x:
+                        x.append(o) 
+                elif not o in a:
+                    if hasattr(o,"Shape"):
+                        a.append(o)
         host.Additions = a
         if hasattr(host,"Axes"):
             host.Axes = x
@@ -97,8 +105,7 @@ def addComponents(objectsList,host):
         a = host.Objects
         for o in objectsList:
             if not o in a:
-                if hasattr(o,"Shape"):
-                    a.append(o)
+                a.append(o)
         host.Objects = a
     elif host.isDerivedFrom("App::DocumentObjectGroup"):
         c = host.Group
@@ -115,7 +122,7 @@ def removeComponents(objectsList,host=None):
     if not isinstance(objectsList,list):
         objectsList = [objectsList]
     if host:
-        if Draft.getType(host) in ["Wall","Structure"]:
+        if Draft.getType(host) in ["Wall","Structure","Window","Roof","Stairs","StructuralSystem"]:
             if hasattr(host,"Tool"):
                 if objectsList[0] == host.Tool:
                     host.Tool = None
@@ -135,16 +142,16 @@ def removeComponents(objectsList,host=None):
                             if o.Base.Support:
                                 if isinstance(o.Base.Support,tuple):
                                    if o.Base.Support[0].Name == host.Name:
-                                       FreeCAD.Console.PrintMessage(str(translate("Arch","removing sketch support to avoid cross-referencing")))
+                                       FreeCAD.Console.PrintMessage(translate("Arch","removing sketch support to avoid cross-referencing"))
                                        o.Base.Support = None
                                 elif o.Base.Support.Name == host.Name:
-                                    FreeCAD.Console.PrintMessage(str(translate("Arch","removing sketch support to avoid cross-referencing")))
+                                    FreeCAD.Console.PrintMessage(translate("Arch","removing sketch support to avoid cross-referencing"))
                                     o.Base.Support = None
                             elif o.Base.ExternalGeometry:
                                 for i in range(len(o.Base.ExternalGeometry)):
                                     if o.Base.ExternalGeometry[i][0].Name == host.Name:
                                         o.Base.delExternal(i)
-                                        FreeCAD.Console.PrintMessage(str(translate("Arch","removing sketch support to avoid cross-referencing")))
+                                        FreeCAD.Console.PrintMessage(translate("Arch","removing sketch support to avoid cross-referencing"))
                                         break                                        
             host.Subtractions = s
     else:
@@ -187,16 +194,16 @@ def fixWindow(obj):
                 if obj.Base.Support:
                     if isinstance(o.Base.Support,tuple):
                        if obj.Base.Support[0]:
-                           FreeCAD.Console.PrintMessage(str(translate("Arch","removing sketch support to avoid cross-referencing")))
+                           FreeCAD.Console.PrintMessage(translate("Arch","removing sketch support to avoid cross-referencing"))
                            obj.Base.Support = None
                     elif obj.Base.Support:
-                        FreeCAD.Console.PrintMessage(str(translate("Arch","removing sketch support to avoid cross-referencing")))
+                        FreeCAD.Console.PrintMessage(translate("Arch","removing sketch support to avoid cross-referencing"))
                         obj.Base.Support = None
             if hasattr(obj.Base,"ExternalGeometry"):
                 if obj.Base.ExternalGeometry:
                     for i in range(len(obj.Base.ExternalGeometry)):
                         obj.Base.delExternal(0)
-                        FreeCAD.Console.PrintMessage(str(translate("Arch","removing sketch external references to avoid cross-referencing")))
+                        FreeCAD.Console.PrintMessage(translate("Arch","removing sketch external references to avoid cross-referencing"))
 
 def copyProperties(obj1,obj2):
     '''copyProperties(obj1,obj2): Copies properties values from obj1 to obj2,
@@ -235,7 +242,7 @@ def makeFace(wires,method=2,cleanup=False):
     '''makeFace(wires): makes a face from a list of wires, finding which ones are holes'''
     #print "makeFace: start:", wires
     import Part
-    
+        
     if not isinstance(wires,list):
         if len(wires.Vertexes) < 3:
             raise
@@ -318,6 +325,8 @@ def closeHole(shape):
 def getCutVolume(cutplane,shapes):
     """getCutVolume(cutplane,shapes): returns a cut face and a cut volume
     from the given shapes and the given cutting plane"""
+    if not shapes:
+        return None,None,None
     import Part
     if not isinstance(shapes,list):
         shapes = [shapes]
@@ -335,14 +344,14 @@ def getCutVolume(cutplane,shapes):
         else:
             p = cutplane.copy().Faces[0]
     except:
-        FreeCAD.Console.PrintMessage(str(translate("Arch","Invalid cutplane")))
+        FreeCAD.Console.PrintMessage(translate("Arch","Invalid cutplane"))
         return None,None,None 
     ce = p.CenterOfMass
     ax = p.normalAt(0,0)
     u = p.Vertexes[1].Point.sub(p.Vertexes[0].Point).normalize()
     v = u.cross(ax)
     if not bb.isCutPlane(ce,ax):
-        FreeCAD.Console.PrintMessage(str(translate("Arch","No objects are cut by the plane")))
+        FreeCAD.Console.PrintMessage(translate("Arch","No objects are cut by the plane"))
         return None,None,None
     else:
         corners = [FreeCAD.Vector(bb.XMin,bb.YMin,bb.ZMin),
@@ -377,9 +386,9 @@ def getCutVolume(cutplane,shapes):
         invcutvolume = cutface.extrude(cutnormal)
         return cutface,cutvolume,invcutvolume
 
-def getShapeFromMesh(mesh):
-    import Part, MeshPart
-    if mesh.isSolid() and (mesh.countComponents() == 1):
+def getShapeFromMesh(mesh,fast=True,tolerance=0.001,flat=False,cut=True):
+    import Part, MeshPart, DraftGeomUtils
+    if mesh.isSolid() and (mesh.countComponents() == 1) and fast:
         # use the best method
         faces = []
         for f in mesh.Facets:
@@ -394,16 +403,33 @@ def getShapeFromMesh(mesh):
         return solid
 
     faces = []  
-    segments = mesh.getPlanarSegments(0.001) # use rather strict tolerance here
+    segments = mesh.getPlanarSegments(tolerance)
+    #print len(segments)
     for i in segments:
         if len(i) > 0:
             wires = MeshPart.wireFromSegment(mesh, i)
             if wires:
-                faces.append(makeFace(wires))
+                if flat:
+                    nwires = []
+                    for w in wires:
+                        nwires.append(DraftGeomUtils.flattenWire(w))
+                    wires = nwires
+                try:
+                    faces.append(makeFace(wires,method=int(cut)+1))
+                except:
+                    return None
     try:
         se = Part.makeShell(faces)
+        se = se.removeSplitter()
+        if flat:
+            return se
     except:
-        return None
+        try:
+            cp = Part.makeCompound(faces)
+        except:
+            return None
+        else:
+            return cp
     else:
         try:
             solid = Part.Solid(se)
@@ -411,18 +437,39 @@ def getShapeFromMesh(mesh):
             return se
         else:
             return solid
-  
+            
+def projectToVector(shape,vector):
+    '''projectToVector(shape,vector): projects the given shape on the given
+    vector'''
+    projpoints = []
+    minl = 10000000000
+    maxl = -10000000000
+    for v in shape.Vertexes:
+        p = DraftVecUtils.project(v.Point,vector)
+        projpoints.append(p)
+        l = p.Length
+        if p.getAngle(vector) > 1:
+            l = -l
+        if l > maxl:
+            maxl = l
+        if l < minl:
+            minl = l
+    return DraftVecUtils.scaleTo(vector,maxl-minl)
 
-def meshToShape(obj,mark=True):
-    '''meshToShape(object,[mark]): turns a mesh into a shape, joining coplanar facets. If
-    mark is True (default), non-solid objects will be marked in red'''
+def meshToShape(obj,mark=True,fast=True,tol=0.001,flat=False,cut=True):
+    '''meshToShape(object,[mark,fast,tol,flat,cut]): turns a mesh into a shape, joining coplanar facets. If
+    mark is True (default), non-solid objects will be marked in red. Fast uses a faster algorithm by
+    building a shell from the facets then removing splitter, tol is the tolerance used when converting
+    mesh segments to wires, flat will force the wires to be perfectly planar, to be sure they can be
+    turned into faces, but this might leave gaps in the final shell. If cut is true, holes in faces are
+    made by subtraction (default)'''
 
     name = obj.Name
     if "Mesh" in obj.PropertiesList:
         faces = []  
         mesh = obj.Mesh
         plac = obj.Placement
-        solid = getShapeFromMesh(mesh)
+        solid = getShapeFromMesh(mesh,fast,tol,flat,cut)
         if solid:
             if solid.isClosed() and solid.isValid():
                 FreeCAD.ActiveDocument.removeObject(name)
@@ -495,13 +542,17 @@ def mergeCells(objectslist):
     FreeCAD.ActiveDocument.recompute()
     return base
 
-def download(url):
+def download(url,force=False):
     '''downloads a file from the given URL and saves it in the
-    user directory. Returns the path to the saved file'''
+    macro path. Returns the path to the saved file'''
     import urllib2, os
     name = url.split('/')[-1]
-    filepath = os.path.join(FreeCAD.ConfigGet("UserAppData"),name)
-    if os.path.exists(filepath):
+    p = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Macro")
+    macropath = p.GetString("MacroPath","")
+    if not macropath:
+        macropath = FreeCAD.ConfigGet("UserAppData")
+    filepath = os.path.join(macropath,name)
+    if os.path.exists(filepath) and not(force):
         return filepath
     try:
         FreeCAD.Console.PrintMessage("downloading "+url+" ...\n")
@@ -527,33 +578,268 @@ def check(objectslist,includehidden=False):
         else:
             s = o.Shape
             if (not s.isClosed()) and (not (Draft.getType(o) == "Axis")):
-                bad.append([o,str(translate("Arch","is not closed"))])
+                bad.append([o,translate("Arch","is not closed")])
             elif not s.isValid():
-                bad.append([o,str(translate("Arch","is not valid"))])
+                bad.append([o,translate("Arch","is not valid")])
             elif (not s.Solids) and (not (Draft.getType(o) == "Axis")):
-                bad.append([o,str(translate("Arch","doesn't contain any solid"))])
+                bad.append([o,translate("Arch","doesn't contain any solid")])
             else:
                 f = 0
                 for sol in s.Solids:
                     f += len(sol.Faces)
                     if not sol.isClosed():
-                        bad.append([o,str(translate("Arch","contains a non-closed solid"))])
+                        bad.append([o,translate("Arch","contains a non-closed solid")])
                 if len(s.Faces) != f:
-                    bad.append([o,str(translate("Arch","contains faces that are not part of any solid"))])
+                    bad.append([o,translate("Arch","contains faces that are not part of any solid")])
     return bad
 
+def getTuples(data,scale=1,placement=None,normal=None,close=True):
+    """getTuples(data,[scale,placement,normal,close]): returns a tuple or a list of tuples from a vector
+    or from the vertices of a shape. Scale can indicate a scale factor"""
+    import Part
+    if isinstance(data,FreeCAD.Vector):
+        if placement:
+            data = placement.multVec(data)
+            data = DraftVecUtils.rounded(data)
+        return (data.x*scale,data.y*scale,data.z*scale)
+    elif isinstance(data,Part.Shape):
+        t = []
+        if len(data.Wires) == 1:
+            import Part,DraftGeomUtils
+            data = Part.Wire(DraftGeomUtils.sortEdges(data.Wires[0].Edges))
+            verts = data.Vertexes
+            try:
+                c = data.CenterOfMass
+                v1 = verts[0].Point.sub(c)
+                v2 = verts[1].Point.sub(c)
+                if DraftVecUtils.angle(v2,v1,normal) >= 0:
+                    # inverting verts order if the direction is couterclockwise
+                    verts.reverse()
+            except:
+                pass
+            for v in verts:
+                pt = v.Point
+                if placement:
+                    if not placement.isNull():
+                        pt = placement.multVec(pt)
+                        pt = DraftVecUtils.rounded(pt)
+                t.append((pt.x*scale,pt.y*scale,pt.z*scale))
 
-def addFixture(fixture,baseobject):
-    '''addFixture(fixture,baseobject): adds the given object as a 
-    fixture to the given base object'''
-    if hasattr(baseobject,"Fixtures"):
-        f = baseobject.Fixtures
-        f.append(fixture)
-        baseobject.Fixtures = f
-        if baseobject.ViewObject.DisplayMode != "Detailed":
-            fixture.ViewObject.hide()
+            if close: # faceloops must not be closed, but ifc profiles must.
+                t.append(t[0])
+        else:
+            print "Arch.getTuples(): Wrong profile data"
+        return t
+
+def getExtrusionData(obj,scale=1):
+    """getExtrusionData(obj,[scale]): returns a closed path (a list of tuples), a tuple expressing an extrusion
+    vector, and a list of 3 tuples for base position, x axis and z axis. Or returns None, if a base loop and 
+    an extrusion direction cannot be extracted. Scale can indicate a scale factor."""
+    if hasattr(obj,"Additions"):
+        if obj.Additions:
+            # provisorily treat objs with additions as breps
+            return None
+    if hasattr(obj,"Subtractions"):
+        if obj.Subtractions:
+            # provisorily treat objs with subtractions as breps
+            return None
+    if hasattr(obj,"Proxy"):
+        if hasattr(obj.Proxy,"getProfiles"):
+            p = obj.Proxy.getProfiles(obj,noplacement=True)
+            v = obj.Proxy.getExtrusionVector(obj,noplacement=True)
+            if (len(p) == 1) and v:
+                p = p[0]
+                r = FreeCAD.Placement()
+                #b = p.CenterOfMass
+                r = obj.Proxy.getPlacement(obj)
+                #b = obj.Placement.multVec(FreeCAD.Vector())
+                #r.Rotation = DraftVecUtils.getRotation(v,FreeCAD.Vector(0,0,1))
+                d = [r.Base,DraftVecUtils.rounded(r.Rotation.multVec(FreeCAD.Vector(1,0,0))),DraftVecUtils.rounded(r.Rotation.multVec(FreeCAD.Vector(0,0,1)))]
+                r = r.inverse()
+                #print "getExtrusionData: computed placement:",r
+                import Part
+                if len(p.Edges) == 1:
+                    if isinstance(p.Edges[0].Curve,Part.Circle):
+                        return "circle", [getTuples(p.Edges[0].Curve.Center,scale), p.Edges[0].Curve.Radius*scale], getTuples(v,scale), d
+                return "polyline", getTuples(p,scale), getTuples(v,scale), d
+    return None   
+    
+def getBrepFacesData(obj,scale=1):
+    """getBrepFacesData(obj,[scale]): returns a list(0) of lists(1) of lists(2) of lists(3), 
+    list(3) being a list of vertices defining a loop, list(2) describing a face from one or 
+    more loops, list(1) being the whole solid made of several faces, list(0) being the list
+    of solids inside the object. Scale can indicate a scaling factor"""
+    if hasattr(obj,"Shape"):
+        if obj.Shape:
+            if not obj.Shape.isNull():
+                if obj.Shape.isValid():
+                    sols = []
+                    for sol in obj.Shape.Solids:
+                        s = []
+                        for face in obj.Shape.Faces:
+                            f = []
+                            f.append(getTuples(face.OuterWire,scale,normal=face.normalAt(0,0),close=False))
+                            for wire in face.Wires:
+                                if wire.hashCode() != face.OuterWire.hashCode():
+                                    f.append(getTuples(wire,scale,normal=DraftVecUtils.neg(face.normalAt(0,0)),close=False))
+                            s.append(f)
+                        sols.append(s)
+                    return sols
+    return None
+    
+def getHost(obj,strict=True):
+    """getHost(obj,[strict]): returns the host of the current object. If strict is true (default),
+    the host can only be an object of a higher level than the given one, or in other words, if a wall
+    is contained in another wall which is part of a floor, the floor is returned instead of the parent wall"""    
+    import Draft
+    t = Draft.getType(obj)
+    for par in obj.InList:
+        if par.isDerivedFrom("Part::Feature") or par.isDerivedFrom("App::DocumentObjectGroup"):
+            if strict:
+                if Draft.getType(par) != t:
+                    return par
+                else:
+                    return getHost(par,strict)
+            else:
+                return par
+    return None
+    
+def pruneIncluded(objectslist):
+    """pruneIncluded(objectslist): removes from a list of Arch objects, those that are subcomponents of
+    another shape-based object, leaving only the top-level shapes."""
+    import Draft
+    newlist = []
+    for obj in objectslist:
+        toplevel = True
+        if obj.isDerivedFrom("Part::Feature"):
+            if not (Draft.getType(obj) in ["Window","Clone"]):
+                for parent in obj.InList:
+                    if parent.isDerivedFrom("Part::Feature"):
+                        if not parent.isDerivedFrom("Part::Part2DObject"):
+                            # don't consider 2D objects based on arch elements
+                            toplevel = False
+        if toplevel:
+            newlist.append(obj)
+    return newlist
+
+class _SurveyObserver:
+    "an observer for the survey() function"
+    def __init__(self,callback):
+        self.callback = callback
+        self.cancellable = False
+        self.selection = []
+        self.labels = []
+        
+    def addSelection(self,document, object, element, position):
+        self.cancellable = False
+        self.callback(True)
+
+    def clearSelection(self,document):
+        if self.cancellable:
+            self.callback(True)
+        else:
+            self.cancellable = True
+
+def survey(callback=False):
+    """survey(): starts survey mode, where you can click edges and faces to get their lengths or area.
+    Clicking on no object (on an empty area) stops survey mode."""
+    if not callback:
+        if hasattr(FreeCAD,"SurveyObserver"):
+            for label in FreeCAD.SurveyObserver.labels:
+                FreeCAD.ActiveDocument.removeObject(label)
+            FreeCADGui.Selection.removeObserver(FreeCAD.SurveyObserver)
+            del FreeCAD.SurveyObserver
+            if FreeCAD.GuiUp:
+                if hasattr(FreeCADGui,"draftToolBar"):
+                    FreeCADGui.draftToolBar.offUi()
+        else:
+            FreeCAD.SurveyObserver = _SurveyObserver(callback=survey)
+            FreeCADGui.Selection.addObserver(FreeCAD.SurveyObserver)
+            if FreeCAD.GuiUp:
+                if hasattr(FreeCADGui,"draftToolBar"):
+                    FreeCADGui.draftToolBar.selectUi(callback=survey)
     else:
-        FreeCAD.Console.PrintMessage(str(translate("Arch","This object has no support for fixtures")))
+        sel = FreeCADGui.Selection.getSelectionEx()
+        if not sel:
+            if hasattr(FreeCAD,"SurveyObserver"):
+                for label in FreeCAD.SurveyObserver.labels:
+                    FreeCAD.ActiveDocument.removeObject(label)
+                FreeCADGui.Selection.removeObserver(FreeCAD.SurveyObserver)
+                del FreeCAD.SurveyObserver
+                if FreeCAD.GuiUp:
+                    if hasattr(FreeCADGui,"draftToolBar"):
+                        FreeCADGui.draftToolBar.offUi()
+        else:
+            if hasattr(FreeCAD,"SurveyObserver"):
+                basesel = FreeCAD.SurveyObserver.selection
+                newsels = []
+                for o in sel:
+                    found = False
+                    for eo in basesel:
+                        if o.ObjectName == eo.ObjectName:
+                            if o.SubElementNames == eo.SubElementNames:
+                                found = True
+                    if not found:
+                        newsels.append(o)
+                if newsels:
+                    for o in newsels:
+                        if o.Object.isDerivedFrom("Part::Feature"):
+                            n = o.Object.Label
+                            if not o.HasSubObjects:
+                                # entire object
+                                anno = FreeCAD.ActiveDocument.addObject("App::AnnotationLabel","surveyLabel")
+                                anno.BasePosition = o.Object.Shape.CenterOfMass
+                                FreeCAD.SurveyObserver.labels.append(anno.Name)
+                                t = ""
+                                if o.Object.Shape.Solids:
+                                    t = FreeCAD.Units.Quantity(o.Object.Shape.Volume,FreeCAD.Units.Volume)
+                                    t = t.getUserPreferred()[0]
+                                    anno.LabelText = "v " + t
+                                    FreeCAD.Console.PrintMessage("Object: " + n + ", Element: Whole, Volume: " + t + "\n")
+                                elif o.Object.Shape.Faces:
+                                    t = FreeCAD.Units.Quantity(o.Object.Shape.Area,FreeCAD.Units.Area)
+                                    t = t.getUserPreferred()[0]
+                                    anno.LabelText = "a " + t
+                                    FreeCAD.Console.PrintMessage("Object: " + n + ", Element: Whole, Area: " + t + "\n")
+                                else:
+                                    t = FreeCAD.Units.Quantity(o.Object.Shape.Length,FreeCAD.Units.Length)
+                                    t = t.getUserPreferred()[0]
+                                    anno.LabelText = "l " + t
+                                    FreeCAD.Console.PrintMessage("Object: " + n + ", Element: Whole, Length: " + t + "\n")
+                                if FreeCAD.GuiUp and t:
+                                    QtGui.qApp.clipboard().setText(t)
+                            else:
+                                # single element(s)
+                                for el in o.SubElementNames:
+                                    e = getattr(o.Object.Shape,el)
+                                    anno = FreeCAD.ActiveDocument.addObject("App::AnnotationLabel","surveyLabel")
+                                    if "Vertex" in el:
+                                        anno.BasePosition = e.Point
+                                    else:
+                                        anno.BasePosition = e.CenterOfMass
+                                    FreeCAD.SurveyObserver.labels.append(anno.Name)
+                                    t = ""
+                                    if "Face" in el:
+                                        t = FreeCAD.Units.Quantity(e.Area,FreeCAD.Units.Area)
+                                        t = t.getUserPreferred()[0]
+                                        anno.LabelText = "a " + t
+                                        FreeCAD.Console.PrintMessage("Object: " + n + ", Element: " + el + ", Area: "+ t  + "\n")
+                                    elif "Edge" in el:
+                                        t = FreeCAD.Units.Quantity(e.Length,FreeCAD.Units.Length)
+                                        t = t.getUserPreferred()[0]
+                                        anno.LabelText = "l " + t
+                                        FreeCAD.Console.PrintMessage("Object: " + n + ", Element: " + el + ", Length: " + t + "\n")
+                                    elif "Vertex" in el:
+                                        t = FreeCAD.Units.Quantity(e.Z,FreeCAD.Units.Length)
+                                        t = t.getUserPreferred()[0]
+                                        anno.LabelText = "z " + t
+                                        FreeCAD.Console.PrintMessage("Object: " + n + ", Element: " + el + ", Zcoord: " + t + "\n")
+                                    if FreeCAD.GuiUp and t:
+                                        QtGui.qApp.clipboard().setText(t)
+
+                    FreeCAD.SurveyObserver.selection.extend(newsels)
+
+
 
     
 # command definitions ###############################################
@@ -614,7 +900,7 @@ class _CommandRemove:
             FreeCADGui.doCommand("Arch.removeSpaceBoundaries( FreeCAD.ActiveDocument."+sel[-1].Name+", FreeCADGui.Selection.getSelection() )")
         else:
             FreeCAD.ActiveDocument.openTransaction(str(translate("Arch","Ungrouping")))
-            if (Draft.getType(sel[-1]) in ["Wall","Structure"]) and (len(sel) > 1):
+            if (Draft.getType(sel[-1]) in ["Wall","Structure","Stairs","Roof","Window"]) and (len(sel) > 1):
                 host = sel.pop()
                 ss = "["
                 for o in sel:
@@ -626,7 +912,7 @@ class _CommandRemove:
                 FreeCADGui.doCommand("Arch.removeComponents("+ss+",FreeCAD.ActiveDocument."+host.Name+")")
             else:
                 FreeCADGui.doCommand("import Arch")
-                FreeCADGui.doCommand("Arch.removeComponents(Arch.ActiveDocument."+sel[-1].Name+")")
+                FreeCADGui.doCommand("Arch.removeComponents(FreeCAD.ActiveDocument."+sel[-1].Name+")")
         FreeCAD.ActiveDocument.commitTransaction()
         FreeCAD.ActiveDocument.recompute()
 
@@ -685,9 +971,14 @@ class _CommandMeshToShape:
                 if f.InList:
                     if f.InList[0].isDerivedFrom("App::DocumentObjectGroup"):
                         g = f.InList[0]
+            p = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Arch")
+            fast = p.GetBool("ConversionFast",True)
+            tol = p.GetFloat("ConversionTolerance",0.001)
+            flat = p.GetBool("ConversionFlat",False)
+            cut = p.GetBool("ConversionCut",False)
             FreeCAD.ActiveDocument.openTransaction(str(translate("Arch","Mesh to Shape")))
             for obj in FreeCADGui.Selection.getSelection():
-                newobj = meshToShape(obj)
+                newobj = meshToShape(obj,True,fast,tol,flat,cut)
                 if g and newobj:
                     g.addObject(newobj)
             FreeCAD.ActiveDocument.commitTransaction()
@@ -777,36 +1068,40 @@ class _CommandCheck:
                 FreeCADGui.Selection.addSelection(i[0])
 
 
-class _CommandFixture:
-    "the Arch Fixture command definition"
+class _CommandIfcExplorer:
+    "the Arch Ifc Explorer command definition"
     def GetResources(self):
-        return {'Pixmap'  : 'Arch_Fixture',
-                'MenuText': QtCore.QT_TRANSLATE_NOOP("Arch_Fixture","Add fixture"),
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP("Arch_Fixture","Adds the selected components as fixtures to the active object")}
+        return {'Pixmap'  : 'IFC',
+                'MenuText': QtCore.QT_TRANSLATE_NOOP("Arch_IfcExplorer","Ifc Explorer"),
+                'ToolTip': QtCore.QT_TRANSLATE_NOOP("Arch_Check","Explore the contents of an Ifc file")}
 
-    def IsActive(self):
-        if len(FreeCADGui.Selection.getSelection()) > 1:
-            return True
-        else:
-            return False
+    def Activated(self):
+        if hasattr(self,"dialog"):
+            del self.dialog
+        import importIFC
+        self.dialog = importIFC.explore()
+
+
+class _CommandSurvey:
+    "the Arch Survey command definition"
+    def GetResources(self):
+        return {'Pixmap'  : 'Arch_Survey',
+                'MenuText': QtCore.QT_TRANSLATE_NOOP("Arch_Survey","Survey"),
+                'ToolTip': QtCore.QT_TRANSLATE_NOOP("Arch_Survey","Starts survey")}
         
     def Activated(self):
-        sel = FreeCADGui.Selection.getSelection()
-        FreeCAD.ActiveDocument.openTransaction(str(translate("Arch","Grouping")))
-        host = sel.pop()
-        for o in sel:
-            FreeCADGui.doCommand("import Arch")
-            FreeCADGui.doCommand("Arch.addFixture(FreeCAD.ActiveDocument."+o.Name+",FreeCAD.ActiveDocument."+host.Name+")")
-        FreeCAD.ActiveDocument.commitTransaction()
-        FreeCAD.ActiveDocument.recompute()
+        FreeCADGui.doCommand("import Arch")
+        FreeCADGui.doCommand("Arch.survey()")
 
 
-FreeCADGui.addCommand('Arch_Add',_CommandAdd())
-FreeCADGui.addCommand('Arch_Remove',_CommandRemove())
-FreeCADGui.addCommand('Arch_SplitMesh',_CommandSplitMesh())
-FreeCADGui.addCommand('Arch_MeshToShape',_CommandMeshToShape())
-FreeCADGui.addCommand('Arch_SelectNonSolidMeshes',_CommandSelectNonSolidMeshes())
-FreeCADGui.addCommand('Arch_RemoveShape',_CommandRemoveShape())
-FreeCADGui.addCommand('Arch_CloseHoles',_CommandCloseHoles())
-FreeCADGui.addCommand('Arch_Check',_CommandCheck())
-FreeCADGui.addCommand('Arch_Fixture',_CommandFixture())
+if FreeCAD.GuiUp:
+    FreeCADGui.addCommand('Arch_Add',_CommandAdd())
+    FreeCADGui.addCommand('Arch_Remove',_CommandRemove())
+    FreeCADGui.addCommand('Arch_SplitMesh',_CommandSplitMesh())
+    FreeCADGui.addCommand('Arch_MeshToShape',_CommandMeshToShape())
+    FreeCADGui.addCommand('Arch_SelectNonSolidMeshes',_CommandSelectNonSolidMeshes())
+    FreeCADGui.addCommand('Arch_RemoveShape',_CommandRemoveShape())
+    FreeCADGui.addCommand('Arch_CloseHoles',_CommandCloseHoles())
+    FreeCADGui.addCommand('Arch_Check',_CommandCheck())
+    FreeCADGui.addCommand('Arch_IfcExplorer',_CommandIfcExplorer())
+    FreeCADGui.addCommand('Arch_Survey',_CommandSurvey())

@@ -60,6 +60,7 @@
 #include <Base/Writer.h>
 #include <App/Application.h>
 #include <App/DocumentObject.h>
+#include <App/DocumentObjectGroup.h>
 
 #include "MainWindow.h"
 #include "Application.h"
@@ -82,7 +83,6 @@
 #include "Macro.h"
 #include "ProgressBar.h"
 
-#include "Icons/background.xpm"
 #include "WidgetFactory.h"
 #include "BitmapFactory.h"
 #include "Splashscreen.h"
@@ -292,8 +292,7 @@ MainWindow::MainWindow(QWidget * parent, Qt::WFlags f)
     d->mdiArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     d->mdiArea->setOption(QMdiArea::DontMaximizeSubWindowOnActivation, false);
     d->mdiArea->setActivationOrder(QMdiArea::ActivationHistoryOrder);
-    QPixmap backgnd((const char**) background);
-    d->mdiArea->setBackground(backgnd);
+    d->mdiArea->setBackground(QBrush(QColor(160,160,160)));
     setCentralWidget(d->mdiArea);
 #endif
 
@@ -408,7 +407,7 @@ MainWindow::MainWindow(QWidget * parent, Qt::WFlags f)
     // Python console
     PythonConsole* pcPython = new PythonConsole(this);
     pcPython->setWordWrapMode(QTextOption::NoWrap);
-    pcPython->setWindowIcon(Gui::BitmapFactory().pixmap("python_small"));
+    pcPython->setWindowIcon(Gui::BitmapFactory().pixmap("applications-python"));
     pcPython->setObjectName
         (QString::fromAscii(QT_TRANSLATE_NOOP("QDockWidget","Python console")));
     pDockMgr->registerDockWindow("Std_PythonView", pcPython);
@@ -1107,8 +1106,15 @@ void MainWindow::closeEvent (QCloseEvent * e)
     if (e->isAccepted()) {
         // Send close event to all non-modal dialogs
         QList<QDialog*> dialogs = this->findChildren<QDialog*>();
+        // It is possible that closing a dialog internally closes further dialogs. Thus,
+        // we have to check the pointer before.
+        QList< QPointer<QDialog> > dialogs_ptr;
         for (QList<QDialog*>::iterator it = dialogs.begin(); it != dialogs.end(); ++it) {
-            (*it)->close();
+            dialogs_ptr.append(*it);
+        }
+        for (QList< QPointer<QDialog> >::iterator it = dialogs_ptr.begin(); it != dialogs_ptr.end(); ++it) {
+            if (!(*it).isNull())
+                (*it)->close();
         }
         QList<MDIView*> mdis = this->findChildren<MDIView*>();
         // Force to close any remaining (passive) MDI child views
@@ -1516,7 +1522,13 @@ void MainWindow::insertFromMimeData (const QMimeData * mimeData)
         std::istream in(0);
         in.rdbuf(&buf);
         MergeDocuments mimeView(doc);
-        mimeView.importObjects(in);
+        std::vector<App::DocumentObject*> newObj = mimeView.importObjects(in);
+        std::vector<App::DocumentObjectGroup*> grp = Gui::Selection().getObjectsOfType<App::DocumentObjectGroup>();
+        if (grp.size() == 1) {
+            Gui::Document* gui = Application::Instance->getDocument(doc);
+            if (gui)
+                gui->addRootObjectsToGroup(newObj, grp.front());
+        }
     }
     else if (mimeData->hasFormat(QLatin1String("application/x-documentobject-file"))) {
         QByteArray res = mimeData->data(QLatin1String("application/x-documentobject-file"));
@@ -1526,8 +1538,14 @@ void MainWindow::insertFromMimeData (const QMimeData * mimeData)
         Base::FileInfo fi((const char*)res);
         Base::ifstream str(fi, std::ios::in | std::ios::binary);
         MergeDocuments mimeView(doc);
-        mimeView.importObjects(str);
+        std::vector<App::DocumentObject*> newObj = mimeView.importObjects(str);
         str.close();
+        std::vector<App::DocumentObjectGroup*> grp = Gui::Selection().getObjectsOfType<App::DocumentObjectGroup>();
+        if (grp.size() == 1) {
+            Gui::Document* gui = Application::Instance->getDocument(doc);
+            if (gui)
+                gui->addRootObjectsToGroup(newObj, grp.front());
+        }
     }
     else if (mimeData->hasUrls()) {
         // load the files into the active document if there is one, otherwise let create one
@@ -1608,7 +1626,7 @@ void MainWindow::showMessage (const QString& message, int timeout)
 {
     QFontMetrics fm(statusBar()->font());
     QString msg = fm.elidedText(message, Qt::ElideMiddle, this->width()/2);
-#if QT_VERSION != 0x040801
+#if QT_VERSION <= 0x040600
     this->statusBar()->showMessage(msg, timeout);
 #else
     //#0000665: There is a crash under Ubuntu 12.04 (Qt 4.8.1)

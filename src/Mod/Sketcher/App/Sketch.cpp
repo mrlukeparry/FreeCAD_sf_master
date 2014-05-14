@@ -50,7 +50,7 @@
 
 #include "Sketch.h"
 #include "Constraint.h"
-#include <math.h>
+#include <cmath>
 
 #include <iostream>
 
@@ -107,7 +107,7 @@ int Sketch::setUpSketch(const std::vector<Part::Geometry *> &GeoList,
     std::vector<Part::Geometry *> intGeoList, extGeoList;
     for (int i=0; i < int(GeoList.size())-extGeoCount; i++)
         intGeoList.push_back(GeoList[i]);
-    for (int i=int(GeoList.size())-extGeoCount; i < GeoList.size(); i++)
+    for (int i=int(GeoList.size())-extGeoCount; i < int(GeoList.size()); i++)
         extGeoList.push_back(GeoList[i]);
 
     addGeometry(intGeoList);
@@ -1245,8 +1245,8 @@ int Sketch::addDistanceConstraint(int geoId, double value)
 // line to line distance constraint
 int Sketch::addDistanceConstraint(int geoId1, int geoId2, double value)
 {
-    geoId1 = checkGeoId(geoId1);
-    geoId2 = checkGeoId(geoId2);
+    //geoId1 = checkGeoId(geoId1);
+    //geoId2 = checkGeoId(geoId2);
 
     //assert(Geoms[geoId1].type == Line);
     //assert(Geoms[geoId2].type == Line);
@@ -1673,7 +1673,7 @@ int Sketch::solve(void)
 
             if (soltype > 0) {
                 Base::Console().Log("If you see this message please report a way of reproducing this result at\n");
-                Base::Console().Log("https://sourceforge.net/apps/mantisbt/free-cad/main_page.php\n");
+                Base::Console().Log("http://www.freecadweb.org/tracker/main_page.php\n");
             }
 
             break;
@@ -1868,6 +1868,9 @@ int Sketch::setDatum(int constrId, double value)
 
 int Sketch::getPointId(int geoId, PointPos pos) const
 {
+    // do a range check first
+    if (geoId < 0 || geoId >= Geoms.size())
+        return -1;
     switch (pos) {
     case start:
         return Geoms[geoId].startPointId;

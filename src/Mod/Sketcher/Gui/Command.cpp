@@ -32,9 +32,11 @@
 # include <QMessageBox>
 #endif
 
+#include <App/DocumentObjectGroup.h>
 #include <Gui/Application.h>
 #include <Gui/Document.h>
 #include <Gui/Command.h>
+#include <Gui/Control.h>
 #include <Gui/MainWindow.h>
 #include <Gui/DlgEditFileIncludeProptertyExternal.h>
 #include <Gui/SelectionFilter.h>
@@ -45,6 +47,7 @@
 
 #include "SketchOrientationDialog.h"
 #include "ViewProviderSketch.h"
+#include "TaskSketcherValidation.h"
 
 using namespace std;
 using namespace SketcherGui;
@@ -115,6 +118,11 @@ void CmdSketcherNewSketch::activated(int iMsg)
         doCommand(Gui,"App.activeDocument().recompute()");  // recompute the sketch placement based on its support
         //doCommand(Gui,"Gui.activeDocument().activeView().setCamera('%s')",cam.c_str());
         doCommand(Gui,"Gui.activeDocument().setEdit('%s')",FeatName.c_str());
+        App::DocumentObjectGroup* grp = part->getGroup();
+        if (grp) {
+            doCommand(Doc,"App.activeDocument().%s.addObject(App.activeDocument().%s)"
+                         ,grp->getNameInDocument(),FeatName.c_str());
+        }
     }
     else {
         // ask user for orientation
@@ -418,6 +426,39 @@ bool CmdSketcherViewSketch::isActive(void)
     return false;
 }
 
+DEF_STD_CMD_A(CmdSketcherValidateSketch);
+
+CmdSketcherValidateSketch::CmdSketcherValidateSketch()
+  : Command("Sketcher_ValidateSketch")
+{
+    sAppModule      = "Sketcher";
+    sGroup          = QT_TR_NOOP("Sketcher");
+    sMenuText       = QT_TR_NOOP("Validate sketch...");
+    sToolTipText    = QT_TR_NOOP("Validate sketch");
+    sWhatsThis      = sToolTipText;
+    sStatusTip      = sToolTipText;
+    eType           = 0;
+}
+
+void CmdSketcherValidateSketch::activated(int iMsg)
+{
+    std::vector<Gui::SelectionObject> selection = getSelection().getSelectionEx(0, Sketcher::SketchObject::getClassTypeId());
+    if (selection.size() != 1) {
+        QMessageBox::warning(Gui::getMainWindow(),
+            qApp->translate("CmdSketcherValidateSketch", "Wrong selection"),
+            qApp->translate("CmdSketcherValidateSketch", "Select one sketch, please."));
+        return;
+    }
+
+    Sketcher::SketchObject* Obj = static_cast<Sketcher::SketchObject*>(selection[0].getObject());
+    Gui::Control().showDialog(new TaskSketcherValidation(Obj));
+}
+
+bool CmdSketcherValidateSketch::isActive(void)
+{
+    return (hasActiveDocument() && !Gui::Control().activeDialog());
+}
+
 
 
 
@@ -431,4 +472,5 @@ void CreateSketcherCommands(void)
     rcCmdMgr.addCommand(new CmdSketcherMapSketch());
     rcCmdMgr.addCommand(new CmdSketcherLeaveSketch());
     rcCmdMgr.addCommand(new CmdSketcherViewSketch());
+    rcCmdMgr.addCommand(new CmdSketcherValidateSketch());
 }

@@ -118,7 +118,7 @@ void LoftWidget::findShapes()
 
 bool LoftWidget::accept()
 {
-    QString list, solid, ruled;
+    QString list, solid, ruled, closed;
     if (d->ui.checkSolid->isChecked())
         solid = QString::fromAscii("True");
     else
@@ -129,11 +129,16 @@ bool LoftWidget::accept()
     else
         ruled = QString::fromAscii("False");
 
+    if (d->ui.checkClosed->isChecked())
+        closed = QString::fromAscii("True");
+    else
+        closed = QString::fromAscii("False");
+
     QTextStream str(&list);
 
     int count = d->ui.selector->selectedTreeWidget()->topLevelItemCount();
     if (count < 2) {
-        QMessageBox::critical(this, tr("Too few elements"), tr("At least two vertices, edges, wires or Faces are required."));
+        QMessageBox::critical(this, tr("Too few elements"), tr("At least two vertices, edges, wires or faces are required."));
         return false;
     }
     for (int i=0; i<count; i++) {
@@ -145,21 +150,28 @@ bool LoftWidget::accept()
     try {
         QString cmd;
         cmd = QString::fromAscii(
-            "App.getDocument('%4').addObject('Part::Loft','Loft')\n"
-            "App.getDocument('%4').ActiveObject.Sections=[%1]\n"
-            "App.getDocument('%4').ActiveObject.Solid=%2\n"
-            "App.getDocument('%4').ActiveObject.Ruled=%3\n"
-            ).arg(list).arg(solid).arg(ruled).arg(QString::fromAscii(d->document.c_str()));
+            "App.getDocument('%5').addObject('Part::Loft','Loft')\n"
+            "App.getDocument('%5').ActiveObject.Sections=[%1]\n"
+            "App.getDocument('%5').ActiveObject.Solid=%2\n"
+            "App.getDocument('%5').ActiveObject.Ruled=%3\n"
+            "App.getDocument('%5').ActiveObject.Closed=%4\n"
+            ).arg(list).arg(solid).arg(ruled).arg(closed).arg(QString::fromAscii(d->document.c_str()));
 
         Gui::Document* doc = Gui::Application::Instance->getDocument(d->document.c_str());
         if (!doc) throw Base::Exception("Document doesn't exist anymore");
         doc->openCommand("Loft");
         Gui::Application::Instance->runPythonCode((const char*)cmd.toAscii(), false, false);
-        doc->commitCommand();
         doc->getDocument()->recompute();
+        App::DocumentObject* obj = doc->getDocument()->getActiveObject();
+        if (obj && !obj->isValid()) {
+            std::string msg = obj->getStatusString();
+            doc->abortCommand();
+            throw Base::Exception(msg);
+        }
+        doc->commitCommand();
     }
     catch (const Base::Exception& e) {
-        Base::Console().Error("%s\n", e.what());
+        QMessageBox::warning(this, tr("Input error"), QString::fromAscii(e.what()));
         return false;
     }
 

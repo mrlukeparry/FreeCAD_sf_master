@@ -38,6 +38,12 @@
 		# define PartGuiExport Q_DECL_IMPORT
 		# define CamExport     Q_DECL_EXPORT
 		# define CamGuiExport  Q_DECL_EXPORT
+		#ifdef FCLibArea
+			// We must be compiling the libArea library
+			# define LibAreaExport   Q_DECL_EXPORT
+		#else
+			# define LibAreaExport   Q_DECL_IMPORT
+		#endif // FCLibArea
 	#else
 		// We're in the Plugin or GUI modules so we want to import the various classes.
 		# define MeshExport    Q_DECL_IMPORT
@@ -45,6 +51,7 @@
 		# define PartGuiExport Q_DECL_IMPORT
 		# define CamExport     Q_DECL_IMPORT
 		# define CamGuiExport  Q_DECL_EXPORT
+		# define LibAreaExport   Q_DECL_IMPORT
 	#endif // FCAppCam
 #else // for Linux
 	# define MeshExport
@@ -52,6 +59,7 @@
 	# define PartGuiExport
 	# define CamExport
 	# define CamGuiExport
+	# define LibAreaExport
 #endif
 
 #ifdef _MSC_VER
