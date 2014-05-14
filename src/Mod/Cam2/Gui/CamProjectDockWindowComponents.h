@@ -25,6 +25,7 @@
 
 #include <PreCompiled.h>
 
+#include <QDialog>
 #include <QLineEdit>
 #include <QFormLayout>
 #include <QList>
@@ -34,6 +35,9 @@
 #include <QPushButton>
 #include <QToolButton>
 #include <QComboBox>
+#include <QListView>
+#include <QStringList>
+#include <QStringListModel>
 
 #include "../App/TPG/TPGSettings.h"
 
@@ -153,7 +157,7 @@ Q_SIGNALS:
 
 /**
 	The CamLineEdit class is only used so that we can register callback functions for the QLineEdit
-	objects to handle the validation as well as a mechanism to set the TPGFeature::PropTPGSettings map
+	objects to handle the validation as well as a mechanism to set the Cam::Settings::Feature::Values map
 	based on the newly changed value.
  */
 class CamLineEdit : public QLineEdit
@@ -179,6 +183,48 @@ private:
 	Cam::Settings::Definition *tpgSetting;
 };
 
+
+class CamGuiExport CamListViewsDialog : public QObject
+{
+	Q_OBJECT
+
+public:
+	typedef std::list< App::DocumentObject * > Objects_t;
+
+	bool ok_pressed;
+
+public:
+	CamListViewsDialog(const Objects_t &objects, Cam::Settings::Definition *tpgSetting );
+	~CamListViewsDialog();
+	bool Show();	// Show the dialog and return TRUE if the user pressed the OK button.
+	
+private:
+	boost::scoped_ptr<QDialog> dialog;
+	boost::scoped_ptr<QVBoxLayout> layout;
+	boost::scoped_ptr<QPushButton> add_button;
+	boost::scoped_ptr<QPushButton> remove_button;
+	boost::scoped_ptr<QPushButton> ok_button;
+	boost::scoped_ptr<QLineEdit> dummy_edit;
+	boost::scoped_ptr<QListView> possible_object_labels;
+	boost::scoped_ptr<QListView> selected_object_labels;
+	boost::scoped_ptr<QStringList> possibleLabelsList;
+	boost::scoped_ptr<QStringListModel> possibleLabelsListModel;
+	boost::scoped_ptr<QStringListModel> selectedLabelsListModel;
+
+private:
+	Cam::Settings::Definition *tpgSetting;
+	Objects_t	objects;
+
+public Q_SLOTS:
+
+    /**
+     * Slot to receive messages when the user changes the text value
+     */
+	void handleAddObjectLabelButton();
+	void handleRemoveObjectLabelButton();
+	void handleOKButton();
+};
+
 // ----- CamTextBoxComponent ---------------------------------------------------------
 /**
  * Object that manages a Cam::TextBox setting
@@ -194,8 +240,11 @@ protected:
     CamLineEdit *widget;
 
 public:
-
     CamTextBoxComponent();
+	typedef std::list<App::DocumentObject *> Objects_t;
+	Objects_t objects;
+
+	QString GetLabels( Cam::Settings::ObjectNamesForType *pObjNamesForType );
 
     /**
      * Creates the UI for this component and loads the initial value
@@ -215,9 +264,6 @@ public Q_SLOTS:
      */
     void editingFinished();
 	void handleButton();
-	void handleAddObjectNameButton();
-	void handleOKButton();
-
 };
 
 

@@ -50,11 +50,13 @@ MachineProgram::~MachineProgram() {
     if (this->machineProgram != NULL)
 	{
         delete this->machineProgram;
+		this->machineProgram = NULL;
 	}
 
 	if (this->errors != NULL)
 	{
 		delete this->errors;
+		this->errors = NULL;
 	}
 
 	if (this->toolPath != NULL)

@@ -20,6 +20,7 @@
 #pragma implementation
 #endif
 
+#ifdef LIBAREA_USE_BOOST_PYTHON
 #include <boost/progress.hpp>
 #include <boost/timer.hpp>
 #include <boost/foreach.hpp>
@@ -311,3 +312,6 @@ BOOST_PYTHON_MODULE(AreaClipper) {
     bp::def("AreaFromDxf", AreaFromDxf);
     bp::def("TangentialArc", TangentialArc);
 }
+
+#endif // LIBAREA_USE_BOOST_PYTHON
+

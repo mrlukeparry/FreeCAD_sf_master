@@ -374,7 +374,7 @@ bool Definition::AddToPythonDictionary(PyObject *pDictionary, const QString requ
 TPGSettings::TPGSettings()
 {
 	this->refcnt = 1;
-	this->tpgFeature = NULL;
+	this->feature = NULL;
 }
 
 TPGSettings::~TPGSettings()
@@ -403,7 +403,7 @@ TPGSettings* TPGSettings::clone()
 		++it;
 	}
 
-	settings->tpgFeature = this->tpgFeature;
+	settings->feature = this->feature;
 
 	return settings;
 }
@@ -414,7 +414,7 @@ TPGSettings* TPGSettings::clone()
 Definition* TPGSettings::addSettingDefinition(QString action, Definition* setting) {
 
 	if (setting != NULL) {
-		QString qname = makeName(action, setting->name);
+		QString qname = makeKey(action, setting->name);
 
 		// store reference to setting
 		settingDefs.push_back(setting->grab());
@@ -467,9 +467,9 @@ const QString TPGSettings::getAction() const {
  */
 bool TPGSettings::setAction(QString action) {
 	this->action = action;
-	if (tpgFeature != NULL)
+	if (feature != NULL)
 	{
-		tpgFeature->PropTPGSettings.setValue("action", action.toAscii().constData());
+		feature->setValue("action", action.toAscii().constData());
 		return(true);
 	}
 	return(false);
@@ -497,12 +497,12 @@ const QString TPGSettings::getValue(QString action, QString name) const
 	}
 
 	// compute full setting name (<action>::<name>)
-	QString qname = makeName(action, name);
+	QString qname = makeKey(action, name);
 
     // get setting value
-	if (tpgFeature != NULL) {
+	if (feature != NULL) {
 		if (settingDefsMap.find(qname) != settingDefsMap.end()) {
-			const std::map<std::string,std::string> vals = tpgFeature->PropTPGSettings.getValues();
+			const std::map<std::string,std::string> vals = feature->getValues();
 			std::map<std::string,std::string>::const_iterator val = vals.find(qname.toStdString());
 			if (val != vals.end()) {
 				return QString::fromStdString(val->second);
@@ -522,13 +522,13 @@ bool TPGSettings::setValue(QString action, QString name, QString value) {
 		return false;
 
 	// compute full setting name (<action>::<name>)
-	QString qname = makeName(action, name);
+	QString qname = makeKey(action, name);
 
-	if (tpgFeature != NULL) {
+	if (feature != NULL) {
 		if (settingDefsMap.find(qname) != settingDefsMap.end()) {
 			std::string strname = qname.toStdString();
 			std::string strvalue = value.toStdString();
-			tpgFeature->PropTPGSettings.setValue(strname, strvalue);
+			feature->setValue(strname, strvalue);
 			return true;
 		}
 	}
@@ -560,24 +560,24 @@ std::vector<Definition*> TPGSettings::getSettings() const
 }
 
 /**
- * Sets the default value for any settings that are missing from the TPGFeature
+ * Sets the default value for any settings that are missing from the Feature
  */
 void TPGSettings::addDefaults() {
 
-	if (tpgFeature != NULL) {
-		const std::map<std::string,std::string> currentValues = tpgFeature->PropTPGSettings.getValues();
+	if (feature != NULL) {
+		const std::map<std::string,std::string> currentValues = feature->getValues();
 
 		// add action
 		if (currentValues.find("action") == currentValues.end())
-			tpgFeature->PropTPGSettings.setValue("action", "default");
+			feature->setValue("action", "default");
 
 		// add all settings for each available action
 		std::vector<Definition*>::iterator it = this->settingDefs.begin();
 		while (it != this->settingDefs.end()) {
-			QString nsName = makeName((*it)->action, (*it)->name);
+			QString nsName = makeKey((*it)->action, (*it)->name);
 			if (currentValues.find(nsName.toStdString()) == currentValues.end())
 			{
-				tpgFeature->PropTPGSettings.setValue(nsName.toStdString(),(*it)->defaultvalue.toStdString());
+				feature->setValue(nsName.toStdString(),(*it)->defaultvalue.toStdString());
 			}
 
 			++it;
@@ -601,15 +601,15 @@ QStringList TPGSettings::getActions() const
 }
 
 /**
- * Sets the TPGFeature that the value will be saved-to/read-from.
+ * Sets the Feature that the value will be saved-to/read-from.
  *
  * This will set the default values for any missing settings
  */
-void TPGSettings::setTPGFeature(Cam::TPGFeature *tpgFeature) {
-	this->tpgFeature = tpgFeature;
+void TPGSettings::setFeature(Cam::Settings::Feature *feature) {
+	this->feature = feature;
 
 	// load the TPG's action
-	tpgFeature->PropTPGSettings.getValues();
+	feature->getValues();
 
 	addDefaults();
 }
@@ -633,63 +633,15 @@ void TPGSettings::release() {
 }
 
 /**
- * Make a namespaced name (from <action>::<name>)
+ * Make a key (from <action>::<name>)
  */
-QString TPGSettings::makeName(QString action, QString name) const {
+QString TPGSettings::makeKey(QString action, QString name) const {
 	QString result = action;
 	result.append(QString::fromAscii("::"));
 	result.append(name);
 	return result;
 }
 
-
-/**
-	Keep a copy of the properties map before any changes occur so that we can
-	compare it with the map of modified settings.  Only by comparing these two
-	can we figure out which one of the settings changed.
- */
-void TPGSettings::onBeforePropTPGSettingsChange(const App::PropertyMap* property_map)
-{
-	if (property_map != NULL)
-	{
-		this->previous_tpg_properties_version.clear();
-
-		std::copy( property_map->getValues().begin(), property_map->getValues().end(),
-			std::inserter( this->previous_tpg_properties_version, this->previous_tpg_properties_version.begin() ) );
-
-		// qDebug("TPGSettings::onBeforePropTPGSettingsChange(%s) called\n", property_map->getName());
-	}
-}
-
-/**
-	Called when one of the TPGFeature::PropTPGSettings values changes.
- */
-void TPGSettings::onPropTPGSettingsChanged(const App::PropertyMap* property_map)
-{
-	// One of the settings has changed.  Figure out which one and let any interested parties know.
-	if (tpgFeature != NULL)
-	{
-		TPG *tpg = tpgFeature->getTPG();
-		if (tpg)
-		{
-			tpg->grab();
-
-			// qDebug("TPGSettings::onPropTPGSettingsChanged() called\n");
-			for (std::map<QString, Definition*>::iterator itSettingsDef = settingDefsMap.begin(); itSettingsDef != settingDefsMap.end(); itSettingsDef++)
-			{
-				std::string name = itSettingsDef->first.toStdString();
-				std::string previous_value = this->previous_tpg_properties_version[name];
-				std::string new_value = itSettingsDef->second->getValue().toStdString();
-
-				if (new_value != previous_value)
-				{
-					tpg->onChanged( itSettingsDef->second, QString::fromStdString(previous_value), QString::fromStdString(new_value));
-				}
-			}
-			tpg->release();
-		}
-	}
-}
 
 
 static std::pair<std::string::size_type, std::string::size_type> next_possible_number(const std::string & value, std::string::size_type offset )
@@ -988,20 +940,21 @@ bool TPGSettings::AddToPythonDictionary(PyObject *pDictionary, const QString req
 	return(status);
 }
 
-
 Settings::Definition *Settings::TPGSettings::getDefinition(const QString action, const QString name) const
 {
-	if (action.isNull() || action.isEmpty()) {
-		Base::Console().Message("action not set\n");
+	return(getDefinition(makeKey(action, name)));
+}
+
+Settings::Definition *Settings::TPGSettings::getDefinition(const QString key) const
+{
+	if (key.isNull() || key.isEmpty()) {
+		Base::Console().Message("key not set\n");
 		return(NULL);
 	}
 
-	// compute full setting name (<action>::<name>)
-	QString qname = makeName(action, name);
-
     // get setting value
-	if (tpgFeature != NULL) {
-		std::map<QString, Settings::Definition *>::const_iterator itDef = settingDefsMap.find(qname);
+	if (feature != NULL) {
+		std::map<QString, Settings::Definition *>::const_iterator itDef = settingDefsMap.find(key);
 		if (itDef != settingDefsMap.end()) {
 			return(itDef->second);
 		}
@@ -1206,6 +1159,16 @@ Double::Double(
 	this->defaultvalue = QString::fromStdString(def_val.str());
 }
 
+Double::Double(
+		const char *name,
+		const double default_value,
+		const char * units ):
+	  Definition(name, name, SettingType_Double, "", units, name)
+{
+	std::ostringstream def_val;
+	def_val << default_value;
+	this->defaultvalue = QString::fromStdString(def_val.str());
+}
 	  
 double Settings::Double::Minimum() const
 {
@@ -1381,10 +1344,23 @@ Settings::Rate::Rate(
 	this->defaultvalue = this->encode(data);
 }
 
+Settings::Rate::Rate(
+		const char *name, 
+		const double default_value,
+		const Definition::Units_t units ):
+	  Definition(name, name, SettingType_Rate, "", "", name)
+{
+	Encode_t data;
+	boost::tuples::get<valueOffset>(data) = default_value;
+	boost::tuples::get<unitsOffset>(data) = units;
+
+	this->defaultvalue = this->encode(data);
+}
+
 
 /**
 	The Length setting can change both its 'value' and its 'units' so it
-	is necessary to store both of these values in the TPGFeature::PropTPGSettings
+	is necessary to store both of these values in the Cam::Settings::Feature::Values
 	map.  This way, they are both saved/restored to/from the data file.
 	Now that we're trying to get the value alone, we need to retrieve
 	the encoded version (i.e. the string that includes both the value
@@ -1882,31 +1858,16 @@ bool Directory::AddToPythonDictionary(PyObject *pDictionary, const QString reque
  */
 Definition::ValidationState ObjectNamesForType::validate(QString & input,int & position) const
 {
-	// Cast this object to a TPGObjectNamesForTypeSettingDefinition object so we can use the helper functions
-	// to review the object's contents.
-	ObjectNamesForType *pSetting = (ObjectNamesForType *) this;
-
-	Option *delimiters_option = this->getOption(QString::fromAscii("Delimiters"));
-	if (delimiters_option == NULL)
-	{
-		return(this->Invalid);
-	}
-
-	// Use a regular expression so that we use any one of the characters in the delimiters string
-	// as a delimiting character.
-	QString expression = QString::fromAscii("[") + delimiters_option->label + QString::fromAscii("]");
-	QRegExp regular_expression(expression);
-	QStringList object_names = input.split(regular_expression, QString::SkipEmptyParts);
-
-	QStringList valid_type_names = pSetting->GetTypes();
+	Encode_t data = this->decode();
+	QStringList valid_type_names = this->GetTypes();
 	
 	App::Document *document = App::GetApplication().getActiveDocument();
 	if (document)
 	{
-		for (QStringList::size_type i=0; i<object_names.size(); i++)
+		for (QStringList::size_type i=0; i<data.size(); i++)
 		{
-			QString name = object_names[i];
-			App::DocumentObject *object = document->getObject(object_names[i].toAscii().constData());
+			QString object_name = data[i];
+			App::DocumentObject *object = document->getObject(object_name.toAscii().constData());
 			if(object)
 			{
 				bool is_valid = false;
@@ -1932,6 +1893,11 @@ Definition::ValidationState ObjectNamesForType::validate(QString & input,int & p
 	return(this->Acceptable);
 }
 
+void ObjectNamesForType::SetNames(const QStringList names)
+{
+	this->setValue(this->encode(names));
+}
+
 
 bool ObjectNamesForType::AddToPythonDictionary(PyObject *pDictionary, const QString requested_units, const QString prefix) const
 {
@@ -1941,11 +1907,9 @@ bool ObjectNamesForType::AddToPythonDictionary(PyObject *pDictionary, const QStr
 ObjectNamesForType::ObjectNamesForType(	const char *name, 
 								const char *label, 
 								const char *helptext,
-								const char *delimiters,
 								const char *object_type )
 								 : Definition(name, label, SettingType_ObjectNamesForType, "", "", helptext)
 {
-	this->addOption( QString::fromAscii("Delimiters"), QString::fromAscii(delimiters) );
 	this->addOption( QString::fromAscii("TypeId"), QString::fromAscii(object_type) );
 }
 
@@ -1954,20 +1918,67 @@ void ObjectNamesForType::Add(const char * object_type)
 	this->addOption( QString::fromAscii("TypeId"), QString::fromAscii(object_type) );
 }
 
-void ObjectNamesForType::SetDelimiters(const char * delimiters)
+QString ObjectNamesForType::encode(const ObjectNamesForType::Encode_t data) const
 {
+	using boost::property_tree::ptree;
+	ptree pt;
 
-	Option *delimiters_option = this->getOption(QString::fromAscii("Delimiters"));
-	if (delimiters_option != NULL)
+	pt.put("object_names_for_type.num_names", data.size());
+	for (Encode_t::size_type i=0; i<data.size(); i++)
 	{
-		delimiters_option->label = QString::fromAscii(delimiters);
-		return;
+		std::ostringstream ossName;
+		ossName << "object_names_for_type.name_" << i;
+		pt.put(ossName.str().c_str(), data[i].toStdString());
 	}
+	
+	std::ostringstream encoded_value;
 
-	// We couldn't find an existing option so add one now.
-	this->addOption( QString::fromAscii("Delimiters"), QString::fromAscii(delimiters) );	
+	write_json(encoded_value, pt);
+	return(QString::fromStdString(encoded_value.str()));
 }
 
+ObjectNamesForType::Encode_t ObjectNamesForType::decode() const
+{
+	std::list<QString> values;
+	values.push_back( this->getValue() );
+	values.push_back( this->defaultvalue );
+	for (std::list<QString>::const_iterator itValue = values.begin(); itValue != values.end(); itValue++)
+	{
+		if (itValue->isNull() == false)
+		{
+			try
+			{
+				using boost::property_tree::ptree;
+				ptree pt;
+
+				std::stringstream encoded_value;
+				encoded_value << itValue->toAscii().constData();
+				
+				read_json(encoded_value, pt);
+
+				Encode_t data;
+				Encode_t::size_type num_names = pt.get<Encode_t::size_type>("object_names_for_type.num_names");
+				for (Encode_t::size_type i=0; i<num_names; i++)
+				{
+					std::string value;
+					std::ostringstream ossName;
+					ossName << "object_names_for_type.name_" << i;
+					value = pt.get<std::string>(ossName.str().c_str());
+					data.push_back(QString::fromStdString(value));
+				}
+
+				return(data);
+			}
+			catch(boost::property_tree::ptree_error const & error)
+			{
+				qWarning("%s\n", error.what());
+			}
+		}
+	}
+
+	Encode_t data;
+	return(data);
+}
 
 QStringList ObjectNamesForType::GetTypes() const
 {
@@ -1986,19 +1997,7 @@ QStringList ObjectNamesForType::GetTypes() const
 
 QStringList ObjectNamesForType::GetNames() const
 {
-	QStringList names;
-	Option *delimiters_option = this->getOption(QString::fromAscii("Delimiters"));
-	if (delimiters_option != NULL)
-	{
-		// Use a regular expression so that we use any one of the characters in the delimiters string
-		// as a delimiting character.
-		QString value = this->getValue();
-		QString expression = QString::fromAscii("[") + delimiters_option->label + QString::fromAscii("]");
-		QRegExp regular_expression(expression);
-		names = value.split(regular_expression, QString::SkipEmptyParts);
-	}
-
-	return(names);
+	return( this->decode() );
 }
 
 #ifdef WIN32
@@ -2118,6 +2117,23 @@ QString SingleObjectNameForType::GetName() const
 	}
 }
 
+bool Settings::Length::operator< ( const Settings::Length & rhs ) const
+{
+	if (*this == rhs) return(false);
+	return( get(Settings::Length::Metric) < rhs.get(Settings::Length::Metric) );
+}
+
+bool Settings::Length::operator> ( const Settings::Length & rhs ) const
+{
+	if (*this == rhs) return(false);
+	return( get(Settings::Length::Metric) > rhs.get(Settings::Length::Metric) );
+}
+
+bool Settings::Length::operator== ( const Settings::Length & rhs ) const
+{
+	const double tolerance = 1e-7;
+	return( fabs(get(Settings::Length::Metric) - rhs.get(Settings::Length::Metric)) < tolerance );
+}
 
 bool Settings::Length::Evaluate( const char *formula, double *pResult ) const
 {
@@ -2157,12 +2173,38 @@ Settings::Length::Length(
 }
 
 Settings::Length::Length(
+		const double default_value,
+		const Definition::Units_t units ):
+	Definition(QString::null, QString::null, SettingType_Length, QString::null, QString::null, QString::null)
+{
+	Encode_t data;
+	boost::tuples::get<valueOffset>(data) = default_value;
+	boost::tuples::get<unitsOffset>(data) = units;
+
+	this->defaultvalue = this->encode( data );
+}
+
+
+Settings::Length::Length(
 		const char *name, 
 		const char *label, 
 		const char *helptext,
 		const double default_value,
 		const Definition::Units_t units ):
 	  Definition(name, label, SettingType_Length, "", "", helptext)
+{
+	Encode_t data;
+	boost::tuples::get<valueOffset>(data) = default_value;
+	boost::tuples::get<unitsOffset>(data) = units;
+
+	this->defaultvalue = this->encode( data );
+}
+
+Settings::Length::Length(
+		const char *name, 
+		const double default_value,
+		const Definition::Units_t units ):
+	  Definition(name, name, SettingType_Length, "", "", name)
 {
 	Encode_t data;
 	boost::tuples::get<valueOffset>(data) = default_value;
@@ -2212,7 +2254,7 @@ Settings::Length::Encode_t Settings::Length::decode() const
 
 /**
 	The Length setting can change both its 'value' and its 'units' so it
-	is necessary to store both of these values in the TPGFeature::PropTPGSettings
+	is necessary to store both of these values in the Cam::Settings::Feature::Values
 	map.  This way, they are both saved/restored to/from the data file.
 	Now that we're trying to get the value alone, we need to retrieve
 	the encoded version (i.e. the string that includes both the value
@@ -2473,7 +2515,7 @@ void Settings::Enumeration::Add(const int id, const QString label)
 
 Settings::Enumeration::Pair_t Settings::Enumeration::get() const
 {
-	// The 'value' stored in the TPGFeature::PropTPGSettings map is the integer portion of the
+	// The 'value' stored in the Cam::Settings::Feature::Values map is the integer portion of the
 	// enumerated type.
 	int id = this->getValue().toInt();
 	Map_t data = this->Values();

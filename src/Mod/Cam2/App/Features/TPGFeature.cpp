@@ -47,13 +47,12 @@ TPGFeature::TPGFeature()
 {
 	//ADD_PROPERTY_TYPE(_prop_, _defaultval_, _group_,_type_,_Docu_)
     ADD_PROPERTY_TYPE(PluginId,        (""),  "TPG Feature", (App::PropertyType)(App::Prop_ReadOnly) , "Plugin ID");
-    ADD_PROPERTY_TYPE(PropTPGSettings, (),    "TPG Feature", (App::PropertyType)(App::Prop_None) , "TPG's Settings storage");
     ADD_PROPERTY_TYPE(ToolPath,        (0),   "TPG Feature", (App::PropertyType)(App::Prop_None),"ToolPath");
     ADD_PROPERTY_TYPE(MachineProgram,  (0),   "TPG Feature", (App::Prop_None),"MachineProgram");
 
     tpg = NULL;
     tpgSettings = new Settings::TPGSettings;
-	tpgSettings->setTPGFeature(this);
+	tpgSettings->setFeature(this);
 }
 
 
@@ -162,54 +161,20 @@ App::DocumentObjectExecReturn *TPGFeature::execute(void)
 }
 
 /**
-	Called by the App::Property framework just before a property is changed.
-	We want this because our PropTPGSettings member is a map of string properties.
-	We can only figure out which of the properties embedded within the
-	PropTPGSettings map changed by comparing the old and new maps.
+	From Cam::Settings::Feature class.
  */
-void TPGFeature::onBeforeChange(const App::Property* prop)
+/* virtual */ void TPGFeature::onSettingChanged(const std::string key, const std::string previous_value, const std::string new_value)
 {
-	if (prop == &PropTPGSettings)
+	TPG *tpg = getTPG();
+	if ((tpg != NULL) && (this->tpgSettings != NULL))
 	{
-		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
-		if (property_map)
+		tpg->grab();
+		Cam::Settings::Definition *definition = this->tpgSettings->getDefinition(QString::fromStdString(key));
+		if (definition != NULL)
 		{
-			// Let the tpgSettings object know that something is about to change.
-			if (tpgSettings != NULL)
-			{
-				tpgSettings->onBeforePropTPGSettingsChange(property_map);
-			}
+			tpg->onChanged( definition, QString::fromStdString(previous_value), QString::fromStdString(new_value));
 		}
-	}
-}
-
-
-/**
-	Figure out which of our property types changed and signal the underlying
-	TPGSettings object accordingly.
-
-	This method is called by the App::Property framework automatically just
-	after a property has changed.
-
-	It's possible that we store some settings in a member variable OTHER than
-	the PropTPGSettings member.  If that's the case then this method is the
-	place where the association is made.  i.e. we need to figure out which
-	member variable holds the modified setting and signal the underlying
-	TPGSettings object accordingly.
- */
-void TPGFeature::onChanged(const App::Property* prop)
-{
-	if (prop == &PropTPGSettings)
-	{
-		const App::PropertyMap *property_map = dynamic_cast<const App::PropertyMap *>(prop);
-		if (property_map)
-		{
-			// Let the tpgSettings object know that something changed.
-			if (tpgSettings != NULL)
-			{
-				tpgSettings->onPropTPGSettingsChanged(property_map);
-			}
-		}
+		tpg->release();
 	}
 }
 
@@ -245,9 +210,10 @@ void TPGFeature::initialise()
 }
 
 /**
- * Get the current TPG settings object
+ * Get the current TPG settings object.  This is the implementation of the
+ * Cam::Settings::Feature::getTPGSettings() base method.
  */
-Settings::TPGSettings* TPGFeature::getTPGSettings() {
+/* virtual */ Settings::TPGSettings* TPGFeature::getTPGSettings() {
 	getTPG();	// Try to load and initialise the TPG so that our settings array is fully populated.
 	return tpgSettings;
 }
@@ -323,7 +289,8 @@ void TPGFeature::setMachineProgram(Cam::MachineProgram *machineProgram) {
     std::string mpFeatName = doc->getUniqueObjectName(toolpathName.c_str());
 
     // create the feature (for Document Tree)
-    App::DocumentObject *machineProgramFeat =  doc->addObject("Cam::MachineProgramFeature", mpFeatName.c_str());
+    // App::DocumentObject *machineProgramFeat =  doc->addObject("Cam::MachineProgramFeature", mpFeatName.c_str());
+	App::DocumentObject *machineProgramFeat =  doc->addObject(Cam::MachineProgramFeature::getClassTypeId().getName(), mpFeatName.c_str());
     if(machineProgramFeat && machineProgramFeat->isDerivedFrom(Cam::MachineProgramFeature::getClassTypeId())) {
         Cam::MachineProgramFeature *machineProgramFeature = dynamic_cast<Cam::MachineProgramFeature *>(machineProgramFeat);
 

@@ -5,6 +5,8 @@
 #ifndef AREA_HEADER
 #define AREA_HEADER
 
+#include <PreCompiled.h>
+
 #include "Curve.h"
 
 namespace area
@@ -18,7 +20,7 @@ enum PocketMode
 	ZigZagThenSingleOffsetPocketMode,
 };
 
-struct CAreaPocketParams
+struct LibAreaExport CAreaPocketParams
 {
 	double tool_radius;
 	double extra_offset;
@@ -38,7 +40,7 @@ struct CAreaPocketParams
 	}
 };
 
-class CArea
+class LibAreaExport CArea
 {
 public:
 	std::list<area::CCurve> m_curves;
@@ -79,10 +81,10 @@ enum eOverlapType
 	eCrossing,
 };
 
-eOverlapType GetOverlapType(const area::CCurve& c1, const area::CCurve& c2);
-eOverlapType GetOverlapType(const CArea& a1, const CArea& a2);
-bool IsInside(const Point& p, const area::CCurve& c);
-bool IsInside(const Point& p, const CArea& a);
+eOverlapType LibAreaExport GetOverlapType(const area::CCurve& c1, const area::CCurve& c2);
+eOverlapType LibAreaExport GetOverlapType(const CArea& a1, const CArea& a2);
+bool LibAreaExport IsInside(const Point& p, const area::CCurve& c);
+bool LibAreaExport IsInside(const Point& p, const CArea& a);
 
 } // End namespace area
 

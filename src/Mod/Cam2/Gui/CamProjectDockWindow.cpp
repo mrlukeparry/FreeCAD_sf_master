@@ -43,8 +43,8 @@ CamProjectDockWindow::CamProjectDockWindow(Gui::Document* pcDocument,
 
 	currentSettings = NULL;
 
-	QObject::connect(&UIManager(), SIGNAL(updatedTPGSelection(Cam::TPGFeature*)), this,
-			SLOT(updatedTPGSelection(Cam::TPGFeature*)));
+	QObject::connect(&UIManager(), SIGNAL(updatedTPGSelection(Cam::Settings::Feature*)), this,
+		SLOT(updatedTPGSelection(Cam::Settings::Feature*)));
 
 	// receive tpg running state changes from Cam layer.
 	QObject::connect(&CamGui::UIManager(), SIGNAL(updatedTPGStateSig(QString, Cam::TPG::State, int)),
@@ -195,24 +195,34 @@ bool CamProjectDockWindow::saveSettings()
     bool failure = false;
     QList<CamComponent*>::iterator it = components.begin();
     for (; it != components.end(); ++it)
-        if (!(*it)->close()) {
-        	Base::Console().Warning("Failed to save '%s'\n", (*it)->name());
+	{
+		CamComponent *pCamComponent = *it;
+        if (! pCamComponent->close()) {
+        	Base::Console().Warning("Failed to save '%s'\n", pCamComponent->name());
             failure = true;
         }
+	}
     return !failure;
 }
 
 /**
  * Slot that is called from the UIManager when the selection is changed.
  */
-void CamProjectDockWindow::updatedTPGSelection(Cam::TPGFeature* tpgFeature) {
+void CamProjectDockWindow::updatedTPGSelection(Cam::Settings::Feature* feature) {
 
-    if (tpgFeature != NULL) {
-		Cam::Settings::TPGSettings *settings = tpgFeature->getTPGSettings();
-		QStringList sl = settings->getActions();
-		Base::Console().Log("Actions: %i",sl.size());
-		if (!this->editSettings(settings))
-			Base::Console().Error("Failed to edit settings for '%s'\n", tpgFeature->Label.getValue());
+    if (feature != NULL) {
+		Cam::Settings::TPGSettings *settings = feature->getTPGSettings();
+		if (settings != NULL)
+		{
+			QStringList sl = settings->getActions();
+			Base::Console().Log("Actions: %i",sl.size());
+			if (!this->editSettings(settings))
+				Base::Console().Error("Failed to edit settings for '%s'\n", feature->Label.getValue());
+		}
+		else
+		{
+			this->editSettings(NULL);
+		}
     }
     else
     	this->editSettings(NULL);

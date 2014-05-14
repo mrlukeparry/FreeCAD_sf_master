@@ -30,6 +30,12 @@
 *                                                                              *
 *******************************************************************************/
 
+#ifdef WIN32
+	// We MUST declare this before including <algorithm> because windef.h has
+	// definitions for min and max that mess up the std::min and std::max methods.
+	#define NOMINMAX
+#endif // WIN32
+
 #include "clipper.hpp"
 #include <cmath>
 #include <ctime>

@@ -1,5 +1,5 @@
 if(MSVC)
-    add_definitions(-DFCAppCam -DHAVE_ACOSH -DHAVE_ASINH -DHAVE_ATANH)
+    add_definitions(-DFCLibArea -DFCAppCam -DHAVE_ACOSH -DHAVE_ASINH -DHAVE_ATANH)
 else(MSVC)
     add_definitions(-DHAVE_LIMITS_H -DHAVE_CONFIG_H -fPIC)
 endif(MSVC)
@@ -18,7 +18,11 @@ if(MSVC)
 	# it has the correct filename used.
 	set(AreaClipper_LIBS
 	    ${PYTHON_LIBRARIES}
-	    ${Boost_LIBRARIES})
+	    ${Boost_LIBRARIES}
+	    debug MSVCRTD.LIB
+            debug MSVCPRTD.LIB
+            optimized MSVCRT.LIB
+            optimized MSVCPRT.LIB)
 else(MSVC)
 	set(AreaClipper_LIBS
 	    boost_python
@@ -124,17 +128,17 @@ target_link_libraries(AreaClipper ${AreaClipper_LIBS} )
 if(MSVC)
     set_target_properties(AreaClipper PROPERTIES SUFFIX ".pyd")
     set_target_properties(AreaClipper PROPERTIES DEBUG_OUTPUT_NAME "AreaClipper_d")
-    set_target_properties(AreaClipper PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam)
+    set_target_properties(AreaClipper PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Mod/Cam")
     set_target_properties(AreaClipper PROPERTIES PREFIX "../")
 elseif(MINGW)
     set_target_properties(AreaClipper PROPERTIES SUFFIX ".pyd")
     set_target_properties(AreaClipper PROPERTIES DEBUG_OUTPUT_NAME "AreaClipper_d")
-    set_target_properties(AreaClipper PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam)
+    set_target_properties(AreaClipper PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Mod/Cam")
     set_target_properties(AreaClipper PROPERTIES PREFIX "")
 else(MSVC)
-    set_target_properties(AreaClipper PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Mod/Cam)
+    set_target_properties(AreaClipper PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Mod/Cam")
     set_target_properties(AreaClipper PROPERTIES PREFIX "")
-    SET_TARGET_PROPERTIES(AreaClipper PROPERTIES INSTALL_RPATH ${INSTALL_RPATH})
+    SET_TARGET_PROPERTIES(AreaClipper PROPERTIES INSTALL_RPATH "${INSTALL_RPATH}")
 endif(MSVC)
 
 

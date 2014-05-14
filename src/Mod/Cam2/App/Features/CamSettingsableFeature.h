@@ -28,7 +28,10 @@
 #include <PreCompiled.h>
 
 namespace Cam {
-class CamExport CamSettingsableFeature;
+	namespace Settings {
+		class CamExport Feature;
+		class CamExport TPGSettings;
+	}
 }
 
 #include <boost/signals.hpp>
@@ -47,14 +50,23 @@ typedef boost::signals::connection Connection;
   */
 namespace Cam
 {
-class CamExport CamSettingsableFeature : public App::DocumentObject
+	namespace Settings
+	{
+class CamExport Feature : public App::DocumentObject
 {
-    PROPERTY_HEADER(Cam::CamSettingsableFeature);
+	PROPERTY_HEADER(Cam::Settings::Feature);
 
 public:
-    CamSettingsableFeature();
-    ~CamSettingsableFeature();
+    Feature();
+    ~Feature();
 
+	App::PropertyMap           Values;
+
+	bool IsCamSettingsProperty(const App::Property* prop) const;
+
+	void setValue(const std::string & key, const std::string & value);
+
+	const std::map<std::string,std::string> &getValues(void) const;
 
     /// recalculate the Feature
     App::DocumentObjectExecReturn *execute(void);
@@ -70,6 +82,12 @@ public:
 //    virtual void Save(Base::Writer &/*writer*/) const;
 //    virtual void Restore(Base::XMLReader &/*reader*/);
 
+	void onBeforeChange(const App::Property* prop);
+	void onChanged(const App::Property* prop);
+
+	virtual Cam::Settings::TPGSettings *getTPGSettings() { return(NULL); } // Should be overloaded so this should never be executed.
+	virtual void onSettingChanged(const std::string key, const std::string previous_value, const std::string new_value) { }
+
 protected:
     
     ///Connections
@@ -80,8 +98,16 @@ protected:
 //    virtual void onSettingDocument();
 
 //    virtual void onDocumentRestored();
+
+private:
+	// NOTE: ONLY used to determine which properties changed in a single update.  i.e. this
+	// value is quite transient.  It only makes sense when comparing the values written
+	// between the onBeforeSettingsChange() and onSettingsChanged() method
+	// calls.
+	std::map<std::string,std::string>	previous_values;
 };
 
+} //namespace Settings
 } //namespace Cam
 
 

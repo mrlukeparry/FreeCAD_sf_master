@@ -25,7 +25,7 @@
 
 
 #include <Gui/DockWindow.h>
-#include <qtextedit.h>
+#include <QTextEdit>
 
 #include "ui_MachineProgramDockWindow.h"
 
@@ -43,10 +43,9 @@ public:
   virtual ~MachineProgramDockWindow();
 
   /**
-   * Set the Toolpath to be displayed.  It expects the toolpath to be in HTML
-   * format already.
+   * Set the MachineProgram to be displayed.
    */
-  void setToolPath(const QString &toolpath);
+  void setMachineProgram(Cam::MachineProgram *machine_program);
 
   /**
    * Clear the output (i.e. no toolpath or machine program selected)
@@ -69,6 +68,7 @@ protected:
 
 private:
     Ui_MachineProgramDockWindow* ui;
+	Cam::MachineProgram *machine_program;
 };
 
 } /* namespace Cam */

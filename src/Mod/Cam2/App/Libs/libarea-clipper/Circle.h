@@ -4,12 +4,14 @@
 
 #pragma once
 
+#include <PreCompiled.h>
+
 #include "Point.h"
 
 namespace area
 {
 
-class Circle{
+class LibAreaExport Circle{
 public:
 	Point m_c;
 	double m_radius;

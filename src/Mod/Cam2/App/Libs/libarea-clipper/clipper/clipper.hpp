@@ -26,6 +26,8 @@
 #ifndef clipper_hpp
 #define clipper_hpp
 
+#include <PreCompiled.h>
+
 #include <vector>
 #include <stdexcept>
 #include <cstring>
@@ -49,15 +51,15 @@ struct IntPoint {
 typedef std::vector< IntPoint > Polygon;
 typedef std::vector< Polygon > Polygons;
 
-bool IsClockwise(const Polygon &poly, bool UseFullInt64Range = true);
-double Area(const Polygon &poly, bool UseFullInt64Range = true);
-Polygons OffsetPolygons(const Polygons &pts, const float &delta);
+bool LibAreaExport IsClockwise(const Polygon &poly, bool UseFullInt64Range = true);
+double LibAreaExport Area(const Polygon &poly, bool UseFullInt64Range = true);
+Polygons LibAreaExport OffsetPolygons(const Polygons &pts, const float &delta);
 
 //used internally ...
 enum EdgeSide { esLeft, esRight };
 enum IntersectProtects { ipNone = 0, ipLeft = 1, ipRight = 2, ipBoth = 3 };
 
-struct TEdge {
+struct LibAreaExport TEdge {
   long64 xbot;
   long64 ybot;
   long64 xcurr;
@@ -81,33 +83,33 @@ struct TEdge {
   TEdge *prevInSEL;
 };
 
-struct IntersectNode {
+struct LibAreaExport IntersectNode {
   TEdge          *edge1;
   TEdge          *edge2;
   IntPoint        pt;
   IntersectNode  *next;
 };
 
-struct LocalMinima {
+struct LibAreaExport LocalMinima {
   long64          Y;
   TEdge        *leftBound;
   TEdge        *rightBound;
   LocalMinima  *next;
 };
 
-struct Scanbeam {
+struct LibAreaExport Scanbeam {
   long64       Y;
   Scanbeam *next;
 };
 
-struct PolyPt {
+struct LibAreaExport PolyPt {
   IntPoint pt;
   PolyPt  *next;
   PolyPt  *prev;
   bool     isHole;
 };
 
-struct JoinRec {
+struct LibAreaExport JoinRec {
   IntPoint  pt1a;
   IntPoint  pt1b;
   int       poly1Idx;
@@ -116,12 +118,12 @@ struct JoinRec {
   int       poly2Idx;
 };
 
-struct HorzJoinRec {
+struct LibAreaExport HorzJoinRec {
   TEdge   *edge;
   int       savedIdx;
 };
 
-struct IntRect { long64 left; long64 top; long64 right; long64 bottom; };
+struct LibAreaExport IntRect { long64 left; long64 top; long64 right; long64 bottom; };
 
 typedef std::vector < PolyPt* > PolyPtList;
 typedef std::vector < TEdge* > EdgeList;
@@ -131,7 +133,7 @@ typedef std::vector < HorzJoinRec* > HorzJoinList;
 //ClipperBase is the ancestor to the Clipper class. It should not be
 //instantiated directly. This class simply abstracts the conversion of sets of
 //polygon coordinates into edge objects that are stored in a LocalMinima list.
-class ClipperBase
+class LibAreaExport ClipperBase
 {
 public:
   ClipperBase();
@@ -155,7 +157,7 @@ private:
   EdgeList          m_edges;
 };
 
-class Clipper : public virtual ClipperBase
+class LibAreaExport Clipper : public virtual ClipperBase
 {
 public:
   Clipper();
@@ -228,7 +230,7 @@ private:
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-class clipperException : public std::exception
+class LibAreaExport clipperException : public std::exception
 {
   public:
     clipperException(const char* description)
